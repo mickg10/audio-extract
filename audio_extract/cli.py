@@ -270,20 +270,13 @@ def cmd_panel_render(args: argparse.Namespace) -> int:
                            construction=args.construction, rendered=rendered, errors=errors))
 
 
-def cmd_qa_score(args: argparse.Namespace) -> int:
-    """Score every candidate in the store against a consensus reference; write
-    per-axis metric rows and return the Pareto frontier + scalarized ranking."""
+def _score_store(layout: "TrackLayout", sr: int, *, write_metrics: bool = True):
+    """Score every candidate in the store against a consensus reference. Returns
+    ``(scored, report)``; shared by `qa score` and `conduct`."""
     import soundfile as sf
 
     from . import panel_runner as pr
     from .manifest import Manifest
-
-    layout = TrackLayout(args.lib, args.run_id)
-    src_json = layout.source_dir / "source.json"
-    if not src_json.exists():
-        return _emit(_envelope("qa.score", "error", args.run_id,
-                               message=f"run {args.run_id!r} not ingested"), code=2)
-    sr = json.loads(src_json.read_text())["sample_rate_hz"]
 
     cands: dict[str, Any] = {}
     for d in sorted(layout.candidates_dir.glob("sha256_*")):
@@ -292,32 +285,94 @@ def cmd_qa_score(args: argparse.Namespace) -> int:
             arr, _ = sf.read(str(wav), dtype="float64", always_2d=True)
             cands[d.name.replace("sha256_", "sha256:")] = arr
     if not cands:
-        return _not_implemented("qa.score", args.run_id, "M3",
-                                "no candidates rendered yet (run `candidate render` / `panel render`)")
+        return [], {"ranking": [], "pareto_frontier": [], "candidate_count": 0, "axes": pr.AXES}
 
     reference = pr.consensus_reference(list(cands.values())) if len(cands) > 1 else next(iter(cands.values()))
     pv = layout.source_dir / "provisional_vocal.f32.wav"
     vocal = sf.read(str(pv), dtype="float64", always_2d=True)[0] if pv.exists() else None
-
     windows = None
     pj = layout.passages_dir / "passages.v1.json"
     if pj.exists():
         windows = [(p["start_sample"], p["end_sample"]) for p in json.loads(pj.read_text())["passages"]]
 
-    scored: list = []
-    with Manifest(layout.manifest_sqlite) as man:
-        for rid, arr in cands.items():
-            costs = pr.score_candidate(arr, sr, reference=reference, vocal_ref=vocal, windows=windows)
-            scored.append(pr.Scored(rid, costs))
-            for axis, val in costs.items():
-                man.upsert_metric({"recipe_id": rid, "passage_id": "__aggregate__",
-                                   "metric": f"{axis}/v1", "value": val, "unit": "", "details": {}})
-        man.set_state(args.run_id, "MEASURING")
+    scored = [pr.Scored(rid, pr.score_candidate(arr, sr, reference=reference, vocal_ref=vocal, windows=windows))
+              for rid, arr in cands.items()]
+    if write_metrics:
+        with Manifest(layout.manifest_sqlite) as man:
+            for s in scored:
+                for axis, val in s.costs.items():
+                    man.upsert_metric({"recipe_id": s.recipe_id, "passage_id": "__aggregate__",
+                                       "metric": f"{axis}/v1", "value": val, "unit": "", "details": {}})
+    report = {
+        "candidate_count": len(scored),
+        "axes": pr.AXES,
+        "pareto_frontier": [s.recipe_id for s in pr.pareto_frontier(scored)],
+        "ranking": [{"recipe_id": s.recipe_id, "costs": s.costs} for s in pr.rank_by_scalarized(scored)],
+    }
+    return scored, report
 
-    frontier = [s.recipe_id for s in pr.pareto_frontier(scored)]
-    ranking = [{"recipe_id": s.recipe_id, "costs": s.costs} for s in pr.rank_by_scalarized(scored)]
-    return _emit(_envelope("qa.score", "ok", args.run_id, axes=pr.AXES,
-                           candidate_count=len(scored), pareto_frontier=frontier, ranking=ranking))
+
+def cmd_qa_score(args: argparse.Namespace) -> int:
+    """Score store candidates -> metric rows + Pareto frontier + scalarized ranking."""
+    from .manifest import Manifest
+
+    layout = TrackLayout(args.lib, args.run_id)
+    src_json = layout.source_dir / "source.json"
+    if not src_json.exists():
+        return _emit(_envelope("qa.score", "error", args.run_id,
+                               message=f"run {args.run_id!r} not ingested"), code=2)
+    sr = json.loads(src_json.read_text())["sample_rate_hz"]
+    scored, report = _score_store(layout, sr, write_metrics=True)
+    if not scored:
+        return _not_implemented("qa.score", args.run_id, "M3",
+                                "no candidates rendered yet (run `candidate render` / `panel render`)")
+    with Manifest(layout.manifest_sqlite) as man:
+        man.set_state(args.run_id, "MEASURING")
+    return _emit(_envelope("qa.score", "ok", args.run_id, **report))
+
+
+def cmd_conduct(args: argparse.Namespace) -> int:
+    """Run the bounded Pi/DeepSeek conductor loop over the run (docs/v2 §6)."""
+    from . import conductor as cd
+    from .manifest import Manifest
+    from .separate import render_candidate
+
+    layout = TrackLayout(args.lib, args.run_id)
+    src_json = layout.source_dir / "source.json"
+    if not src_json.exists():
+        return _emit(_envelope("conduct", "error", args.run_id,
+                               message=f"run {args.run_id!r} not ingested"), code=2)
+    source_record = json.loads(src_json.read_text())
+    sr = source_record["sample_rate_hz"]
+    code_commit = _code_commit()
+
+    def execute(action: dict) -> dict | None:
+        if action["type"] == "build_weighted_ensemble":
+            return None  # ensemble render lands in M6
+        rec = render_candidate(
+            layout, source_record, model_filename=action.get("model", args.model),
+            target=action.get("target", "vocals"), construction=action.get("construction", "native_primary"),
+            overlap=int(action.get("overlap", 8)), code_commit=code_commit, model_dir=args.model_dir,
+        )
+        return {"recipe_id": rec["recipe_id"]}
+
+    def score(_cands):
+        _s, report = _score_store(layout, sr, write_metrics=True)
+        return report
+
+    if args.planner == "deepseek":
+        planner: cd.Planner = cd.DeepSeekPlanner()
+    else:
+        planner = cd.ScriptedPlanner(json.loads(Path(args.script).read_text()))
+
+    _scored, baseline = _score_store(layout, sr, write_metrics=False)
+    conductor = cd.Conductor(cd.Budget(), execute, score, planner)
+    decision = conductor.run([{"recipe_id": r["recipe_id"]} for r in baseline["ranking"]], baseline)
+
+    if decision.get("status") == "final" and decision.get("candidate_id"):
+        with Manifest(layout.manifest_sqlite) as man:
+            man.set_state(args.run_id, "COMPLETE")
+    return _emit(_envelope("conduct", "ok", args.run_id, decision=decision, rounds_log=conductor.log))
 
 
 def _code_commit() -> str:
@@ -436,6 +491,16 @@ def build_parser() -> argparse.ArgumentParser:
     sp.set_defaults(func=cmd_ingest)
     sp = sub.add_parser("fingerprint", help="print the execution fingerprint")
     sp.set_defaults(func=cmd_fingerprint)
+
+    # conduct — the bounded Pi/DeepSeek conductor loop
+    sp = sub.add_parser("conduct", help="run the bounded conductor loop over a run")
+    sp.add_argument("--run-id", required=True)
+    sp.add_argument("--planner", default="deepseek", choices=["deepseek", "scripted"])
+    sp.add_argument("--script", help="JSON file of proposals for --planner scripted")
+    sp.add_argument("--model", default="Kim_Vocal_2.onnx")
+    sp.add_argument("--model-dir", default=str(Path.home() / "audio-extract" / "models"))
+    sp.add_argument("--json", action="store_true")
+    sp.set_defaults(func=cmd_conduct)
 
     return p
 
