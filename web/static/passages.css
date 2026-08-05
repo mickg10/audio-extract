@@ -1,0 +1,120 @@
+/* audio-extract v2 GUI — passages timeline + A/B/C. Complements style.css. */
+
+.muted { color: var(--text-mute); font-size: 13px; }
+.sel-passage {
+  font-family: var(--mono); font-size: 12px; color: var(--accent-2);
+  background: var(--bg-panel2); border: 1px solid var(--border); border-radius: 6px;
+  padding: 3px 9px; margin-left: auto;
+}
+
+/* ---- run picker ---- */
+.run-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+.run-card {
+  display: block; background: var(--bg-panel); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px; color: var(--text);
+}
+.run-card:hover { border-color: var(--accent); text-decoration: none; background: var(--bg-hover); }
+.run-card .rc-title { font-weight: 650; font-size: 15px; word-break: break-word; margin-bottom: 6px; }
+.run-card .rc-meta { color: var(--text-dim); font-size: 12.5px; font-family: var(--mono); }
+.run-card .rc-badges { margin-top: 9px; display: flex; gap: 6px; flex-wrap: wrap; }
+
+/* ---- timeline ---- */
+.timeline-wrap {
+  position: relative; overflow: hidden;
+  background: #0a0d12; border: 1px solid var(--border); border-radius: 8px;
+  height: 150px; touch-action: manipulation; user-select: none;
+}
+.timeline-wrap canvas { display: block; width: 100%; height: 150px; cursor: crosshair; }
+.timeline-wrap .playhead {
+  position: absolute; top: 0; width: 2px; height: 100%;
+  background: var(--playhead); pointer-events: none; box-shadow: 0 0 5px var(--playhead);
+}
+/* passage regions overlaid on the wave */
+.pregion {
+  position: absolute; top: 0; height: 100%; box-sizing: border-box;
+  border-left: 2px solid; border-right: 2px solid; cursor: pointer;
+  overflow: hidden;
+}
+.pregion:hover { filter: brightness(1.25); }
+.pregion.selected { outline: 2px solid var(--text); outline-offset: -2px; z-index: 3; }
+.pregion .plabel {
+  position: absolute; top: 4px; left: 5px; right: 4px;
+  font-size: 10px; font-family: var(--mono); font-weight: 700;
+  white-space: nowrap; text-overflow: ellipsis; overflow: hidden;
+  color: #06120e; padding: 1px 4px; border-radius: 4px; pointer-events: none;
+}
+
+/* legend swatches (extends .legend from style.css) */
+.legend .sw { border-radius: 3px; }
+.legend .lg-item { display: inline-flex; align-items: center; gap: 5px; }
+
+/* passage chips */
+.chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.chip {
+  display: inline-flex; align-items: center; gap: 7px; cursor: pointer;
+  background: var(--bg-panel2); border: 1px solid var(--border-lt);
+  border-radius: 999px; padding: 4px 11px 4px 8px; font-size: 12.5px; color: var(--text-dim);
+}
+.chip:hover { border-color: var(--accent); color: var(--text); }
+.chip.selected { border-color: var(--text); color: var(--text); background: var(--bg-hover); }
+.chip .dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+.chip .ctime { font-family: var(--mono); color: var(--text-mute); font-size: 11px; }
+
+/* ---- tables (candidates + costs) ---- */
+.table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+table.cands, table.costs { width: 100%; border-collapse: collapse; font-size: 13px; }
+table.cands th, table.costs th {
+  text-align: left; color: var(--text-mute); font-weight: 600; font-size: 11px;
+  text-transform: uppercase; letter-spacing: .4px; padding: 7px 10px;
+  border-bottom: 1px solid var(--border); white-space: nowrap;
+}
+table.cands td, table.costs td {
+  padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: middle;
+  white-space: nowrap;
+}
+table.cands td.lbl { white-space: normal; min-width: 160px; }
+table.cands td.numc, table.costs td.numc { font-family: var(--mono); color: var(--text-dim); text-align: right; }
+table.cands td.numc.best, table.costs td.numc.best { color: var(--accent-2); font-weight: 700; }
+table.costs th.slotA, table.costs td.slotA { }
+table.cands tr:hover td { background: var(--bg-panel2); }
+.axis-hint { color: var(--text-mute); font-weight: 400; text-transform: none; letter-spacing: 0; }
+
+.pareto-pill {
+  display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 10px; font-weight: 700;
+  font-family: var(--mono); color: #06253f; background: var(--accent-2); border: 1px solid var(--accent-2);
+}
+.dom-pill {
+  display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 10px;
+  font-family: var(--mono); color: var(--text-mute); border: 1px solid var(--border-lt);
+}
+.mini-btn {
+  padding: 2px 8px; font-size: 11px; border-radius: 6px; cursor: pointer;
+  background: var(--bg-panel2); color: var(--text); border: 1px solid var(--border-lt);
+}
+.mini-btn:hover { border-color: var(--accent); }
+.mini-btn.on { background: var(--accent); color: #06253f; border-color: var(--accent); font-weight: 700; }
+
+/* ---- A/B/C ---- */
+.abc-btn { min-width: 42px; font-weight: 700; }
+.abc-btn.playing { background: var(--accent); color: #06253f; border-color: var(--accent); }
+.abc-btn:disabled { opacity: .4; cursor: not-allowed; }
+
+.ab-col .slot-letter {
+  display: inline-block; width: 20px; height: 20px; line-height: 20px; text-align: center;
+  border-radius: 5px; background: var(--bg-panel2); border: 1px solid var(--border-lt);
+  font-family: var(--mono); font-weight: 700; font-size: 12px; margin-right: 7px; color: var(--accent);
+}
+.ab-col .cand-label { font-size: 13px; color: var(--text); font-weight: 600; word-break: break-word; }
+.ab-col .cand-sub { font-size: 11px; color: var(--text-mute); font-family: var(--mono); margin-top: 2px; }
+.ab-col audio { width: 100%; margin: 10px 0 6px; }
+.ab-col .spec img { max-width: 100%; display: block; border-radius: 6px; border: 1px solid var(--border); }
+.ab-col .spec-missing { font-size: 12px; }
+.ab-col.empty { color: var(--text-mute); text-align: center; padding: 30px 14px; }
+.ab-col .col-costs { margin-top: 10px; font-family: var(--mono); font-size: 11.5px; }
+.ab-col .col-costs .cc { display: flex; justify-content: space-between; padding: 2px 0; color: var(--text-dim); }
+.ab-col .col-costs .cc b { color: var(--text); }
+
+@media (max-width: 640px) {
+  .timeline-wrap, .timeline-wrap canvas { height: 120px; }
+  .sel-passage { margin-left: 0; }
+}
