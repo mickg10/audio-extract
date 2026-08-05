@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Explorer · Stem Library</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <div class="topbar">
+    <a class="back" href="/">← Library</a>
+    <h1 id="fileTitle" style="font-size:15px;">…</h1>
+    <span class="spacer"></span>
+    <span class="meta" id="fileMeta"></span>
+    <button class="btn small" id="refreshBtn" title="Refresh variants">Refresh</button>
+  </div>
+
+  <div class="wrap wide">
+    <div class="file-head">
+      <div class="sub" id="fileSub"></div>
+    </div>
+
+    <div class="tabs">
+      <div class="tab active" data-tab="variants" id="tabVariants">Variants</div>
+      <div class="tab" data-tab="analysis" id="tabAnalysis">Analysis · A/B/C</div>
+      <span class="spacer" style="flex:1"></span>
+      <span class="meta" style="align-self:center; padding-right:4px;">
+        <kbd>space</kbd> play/pause · click wave to seek
+      </span>
+    </div>
+
+    <!-- VARIANTS TAB -->
+    <div id="variantsTab">
+      <div class="empty-state"><span class="spin"></span> Loading variants…</div>
+    </div>
+
+    <!-- ANALYSIS TAB -->
+    <div id="analysisTab" class="hidden">
+      <div id="presetBar" style="margin-bottom:14px; display:flex; gap:8px; flex-wrap:wrap;"></div>
+
+      <div class="analysis-controls">
+        <div class="slot-pick"><label>Slot A</label><select id="pickA"></select></div>
+        <div class="slot-pick"><label>Slot B</label><select id="pickB"></select></div>
+        <div class="slot-pick"><label>Slot C</label><select id="pickC"></select></div>
+      </div>
+
+      <div class="transport">
+        <button class="btn primary big" id="masterPlay">▶ Play all</button>
+        <span class="time" id="masterTime">0:00 / 0:00</span>
+        <input type="range" id="masterSeek" min="0" max="1000" value="0" step="1">
+      </div>
+
+      <div class="ab-grid" id="abGrid"></div>
+
+      <div class="card" id="overlayCard">
+        <div class="card-head"><span class="name">A vs B — overlaid envelopes</span></div>
+        <div class="card-desc">Cheap in-browser A−B view: the two waveforms superimposed, plus their divergence. For the intended “subtraction vs reverb-subtraction” comparison, load a precomputed <b>diff</b> variant (residual / *_removed) into a slot above.</div>
+        <div class="legend">
+          <span><span class="sw" style="background:var(--wave)"></span><span id="legA">A</span></span>
+          <span><span class="sw" style="background:var(--wave-b)"></span><span id="legB">B</span></span>
+          <span><span class="sw" style="background:var(--accent-3)"></span>|A−B| divergence</span>
+        </div>
+        <div class="wave-scroll overlay-wrap" id="overlayWrap" style="height:120px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/common.js"></script>
+  <script src="/static/explorer.js"></script>
+</body>
+</html>

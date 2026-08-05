@@ -1,0 +1,15 @@
+[project]
+name = "audio-extract"
+version = "0.1.0"
+description = "UVR-style stem separation + spectrogram ensemble, driven from a uv environment"
+requires-python = ">=3.10,<3.13"
+dependencies = [
+    "audio-separator[cpu]",   # Apple Silicon: CPU/CoreML onnxruntime (not the CUDA [gpu] extra)
+    "numpy",
+    "soundfile",
+    "librosa",
+    "matplotlib>=3.10.9",
+]
+
+[tool.uv]
+# keep resolution reproducible; uv writes uv.lock

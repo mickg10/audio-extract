@@ -1,0 +1,37 @@
+# environments / caches
+.venv/
+__pycache__/
+*.pyc
+.uv/
+
+# generated library + assets (large, reproducible from input via convert.py)
+lib/
+output/
+bench_tmp*/
+
+# inputs / models / downloads (large binaries, sourced separately)
+input/
+raw_input/
+drive_pull/
+models/
+*.wav
+*.m4a
+*.mp3
+*.flac
+*.pth
+*.ckpt
+*.onnx
+*.safetensors
+
+# runtime state / logs
+*.log
+web/server.log
+web/server.pid
+web/jobs.json
+*.pid
+
+# editor / os
+.DS_Store
+*.bak
+*.bak-*
+*.bak.*

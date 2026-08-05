@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Stem Library</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <div class="topbar">
+    <h1><span class="brand">◈</span> Stem&nbsp;Separation Library</h1>
+    <span class="spacer"></span>
+    <span class="meta" id="genMeta">loading…</span>
+    <a class="btn jobs-link" href="/jobs" id="jobsLink">Jobs<span class="badge hidden" id="jobsBadge"></span></a>
+  </div>
+
+  <div class="wrap">
+    <div id="uploader" style="margin-bottom:18px;"></div>
+
+    <div class="list-controls">
+      <input class="search" id="search" type="search" placeholder="Filter files…" autocomplete="off">
+      <span class="count" id="count"></span>
+      <span class="spacer" style="flex:1"></span>
+      <label class="toggle"><input type="checkbox" id="autoRefresh" checked> Auto-refresh</label>
+      <button class="btn" id="refreshBtn">Refresh</button>
+    </div>
+
+    <div id="tableHost">
+      <div class="empty-state"><span class="spin"></span> Loading library…</div>
+    </div>
+  </div>
+
+  <script src="/static/common.js"></script>
+  <script src="/static/listing.js"></script>
+</body>
+</html>
