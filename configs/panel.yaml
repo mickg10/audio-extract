@@ -1,0 +1,114 @@
+schema: audio-extract/model-panel/v1
+
+# Seed panel for v2 (docs/v2 §3). Identity is the *bundle* — weight sha256 +
+# config sha256 + adapter revision + target — never the checkpoint filename.
+# config.sha256 == REQUIRED_AT_IMPORT means `audio-extract panel show` reports
+# needs_import=true until the importer resolves and pins the config bytes.
+
+defaults:
+  excerpts_only: true
+  output_sample_format: float32
+  input_peak_normalization: disabled
+  output_peak_normalization: disabled
+
+models:
+  # --- Tier A: stable baseline panel (docs/v2 §3.2) ---------------------
+  - id: viperx_1297
+    family: bs_roformer
+    adapter: audio_separator_mdxc
+    target: vocals
+    checkpoint:
+      filename: model_bs_roformer_ep_317_sdr_12.9755.ckpt
+      sha256: 5b84f37e8d444c8cb30c79d77f613a41c05868ff9c9ac6c7049c00aefae115aa
+      source_revision: all_public_uvr_models
+    config:
+      source: https://github.com/ZFTurbo/Music-Source-Separation-Training/raw/main/configs/viperx/model_bs_roformer_ep_317_sdr_12.9755.yaml
+      sha256: REQUIRED_AT_IMPORT
+    sweep:
+      overlap_factor: [2, 4, 8]
+    constructions:
+      - native_primary
+      - native_secondary
+      - mixture_minus_primary
+
+  - id: kim_vocal_2
+    family: mel_band_roformer
+    adapter: audio_separator_mdxc
+    target: vocals
+    checkpoint:
+      filename: MelBandRoformer.ckpt
+      sha256: 87201f4d31afb5bc79993230fc49446918425574db48c01c405e44f365c7559e
+      source_revision: 94a0e5de2622a4160198b158e6f8141296da887e
+    constructions:
+      - native_primary
+      - mixture_minus_primary
+
+  - id: unwa_inst_v1e_plus
+    family: mel_band_roformer
+    adapter: audio_separator_mdxc
+    target: instrumental
+    checkpoint:
+      filename: inst_v1e_plus.ckpt
+      sha256: 6a4ddba739f0352407fb6e18b29206b82318ec427fe37fcedb0f83241e4e15fb
+      source_revision: f86cd9e99d63eb9499b00fca424bc4ed8a8aeaba
+    constructions:
+      - native_primary
+
+  - id: becruily_inst
+    family: mel_band_roformer
+    adapter: audio_separator_mdxc
+    target: instrumental
+    checkpoint:
+      filename: mel_band_roformer_instrumental_becruily.ckpt
+      sha256: a8da6632a1c25efb1c9be783ce9ea367d226d4b918cd6c3717c8b1d7a396041d
+      source_revision: 1bbef428121cc700899a57c8a50d6dce13aa7e98
+    constructions:
+      - native_primary
+
+  - id: becruily_vocal
+    family: mel_band_roformer
+    adapter: audio_separator_mdxc
+    target: vocals
+    checkpoint:
+      filename: mel_band_roformer_vocals_becruily.ckpt
+      sha256: a05961310cc55fbb901290c2e8be02682942f73522b6ac76bf2ec11e347ed95a
+      source_revision: af457f56e56eb23fa8322929eef6a63b455e5858
+    constructions:
+      - native_primary
+      - mixture_minus_primary
+
+  - id: mdx23c_hq
+    family: mdx23c
+    adapter: audio_separator_mdxc
+    target: vocals
+    checkpoint:
+      filename: MDX23C-8KFFT-InstVoc_HQ.ckpt
+      sha256: 49d51472769e34a2501cd1da782346a3212555c3a5619fc2c53507445528d816
+    constructions:
+      - native_primary
+      - native_secondary
+      - mixture_minus_primary
+
+  - id: bs_polarformer
+    family: bs_roformer
+    adapter: audio_separator_mdxc
+    target: vocals
+    checkpoint:
+      filename: model_bs_polarformer_float16.ckpt
+      sha256: fc8b72c3beb92caad4e14f180979c02ddf18a330182176cf6c7bb0eb6c685e87
+      source_revision: v1.0.20
+    constructions:
+      - native_primary
+      - mixture_minus_primary
+
+  - id: htdemucs_ft
+    family: htdemucs
+    adapter: demucs_bundle
+    target: instrumental
+    checkpoint:
+      # htdemucs_ft is a 4-weight bundle; identity is a bundle hash over the
+      # descriptor + all four .th SHA-256s, computed at import.
+      filename: htdemucs_ft.yaml
+      sha256: REQUIRED_AT_IMPORT
+    constructions:
+      - native_primary
