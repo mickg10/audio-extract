@@ -18,6 +18,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from dataclasses import asdict
 from pathlib import Path
 from typing import Any
 
@@ -25,9 +26,15 @@ from . import __version__, identity, recipe as recipe_mod
 from .storage import TrackLayout
 
 
+# The Pi conductor consumes JSON on stdout, but audio-separator / onnxruntime write
+# progress to fd 1. main() redirects fd 1 -> stderr and points this at the real stdout.
+_STDOUT = sys.stdout
+
+
 def _emit(obj: dict[str, Any], *, code: int = 0) -> int:
-    json.dump(obj, sys.stdout, ensure_ascii=False)
-    sys.stdout.write("\n")
+    json.dump(obj, _STDOUT, ensure_ascii=False)
+    _STDOUT.write("\n")
+    _STDOUT.flush()
     return code
 
 
@@ -191,10 +198,38 @@ def cmd_run_finalize(args: argparse.Namespace) -> int:
 # conductor contracts (stable envelope; bodies land in later milestones)
 # --------------------------------------------------------------------------
 def cmd_passages_mine(args: argparse.Namespace) -> int:
-    return _not_implemented(
-        "passages.mine", args.run_id, "M2",
-        "passage miner requires a provisional separator + PESTO/pYIN fusion (docs/v2 §2)",
+    """Provisional-separate (kim_vocal_2) then mine hard passages (docs/v2 §2)."""
+    layout = TrackLayout(args.lib, args.run_id)
+    src_json = layout.source_dir / "source.json"
+    canonical = layout.source_dir / "canonical.f32.wav"
+    if not canonical.exists():
+        return _emit(_envelope("passages.mine", "error", args.run_id,
+                               message=f"run {args.run_id!r} not ingested"), code=2)
+
+    from .separate import provisional_vocal
+    from .passages import mine_passages, write_passages, MinerConfig
+    from .manifest import Manifest
+
+    vocal, accomp, sr, out = provisional_vocal(
+        canonical, model_filename=args.model, overlap=args.overlap, model_dir=args.model_dir
     )
+    cfg = MinerConfig(seed=args.seed)
+    passages = mine_passages(vocal, accomp, sr, cfg)
+
+    layout.passages_dir.mkdir(parents=True, exist_ok=True)
+    write_passages(passages, layout.passages_dir / "passages.v1.json")
+    with Manifest(layout.manifest_sqlite) as man:
+        man.upsert_passages([asdict(p) for p in passages])
+        man.set_state(args.run_id, "MINING_PASSAGES")
+
+    summary = [
+        {"passage_id": p.passage_id, "start_sample": p.start_sample,
+         "end_sample": p.end_sample, "tags": p.tags} for p in passages
+    ]
+    return _emit(_envelope("passages.mine", "ok", args.run_id,
+                           provisional_model=out.model_filename,
+                           provisional_model_sha256=out.model_sha256,
+                           passage_count=len(passages), passages=summary))
 
 
 def cmd_panel_render(args: argparse.Namespace) -> int:
@@ -211,11 +246,35 @@ def cmd_qa_score(args: argparse.Namespace) -> int:
     )
 
 
+def _code_commit() -> str:
+    import subprocess
+
+    try:
+        return subprocess.check_output(
+            ["git", "rev-parse", "HEAD"], cwd=str(Path(__file__).resolve().parent.parent),
+            stderr=subprocess.DEVNULL,
+        ).decode().strip()
+    except Exception:
+        return __version__
+
+
 def cmd_candidate_render(args: argparse.Namespace) -> int:
-    return _not_implemented(
-        "candidate.render", args.run_id, "M3",
-        "candidate render requires separator adapters + float32 writer (docs/v2 §1.4, §7)",
+    """Render one immutable separator candidate, keyed by recipe_id (docs/v2 §1.4)."""
+    layout = TrackLayout(args.lib, args.run_id)
+    src_json = layout.source_dir / "source.json"
+    if not src_json.exists():
+        return _emit(_envelope("candidate.render", "error", args.run_id,
+                               message=f"run {args.run_id!r} not ingested"), code=2)
+    source_record = json.loads(src_json.read_text())
+
+    from .separate import render_candidate
+
+    rec = render_candidate(
+        layout, source_record, model_filename=args.model, target=args.target,
+        construction=args.construction, overlap=args.overlap, code_commit=_code_commit(),
+        model_dir=args.model_dir,
     )
+    return _emit(_envelope("candidate.render", "ok", args.run_id, candidate=rec))
 
 
 # --------------------------------------------------------------------------
@@ -249,8 +308,12 @@ def build_parser() -> argparse.ArgumentParser:
 
     # passages
     g_pass = sub.add_parser("passages", help="passage miner").add_subparsers(dest="cmd", required=True)
-    sp = g_pass.add_parser("mine", help="[M2] mine hard excerpts")
+    sp = g_pass.add_parser("mine", help="provisional-separate + mine hard excerpts")
     sp.add_argument("--run-id", required=True)
+    sp.add_argument("--model", default="Kim_Vocal_2.onnx", help="provisional vocal model")
+    sp.add_argument("--overlap", type=int, default=8)
+    sp.add_argument("--model-dir", default=str(Path.home() / "audio-extract" / "models"))
+    sp.add_argument("--seed", type=int, default=0)
     sp.add_argument("--json", action="store_true")
     sp.set_defaults(func=cmd_passages_mine)
 
@@ -263,9 +326,14 @@ def build_parser() -> argparse.ArgumentParser:
 
     # candidate
     g_cand = sub.add_parser("candidate", help="candidate DAG").add_subparsers(dest="cmd", required=True)
-    sp = g_cand.add_parser("render", help="[M3] render a candidate from a recipe")
+    sp = g_cand.add_parser("render", help="render an immutable separator candidate")
     sp.add_argument("--run-id", required=True)
-    sp.add_argument("--recipe", required=True)
+    sp.add_argument("--model", required=True, help="separator model filename (audio-separator registry)")
+    sp.add_argument("--target", default="vocals", choices=["vocals", "instrumental"])
+    sp.add_argument("--construction", default="native_primary",
+                    choices=["native_primary", "native_secondary", "mixture_minus_primary"])
+    sp.add_argument("--overlap", type=int, default=8)
+    sp.add_argument("--model-dir", default=str(Path.home() / "audio-extract" / "models"))
     sp.add_argument("--json", action="store_true")
     sp.set_defaults(func=cmd_candidate_render)
 
@@ -293,8 +361,16 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
+    global _STDOUT
+    import os
+
     parser = build_parser()
-    args = parser.parse_args(argv)
+    args = parser.parse_args(argv)  # --version/--help/errors happen here, before redirect
+    try:
+        _STDOUT = os.fdopen(os.dup(1), "w", encoding="utf-8")
+        os.dup2(2, 1)  # library output on fd 1 now goes to stderr; stdout stays JSON-only
+    except Exception:
+        _STDOUT = sys.stdout
     try:
         return args.func(args)
     except Exception as exc:  # surface as a JSON error envelope, never a bare traceback
@@ -303,6 +379,11 @@ def main(argv: list[str] | None = None) -> int:
                       error=type(exc).__name__, message=str(exc)),
             code=1,
         )
+    finally:
+        try:
+            _STDOUT.flush()
+        except Exception:
+            pass
 
 
 if __name__ == "__main__":
