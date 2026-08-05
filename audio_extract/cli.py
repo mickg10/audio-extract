@@ -375,6 +375,23 @@ def cmd_conduct(args: argparse.Namespace) -> int:
     return _emit(_envelope("conduct", "ok", args.run_id, decision=decision, rounds_log=conductor.log))
 
 
+def cmd_deliver(args: argparse.Namespace) -> int:
+    """Render the delivery DAG (gain → dither/AAC children) for a finalist (docs/v2 §7)."""
+    from .delivery import deliver
+
+    layout = TrackLayout(args.lib, args.run_id)
+    src_json = layout.source_dir / "source.json"
+    if not src_json.exists():
+        return _emit(_envelope("deliver", "error", args.run_id,
+                               message=f"run {args.run_id!r} not ingested"), code=2)
+    if not (layout.candidate_dir(args.candidate_id) / "output.f32.wav").exists():
+        return _emit(_envelope("deliver", "error", args.run_id,
+                               message=f"candidate {args.candidate_id!r} not in store"), code=2)
+    report = deliver(layout, json.loads(src_json.read_text()), args.candidate_id,
+                     target_dbfs=args.target_dbfs, bitrate=args.bitrate, code_commit=_code_commit())
+    return _emit(_envelope("deliver", "ok", args.run_id, delivery=report))
+
+
 def _code_commit() -> str:
     import subprocess
 
@@ -501,6 +518,15 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--model-dir", default=str(Path.home() / "audio-extract" / "models"))
     sp.add_argument("--json", action="store_true")
     sp.set_defaults(func=cmd_conduct)
+
+    # deliver — render delivery children for a finalist
+    sp = sub.add_parser("deliver", help="render delivery children (gain/dither/AAC) for a finalist")
+    sp.add_argument("--run-id", required=True)
+    sp.add_argument("--candidate-id", required=True)
+    sp.add_argument("--target-dbfs", type=float, default=-5.0)
+    sp.add_argument("--bitrate", default="256k")
+    sp.add_argument("--json", action="store_true")
+    sp.set_defaults(func=cmd_deliver)
 
     return p
 
