@@ -147,3 +147,55 @@ web/
 | `GET /lib/<path>` | raw assets (audio/png/peaks) with HTTP **Range** (206); `?dl=<name>` forces download |
 | `GET /static/<file>` | frontend assets |
 | `GET /healthz` | `ok` |
+
+---
+
+## v2 GUI (`server_v2.py`) — passages timeline + A/B/C compare
+
+A **separate, read-only** server for the **v2** content-addressed library
+(`audio_extract/`'s `lib/<track_id>/…` tree — `source/`, `passages/`,
+`candidates/sha256_*/`, `manifest.sqlite`). It does **not** touch v1: v1 keeps
+running on `server.py`; this is an additive sibling. Same stack — Python stdlib +
+numpy/matplotlib/soundfile + ffmpeg only, no CDN.
+
+```bash
+uv run python web/server_v2.py --lib /path/to/lib   # default port 8731
+#   optional: --port, --host, --cache-dir (default <lib>/.gui_cache)
+```
+
+**Pages**
+- **`/`** — run picker (or auto-opens the only run). **`/r/<track_id>`** — deep-link a run.
+- The run page has three parts:
+  1. **Track timeline** — the source waveform with mined **passages drawn as
+     colored regions labeled by tag** (color legend + a tag-color palette).
+     Tap a region (or a chip) to **zoom** the timeline to that passage and select
+     it; tap elsewhere to seek. A source transport plays the whole track.
+  2. **Candidates** — every rendered candidate with its `recipe.json` label and
+     per-axis **damage costs** from `manifest.sqlite`; **Pareto-frontier**
+     candidates are badged, best-per-axis values highlighted, `A`/`B`/`C` buttons
+     load a candidate into a compare slot.
+  3. **A/B/C compare** — up to three candidates side by side, each with a native
+     player, a **passage-focused spectrogram**, and its costs; a solo
+     **audition** transport plays the selected passage on the active slot and
+     switches A↔B↔C seamlessly by ear (keys `A`/`B`/`C`, `space`, `esc`). A
+     combined cost table shows the three columns side by side.
+
+Everything degrades: a run with only `source.json` + `passages.v1.json` (no
+candidates/metrics yet) still renders the timeline + source playback.
+
+**Endpoints** (all read-only; `?start=<sample>&end=<sample>` windows the media)
+
+| Route | Purpose |
+|-------|---------|
+| `GET /api/v2/runs` | every run under `--lib` (state/duration/counts) |
+| `GET /api/v2/run/<track_id>` | source.json + passages.v1.json + candidates (recipe + costs + Pareto) |
+| `GET /api/v2/audio/<t>/source.m4a` | source transcoded to **AAC/m4a** on the fly (ffmpeg; never raw f32) |
+| `GET /api/v2/audio/<t>/candidate/<dir>.m4a` | a candidate's `output.f32.wav` → AAC |
+| `GET /api/v2/audio/<t>/provisional_vocal.m4a` | the miner's provisional vocal → AAC |
+| `GET /api/v2/peaks/<t>/{source,candidate/<dir>}.json` | cached waveform peaks (numpy) |
+| `GET /api/v2/spectrogram/<t>/{source,candidate/<dir>}.png` | cached spectrogram (matplotlib) |
+
+Generated peaks / spectrograms / m4a are cached under `<lib>/.gui_cache`
+(keyed by source path + mtime + window), then served as static files with HTTP
+**Range** so `<audio>` seeking works. Layout: `web/server_v2.py`,
+`web/static/passages.{html,js,css}` (reusing `common.js` + `style.css`).

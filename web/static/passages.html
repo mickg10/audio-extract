@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Passages · A/B/C · audio-extract v2</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <link rel="stylesheet" href="/static/passages.css">
+</head>
+<body>
+  <div class="topbar">
+    <h1><span class="brand">audio-extract</span> · v2 passages</h1>
+    <span class="spacer"></span>
+    <label class="toggle" for="runPick" style="gap:6px;">run
+      <select id="runPick" title="Choose a run"></select>
+    </label>
+    <span class="pill" id="runState" style="display:none;"></span>
+    <button class="btn small" id="refreshBtn" title="Reload this run">Refresh</button>
+  </div>
+
+  <div class="wrap wide">
+    <!-- RUN PICKER (shown when no run is selected) -->
+    <div id="runPicker">
+      <div class="empty-state"><span class="spin"></span> Loading runs…</div>
+    </div>
+
+    <!-- RUN VIEW -->
+    <div id="runView" class="hidden">
+      <div class="file-head">
+        <h2 id="trackTitle">…</h2>
+        <div class="sub" id="trackSub"></div>
+      </div>
+
+      <!-- ---- TIMELINE ---- -->
+      <div class="card" id="timelineCard">
+        <div class="card-head" style="justify-content:space-between;">
+          <span class="name">Track timeline · mined passages</span>
+          <span class="wave-zoom">
+            <button class="btn small" id="fitBtn" title="Zoom out to the whole track">Fit</button>
+          </span>
+        </div>
+        <div class="card-desc" id="passageHint">
+          Colored regions are mined passages (labeled by tag). Tap a region — or a chip below — to zoom
+          in and select it for A/B/C comparison. Tap elsewhere on the wave to seek.
+        </div>
+
+        <div class="legend" id="tagLegend"></div>
+
+        <div class="transport" style="position:static; top:auto; margin:8px 0 4px;">
+          <button class="btn primary" id="srcPlay">▶ Source</button>
+          <span class="time" id="srcTime">0:00 / 0:00</span>
+          <span class="sel-passage" id="selPassage">whole track</span>
+        </div>
+
+        <div class="timeline-wrap" id="timeline"></div>
+
+        <div class="chips" id="passageChips"></div>
+
+        <details class="spec-wrap" id="srcSpecWrap" style="margin-top:12px;">
+          <summary>source spectrogram (selected window)</summary>
+          <div class="spec"><img id="srcSpec" alt="source spectrogram"></div>
+        </details>
+      </div>
+
+      <!-- ---- CANDIDATES OVERVIEW ---- -->
+      <div class="card" id="candOverviewCard">
+        <div class="card-head"><span class="name">Candidates</span>
+          <span class="kind" id="candCount"></span>
+          <span class="spacer" style="flex:1"></span>
+          <span class="muted" id="paretoNote"></span>
+        </div>
+        <div class="card-desc">Lower is better on every axis. <span class="pareto-pill">Pareto</span>
+          marks candidates nothing else dominates. Best value per axis is highlighted.</div>
+        <div class="table-scroll"><table class="cands" id="candTable"></table></div>
+      </div>
+
+      <!-- ---- A / B / C ---- -->
+      <div class="card" id="abcCard">
+        <div class="card-head"><span class="name">A / B / C compare</span>
+          <span class="spacer" style="flex:1"></span>
+          <span class="muted">audition on: <b id="abcPassage">whole track</b></span>
+        </div>
+
+        <div class="analysis-controls">
+          <div class="slot-pick"><label>Slot A</label><select id="pickA"></select></div>
+          <div class="slot-pick"><label>Slot B</label><select id="pickB"></select></div>
+          <div class="slot-pick"><label>Slot C</label><select id="pickC"></select></div>
+        </div>
+
+        <div class="transport" style="position:static; top:auto;">
+          <span class="muted" style="font-size:13px;">audition passage:</span>
+          <button class="btn abc-btn" data-slot="A" id="soloA">A</button>
+          <button class="btn abc-btn" data-slot="B" id="soloB">B</button>
+          <button class="btn abc-btn" data-slot="C" id="soloC">C</button>
+          <button class="btn" id="abcStop">■ Stop</button>
+          <label class="toggle"><input type="checkbox" id="abcLoop" checked> loop</label>
+          <span class="time" id="abcTime">0:00 / 0:00</span>
+        </div>
+
+        <div class="ab-grid" id="abGrid"></div>
+
+        <div class="card" style="margin-top:14px; background:var(--bg-panel2);">
+          <div class="card-head"><span class="name" style="font-size:14px;">Metric costs — side by side</span></div>
+          <div class="table-scroll"><table class="costs" id="costTable"></table></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/common.js"></script>
+  <script src="/static/passages.js"></script>
+</body>
+</html>
