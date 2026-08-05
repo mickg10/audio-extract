@@ -47,6 +47,15 @@ def _normalize_stem_name(stem: str) -> str:
     return s
 
 
+def _residual_primary(stems: dict):
+    """Stem to subtract for a residual, preferring vocals. Uses explicit None
+    checks — ``a or b`` on numpy arrays raises 'truth value ambiguous'."""
+    prim = stems.get("vocals")
+    if prim is None:
+        prim = stems.get("instrumental")
+    return prim
+
+
 class Separator:
     """Thin wrapper: one loaded model, float-preserving output."""
 
@@ -212,7 +221,7 @@ def render_candidate(layout, source_record: dict, *, model_filename: str, target
         raise ValueError(f"unknown construction: {construction!r}")
 
     if arr is None:  # native stem absent -> residual fallback from whichever stem exists
-        prim = _stem("vocals") or _stem("instrumental")
+        prim = _residual_primary(out.stems)
         if prim is None:
             raise RuntimeError("separator produced no usable stem")
         n = min(len(mix), len(prim))
