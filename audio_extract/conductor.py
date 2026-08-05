@@ -24,9 +24,10 @@ _EXCERPT_ACTIONS = {"run_model_variant", "run_construction", "change_overlap"}
 
 @dataclass
 class Budget:
-    max_excerpt_candidates: int = 30
-    max_full_renders: int = 4
-    max_ensembles: int = 2
+    # oracle-aligned limits (issue #1): 24 excerpts / 3 finalists / 3 ensembles / 2 rounds
+    max_excerpt_candidates: int = 24
+    max_full_renders: int = 3
+    max_ensembles: int = 3
     max_rounds: int = 2
 
 
@@ -128,6 +129,10 @@ def validate_terminal(d: dict) -> tuple[bool, str]:
     if status == "needs_human_ab":
         if not (d.get("candidate_a") and d.get("candidate_b")):
             return False, "needs_human_ab requires candidate_a and candidate_b"
+        return True, ""
+    if status == "no_acceptable_candidate":
+        if not d.get("reason"):
+            return False, "no_acceptable_candidate requires a reason"
         return True, ""
     return False, f"unknown terminal status: {status!r}"
 

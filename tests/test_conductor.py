@@ -78,4 +78,6 @@ def test_validate_terminal_schema():
     assert not cd.validate_terminal({"status": "final"})[0]
     assert cd.validate_terminal({"status": "needs_human_ab", "candidate_a": "a", "candidate_b": "b"})[0]
     assert not cd.validate_terminal({"status": "needs_human_ab", "candidate_a": "a"})[0]
+    assert cd.validate_terminal({"status": "no_acceptable_candidate", "reason": "all leak badly"})[0]
+    assert not cd.validate_terminal({"status": "no_acceptable_candidate"})[0]   # reason required
     assert not cd.validate_terminal({"status": "bogus"})[0]

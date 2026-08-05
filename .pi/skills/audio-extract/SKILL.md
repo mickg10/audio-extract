@@ -26,8 +26,9 @@ uv run audio-extract run finalize     --run-id "$RUN_ID" --candidate-id "<recipe
 4. Change **one material variable** per experiment.
 5. Render at most **six** new candidates in a round.
 6. Perform at most **two** refinement rounds. Per-work budget:
-   ≤30 excerpt candidates, ≤4 full-track renders, ≤2 final ensembles.
-7. Finalize a clear winner, or request a blinded human A/B when the top two are close.
+   ≤24 excerpt candidates, ≤3 full-track renders, ≤3 final ensembles, ≤1 cleanup per candidate.
+7. Finalize a clear winner, request a blinded human A/B when the top two are close,
+   or declare no acceptable candidate.
 
 ## Allowed actions (propose only these)
 
@@ -56,6 +57,12 @@ Terminal — needs human ears:
 {"status": "needs_human_ab", "candidate_a": "sha256:...", "candidate_b": "sha256:...",
  "passages": ["seg_004", "seg_011"],
  "question": "Which candidate preserves the orchestra more naturally during the soprano forte?"}
+```
+
+Terminal — nothing acceptable:
+```json
+{"status": "no_acceptable_candidate",
+ "reason": "every candidate leaks orchestra into the vocal or holes the accompaniment on the mined passages"}
 ```
 
 The controller validates every proposal (action exists, budget remains, not already
