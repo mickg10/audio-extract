@@ -8,7 +8,7 @@ environment) + plain offline HTML/CSS/JS frontend (no CDN).
 
 ## URL / port
 
-- **Tailnet (private) URL:** https://michaels-macbook-pro.taildebf6.ts.net/
+- **Tailnet (private) URL:** https://<your-tailnet-node>.ts.net/
   (exposed with `tailscale serve` — tailnet-only, **not** public funnel)
 - **Local:** http://127.0.0.1:8730/
 - **Port:** `8730` (override with `PORT=... web/run.sh`)
