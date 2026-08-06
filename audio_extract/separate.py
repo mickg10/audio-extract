@@ -39,7 +39,16 @@ class SepOutput:
 
 
 def _normalize_stem_name(stem: str) -> str:
-    s = stem.lower()
+    """audio-separator writes ``<input>_(Stem)_<model>.wav`` — the STEM lives in the
+    parenthesized tag. Matching on the whole filename is a trap: model names like
+    ``Kim_Vocal_2`` contain "vocal", which made BOTH stems normalize to "vocals"
+    with glob order deciding which audio won (found by the real-opera GPU run:
+    the provisional vocal was randomly the instrumental). Parse the tag first;
+    fall back to the whole-name heuristic only when no tag exists."""
+    import re
+
+    m = re.search(r"\(([^)]+)\)", stem)
+    s = (m.group(1) if m else stem).lower()
     if "vocal" in s:
         return "vocals"
     if "instrument" in s or "_inst" in s or s.endswith("inst"):
