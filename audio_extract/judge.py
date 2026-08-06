@@ -69,10 +69,15 @@ class MetricJudge:
     def cost(self, x: np.ndarray) -> float:
         xm = metrics.gain_match(x, self.reference)
         c = panel_runner.score_candidate(xm, self.sr, reference=self.reference, vocal_ref=self.vocal_ref)
-        return float(sum(c[a] for a in self.axes))
+        return float(sum(c[a] for a in self.axes if a in c))
 
     def compare(self, a: np.ndarray, b: np.ndarray, sr: int, **ctx) -> str:
-        return "a" if self.cost(a) <= self.cost(b) else "b"
+        ca, cb = self.cost(a), self.cost(b)
+        # §12.4: sub-epsilon differences are a TIE, not a forced choice — otherwise
+        # float noise masquerades as (e.g.) loudness preference.
+        if abs(ca - cb) <= 1e-6 * max(1.0, abs(ca), abs(cb)):
+            return "tie"
+        return "a" if ca < cb else "b"
 
 
 class NoisyJudge:
@@ -159,8 +164,9 @@ class CalibrationReport:
 
 
 def _consistent(w1: str, w2: str) -> bool:
-    # w1 from compare(a,b); w2 from compare(b,a). Same real winner => opposite labels.
-    return (w1, w2) in (("a", "b"), ("b", "a"))
+    # w1 from compare(a,b); w2 from compare(b,a). Same real winner => opposite
+    # labels; a stable tie/uncertain in both orders is also consistent.
+    return (w1, w2) in (("a", "b"), ("b", "a"), ("tie", "tie"), ("uncertain", "uncertain"))
 
 
 def ab_order_consistency(judge: Judge, pairs, sr: int) -> float:
@@ -199,15 +205,110 @@ def loudness_bias(judge: Judge, clips, sr: int, gain_db: float = 6.0) -> float:
     deterministic tie-break toward the first argument does not masquerade as
     loudness preference. Returns ``|P(prefer louder) - 0.5|``; a good judge ~0."""
     g = 10 ** (gain_db / 20.0)
-    louder, tot = 0, 0
+    louder = decided = 0
     for x in clips:
         loud = x * g
-        if judge.compare(x, loud, sr) == "b":  # louder is in slot b
-            louder += 1
-        if judge.compare(loud, x, sr) == "a":  # louder is in slot a
-            louder += 1
-        tot += 2
-    return abs(louder / tot - 0.5) if tot else 0.0
+        for verdict, louder_slot in ((judge.compare(x, loud, sr), "b"),
+                                     (judge.compare(loud, x, sr), "a")):
+            if verdict in ("tie", "uncertain"):
+                continue  # an honest tie is NOT a loudness preference
+            decided += 1
+            if verdict == louder_slot:
+                louder += 1
+    return abs(louder / decided - 0.5) if decided else 0.0
+
+
+# ---------------------------------------------------------------------------
+# WP7 (v2.1 §12): autonomous calibration — no required human agreement.
+# Labels come from exact-target challenge errors, not people. Judges may answer
+# "a" | "b" | "tie" | "uncertain"; forced choices hide weakness.
+# ---------------------------------------------------------------------------
+PROMOTION_V2 = {
+    "min_total_pairs": 200,
+    "min_pairs_per_defect": 25,
+    "order_consistency_min": 0.98,
+    "repeatability_min": 0.98,
+    "synthetic_pair_accuracy_min": 0.90,
+    "track_remix_pair_accuracy_min": 0.85,
+    "monotonicity_each_defect_min": 0.95,
+    "loudness_bias_max": 0.05,
+}
+
+
+@dataclass
+class AutonomousCalibration:
+    judge_id: str
+    calibration_id: str
+    order_consistency: float
+    repeatability: float
+    gain_invariance: float
+    synthetic_pair_accuracy: float
+    track_remix_pair_accuracy: float
+    monotonicity_by_defect: dict
+    loudness_bias: float
+    ood_coverage: float
+    passed_axes: set
+    n_pairs: int
+    passed: bool
+    verdict: str
+
+
+def _pair_accuracy(judge: Judge, labeled_pairs, sr: int) -> tuple[float, int]:
+    """``labeled_pairs`` = (a, b, true_winner) with truth from EXACT-target error
+    (lower error wins). 'tie'/'uncertain' answers count as misses (conservative)."""
+    if not labeled_pairs:
+        return 0.0, 0
+    ok = sum(1 for a, b, w in labeled_pairs if judge.compare(a, b, sr) == w)
+    return ok / len(labeled_pairs), len(labeled_pairs)
+
+
+def calibrate_autonomous(judge: Judge, sr: int, *, judge_id: str, calibration_id: str,
+                         exact_pairs, remix_pairs, ladders_by_defect: dict,
+                         clips, thresholds: dict = PROMOTION_V2) -> AutonomousCalibration:
+    """Promotion gate with zero human labels (§12). ``exact_pairs``/``remix_pairs``
+    carry truth from exact-target errors; ``ladders_by_defect`` maps a defect class
+    to a best→worst ladder; promotion requires EVERY defect class to pass its
+    monotonicity floor (excellence in one class cannot hide failure in another)."""
+    syn_acc, n_syn = _pair_accuracy(judge, exact_pairs, sr)
+    remix_acc, n_remix = _pair_accuracy(judge, remix_pairs, sr)
+    mono = {defect: defect_monotonicity(judge, [ladder], sr)
+            for defect, ladder in ladders_by_defect.items()}
+    order = ab_order_consistency(judge, [(a, b) for a, b, _ in exact_pairs], sr)
+    repeat = repeated_pair_agreement(judge, [(a, b) for a, b, _ in exact_pairs], sr)
+    bias = loudness_bias(judge, clips, sr)
+    # gain invariance: the verdict must survive an identical gain on both sides
+    g = 10 ** (3.0 / 20.0)
+    gain_ok = sum(1 for a, b, _ in exact_pairs
+                  if judge.compare(a, b, sr) == judge.compare(a * g, b * g, sr))
+    gain_inv = gain_ok / len(exact_pairs) if exact_pairs else 0.0
+    # OOD coverage: fraction of noise-vs-noise comparisons answered tie/uncertain
+    rng_flip = 0
+    for x in clips:
+        noise = (x[::-1] if hasattr(x, "__getitem__") else x)
+        if judge.compare(noise, noise, sr) in ("tie", "uncertain"):
+            rng_flip += 1
+    ood = rng_flip / len(clips) if clips else 0.0
+
+    n_pairs = n_syn + n_remix
+    passed_axes = {d for d, v in mono.items()
+                   if v >= thresholds["monotonicity_each_defect_min"]}
+    passed = (
+        n_pairs >= thresholds["min_total_pairs"]
+        and order >= thresholds["order_consistency_min"]
+        and repeat >= thresholds["repeatability_min"]
+        and syn_acc >= thresholds["synthetic_pair_accuracy_min"]
+        and remix_acc >= thresholds["track_remix_pair_accuracy_min"]
+        and len(passed_axes) == len(ladders_by_defect)
+        and bias <= thresholds["loudness_bias_max"]
+    )
+    return AutonomousCalibration(
+        judge_id=judge_id, calibration_id=calibration_id,
+        order_consistency=order, repeatability=repeat, gain_invariance=gain_inv,
+        synthetic_pair_accuracy=syn_acc, track_remix_pair_accuracy=remix_acc,
+        monotonicity_by_defect=mono, loudness_bias=bias, ood_coverage=ood,
+        passed_axes=passed_axes, n_pairs=n_pairs, passed=passed,
+        verdict="selector" if passed else "annotation_only",
+    )
 
 
 def calibrate(judge: Judge, sr: int, *, ab_pairs, repeat_pairs, ladders, human_labeled, clips) -> CalibrationReport:
