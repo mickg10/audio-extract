@@ -32,9 +32,10 @@ def test_reaches_final_decision():
 
 def test_excerpt_budget_enforced():
     big = [{"type": "change_overlap", "overlap": i, "changes_one_variable": True} for i in range(40)]
-    c, calls = _mk([{"actions": big}], cd.Budget(max_excerpt_candidates=30))
+    # raise the per-round cap so this isolates the TOTAL excerpt budget
+    c, calls = _mk([{"actions": big}], cd.Budget(max_excerpt_candidates=30, max_new_candidates_per_round=40))
     c.run([{"recipe_id": "base"}], {"ranking": []})
-    assert calls["execute"] == 30  # 40 proposed, budget caps at 30
+    assert calls["execute"] == 30  # 40 proposed, total budget caps at 30
     assert any(e["event"] == "rejected_action" for e in c.log)
 
 
