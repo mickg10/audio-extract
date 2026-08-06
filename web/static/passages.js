@@ -41,6 +41,9 @@ const S = {
   abAudios: { A: null, B: null, C: null }, // HTMLAudioElement per slot
   active: null,          // slot currently unmuted during audition
   auditioning: false,
+  decision: null,        // /api/v2/decision payload (autonomous audit panel)
+  challenges: null,      // /api/v2/challenges payload
+  actions: null,         // /api/v2/actions payload
 };
 
 /* =======================================================================
@@ -304,6 +307,7 @@ async function loadRun(tid) {
   S.run = run;
   S.selPassage = null;
   S.slots = { A: null, B: null, C: null };
+  S.decision = S.challenges = S.actions = null;
 
   renderHeader();
   renderState();
@@ -313,6 +317,7 @@ async function loadRun(tid) {
   renderSlotPickers();
   renderABGrid();
   renderCostTable();
+  loadDecisionPanel(tid);   // async, non-blocking; read-only audit surface
 
   // timeline (clear any prior run's canvas/regions before rebuilding)
   const tlEl = document.getElementById("timeline");
@@ -517,6 +522,379 @@ function renderCostTable() {
         fmtCost(v) + "</td>").join("") + "</tr>";
   }).join("") + "</tbody>";
   t.innerHTML = head + body;
+}
+
+/* ================= autonomous decision panel (v2.1 WP13) =================
+   Read-only audit surface over the data-model-v2 tables: what the autonomous
+   selector decided, the per-candidate risk/gate evidence, challenge results
+   and the conductor's probe log. Never writes anything; every sub-section
+   degrades to a muted note when its table is absent. */
+
+const DEFECT_ABBREV = {
+  orchestral_theft: "theft", vocal_leakage: "leakage", event_hole: "holes",
+  generic_quality: "generic", brightness: "bright", transients: "trans",
+  fullness: "fullness", stereo: "stereo", hall: "hall", severe_artifact: "artifact",
+  technical: "tech",
+};
+function defectAbbrev(d) { return DEFECT_ABBREV[d] || String(d).slice(0, 8); }
+
+function fmtRisk(v) { return (v == null || !isFinite(v)) ? "—" : Number(v).toFixed(2); }
+
+function riskColor(v) {
+  if (v == null || !isFinite(v)) return "var(--text-mute)";
+  if (v < 0.35) return "var(--accent-2)";
+  if (v < 0.65) return "var(--accent-3)";
+  return "var(--danger)";
+}
+
+/* Map a selector candidate id (recipe_id) onto a rendered candidate, if any. */
+function decCandInfo(cid) {
+  const cands = (S.run && S.run.candidates) || [];
+  const c = cands.find((x) => x.recipe_id === cid || x.dir === cid) || null;
+  const short = String(cid || "").replace(/^sha256:/, "").slice(0, 8) || "?";
+  return { short, label: c ? c.label : null, cand: c };
+}
+function decCandName(cid) {
+  const i = decCandInfo(cid);
+  return (i.label ? escapeHtml(i.label) + " · " : "") +
+    '<span class="dec-id">' + escapeHtml(i.short) + "</span>";
+}
+
+/* [lower, mean, upper] interval bar on a 0..1 track + acceptable-risk tick. */
+function riskBarHtml(lo, mean, hi, ceiling) {
+  const pc = (v) => (clamp(v == null ? 0 : v, 0, 1) * 100).toFixed(1) + "%";
+  const l = clamp(lo == null ? 0 : lo, 0, 1);
+  const h = clamp(hi == null ? l : hi, 0, 1);
+  const w = Math.max(0.5, (h - l) * 100).toFixed(1) + "%";
+  let html = '<span class="risk-track" title="risk lower/mean/upper: ' +
+    fmtRisk(lo) + " / " + fmtRisk(mean) + " / " + fmtRisk(hi) + '">';
+  if (ceiling != null && isFinite(ceiling)) {
+    html += '<span class="risk-ceiling" style="left:' + pc(ceiling) +
+      '" title="acceptable-risk ceiling ' + fmtRisk(ceiling) + '"></span>';
+  }
+  html += '<span class="risk-band" style="left:' + pc(l) + ";width:" + w +
+    ";background:" + riskColor(mean) + '"></span>';
+  if (mean != null && isFinite(mean)) {
+    html += '<span class="risk-mean" style="left:' + pc(mean) + '"></span>';
+  }
+  return html + "</span>";
+}
+
+function defectBarsHtml(perDefect) {
+  const keys = Object.keys(perDefect || {}).sort(
+    (a, b) => (perDefect[b] || 0) - (perDefect[a] || 0));
+  if (!keys.length) return '<span class="muted">—</span>';
+  return '<span class="defect-bars">' + keys.map((d) => {
+    const v = clamp(perDefect[d] || 0, 0, 1);
+    return '<span class="db-item" title="' + escapeHtml(d) + " risk " + fmtRisk(v) + '">' +
+      '<span class="db-name">' + escapeHtml(defectAbbrev(d)) + "</span>" +
+      '<span class="db-track"><span class="db-fill" style="width:' + (v * 100).toFixed(0) +
+      "%;background:" + riskColor(v) + '"></span></span>' +
+      '<span class="db-val">' + fmtRisk(v) + "</span></span>";
+  }).join("") + "</span>";
+}
+
+function gateChipsHtml(entry) {
+  if (!entry) return '<span class="muted">—</span>';
+  if (entry.gates_passed) return '<span class="gate-chip ok">gates ok</span>';
+  const failed = entry.failed_gates || [];
+  if (!failed.length) return '<span class="gate-chip bad">gates failed</span>';
+  return failed.map((g) =>
+    '<span class="gate-chip bad" title="hard gate exceeded">' + escapeHtml(g) + "</span>").join(" ");
+}
+
+/* Why a non-selected candidate lost against the reference (winner / best_available). */
+function decWhyLost(entry, refEntry, refCid, cid) {
+  if (!entry) return "—";
+  if ((entry.failed_gates || []).length) {
+    return "failed gate: " + entry.failed_gates.map(escapeHtml).join(", ");
+  }
+  if (!refEntry || cid === refCid) return "—";
+  let worst = null, worstDelta = 0;
+  const per = entry.per_defect || {}, refPer = refEntry.per_defect || {};
+  for (const d of Object.keys(per)) {
+    const delta = (per[d] || 0) - (refPer[d] || 0);
+    if (delta > worstDelta) { worstDelta = delta; worst = d; }
+  }
+  if (worst && worstDelta > 0.005) {
+    return "higher " + escapeHtml(worst) + " risk (+" + worstDelta.toFixed(2) + ")";
+  }
+  const dm = (entry.risk_mean || 0) - (refEntry.risk_mean || 0);
+  if (dm > 0.005) return "higher overall risk (+" + dm.toFixed(2) + ")";
+  return "bounds overlap with the winner";
+}
+
+function decBannerHtml(dec) {
+  const rep = (dec && dec.report) || {};
+  const status = (dec && dec.status) || rep.status;
+  const mode = (dec && dec.mode) || rep.mode;
+  const reason = rep.reason ? ' <span class="dec-reason">' + escapeHtml(rep.reason) + "</span>" : "";
+  if (status === "final" && mode === "clear_winner") {
+    return '<div class="dec-banner final-clear"><span class="dec-status">FINAL · clear winner</span> ' +
+      decCandName(dec.candidate_recipe_id) +
+      (rep.risk_upper != null ? ' <span class="dec-kv">risk ≤ ' + fmtRisk(rep.risk_upper) + "</span>" : "") +
+      reason + "</div>";
+  }
+  if (status === "final") {  // best_safe (or an unknown final mode — treat as not-certain)
+    return '<div class="dec-banner final-safe"><span class="dec-status">FINAL · best safe</span> ' +
+      decCandName(dec.candidate_recipe_id) +
+      (rep.risk_upper != null ? ' <span class="dec-kv">risk ≤ ' + fmtRisk(rep.risk_upper) + "</span>" : "") +
+      ' <span class="dec-warn">bounds overlap — this choice is <b>not certain</b>, it is the ' +
+      "safest of the gate-passing candidates</span>" + reason + "</div>";
+  }
+  if (status === "no_acceptable_candidate") {
+    const failed = rep.failed_gates || [];
+    return '<div class="dec-banner none"><span class="dec-status">NO ACCEPTABLE CANDIDATE</span>' +
+      (rep.best_available ? " best available: " + decCandName(rep.best_available) : "") +
+      (failed.length ? ' <span class="dec-kv">failed gates: ' +
+        failed.map(escapeHtml).join(", ") + "</span>" : "") +
+      reason + "</div>";
+  }
+  return '<div class="dec-banner unknown"><span class="dec-status">' +
+    escapeHtml(status || "unknown status") + "</span>" + reason + "</div>";
+}
+
+function decSelectedHtml(dec) {
+  const rep = dec.report || {};
+  const cands = rep.candidates || {};
+  const isFinal = dec.status === "final";
+  const cid = isFinal ? dec.candidate_recipe_id : rep.best_available;
+  const entry = cid != null ? cands[cid] : null;
+  if (!entry) return "";
+  const params = rep.params || {};
+  const ceiling = params.max_acceptable_risk;
+  const head = isFinal ? "Selected candidate" : "Best available (not selected)";
+  const paramsBits = [];
+  if (params.lambda != null) paramsBits.push("λ=" + params.lambda);
+  if (params.alpha != null) paramsBits.push("α=" + params.alpha);
+  if (params.delta != null) paramsBits.push("δ=" + params.delta);
+  if (ceiling != null) paramsBits.push("risk ceiling=" + ceiling);
+  return '<div class="dec-selected' + (isFinal ? "" : " not-final") + '">' +
+    '<div class="dec-sel-head">' + head + ": " + decCandName(cid) + "</div>" +
+    '<div class="dec-sel-risk">' +
+    '<span class="dec-risk-nums">' + fmtRisk(entry.risk_lower) + " – <b>" +
+    fmtRisk(entry.risk_mean) + "</b> – " + fmtRisk(entry.risk_upper) + "</span>" +
+    riskBarHtml(entry.risk_lower, entry.risk_mean, entry.risk_upper, ceiling) +
+    '<span class="muted" style="font-size:11px;">risk lower – mean – upper (bootstrap 5–95%)</span>' +
+    "</div>" +
+    (paramsBits.length ? '<div class="dec-params muted">selector params: ' +
+      paramsBits.join(" · ") + "</div>" : "") +
+    "</div>";
+}
+
+function decCandTableHtml(dec) {
+  const rep = dec.report || {};
+  const cands = rep.candidates || {};
+  const ids = Object.keys(cands);
+  if (!ids.length) return "";
+  const refCid = dec.status === "final" ? dec.candidate_recipe_id : rep.best_available;
+  const refEntry = refCid != null ? cands[refCid] : null;
+  // eligible (gates passed) first, then by mean risk
+  ids.sort((a, b) => {
+    const ea = cands[a], eb = cands[b];
+    if (!!ea.gates_passed !== !!eb.gates_passed) return ea.gates_passed ? -1 : 1;
+    return (ea.risk_mean || 0) - (eb.risk_mean || 0);
+  });
+  const ceiling = (rep.params || {}).max_acceptable_risk;
+  const rows = ids.map((cid) => {
+    const e = cands[cid];
+    const isRef = cid === refCid;
+    let verdict;
+    if (isRef && dec.status === "final") {
+      verdict = '<span class="dec-verdict win">selected · ' +
+        (dec.mode === "clear_winner" ? "clear winner" : "best safe (not certain)") + "</span>";
+    } else if (isRef) {
+      verdict = '<span class="dec-verdict best-avail">best available — still unacceptable</span>';
+    } else {
+      verdict = decWhyLost(e, refEntry, refCid, cid);
+    }
+    return "<tr" + (isRef ? ' class="winner"' : "") + "><td>" + decCandName(cid) + "</td>" +
+      "<td>" + gateChipsHtml(e) + "</td>" +
+      '<td class="db-cell">' + defectBarsHtml(e.per_defect) + "</td>" +
+      '<td class="risk-cell"><span class="dec-risk-nums">' + fmtRisk(e.risk_lower) + " – <b>" +
+      fmtRisk(e.risk_mean) + "</b> – " + fmtRisk(e.risk_upper) + "</span>" +
+      riskBarHtml(e.risk_lower, e.risk_mean, e.risk_upper, ceiling) + "</td>" +
+      '<td class="why-cell">' + verdict + "</td></tr>";
+  }).join("");
+  return '<div class="dec-subhead">Candidates under audit <span class="muted">(sorted by risk; ' +
+    "lower is better)</span></div>" +
+    '<div class="table-scroll"><table class="cands dec-table">' +
+    "<thead><tr><th>candidate</th><th>hard gates</th><th>per-defect risk</th>" +
+    "<th>risk (lower – mean – upper)</th><th>why not selected</th></tr></thead>" +
+    "<tbody>" + rows + "</tbody></table></div>";
+}
+
+/* colored challenge matrix: rows = cases, cols = candidates, cell = key metric */
+function heatStyle(v, best, worst) {
+  if (v == null || !isFinite(v) || best == null || !isFinite(best)) return "";
+  const span = Math.abs(best - worst);
+  const g = span < 1e-12 ? 1 : clamp(1 - Math.abs(v - best) / span, 0, 1);
+  const r = Math.round(255 + (126 - 255) * g);
+  const gg = Math.round(107 + (224 - 107) * g);
+  const b = Math.round(107 + (200 - 107) * g);
+  return "background:rgba(" + r + "," + gg + "," + b + ",0.20);";
+}
+function fmtMetric(v) {
+  if (v == null || !isFinite(v)) return "—";
+  const a = Math.abs(v);
+  if (a >= 100) return v.toFixed(0);
+  if (a >= 10) return v.toFixed(1);
+  if (a < 0.01 && a > 0) return v.toExponential(1);
+  return v.toFixed(2);
+}
+function classLabel(cls) {
+  const bits = Object.entries(cls || {}).map(([k, v]) => escapeHtml(k) + "=" + escapeHtml(String(v)));
+  return bits.join(" · ");
+}
+
+function decMatrixHtml(chal, dec) {
+  if (!chal || !chal.available) {
+    return '<div class="dec-subhead">Challenge performance</div>' +
+      '<div class="muted">no challenge cases recorded for this run</div>';
+  }
+  const cases = chal.cases || [];
+  const results = chal.results || {};
+  // column order: decision-report risk order when available, else payload order
+  let cols = chal.candidates || [];
+  const rep = (dec && dec.report) || {};
+  if (rep.candidates) {
+    const known = Object.keys(rep.candidates)
+      .sort((a, b) => (rep.candidates[a].risk_mean || 0) - (rep.candidates[b].risk_mean || 0))
+      .filter((c) => cols.includes(c));
+    cols = known.concat(cols.filter((c) => !known.includes(c)));
+  }
+  if (!cases.length || !cols.length) {
+    return '<div class="dec-subhead">Challenge performance</div>' +
+      '<div class="muted">' + (cases.length ? "no per-candidate challenge results yet"
+        : "no challenge cases recorded for this run") + "</div>";
+  }
+  let head = "<thead><tr><th>challenge case</th>" + cols.map((c) =>
+    '<th class="numc" title="' + escapeHtml(c) + '">' + decCandName(c) + "</th>").join("") +
+    "</tr></thead>";
+  const body = cases.map((cs) => {
+    const row = results[cs.challenge_id] || {};
+    // normalize the heat over cells sharing the row's modal metric
+    const prim = cols.map((c) => (row[c] && row[c].primary) || null);
+    const metrics = prim.filter(Boolean).map((p) => p.metric);
+    const modal = metrics.sort((a, b) =>
+      metrics.filter((m) => m === a).length - metrics.filter((m) => m === b).length).pop();
+    const vals = prim.filter((p) => p && p.metric === modal).map((p) => p.value);
+    const hib = (prim.find((p) => p && p.metric === modal) || {}).higher_is_better;
+    const best = vals.length ? (hib ? Math.max.apply(null, vals) : Math.min.apply(null, vals)) : null;
+    const worst = vals.length ? (hib ? Math.min.apply(null, vals) : Math.max.apply(null, vals)) : null;
+    const cls = classLabel(cs.class);
+    const cells = cols.map((c) => {
+      const cell = row[c];
+      if (!cell || !cell.primary) return '<td class="numc muted">—</td>';
+      const p = cell.primary;
+      const tip = Object.entries(cell.metrics || {})
+        .filter(([, v]) => typeof v === "number")
+        .map(([k, v]) => k + "=" + fmtMetric(v)).join("  ");
+      const style = p.metric === modal ? heatStyle(p.value, best, worst) : "";
+      return '<td class="numc" style="' + style + '" title="' + escapeHtml(tip) + '">' +
+        fmtMetric(p.value) + '<span class="cell-metric">' + escapeHtml(p.metric) + "</span></td>";
+    }).join("");
+    return '<tr><td class="case-cell"><span class="case-type">' + escapeHtml(cs.challenge_type) +
+      "</span>" + (cls ? '<span class="case-class">' + cls + "</span>" : "") + "</td>" + cells + "</tr>";
+  }).join("");
+  return '<div class="dec-subhead">Challenge performance ' +
+    '<span class="muted">(exact-reference cases; SI-SDR higher is better, errors lower)</span></div>' +
+    '<div class="table-scroll"><table class="cands dec-matrix">' + head +
+    "<tbody>" + body + "</tbody></table></div>";
+}
+
+function decActionsHtml(act) {
+  if (!act || !act.available) {
+    return '<div class="dec-subhead">Conductor probes &amp; actions</div>' +
+      '<div class="muted">no conductor actions recorded for this run</div>';
+  }
+  const actions = act.actions || [];
+  if (!actions.length) {
+    return '<div class="dec-subhead">Conductor probes &amp; actions</div>' +
+      '<div class="muted">conductor_action table is empty</div>';
+  }
+  const counts = Object.entries(act.counts || {}).map(([k, n]) => n + " " + escapeHtml(k)).join(" · ");
+  const rows = actions.map((a) => {
+    const detail = Object.entries(a.proposed || {})
+      .filter(([k]) => k !== "type")
+      .map(([k, v]) => escapeHtml(k) + "=" + escapeHtml(typeof v === "object" ? JSON.stringify(v) : String(v)))
+      .join(" · ");
+    const validated = a.validated_recipe_id
+      ? '<div class="cand-sub">→ ' + decCandName(a.validated_recipe_id) + "</div>" : "";
+    const st = String(a.status || "");
+    const cls = /executed|validated|done|ok/i.test(st) ? "ok"
+      : /rejected|failed|refused/i.test(st) ? "bad"
+      : /skipped|deferred/i.test(st) ? "warn" : "dim";
+    return '<tr><td class="numc">' + (a.round == null ? "—" : a.round) + "</td>" +
+      '<td class="act-cell"><b>' + escapeHtml(a.type || "action") + "</b>" +
+      (detail ? '<div class="cand-sub">' + detail + "</div>" : "") + validated + "</td>" +
+      '<td><span class="act-pill ' + cls + '">' + escapeHtml(st) + "</span></td>" +
+      '<td class="why-cell">' + (a.reason ? escapeHtml(a.reason) : '<span class="muted">—</span>') +
+      "</td></tr>";
+  }).join("");
+  return '<div class="dec-subhead">Conductor probes &amp; actions' +
+    (counts ? ' <span class="muted">(' + counts + ")</span>" : "") + "</div>" +
+    '<div class="table-scroll"><table class="cands dec-actions">' +
+    "<thead><tr><th>round</th><th>proposed action</th><th>status</th><th>reason</th></tr></thead>" +
+    "<tbody>" + rows + "</tbody></table></div>";
+}
+
+function decFooterHtml(dec) {
+  const bits = [];
+  if (dec && dec.available) {
+    if (dec.selector_version) bits.push("selector " + escapeHtml(dec.selector_version));
+    if (dec.decision_id) bits.push("decision " + escapeHtml(String(dec.decision_id).slice(0, 24)));
+    if (dec.n_decisions > 1) bits.push(dec.n_decisions + " decisions recorded (latest shown)");
+  }
+  const judges = (dec && dec.judges) || [];
+  if (judges.length) {
+    bits.push("judge calibration: " + judges.map((j) =>
+      escapeHtml(j.judge_id) + (j.passed_axes && j.passed_axes.length
+        ? " (" + j.passed_axes.map(escapeHtml).join(", ") + ")" : " (no axes passed)")).join(" · "));
+  }
+  return bits.length ? '<div class="dec-footer muted">' + bits.join("  ·  ") + "</div>" : "";
+}
+
+async function loadDecisionPanel(tid) {
+  const body = document.getElementById("decisionBody");
+  const get = (url) => fetchJSON(url).catch(() => null);
+  const q = encodeURIComponent(tid);
+  const [dec, chal, act] = await Promise.all([
+    get("/api/v2/decision/" + q),
+    get("/api/v2/challenges/" + q),
+    get("/api/v2/actions/" + q),
+  ]);
+  if (S.tid !== tid) return;   // user already switched runs
+  S.decision = dec; S.challenges = chal; S.actions = act;
+  renderDecisionPanel(body);
+}
+
+function renderDecisionPanel(body) {
+  body = body || document.getElementById("decisionBody");
+  const dec = S.decision, chal = S.challenges, act = S.actions;
+  const meta = document.getElementById("decMeta");
+  meta.textContent = (dec && dec.available)
+    ? [dec.selector_version, dec.created_at].filter(Boolean).join(" · ") : "";
+  const nothing = (!dec || !dec.available) && (!chal || !chal.available) && (!act || !act.available);
+  if (nothing) {
+    body.innerHTML = '<div class="dec-banner none-yet">no autonomous decision recorded yet ' +
+      "for this run — the panel fills in once the v2 pipeline records " +
+      "<code>selection_decision</code> / <code>challenge_case</code> / " +
+      "<code>conductor_action</code> facts</div>";
+    return;
+  }
+  let html = "";
+  if (dec && dec.available) {
+    html += decBannerHtml(dec);
+    html += decSelectedHtml(dec);
+    html += decCandTableHtml(dec);
+  } else {
+    html += '<div class="dec-banner none-yet">no selection decision recorded yet</div>';
+  }
+  html += decMatrixHtml(chal, dec);
+  html += decActionsHtml(act);
+  html += decFooterHtml(dec);
+  body.innerHTML = html;
 }
 
 /* --------------------------- passage selection -------------------------- */

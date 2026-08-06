@@ -62,6 +62,20 @@
         </details>
       </div>
 
+      <!-- ---- AUTONOMOUS DECISION (v2.1 WP13 — read-only audit surface) ---- -->
+      <div class="card" id="decisionCard">
+        <div class="card-head">
+          <span class="name">Autonomous decision</span>
+          <span class="kind">read-only audit</span>
+          <span class="spacer" style="flex:1"></span>
+          <span class="muted" id="decMeta"></span>
+        </div>
+        <div class="card-desc">What the autonomous selector decided for this run and why —
+          hard gates, per-defect risk with uncertainty bounds, challenge performance and the
+          conductor's probe log. Nothing here is editable.</div>
+        <div id="decisionBody"><div class="muted"><span class="spin"></span> loading decision…</div></div>
+      </div>
+
       <!-- ---- CANDIDATES OVERVIEW ---- -->
       <div class="card" id="candOverviewCard">
         <div class="card-head"><span class="name">Candidates</span>

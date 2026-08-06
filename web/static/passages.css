@@ -94,6 +94,109 @@ table.cands tr:hover td { background: var(--bg-panel2); }
 .mini-btn:hover { border-color: var(--accent); }
 .mini-btn.on { background: var(--accent); color: #06253f; border-color: var(--accent); font-weight: 700; }
 
+/* ---- autonomous decision panel (v2.1 WP13 — read-only audit) ---- */
+.dec-banner {
+  border: 1px solid var(--border-lt); border-radius: 8px;
+  padding: 10px 14px; margin: 4px 0 14px; font-size: 14px; line-height: 1.55;
+}
+.dec-banner .dec-status {
+  font-family: var(--mono); font-weight: 700; font-size: 12px; letter-spacing: .5px;
+  padding: 2px 9px; border-radius: 999px; margin-right: 8px; white-space: nowrap;
+}
+.dec-banner.final-clear { border-color: #2f5b50; background: #10231d; }
+.dec-banner.final-clear .dec-status { background: var(--accent-2); color: #06253f; }
+.dec-banner.final-safe { border-color: #5b4a2f; background: #231d10; }
+.dec-banner.final-safe .dec-status { background: var(--accent-3); color: #2a1c04; }
+.dec-banner.none { border-color: #5b2f2f; background: #231012; }
+.dec-banner.none .dec-status { background: var(--danger); color: #2a0808; }
+.dec-banner.none-yet, .dec-banner.unknown { color: var(--text-mute); background: var(--bg-panel2); }
+.dec-banner .dec-warn { color: var(--accent-3); }
+.dec-banner .dec-reason { display: block; color: var(--text-dim); font-size: 12.5px; margin-top: 3px; }
+.dec-banner .dec-kv { font-family: var(--mono); font-size: 12px; color: var(--text-dim); margin-left: 6px; }
+.dec-id { font-family: var(--mono); font-size: 11.5px; color: var(--text-mute); }
+
+.dec-selected {
+  background: var(--bg-panel2); border: 1px solid var(--border);
+  border-radius: 8px; padding: 10px 14px; margin-bottom: 14px;
+}
+.dec-selected.not-final { border-style: dashed; }
+.dec-sel-head { font-weight: 650; font-size: 13.5px; margin-bottom: 8px; }
+.dec-sel-risk { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.dec-params { font-size: 11.5px; font-family: var(--mono); margin-top: 7px; }
+.dec-risk-nums { font-family: var(--mono); font-size: 12px; color: var(--text-dim); white-space: nowrap; }
+.dec-risk-nums b { color: var(--text); }
+
+/* 0..1 risk interval bar */
+.risk-track {
+  position: relative; display: inline-block; vertical-align: middle;
+  width: 150px; min-width: 110px; height: 10px; border-radius: 5px;
+  background: #0a0d12; border: 1px solid var(--border);
+}
+.risk-band { position: absolute; top: 1px; bottom: 1px; border-radius: 4px; opacity: .55; }
+.risk-mean {
+  position: absolute; top: -2px; bottom: -2px; width: 2px; margin-left: -1px;
+  background: var(--text); border-radius: 1px;
+}
+.risk-ceiling {
+  position: absolute; top: -3px; bottom: -3px; width: 0;
+  border-left: 2px dashed var(--danger); opacity: .7;
+}
+
+/* per-defect mini bars */
+.defect-bars { display: flex; flex-direction: column; gap: 2px; }
+.db-item { display: flex; align-items: center; gap: 6px; }
+.db-name { font-family: var(--mono); font-size: 10.5px; color: var(--text-mute); width: 56px; text-align: right; }
+.db-track { width: 70px; height: 5px; border-radius: 3px; background: #0a0d12; overflow: hidden; flex: none; }
+.db-fill { display: block; height: 100%; border-radius: 3px; }
+.db-val { font-family: var(--mono); font-size: 10.5px; color: var(--text-dim); }
+
+/* gates */
+.gate-chip {
+  display: inline-block; padding: 1px 8px; border-radius: 999px;
+  font-size: 10.5px; font-weight: 700; font-family: var(--mono); margin: 1px 0;
+}
+.gate-chip.ok { color: var(--accent-2); border: 1px solid #2f5b50; background: #12251f; }
+.gate-chip.bad { color: var(--danger); border: 1px solid #5b2f2f; background: #251212; }
+
+/* decision tables */
+.dec-subhead { font-weight: 650; font-size: 13.5px; margin: 16px 0 8px; }
+table.dec-table td, table.dec-matrix td, table.dec-actions td { white-space: normal; }
+table.dec-table td.risk-cell { white-space: nowrap; }
+table.dec-table td.risk-cell .risk-track { margin-left: 8px; }
+table.dec-table tr.winner td { background: rgba(126, 224, 200, 0.06); }
+table.dec-table td.why-cell, table.dec-actions td.why-cell {
+  color: var(--text-dim); font-size: 12px; min-width: 140px; max-width: 300px;
+}
+.dec-verdict.win { color: var(--accent-2); font-weight: 700; font-size: 12px; }
+.dec-verdict.best-avail { color: var(--danger); font-weight: 650; font-size: 12px; }
+
+/* challenge matrix */
+table.dec-matrix td.case-cell { max-width: 240px; }
+.case-type { display: block; font-weight: 650; font-size: 12.5px; }
+.case-class { display: block; font-family: var(--mono); font-size: 10.5px; color: var(--text-mute); white-space: normal; }
+table.dec-matrix td .cell-metric {
+  display: block; font-size: 9.5px; color: var(--text-mute); font-family: var(--mono);
+}
+
+/* actions log */
+table.dec-actions td.act-cell { min-width: 180px; }
+.act-pill {
+  display: inline-block; padding: 1px 9px; border-radius: 999px;
+  font-size: 10.5px; font-weight: 700; font-family: var(--mono);
+  border: 1px solid var(--border-lt); color: var(--text-mute);
+}
+.act-pill.ok { color: var(--accent-2); border-color: #2f5b50; background: #12251f; }
+.act-pill.bad { color: var(--danger); border-color: #5b2f2f; background: #251212; }
+.act-pill.warn { color: var(--accent-3); border-color: #5b4a2f; background: #251f12; }
+
+.dec-footer { margin-top: 14px; font-size: 11.5px; border-top: 1px solid var(--border); padding-top: 9px; }
+
+@media (max-width: 640px) {
+  .risk-track { width: 90px; }
+  .db-name { width: 46px; }
+  .dec-sel-risk { gap: 8px; }
+}
+
 /* ---- A/B/C ---- */
 .abc-btn { min-width: 42px; font-weight: 700; }
 .abc-btn.playing { background: var(--accent); color: #06253f; border-color: var(--accent); }

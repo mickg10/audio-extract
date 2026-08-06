@@ -14,10 +14,22 @@ What it exposes (all read-only, all defensive about partial/missing data):
 * ``GET /api/v2/run/<track_id>``    source.json + passages.v1.json + candidates
                                     (recipe.json + manifest metric costs +
                                     Pareto frontier)
+* ``GET /api/v2/decision/<track_id>``   latest autonomous selection decision
+                                        (v2.1 WP13 audit panel) or {"available": false}
+* ``GET /api/v2/challenges/<track_id>`` challenge cases + per-candidate results matrix
+* ``GET /api/v2/actions/<track_id>``    conductor probe/action log
 * ``GET /api/v2/audio/<t>/source.m4a``                on-the-fly AAC of the source
 * ``GET /api/v2/audio/<t>/candidate/<dir>.m4a``       on-the-fly AAC of a candidate
 * ``GET /api/v2/peaks/<t>/...json``                   cached waveform peaks (numpy)
 * ``GET /api/v2/spectrogram/<t>/...png``              cached spectrogram (matplotlib)
+
+The decision/challenges/actions endpoints read the **data model v2** tables
+(``selection_decision``, ``challenge_case``, ``challenge_result``,
+``judge_calibration``, ``conductor_action`` — see ``audio_extract/manifest_v2.py``).
+The pipeline may write those either into the run's ``manifest.sqlite`` (alongside
+the v1 tables) or into a separate ``manifest_v2.sqlite``; both are probed, table
+by table, and a missing table degrades to ``{"available": false}`` — the GUI is a
+read-only audit surface, never a labeling/decision system.
 
 The peaks/spectrogram/audio endpoints accept ``?start=<sample>&end=<sample>`` so
 the UI can render a passage-focused window. Raw float32 PCM is **never** sent to
@@ -202,6 +214,187 @@ def _job_state(manifest_path: str) -> str | None:
         return None
     finally:
         conn.close()
+
+
+# ---------------------------------------------------------------------------
+# Data-model-v2 readers (autonomous decision panel — v2.1 WP13, read-only)
+# ---------------------------------------------------------------------------
+def _loads(text, default):
+    """Parse a stored *_json column; malformed/absent data degrades to default."""
+    if not text:
+        return default
+    try:
+        v = json.loads(text)
+    except (ValueError, TypeError):
+        return default
+    return v if isinstance(v, type(default)) else default
+
+
+def _v2_manifest_paths(lib: Lib, tid: str) -> list[str]:
+    """Where the v2 tables may live: the run's manifest.sqlite (v2 tables written
+    alongside the v1 ones) or a separate manifest_v2.sqlite. Both are probed."""
+    root = lib.track_root(tid)
+    return [os.path.join(root, "manifest.sqlite"),
+            os.path.join(root, "manifest_v2.sqlite")]
+
+
+def _v2_rows(lib: Lib, tid: str, table: str, sql: str, params=()) -> list[dict] | None:
+    """Rows of ``sql`` from the first manifest file that contains ``table``.
+
+    Returns ``None`` when no manifest has the table (pipeline hasn't run the
+    autonomous stage yet), ``[]`` when the table exists but is empty. Read-only
+    and defensive: a locked/corrupt db behaves like a missing table.
+    """
+    for path in _v2_manifest_paths(lib, tid):
+        if not os.path.isfile(path):
+            continue
+        try:
+            conn = sqlite3.connect(f"file:{path}?mode=ro", uri=True, timeout=1.0)
+        except sqlite3.Error:
+            continue
+        try:
+            conn.row_factory = sqlite3.Row
+            has = conn.execute(
+                "SELECT 1 FROM sqlite_master WHERE type='table' AND name=?", (table,)
+            ).fetchone()
+            if not has:
+                continue
+            return [dict(r) for r in conn.execute(sql, params)]
+        except sqlite3.Error:
+            continue
+        finally:
+            conn.close()
+    return None
+
+
+def decision_payload(lib: Lib, tid: str) -> dict:
+    """Latest ``selection_decision`` (parsed selector report) + judge calibration."""
+    rows = _v2_rows(lib, tid, "selection_decision",
+                    "SELECT rowid AS _rid, * FROM selection_decision")
+    if not rows:  # None (no table) and [] (no rows) render the same empty panel
+        payload = {"track_id": tid, "available": False,
+                   "reason": ("no autonomous decision recorded yet"
+                              if rows is None else "selection_decision table is empty")}
+    else:
+        rows.sort(key=lambda r: (r.get("created_at") or "", r["_rid"]))
+        latest = rows[-1]
+        report = _loads(latest.get("report_json"), {})
+        payload = {
+            "track_id": tid,
+            "available": True,
+            "decision_id": latest.get("decision_id"),
+            "status": latest.get("status"),
+            "mode": report.get("mode"),
+            "candidate_recipe_id": latest.get("candidate_recipe_id") or report.get("candidate_id"),
+            "selector_version": latest.get("selector_version"),
+            "created_at": latest.get("created_at"),
+            "report": report,          # full selector report: candidates/params/reason/...
+            "n_decisions": len(rows),
+        }
+    judges = _v2_rows(lib, tid, "judge_calibration",
+                      "SELECT * FROM judge_calibration ORDER BY judge_id, calibration_id")
+    payload["judges"] = [{"judge_id": j.get("judge_id"),
+                          "calibration_id": j.get("calibration_id"),
+                          "passed_axes": _loads(j.get("passed_axes_json"), [])}
+                         for j in (judges or [])]
+    return payload
+
+
+# Preferred "key metric" per challenge-result dict, in order; the flag says
+# whether higher is better (SI-SDR) or lower is better (all error measures).
+_PRIMARY_METRIC_PREFS = (
+    ("si_sdr_db", True),
+    ("target_error_db", False),
+    ("stft_distance", False),
+    ("band_envelope_err_db", False),
+    ("theft_broadband", False),
+    ("bleed_broadband", False),
+    ("invariance", False),
+    ("relative_change", False),
+    ("passthrough_error", False),
+    ("stereo_width_err", False),
+)
+
+
+def _primary_metric(result: dict) -> dict | None:
+    for key, hib in _PRIMARY_METRIC_PREFS:
+        v = result.get(key)
+        if isinstance(v, (int, float)) and not isinstance(v, bool):
+            return {"metric": key, "value": float(v), "higher_is_better": hib}
+    for k in sorted(result):
+        v = result[k]
+        if isinstance(v, (int, float)) and not isinstance(v, bool):
+            return {"metric": k, "value": float(v), "higher_is_better": False}
+    return None
+
+
+def challenges_payload(lib: Lib, tid: str) -> dict:
+    """Challenge cases + a {challenge_id: {candidate: result}} matrix with a
+    pre-extracted key metric per cell (for the GUI's colored grid)."""
+    cases = _v2_rows(lib, tid, "challenge_case",
+                     "SELECT rowid AS _rid, * FROM challenge_case ORDER BY challenge_type, rowid")
+    results = _v2_rows(lib, tid, "challenge_result",
+                       "SELECT rowid AS _rid, * FROM challenge_result ORDER BY rowid")
+    if cases is None and results is None:
+        return {"track_id": tid, "available": False, "cases": [],
+                "candidates": [], "results": {}}
+
+    matrix: dict[str, dict] = {}
+    cand_ids: set[str] = set()
+    for r in results or []:
+        res = _loads(r.get("result_json"), {})
+        cid = r.get("candidate_recipe_id")
+        if not cid:
+            continue
+        cand_ids.add(cid)
+        matrix.setdefault(r.get("challenge_id"), {})[cid] = {
+            "metrics": res, "primary": _primary_metric(res)}
+
+    out_cases, seen = [], set()
+    for c in cases or []:
+        seen.add(c.get("challenge_id"))
+        out_cases.append({
+            "challenge_id": c.get("challenge_id"),
+            "challenge_type": c.get("challenge_type"),
+            "class": _loads(c.get("class_json"), {}),
+            "recipe": _loads(c.get("recipe_json"), {}),
+            "mixture_node_id": c.get("mixture_node_id"),
+            "target_node_id": c.get("target_node_id"),
+        })
+    for chid in sorted(matrix):          # results whose case row is missing
+        if chid not in seen:
+            out_cases.append({"challenge_id": chid, "challenge_type": "unknown",
+                              "class": {}, "recipe": {},
+                              "mixture_node_id": None, "target_node_id": None})
+    return {"track_id": tid,
+            "available": bool(out_cases or matrix),
+            "cases": out_cases,
+            "candidates": sorted(cand_ids),
+            "results": matrix}
+
+
+def actions_payload(lib: Lib, tid: str) -> dict:
+    """Conductor probe/action log: round, proposed action, status, reason."""
+    rows = _v2_rows(lib, tid, "conductor_action",
+                    "SELECT rowid AS _rid, * FROM conductor_action ORDER BY round, rowid")
+    if rows is None:
+        return {"track_id": tid, "available": False, "actions": [], "counts": {}}
+    actions, counts = [], {}
+    for r in rows:
+        proposed = _loads(r.get("proposed_json"), {})
+        status = r.get("status") or "unknown"
+        counts[status] = counts.get(status, 0) + 1
+        actions.append({
+            "action_id": r.get("action_id"),
+            "round": r.get("round"),
+            "type": proposed.get("type"),
+            "proposed": proposed,
+            "parent_recipe_id": r.get("parent_recipe_id"),
+            "validated_recipe_id": r.get("validated_recipe_id"),
+            "status": status,
+            "reason": r.get("reason"),
+        })
+    return {"track_id": tid, "available": True, "actions": actions, "counts": counts}
 
 
 # ---------------------------------------------------------------------------
@@ -519,6 +712,9 @@ def generate_aac(lib: Lib, wav_path: str, start, end, bitrate: str = "192k") -> 
 # HTTP handler
 # ---------------------------------------------------------------------------
 API_RUN_RE = re.compile(r"^/api/v2/run/(.+)$")
+DECISION_RE = re.compile(r"^/api/v2/decision/([^/]+)$")
+CHALLENGES_RE = re.compile(r"^/api/v2/challenges/([^/]+)$")
+ACTIONS_RE = re.compile(r"^/api/v2/actions/([^/]+)$")
 AUDIO_RE = re.compile(r"^/api/v2/audio/([^/]+)/(source|provisional_vocal|candidate/[^/]+)\.m4a$")
 PEAKS_RE = re.compile(r"^/api/v2/peaks/([^/]+)/(source|candidate/[^/]+)\.json$")
 SPEC_RE = re.compile(r"^/api/v2/spectrogram/([^/]+)/(source|candidate/[^/]+)\.png$")
@@ -677,6 +873,19 @@ class Handler(BaseHTTPRequestHandler):
                 else:
                     self._send_json(payload)
                 return
+
+            # ---- autonomous decision panel (WP13, read-only audit) ----
+            for rx, fn in ((DECISION_RE, decision_payload),
+                           (CHALLENGES_RE, challenges_payload),
+                           (ACTIONS_RE, actions_payload)):
+                m = rx.match(path)
+                if m:
+                    tid = urllib.parse.unquote(m.group(1))
+                    if not lib.is_run(tid):
+                        self._send_json({"error": "run not found", "track_id": tid}, 404)
+                    else:
+                        self._send_json(fn(lib, tid))
+                    return
 
             m = AUDIO_RE.match(path)
             if m:
