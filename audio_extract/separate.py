@@ -115,8 +115,12 @@ def provisional_vocal(canonical_wav: str | Path, model_filename: str = "Kim_Voca
 
 
 def build_separate_recipe(source_record: dict, *, model_filename: str, model_sha256: str,
-                          overlap: int, construction: str, target: str, code_commit: str) -> dict:
-    """Assemble a v2 recipe object for a separation candidate (docs/v2 §1.3)."""
+                          overlap: int, construction: str, target: str, code_commit: str,
+                          executed_bundle_id: str | None = None) -> dict:
+    """Assemble a v2 recipe object for a separation candidate (docs/v2 §1.3).
+    When the model lock resolved this execution, ``executed_bundle_id`` pins the
+    exact bundle (weights+config+adapter) into the identity (v2.1 §6)."""
+    model_block_extra = {"executed_bundle_id": executed_bundle_id} if executed_bundle_id else {}
     return {
         "schema": recipe_mod.SCHEMA,
         "canon": recipe_mod.CANON,
@@ -134,6 +138,7 @@ def build_separate_recipe(source_record: dict, *, model_filename: str, model_sha
                                else "unknown"),
             "adapter": "audio-separator",
             "adapter_revision": "audio-separator+audio-extract-adapter-v1",
+            **model_block_extra,
         },
         "effective_config": {
             "model_sample_rate_hz": source_record["sample_rate_hz"],
@@ -145,7 +150,9 @@ def build_separate_recipe(source_record: dict, *, model_filename: str, model_sha
 
 def render_candidate(layout, source_record: dict, *, model_filename: str, target: str,
                      construction: str, overlap: int, code_commit: str,
-                     model_dir: str | Path = DEFAULT_MODEL_DIR) -> dict:
+                     model_dir: str | Path = DEFAULT_MODEL_DIR,
+                     executed_bundle_id: str | None = None,
+                     expected_sha256: str | None = None) -> dict:
     """Run one separation, build the construction, and write an immutable candidate
     keyed by ``recipe_id`` (docs/v2 §1.4, §1.6). Returns the manifest record.
 
@@ -187,9 +194,13 @@ def render_candidate(layout, source_record: dict, *, model_filename: str, target
     ckpt = Path(model_dir) / model_filename
     if ckpt.exists():
         pre_hash = _sha256_file(ckpt)
+        if expected_sha256 and pre_hash.split(":")[-1] != expected_sha256.split(":")[-1]:
+            raise RuntimeError(f"model lock hash mismatch for {model_filename!r}: "
+                               f"expected {expected_sha256[:16]}, on-disk {pre_hash[:16]}")
         pre_recipe = build_separate_recipe(
             source_record, model_filename=model_filename, model_sha256=pre_hash,
             overlap=overlap, construction=construction, target=target, code_commit=code_commit,
+            executed_bundle_id=executed_bundle_id,
         )
         pre_rid = identity.recipe_id(pre_recipe)
         if (layout.candidate_dir(pre_rid) / "output.f32.wav").exists():
@@ -202,6 +213,9 @@ def render_candidate(layout, source_record: dict, *, model_filename: str, target
     out = sep.separate_file(canonical)
     if out.model_sha256 == "unknown":  # an unidentified model cannot produce a trustworthy cache key
         raise RuntimeError(f"refusing to render candidate: model {model_filename!r} has no checkpoint hash")
+    if expected_sha256 and out.model_sha256.split(":")[-1] != expected_sha256.split(":")[-1]:
+        raise RuntimeError(f"model lock hash mismatch for {model_filename!r} after load: "
+                           f"expected {expected_sha256[:16]}, got {out.model_sha256[:16]}")
     sr = out.sr
     mix, _ = sf.read(str(canonical), dtype="float64", always_2d=True)
 
@@ -232,6 +246,7 @@ def render_candidate(layout, source_record: dict, *, model_filename: str, target
     recipe = build_separate_recipe(
         source_record, model_filename=model_filename, model_sha256=out.model_sha256,
         overlap=overlap, construction=construction, target=target, code_commit=code_commit,
+        executed_bundle_id=executed_bundle_id,
     )
     rid = identity.recipe_id(recipe)
     frames, channels = int(arr.shape[0]), int(arr.shape[1])

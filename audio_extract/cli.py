@@ -105,6 +105,66 @@ def cmd_fingerprint(_args: argparse.Namespace) -> int:
     return _emit(_envelope("fingerprint", "ok", fingerprint=identity.execution_fingerprint()))
 
 
+def _resolve_locked_model(lock_path: str, name: str, model_dir: str):
+    """If a model lock exists, resolve+verify ``name`` through it (v2.1 §6.5/§6.7).
+    Returns (registry_filename, executed_bundle_id, expected_sha256). Without a lock
+    file the legacy hash-at-run path applies (dev mode)."""
+    from .model_lock import ModelLock
+
+    lock = ModelLock(lock_path)
+    if not lock.exists:
+        return name, None, None
+    bundle = lock.verify(name, model_dir)   # raises on unknown/mismatch/missing
+    weights = next(f for f in bundle["files"] if f["role"] == "weights")
+    return bundle["registry"]["alias"], bundle["bundle_sha256"], weights["sha256"]
+
+
+def cmd_models_import(args: argparse.Namespace) -> int:
+    """Resolve registry models to executed bundles and write the immutable lock."""
+    from importlib.metadata import version as _pkg_ver
+
+    from .model_lock import ModelLock, build_bundle, default_logical_id, guess_family
+
+    try:
+        adapter_version = _pkg_ver("audio-separator")
+    except Exception:
+        adapter_version = "unknown"
+
+    lock = ModelLock(args.write_lock)
+    imported, errors = [], []
+    for spec in [s.strip() for s in args.models.split(",") if s.strip()]:
+        alias, _, target = spec.partition("=")
+        target = target or "vocals"
+        path = Path(args.model_dir) / alias
+        try:
+            bundle = build_bundle(
+                logical_id=default_logical_id(alias),
+                family=guess_family(alias),
+                target_stem=target,
+                registry_alias=alias,
+                files=[("weights", path)],
+                adapter_version=adapter_version,
+                adapter_revision="audio-separator+audio-extract-adapter-v1",
+                effective_defaults={
+                    "model_sample_rate_hz": 44100, "segment_size": 256, "overlap_factor": 8,
+                    "normalization_threshold": "1.000000", "amplification_threshold": "0.000000",
+                    "use_soundfile": True,
+                },
+            )
+            lock.add(bundle)
+            imported.append({"logical_id": bundle["logical_id"], "alias": alias,
+                             "bundle_sha256": bundle["bundle_sha256"],
+                             "weights_sha256": bundle["files"][0]["sha256"]})
+        except Exception as exc:
+            errors.append({"model": alias, "error": f"{type(exc).__name__}: {exc}"})
+    if imported:
+        lock.write()
+    return _emit(_envelope("models.import", "ok" if imported and not errors else
+                           ("error" if not imported else "partial"),
+                           lock=str(args.write_lock), imported=imported, errors=errors),
+                 code=0 if imported else 2)
+
+
 def cmd_ingest(args: argparse.Namespace) -> int:
     """Decode a source file to canonical float32 PCM, hash it, lay out storage."""
     import numpy as np
@@ -254,13 +314,14 @@ def cmd_panel_render(args: argparse.Namespace) -> int:
     rendered, errors = [], []
     for model_name in models:
         try:
+            filename, bundle_id, expected = _resolve_locked_model(args.lock, model_name, args.model_dir)
             rec = render_candidate(
-                layout, source_record, model_filename=model_name, target=args.target,
+                layout, source_record, model_filename=filename, target=args.target,
                 construction=args.construction, overlap=args.overlap, code_commit=_code_commit(),
-                model_dir=args.model_dir,
+                model_dir=args.model_dir, executed_bundle_id=bundle_id, expected_sha256=expected,
             )
             rendered.append({"model": model_name, "recipe_id": rec["recipe_id"],
-                             "cached": rec.get("cached", False)})
+                             "cached": rec.get("cached", False), "locked": bundle_id is not None})
         except Exception as exc:
             errors.append({"model": model_name, "error": f"{type(exc).__name__}: {exc}"})
 
@@ -436,12 +497,14 @@ def cmd_candidate_render(args: argparse.Namespace) -> int:
 
     from .separate import render_candidate
 
+    filename, bundle_id, expected = _resolve_locked_model(args.lock, args.model, args.model_dir)
     rec = render_candidate(
-        layout, source_record, model_filename=args.model, target=args.target,
+        layout, source_record, model_filename=filename, target=args.target,
         construction=args.construction, overlap=args.overlap, code_commit=_code_commit(),
-        model_dir=args.model_dir,
+        model_dir=args.model_dir, executed_bundle_id=bundle_id, expected_sha256=expected,
     )
-    return _emit(_envelope("candidate.render", "ok", args.run_id, candidate=rec))
+    return _emit(_envelope("candidate.render", "ok", args.run_id, candidate=rec,
+                           locked=bundle_id is not None))
 
 
 # --------------------------------------------------------------------------
@@ -476,6 +539,7 @@ def build_parser() -> argparse.ArgumentParser:
                     choices=["native_primary", "native_secondary", "mixture_minus_primary"])
     sp.add_argument("--overlap", type=int, default=8)
     sp.add_argument("--model-dir", default=str(Path.home() / "audio-extract" / "models"))
+    sp.add_argument("--lock", default="configs/model-lock.json")
     sp.add_argument("--json", action="store_true")
     sp.set_defaults(func=cmd_panel_render)
 
@@ -507,6 +571,7 @@ def build_parser() -> argparse.ArgumentParser:
                     choices=["native_primary", "native_secondary", "mixture_minus_primary"])
     sp.add_argument("--overlap", type=int, default=8)
     sp.add_argument("--model-dir", default=str(Path.home() / "audio-extract" / "models"))
+    sp.add_argument("--lock", default="configs/model-lock.json")
     sp.add_argument("--json", action="store_true")
     sp.set_defaults(func=cmd_candidate_render)
 
@@ -529,6 +594,16 @@ def build_parser() -> argparse.ArgumentParser:
     sp.set_defaults(func=cmd_ingest)
     sp = sub.add_parser("fingerprint", help="print the execution fingerprint")
     sp.set_defaults(func=cmd_fingerprint)
+
+    # models — executed model lock
+    g_models = sub.add_parser("models", help="executed model lock").add_subparsers(dest="cmd", required=True)
+    sp = g_models.add_parser("import", help="hash models into the immutable lock (v2.1 §6)")
+    sp.add_argument("--models", required=True,
+                    help="comma-separated registry filenames, optional =target (e.g. Kim_Vocal_2.onnx=vocals)")
+    sp.add_argument("--model-dir", default=str(Path.home() / "audio-extract" / "models"))
+    sp.add_argument("--write-lock", default="configs/model-lock.json")
+    sp.add_argument("--json", action="store_true")
+    sp.set_defaults(func=cmd_models_import)
 
     # conduct — the bounded Pi/DeepSeek conductor loop
     sp = sub.add_parser("conduct", help="run the bounded conductor loop over a run")
