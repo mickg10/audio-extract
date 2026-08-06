@@ -180,10 +180,21 @@ def run_challenges(layout: TrackLayout, sr: int, models: list[str],
                     lambda a: dsp.as2d(estimator_factory(model)(dsp.as2d(a)).get(
                         "vocals", np.zeros_like(dsp.as2d(a)))), controls, sr)
                 theft = float(np.mean([r["theft_broadband"] for r in theft_rows]))
+                # v3 review §10: also evaluate the ACTUAL residual construction on
+                # the control — Â_res(A) = A − V̂(A) compared directly with A. This
+                # catches phase/compensation/timing errors invisible in stem energy.
+                res_errs = []
+                for ctl_id, a_ctl in controls:
+                    a2 = dsp.as2d(a_ctl)
+                    v_hat = dsp.as2d(estimate(a2).get("vocals", np.zeros_like(a2)))
+                    nn = min(len(a2), len(v_hat))
+                    res_errs.append({"control_id": ctl_id,
+                                     **ch.exact_reference_error(a2[:nn] - v_hat[:nn], a2[:nn], sr)})
                 m2.add_challenge_result(challenge_id="theft_assay",
                                         candidate_recipe_id=model,
                                         result={"theft_rows": theft_rows,
-                                                "theft_mean": theft})
+                                                "theft_mean": theft,
+                                                "residual_construction": res_errs})
             matrix[model] = {"cases": per_case, "theft_mean": theft}
     return {"ran": len(case_dirs), "models": list(matrix), "matrix": matrix}
 
