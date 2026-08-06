@@ -35,3 +35,4 @@ web/jobs.json
 *.bak
 *.bak-*
 *.bak.*
+calibration/spotify_pairs/pairs_all.jsonl
