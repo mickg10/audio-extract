@@ -148,8 +148,53 @@ def build_challenges(layout: TrackLayout, sr: int, *, count: int = 8,
 # ---------------------------------------------------------------------------
 # challenges run  (estimator_factory: model_name -> fn(audio)->{"vocals": arr,...})
 # ---------------------------------------------------------------------------
+def _exact_case_labels(residual: np.ndarray, target: np.ndarray,
+                       injected_vocal: np.ndarray, sr: int) -> dict:
+    """Oracle §3: exact event-conditioned labels from the KNOWN A and injected V.
+    Event-hole depth (multiband deficit during the injected-vocal events) is the
+    PRIMARY event-hole truth; vocal interference = the error's projection onto the
+    injected-vocal direction. SI-SDR stays a secondary broad metric."""
+    from . import metrics_v2 as m2x
+
+    n = min(len(residual), len(target), len(injected_vocal))
+    res, tgt, vin = residual[:n], target[:n], dsp.as2d(injected_vocal)[:n]
+    # events = frames where the injected vocal is active (known by construction)
+    v_rms = dsp.frame_rms_db(vin, sr)
+    thr = float(np.max(v_rms)) - 30.0
+    active = v_rms > thr
+    events, start = [], None
+    for i, a in enumerate(active):
+        if a and start is None:
+            start = i
+        elif not a and start is not None:
+            if i - start >= 10:
+                events.append((start, i))
+            start = None
+    if start is not None:
+        events.append((start, len(active)))
+    ce = dsp.band_envelope_db(res, sr, dsp.PUMP_BANDS)
+    te = dsp.band_envelope_db(tgt, sr, dsp.PUMP_BANDS)
+    ve = dsp.band_envelope_db(vin, sr, dsp.PUMP_BANDS)
+    holes = m2x.event_holes(ce, te, ve, events)
+    hole = {o["metric"].split("/")[0]: o["value"] for o in holes if o["available"]}
+    # vocal interference: projection of e = residual − target onto the V direction
+    e = dsp.mono(res) - dsp.mono(tgt)
+    v = dsp.mono(vin)
+    v_energy = float(np.dot(v, v)) + 1e-12
+    beta = float(np.dot(e, v)) / v_energy
+    interf = beta * v
+    si_sir = 10 * np.log10((float(np.dot(interf, interf)) + 1e-12)
+                           / (float(np.dot(e - interf, e - interf)) + 1e-12))
+    return {"event_hole_depth_db": hole.get("event_hole_depth"),
+            "event_hole_area": hole.get("event_hole_area"),
+            "masked_hole_uncertainty": hole.get("masked_hole_uncertainty"),
+            "vocal_interference_ratio": round(abs(beta), 5),
+            "vocal_si_sir_db": round(si_sir, 2),
+            "n_events": len(events)}
+
+
 def run_challenges(layout: TrackLayout, sr: int, models: list[str],
-                   estimator_factory) -> dict:
+                   estimator_factory, persist_outputs: bool = True) -> dict:
     import soundfile as sf
 
     chdir = layout.root / "challenges"
@@ -170,10 +215,26 @@ def run_challenges(layout: TrackLayout, sr: int, models: list[str],
                 n = min(len(mix), len(v_hat))
                 residual = mix[:n] - v_hat[:n]
                 err = ch.exact_reference_error(residual, tgt, sr)
+                # oracle §9.1: persist the per-case output audio (append-only)
+                if persist_outputs:
+                    odir = cdir / "outputs"
+                    odir.mkdir(exist_ok=True)
+                    slug = "".join(c if c.isalnum() else "_" for c in model)[:64]
+                    opath = odir / f"{slug}.f32.wav"
+                    if not opath.exists():
+                        sf.write(str(opath), residual.astype("float32"), sr, subtype="FLOAT")
+                # oracle §9.2: exact event-hole + interference labels (V known)
+                labels = {}
+                inj = mix[:n] - tgt[: n]  # injected vocal = mixture − exact target
+                try:
+                    labels = _exact_case_labels(residual, tgt[:n], inj, sr)
+                except Exception as exc:
+                    labels = {"label_error": f"{type(exc).__name__}: {exc}"}
                 cid = cdir.name.replace("sha256_", "sha256:")
-                per_case[cid] = err
+                per_case[cid] = {**err, **labels}
                 m2.add_challenge_result(challenge_id=cid, candidate_recipe_id=model,
-                                        result={"exact_reference": err})
+                                        result={"exact_reference": err,
+                                                "exact_labels": labels})
             theft = None
             if controls:
                 theft_rows = ch.run_no_vocal_theft_assay(
@@ -220,8 +281,21 @@ def severity_cells_from_store(layout: TrackLayout, *, u: float = 0.05) -> dict[s
         if not er:
             continue
         c = cands.setdefault(model, {"cells": {}, "gates": {}})
-        c["cells"].setdefault("event_hole", []).append(
-            (severity_from_si_sdr(er["si_sdr_db"]), u))
+        labels = result.get("exact_labels") or {}
+        # oracle §3: exact event-conditioned deficit is the PRIMARY event-hole
+        # evidence; SI-SDR is only the fallback broad signal when labels absent
+        depth = labels.get("event_hole_depth_db")
+        if depth is not None:
+            c["cells"].setdefault("event_hole", []).append(
+                (float(np.clip(depth / 24.0, 0, 1)),
+                 u + float(labels.get("masked_hole_uncertainty") or 0.0)))
+        else:
+            c["cells"].setdefault("event_hole", []).append(
+                (severity_from_si_sdr(er["si_sdr_db"]), u))
+        interf = labels.get("vocal_interference_ratio")
+        if interf is not None:
+            c["cells"].setdefault("vocal_leakage", []).append(
+                (float(np.clip(interf, 0, 1)), u))
         c["cells"].setdefault("fullness", []).append(
             (severity_from_band_err(er["band_envelope_err_db"]), u))
         c["cells"].setdefault("stereo", []).append(

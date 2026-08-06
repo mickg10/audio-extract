@@ -106,6 +106,45 @@ def test_probes_build_all_kinds():
     assert np.allclose(side[:, 0], -side[:, 1])   # pure side content
 
 
+def test_symmetric_source_response_semantics():
+    _, orch = _material()
+    probe = ch.make_orchestral_probe("brass_onset", SR, 1.0)
+    identity = lambda m: m
+    absorb = lambda m: np.zeros_like(m)
+    r_id = ch.symmetric_source_response(identity, orch, probe)
+    r_ab = ch.symmetric_source_response(absorb, orch, probe)
+    assert all(row["pass_through_err"] < 1e-9 for row in r_id["per_alpha"])   # J == δ exactly
+    assert r_id["stability"] < 1e-9                                            # linear across α
+    assert all(row["response_ratio"] < 1e-9 for row in r_ab["per_alpha"])      # fully invariant
+    assert all(abs(row["pass_through_err"] - 1.0) < 1e-6 for row in r_ab["per_alpha"])
+
+
+def test_audit_pair_integrity_classes():
+    vocal, orch = _material()
+    full = orch + vocal
+    # linear pair: base IS the true accompaniment of full
+    a1 = ch.audit_pair(full, orch, SR, solo_inactive_mask=(np.abs(vocal).sum(axis=1) < 1e-9))
+    assert a1["recommended_integrity"] == "linear_exact"
+    # same-take, master differs: base with gain + small delay
+    base2 = np.vstack([np.zeros((30, 2)), orch * 0.7])[: len(orch)]
+    a2 = ch.audit_pair(full, base2, SR, solo_inactive_mask=(np.abs(vocal).sum(axis=1) < 1e-9))
+    assert a2["recommended_integrity"] in ("linear_exact", "same_take_paired_target")
+    assert abs(a2["delay_samples"]) >= 25
+    # different length -> different edit, never a mute
+    a3 = ch.audit_pair(full, orch[: len(orch) // 2], SR)
+    assert a3["recommended_integrity"] == "matched_program"
+    # unrelated recording -> matched_program
+    other = fx.synth_orchestra(SR, 3.0, seed=99)[: len(full)]
+    a4 = ch.audit_pair(full, other, SR)
+    assert a4["recommended_integrity"] == "matched_program"
+
+
+def test_ontology_constants():
+    assert "soloist_vs_rest" in ch.EVALUATION_TASKS
+    assert set(ch.PAIR_INTEGRITY) == {"linear_exact", "same_take_paired_target",
+                                      "same_performance_bleed", "matched_program"}
+
+
 def test_rt60_estimate_in_range():
     rng = np.random.default_rng(0)
     t = np.arange(int(SR * 1.5)) / SR

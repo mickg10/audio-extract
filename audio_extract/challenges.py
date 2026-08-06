@@ -35,6 +35,49 @@ _CHALLENGE_DOMAIN = b"audio-extract-challenge-v1\x00"
 PROBE_KINDS = ("high_string_cluster", "brass_onset", "low_mid_pad",
                "wide_hall_tail", "center_transient", "side_hf_air")
 
+# Evaluation-task ontology (oracle reply §5): truth definitions are NEVER pooled
+# across tasks — a retained chorus is desired output under soloist_vs_rest.
+EVALUATION_TASKS = ("all_voices_vs_nonvocal", "soloist_vs_rest",
+                    "role_specific_voice_removal", "choir_vs_rest")
+
+# Paired-source integrity classes (§6): equal duration does not prove linearity.
+PAIR_INTEGRITY = ("linear_exact", "same_take_paired_target",
+                  "same_performance_bleed", "matched_program")
+
+
+def audit_pair(full: np.ndarray, base: np.ndarray, sr: int,
+               solo_inactive_mask: np.ndarray | None = None) -> dict:
+    """§6 pair audit: fit ONLY delay + one fixed gain (from solo-inactive regions
+    when given), then measure the null residual. Time-varying differences demote
+    the pair instead of being 'corrected away'."""
+    f2, b2 = dsp.as2d(full), dsp.as2d(base)
+    n = min(len(f2), len(b2))
+    length_mismatch = abs(len(f2) - len(b2)) / max(len(f2), len(b2), 1)
+    al = estimate_alignment(f2[:n], b2[:n])
+    b_al = apply_alignment(b2[:n], al, target_len=n)
+    if solo_inactive_mask is not None:
+        m = np.asarray(solo_inactive_mask[:n], dtype=bool)
+    else:
+        m = np.ones(n, dtype=bool)
+    ef = float(np.sqrt(np.mean(f2[:n][m] ** 2))) + _EPS
+    eb = float(np.sqrt(np.mean(b_al[m] ** 2))) + _EPS
+    gain = ef / eb
+    resid = f2[:n][m] - gain * b_al[m]
+    resid_db = 20 * np.log10(float(np.sqrt(np.mean(resid ** 2))) / ef + _EPS)
+    if length_mismatch > 0.02:
+        integrity = "matched_program"          # different edit, not a mute
+    elif resid_db < -35.0:
+        integrity = "linear_exact"
+    elif resid_db < -12.0:
+        integrity = "same_take_paired_target"  # same take, master differs
+    else:
+        integrity = "matched_program"
+    return {"delay_samples": al.delay_samples, "fixed_gain_db": round(20 * np.log10(gain), 3),
+            "residual_on_solo_inactive_db": round(resid_db, 2),
+            "edit_or_length_mismatch": round(length_mismatch, 4),
+            "alignment_confidence": round(al.confidence, 4),
+            "recommended_integrity": integrity}
+
 
 def challenge_id(recipe: dict) -> str:
     return "sha256:" + hashlib.sha256(_CHALLENGE_DOMAIN + canon.canonicalize(recipe)).hexdigest()
@@ -228,6 +271,42 @@ def make_orchestral_probe(kind: str, sr: int, dur_s: float = 1.0, seed: int = 0,
         st = np.column_stack([hf, -hf])
     peak = np.max(np.abs(st)) + _EPS
     return st / peak * level
+
+
+def symmetric_source_response(candidate_fn, mixture: np.ndarray, delta: np.ndarray,
+                              alphas: tuple[float, ...] = (0.25, 0.5, 1.0)) -> dict:
+    """Local finite-difference source-response probe (oracle: NOT causal
+    identification). Symmetric form J = (F(M+αδ) − F(M−αδ)) / 2α at several low
+    amplitudes; response stability across α flags strongly nonlinear operation.
+
+    Returns per-α: ``pass_through_err`` = ||J − δ||/||δ|| (0 for an estimator that
+    passes the probe through — the ORCHESTRAL ideal) and ``response_ratio`` =
+    ||J||/||δ|| (0 for an estimator invariant to the probe — the VOCAL ideal),
+    plus ``stability`` = max pairwise deviation of J across α levels."""
+    m = dsp.as2d(mixture)
+    d = dsp.as2d(delta)
+    n = min(len(m), len(d))
+    m, d = m[:n], d[:n]
+    d_norm = float(np.sqrt(np.mean(d ** 2))) + _EPS
+    responses, rows = [], []
+    for a in alphas:
+        plus = dsp.as2d(candidate_fn(m + a * d))
+        minus = dsp.as2d(candidate_fn(m - a * d))
+        nn = min(len(plus), len(minus), n)
+        J = (plus[:nn] - minus[:nn]) / (2.0 * a)
+        responses.append(J)
+        rows.append({
+            "alpha": a,
+            "pass_through_err": round(float(np.sqrt(np.mean((J - d[:nn]) ** 2))) / d_norm, 5),
+            "response_ratio": round(float(np.sqrt(np.mean(J ** 2))) / d_norm, 5),
+        })
+    stability = 0.0
+    for i in range(len(responses)):
+        for j in range(i + 1, len(responses)):
+            nn = min(len(responses[i]), len(responses[j]))
+            dev = float(np.sqrt(np.mean((responses[i][:nn] - responses[j][:nn]) ** 2))) / d_norm
+            stability = max(stability, dev)
+    return {"per_alpha": rows, "stability": round(stability, 5)}
 
 
 def vocal_intervention_invariance(candidate_fn, mixture: np.ndarray,
