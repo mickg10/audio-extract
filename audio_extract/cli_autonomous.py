@@ -255,6 +255,77 @@ def select_autonomous(layout: TrackLayout, **selector_kwargs) -> dict:
     return decision
 
 
+def revalidate_finalist(layout: TrackLayout, sr: int, candidate_recipe_id: str,
+                        *, source_peak: float | None = None) -> dict:
+    """v3 review §11: before delivery, extract the ORIGINAL mined passage intervals
+    from the finalist's full-track audio and rerun the hard gates + core damage
+    metrics there. A full render that regresses on its own decisive passages is
+    rejected, not shipped."""
+    import soundfile as sf
+
+    from . import metrics as mx
+    from . import metrics_v2 as m2
+
+    cand_wav = layout.candidate_dir(candidate_recipe_id) / "output.f32.wav"
+    if not cand_wav.exists():
+        return {"ok": False, "reason": f"candidate {candidate_recipe_id} not in store"}
+    audio, csr = sf.read(str(cand_wav), dtype="float64", always_2d=True)
+    if int(csr) != sr:
+        return {"ok": False, "reason": f"candidate sr {csr} != canonical {sr}"}
+    pj = layout.passages_dir / "passages.v1.json"
+    passages = json.loads(pj.read_text())["passages"] if pj.exists() else []
+    if not passages:
+        return {"ok": False, "reason": "no mined passages to revalidate against"}
+
+    src = layout.source_dir / "canonical.f32.wav"
+    reference = None
+    if src.exists():
+        reference, _ = sf.read(str(src), dtype="float64", always_2d=True)
+        if source_peak is None and reference.size:
+            source_peak = float(np.max(np.abs(reference)))
+
+    per_passage, failures = [], []
+    for p in passages:
+        s, e = p["start_sample"], min(p["end_sample"], audio.shape[0])
+        if e - s < sr // 4:
+            continue
+        seg = audio[s:e]
+        hc = mx.hard_checks(seg, sr, source_peak=source_peak)
+        row = {"passage_id": p["passage_id"], "tags": p["tags"],
+               "hard_ok": hc["ok"], "problems": hc["problems"]}
+        if reference is not None and "no_vocal_control" in p["tags"]:
+            # on a genuine control the finalist should preserve the original mix
+            err = m2.fullness_v2(seg, reference[s:e], sr)
+            row["control_band_deficit_db"] = err[0]["value"]
+            if err[0]["value"] is not None and err[0]["value"] > 6.0:
+                failures.append(f"{p['passage_id']}: control deficit {err[0]['value']:.1f} dB")
+        if not hc["ok"]:
+            failures.append(f"{p['passage_id']}: {hc['problems']}")
+        per_passage.append(row)
+
+    return {"ok": not failures, "passages_checked": len(per_passage),
+            "failures": failures, "per_passage": per_passage}
+
+
+def finalize_and_deliver(layout: TrackLayout, sr: int, candidate_recipe_id: str,
+                         *, target_dbfs: float = -5.0, bitrate: str = "256k",
+                         code_commit: str = "") -> dict:
+    """The last mile: revalidate the finalist on its mined passages, then run the
+    delivery DAG. A revalidation failure leaves the run NOT complete."""
+    from .delivery import deliver
+    from .manifest import Manifest
+
+    reval = revalidate_finalist(layout, sr, candidate_recipe_id)
+    if not reval["ok"]:
+        with Manifest(layout.manifest_sqlite) as man:
+            man.set_state(layout.track_id, "FINAL_QC")
+        return {"status": "revalidation_failed", "revalidation": reval}
+    src_record = json.loads((layout.source_dir / "source.json").read_text())
+    report = deliver(layout, src_record, candidate_recipe_id,
+                     target_dbfs=target_dbfs, bitrate=bitrate, code_commit=code_commit)
+    return {"status": "delivered", "revalidation": reval, "delivery": report}
+
+
 def run_report(layout: TrackLayout) -> dict:
     """§17.3 consolidated report from stored records."""
     with ManifestV2(layout.manifest_sqlite) as m2:

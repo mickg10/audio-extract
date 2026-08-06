@@ -447,7 +447,14 @@ def cmd_conduct(args: argparse.Namespace) -> int:
 
     def execute(action: dict) -> dict | None:
         if action["type"] == "build_weighted_ensemble":
-            return None  # ensemble render lands in M6
+            from .separate import render_ensemble_candidate
+
+            rec = render_ensemble_candidate(
+                layout, source_record,
+                member_recipe_ids=list(action.get("members", [])),
+                algo=action.get("algo", "median"),
+                weights=action.get("weights"), code_commit=code_commit)
+            return {"recipe_id": rec["recipe_id"]}
         rec = render_candidate(
             layout, source_record, model_filename=action.get("model", args.model),
             target=action.get("target", "vocals"), construction=action.get("construction", "native_primary"),
@@ -530,6 +537,41 @@ def cmd_challenges(args: argparse.Namespace) -> int:
         res = {"cases": len(auto.severity_cells_from_store(layout)),
                "cells": auto.severity_cells_from_store(layout)}
     return _emit(_envelope(f"challenges.{args.cmd}", "ok", args.run_id, **res))
+
+
+def cmd_candidate_ensemble(args: argparse.Namespace) -> int:
+    """Render a vocal-ensemble residual candidate (oracle §5 ε-minimization)."""
+    from .separate import render_ensemble_candidate
+
+    layout = TrackLayout(args.lib, args.run_id)
+    src_json = layout.source_dir / "source.json"
+    if not src_json.exists():
+        return _emit(_envelope("candidate.ensemble", "error", args.run_id,
+                               message=f"run {args.run_id!r} not ingested"), code=2)
+    members = [m.strip() for m in args.members.split(",") if m.strip()]
+    weights = ([float(x) for x in args.weights.split(",")] if args.weights else None)
+    rec = render_ensemble_candidate(
+        layout, json.loads(src_json.read_text()), member_recipe_ids=members,
+        algo=args.algo, weights=weights, code_commit=_code_commit())
+    return _emit(_envelope("candidate.ensemble", "ok", args.run_id, candidate=rec))
+
+
+def cmd_finalists_render(args: argparse.Namespace) -> int:
+    """Revalidate the finalist on its mined passages, then deliver (v3 §11 + WP14)."""
+    from .cli_autonomous import finalize_and_deliver
+
+    layout = TrackLayout(args.lib, args.run_id)
+    src_json = layout.source_dir / "source.json"
+    if not src_json.exists():
+        return _emit(_envelope("finalists.render", "error", args.run_id,
+                               message=f"run {args.run_id!r} not ingested"), code=2)
+    sr = json.loads(src_json.read_text())["sample_rate_hz"]
+    res = finalize_and_deliver(layout, sr, args.candidate_id,
+                               target_dbfs=args.target_dbfs, bitrate=args.bitrate,
+                               code_commit=_code_commit())
+    ok = res["status"] == "delivered"
+    return _emit(_envelope("finalists.render", "ok" if ok else "error", args.run_id, **res),
+                 code=0 if ok else 3)
 
 
 def cmd_select_autonomous(args: argparse.Namespace) -> int:
@@ -653,6 +695,13 @@ def build_parser() -> argparse.ArgumentParser:
 
     # candidate
     g_cand = sub.add_parser("candidate", help="candidate DAG").add_subparsers(dest="cmd", required=True)
+    sp = g_cand.add_parser("ensemble", help="vocal-ensemble residual candidate (median/mean of vocal estimates)")
+    sp.add_argument("--run-id", required=True)
+    sp.add_argument("--members", required=True, help="comma-separated VOCAL candidate recipe_ids")
+    sp.add_argument("--algo", default="median", choices=["median", "mean"])
+    sp.add_argument("--weights", help="comma-separated weights (mean only)")
+    sp.add_argument("--json", action="store_true")
+    sp.set_defaults(func=cmd_candidate_ensemble)
     sp = g_cand.add_parser("render", help="render an immutable separator candidate")
     sp.add_argument("--run-id", required=True)
     sp.add_argument("--model", required=True, help="separator model filename (audio-separator registry)")
@@ -735,6 +784,16 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--model-dir", default=str(Path.home() / "audio-extract" / "models"))
     sp.add_argument("--json", action="store_true")
     sp.set_defaults(func=cmd_conduct)
+
+    # finalists — revalidate on mined passages, then deliver (the last mile)
+    g_fin = sub.add_parser("finalists", help="finalist revalidation + delivery").add_subparsers(dest="cmd", required=True)
+    sp = g_fin.add_parser("render", help="revalidate the finalist per-passage, then run the delivery DAG")
+    sp.add_argument("--run-id", required=True)
+    sp.add_argument("--candidate-id", required=True)
+    sp.add_argument("--target-dbfs", type=float, default=-5.0)
+    sp.add_argument("--bitrate", default="256k")
+    sp.add_argument("--json", action="store_true")
+    sp.set_defaults(func=cmd_finalists_render)
 
     # deliver — render delivery children for a finalist
     sp = sub.add_parser("deliver", help="render delivery children (gain/dither/AAC) for a finalist")

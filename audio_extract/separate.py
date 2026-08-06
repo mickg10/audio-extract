@@ -10,6 +10,7 @@ checkpoint hash, not the filename.
 from __future__ import annotations
 
 import hashlib
+import json
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
@@ -155,6 +156,130 @@ def build_separate_recipe(source_record: dict, *, model_filename: str, model_sha
         },
         "software": {"audio_extract_commit": code_commit},
     }
+
+
+def render_ensemble_candidate(layout, source_record: dict, *, member_recipe_ids: list[str],
+                              algo: str = "median", weights: list[float] | None = None,
+                              code_commit: str = "") -> dict:
+    """ε-minimization route (oracle §5): combine MEMBER VOCAL estimates (aligned
+    first — WP0 hard rule) into V̂_ens, then the accompaniment is the residual
+    ``M − V̂_ens``. ``algo``: 'median' (robust, ≥3 members) or 'mean' (weighted,
+    ≥2). The ensemble is a first-class content-addressed candidate whose parents
+    are the member recipe ids."""
+    import tempfile
+    from datetime import datetime, timezone
+
+    import numpy as np
+    import soundfile as sf
+
+    from . import identity
+    from .alignment import apply_alignment, estimate_alignment
+    from .manifest import Manifest
+    from .storage import ImmutableWriteError
+
+    if algo == "median" and len(member_recipe_ids) < 3:
+        raise ValueError("median ensemble needs >=3 members")
+    if algo == "mean" and len(member_recipe_ids) < 2:
+        raise ValueError("mean ensemble needs >=2 members")
+    if weights is not None:
+        if len(weights) != len(member_recipe_ids):
+            raise ValueError("weights length must match members")
+        w = np.asarray(weights, dtype=np.float64)
+        if not np.all(np.isfinite(w)) or w.sum() <= 0:
+            raise ValueError("weights must be finite with positive sum")
+        w = w / w.sum()
+    else:
+        w = np.full(len(member_recipe_ids), 1.0 / len(member_recipe_ids))
+
+    canonical = Path(layout.source_dir) / "canonical.f32.wav"
+    mix, sr = sf.read(str(canonical), dtype="float64", always_2d=True)
+    sr = int(sr)
+
+    # load member VOCAL stems; refuse non-vocal members (role discipline)
+    members, alignments = [], []
+    for rid in member_recipe_ids:
+        cdir = layout.candidate_dir(rid)
+        rj = cdir / "recipe.json"
+        if not rj.exists() or not (cdir / "output.f32.wav").exists():
+            raise ValueError(f"ensemble member {rid} not in the store")
+        recipe = json.loads(rj.read_text())
+        op = recipe.get("operation", {})
+        if not (op.get("type") == "separate" and op.get("construction") == "native_primary"
+                and op.get("target") == "vocals"):
+            raise ValueError(f"ensemble member {rid} is not a native vocal estimate "
+                             f"({op.get('construction')}/{op.get('target')})")
+        arr, msr = sf.read(str(cdir / "output.f32.wav"), dtype="float64", always_2d=True)
+        if int(msr) != sr:
+            raise ValueError(f"member {rid} sample rate {msr} != canonical {sr} "
+                             "(resample explicitly before ensembling)")
+        al = estimate_alignment(mix, arr)     # align each member to the mixture grid
+        members.append(apply_alignment(arr, al, target_len=mix.shape[0]))
+        alignments.append({"recipe_id": rid, "delay": al.delay_samples,
+                           "polarity": al.polarity, "confidence": round(al.confidence, 4)})
+
+    stack = np.stack(members, axis=0)
+    if algo == "median":
+        v_ens = np.median(stack, axis=0)
+    else:
+        v_ens = np.tensordot(w, stack, axes=(0, 0))
+    accomp = mix - v_ens
+
+    recipe = {
+        "schema": recipe_mod.SCHEMA,
+        "canon": recipe_mod.CANON,
+        "input_pcm": {
+            "sha256": source_record["input_pcm_sha256"],
+            "sample_rate_hz": source_record["sample_rate_hz"],
+            "channel_layout": source_record["channel_layout"],
+            "frames": source_record["frames"],
+            "sample_format": "float32-le-interleaved",
+        },
+        "operation": {"type": "mixture_minus_source", "target": "instrumental",
+                      "construction": "waveform_ensemble"},
+        "model": {"model_id": f"vocal-ensemble-{algo}",
+                  "weights_sha256": hashlib.sha256(
+                      ("|".join(sorted(member_recipe_ids))).encode()).hexdigest(),
+                  "adapter": "audio-extract-ensemble",
+                  "adapter_revision": "ensemble-v1",
+                  "members": sorted(member_recipe_ids),
+                  "algo": algo,
+                  "member_weights_ppm": [int(round(x * 1e6)) for x in w]},
+        "effective_config": {"model_sample_rate_hz": sr,
+                             "alignment": "gcc_phat+fractional/v1"},
+        "software": {"audio_extract_commit": code_commit},
+    }
+    rid = identity.recipe_id(recipe)
+    frames, channels = int(accomp.shape[0]), int(accomp.shape[1])
+    ch_layout = (source_record["channel_layout"]
+                 if channels == len(source_record["channel_layout"])
+                 else [f"CH{i}" for i in range(channels)])
+    artifact = identity.artifact_pcm_sha256(accomp.astype("float32"), sr, ch_layout, frames)
+
+    cached = (layout.candidate_dir(rid) / "output.f32.wav").exists()
+    if not cached:
+        fd, tmp = tempfile.mkstemp(suffix=".f32.wav")
+        import os
+        os.close(fd)
+        sf.write(tmp, accomp.astype("float32"), sr, subtype="FLOAT")
+        try:
+            layout.write_candidate(rid, recipe,
+                                   {**identity.execution_fingerprint(),
+                                    "alignments": alignments}, Path(tmp), artifact)
+        except ImmutableWriteError:
+            cached = True
+
+    record = {
+        "recipe_id": rid, "operation": "mixture_minus_source",
+        "parents": sorted(member_recipe_ids),
+        "artifact_pcm_sha256": artifact, "sample_rate_hz": sr,
+        "channels": ch_layout, "frames": frames, "sample_format": "float32",
+        "status": "complete",
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "cached": cached, "alignments": alignments,
+    }
+    with Manifest(layout.manifest_sqlite) as man:
+        man.upsert_candidate(record)   # upsert maps known columns; extras ignored
+    return record
 
 
 def render_candidate(layout, source_record: dict, *, model_filename: str, target: str,
