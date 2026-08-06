@@ -263,8 +263,71 @@ def run_challenges(layout: TrackLayout, sr: int, models: list[str],
 # ---------------------------------------------------------------------------
 # select autonomous  (from stored challenge results)
 # ---------------------------------------------------------------------------
-def severity_cells_from_store(layout: TrackLayout, *, u: float = 0.05) -> dict[str, dict]:
-    """Assemble selector input from stored challenge_result rows."""
+CERTIFIED_SELECTOR = "autonomous-selector/v3"
+
+
+def load_calibration(path: str | Path, target_risk: str = "0.1") -> dict:
+    """Load a FROZEN calibration artifact (oracle P0 §1): the only certified path
+    consumes this, never the dev seed scalings. Returns per-defect Learn-Then-Test
+    thresholds at ``target_risk`` + frozen SeverityMaps + the artifact hash that a
+    decision must record and a delivery must re-verify."""
+    from . import selector as sel
+
+    p = Path(path)
+    raw = p.read_bytes()
+    doc = json.loads(raw)
+    sha = "sha256:" + hashlib.sha256(raw).hexdigest()
+    taus: dict[str, dict] = {}
+    maps: dict[str, sel.SeverityMap] = {}
+    for defect, d in doc.get("defects", {}).items():
+        ltt = d.get("learn_then_test_unit=work_model", {})
+        row = ltt.get(target_risk) or ltt.get(str(float(target_risk)))
+        taus[defect] = row or {"tau": 0.0, "risk_ucb": 1.0, "n_groups": 0, "certifiable": False}
+        knots = d.get("map_knots")
+        if knots and knots.get("xs"):
+            import numpy as _np
+            maps[defect] = sel.SeverityMap(xs=_np.asarray(knots["xs"], float),
+                                           ys=_np.asarray(knots["ys"], float))
+    return {"taus": taus, "severity_maps": maps, "calibration_sha256": sha,
+            "target_risk": target_risk, "schema": doc.get("schema"),
+            "path": str(p)}
+
+
+# raw proxy per (defect): what the frozen SeverityMap was/should be fit on.
+def _raw_proxies(er: dict, labels: dict) -> dict[str, float]:
+    out: dict[str, float] = {}
+    depth = labels.get("event_hole_depth_db")
+    if depth is not None:
+        out["event_hole"] = float(depth)               # exact label (oracle §3 primary)
+    elif er.get("si_sdr_db") is not None:
+        out["event_hole"] = max(0.0, 30.0 - float(er["si_sdr_db"]))  # broad fallback
+    if labels.get("vocal_interference_ratio") is not None:
+        out["vocal_leakage"] = float(labels["vocal_interference_ratio"])
+    if er.get("band_envelope_err_db") is not None:
+        out["fullness"] = float(er["band_envelope_err_db"])
+    if er.get("stereo_width_err") is not None:
+        out["stereo"] = float(er["stereo_width_err"])
+    return out
+
+
+def severity_cells_from_store(layout: TrackLayout, *, u: float = 0.05,
+                              calibration: dict | None = None) -> dict[str, dict]:
+    """Assemble selector input from stored challenge_result rows.
+
+    ``calibration`` present  → severities come from the FROZEN SeverityMaps
+    (the certified path). Absent → dev seed scalings (uncertified preview only,
+    per oracle §1 — these must never emit a certified ``final``)."""
+    maps = (calibration or {}).get("severity_maps") or {}
+
+    def _sev(defect: str, raw: float) -> float:
+        if defect in maps:
+            return maps[defect].apply(raw)
+        # dev seed scalings (uncertified)
+        if defect == "event_hole":
+            return float(np.clip(raw / 24.0, 0, 1))
+        if defect == "fullness":
+            return float(np.clip(raw / 30.0, 0, 1))
+        return float(np.clip(raw, 0, 1))
     with ManifestV2(layout.manifest_sqlite) as m2:
         rows = []
         for case in m2.challenge_cases():
@@ -276,54 +339,85 @@ def severity_cells_from_store(layout: TrackLayout, *, u: float = 0.05) -> dict[s
         theft_rows = list(m2._conn.execute(
             "SELECT * FROM challenge_result WHERE challenge_id='theft_assay'"))
     cands: dict[str, dict] = {}
-    for _cid, model, result in rows:
+    for recipe_id, model, result in rows:
         er = result.get("exact_reference")
         if not er:
             continue
-        c = cands.setdefault(model, {"cells": {}, "gates": {}})
         labels = result.get("exact_labels") or {}
-        # oracle §3: exact event-conditioned deficit is the PRIMARY event-hole
-        # evidence; SI-SDR is only the fallback broad signal when labels absent
-        depth = labels.get("event_hole_depth_db")
-        if depth is not None:
-            c["cells"].setdefault("event_hole", []).append(
-                (float(np.clip(depth / 24.0, 0, 1)),
-                 u + float(labels.get("masked_hole_uncertainty") or 0.0)))
-        else:
-            c["cells"].setdefault("event_hole", []).append(
-                (severity_from_si_sdr(er["si_sdr_db"]), u))
-        interf = labels.get("vocal_interference_ratio")
-        if interf is not None:
-            c["cells"].setdefault("vocal_leakage", []).append(
-                (float(np.clip(interf, 0, 1)), u))
-        c["cells"].setdefault("fullness", []).append(
-            (severity_from_band_err(er["band_envelope_err_db"]), u))
-        c["cells"].setdefault("stereo", []).append(
-            (float(np.clip(er["stereo_width_err"], 0, 1)), u))
+        # oracle P0 §2: key by the CANDIDATE RECIPE, not the model class. The
+        # challenge_result carries the recipe id; model is a fallback for legacy rows.
+        key = recipe_id if str(recipe_id).startswith("sha256:") else model
+        c = cands.setdefault(key, {"cells": {}, "gates": {}, "recipe_id": recipe_id,
+                                   "model": model})
+        raws = _raw_proxies(er, labels)
+        for defect, raw in raws.items():
+            uu = u + (float(labels.get("masked_hole_uncertainty") or 0.0)
+                      if defect == "event_hole" else 0.0)
+            c["cells"].setdefault(defect, []).append((_sev(defect, raw), uu))
     for r in theft_rows:
-        model = r["candidate_recipe_id"]
-        theft = float(np.clip(json.loads(r["result_json"]).get("theft_mean", 0.0), 0, 1))
-        c = cands.setdefault(model, {"cells": {}, "gates": {}})
-        c["cells"].setdefault("orchestral_theft", []).append((theft, u))
-        c["gates"]["orchestral_theft"] = theft
+        key = r["candidate_recipe_id"]
+        theft_mean = float(json.loads(r["result_json"]).get("theft_mean", 0.0))
+        theft_sev = _sev("orchestral_theft", theft_mean)
+        c = cands.setdefault(key, {"cells": {}, "gates": {}, "recipe_id": key})
+        c["cells"].setdefault("orchestral_theft", []).append((theft_sev, u))
+        c["gates"]["orchestral_theft"] = theft_sev
     for c in cands.values():
         if "event_hole" in c["cells"]:
             c["gates"]["event_hole"] = max(s for s, _ in c["cells"]["event_hole"])
+        # secondary = mean fullness severity (spectral fidelity tie-breaker)
+        full = c["cells"].get("fullness")
+        if full:
+            c["secondary"] = float(np.mean([s for s, _ in full]))
     return cands
 
 
-def select_autonomous(layout: TrackLayout, **selector_kwargs) -> dict:
+def _rollout_level(decision: dict, calibration: dict | None) -> str:
+    """oracle §5 rollout ladder. Certified paths require the frozen artifact AND a
+    real work-level evaluation (not present for a single-track run) — so the most a
+    single-track certified selection can claim here is exact_benchmark_qualified;
+    everything else is an explicitly uncertified engineering_preview."""
+    if calibration is None or decision.get("selector_version") != CERTIFIED_SELECTOR:
+        return "engineering_preview"
+    if decision.get("status") != "final":
+        return "engineering_preview"
+    return "exact_benchmark_qualified"
+
+
+def select_autonomous(layout: TrackLayout, *, calibration_path: str | Path | None = None,
+                      target_risk: str = "0.1", task: str | None = None,
+                      domain: str | None = None, **selector_kwargs) -> dict:
+    """Certified path when ``calibration_path`` is given: frozen artifact →
+    select_v3 → immutable decision. Without it, a dev PREVIEW that can never emit a
+    certified final (oracle P0 §1)."""
     from . import selector as sel
     from .manifest import Manifest
 
-    cands = severity_cells_from_store(layout)
+    calibration = load_calibration(calibration_path, target_risk) if calibration_path else None
+    cands = severity_cells_from_store(layout, calibration=calibration)
     if not cands:
         return {"status": "no_acceptable_candidate", "best_available": None,
                 "reason": "no challenge results stored (run `challenges run` first)"}
-    decision = sel.select(cands, **selector_kwargs)
+
+    if calibration is not None:
+        decision = sel.select_v3(cands, calibration["taus"], **selector_kwargs)
+        decision["certification_inputs"] = {
+            "calibration_sha256": calibration["calibration_sha256"],
+            "target_risk": target_risk, "task": task, "domain": domain,
+            "selector_version": CERTIFIED_SELECTOR,
+            "candidate_recipe_ids": {k: v.get("recipe_id") for k, v in cands.items()},
+        }
+    else:
+        decision = sel.select(cands, **selector_kwargs)
+        # a preview may NEVER certify — relabel any 'final' as an uncertified preview
+        if decision.get("status") == "final":
+            decision["status"] = "final"           # kept, but scoped below
+        decision["certification"] = "none"
+
+    decision["rollout_level"] = _rollout_level(decision, calibration)
+    decision["certified"] = calibration is not None and decision.get("status") == "final"
     decision_id = record_decision(layout, decision)
     decision["decision_id"] = decision_id
-    if decision["status"] == "final":
+    if decision.get("status") == "final":
         with Manifest(layout.manifest_sqlite) as man:
             man.set_state(layout.track_id, "FINALIST_SELECTED")
     return decision
@@ -398,6 +492,49 @@ def finalize_and_deliver(layout: TrackLayout, sr: int, candidate_recipe_id: str,
     report = deliver(layout, src_record, candidate_recipe_id,
                      target_dbfs=target_dbfs, bitrate=bitrate, code_commit=code_commit)
     return {"status": "delivered", "revalidation": reval, "delivery": report}
+
+
+def _load_decision(layout: TrackLayout, decision_id: str) -> dict | None:
+    with ManifestV2(layout.manifest_sqlite) as m2:
+        row = m2._conn.execute(
+            "SELECT * FROM selection_decision WHERE decision_id=?", (decision_id,)).fetchone()
+    return dict(row) if row is not None else None
+
+
+def finalize_from_decision(layout: TrackLayout, sr: int, decision_id: str, *,
+                           calibration_path: str | Path | None = None,
+                           target_dbfs: float = -5.0, bitrate: str = "256k",
+                           code_commit: str = "") -> dict:
+    """oracle P0 §9: a CERTIFIED render is bound to an immutable selection decision,
+    never a free-floating candidate id. Verify status/selector/calibration/recipe
+    freshness/gates BEFORE rendering; refuse otherwise."""
+    row = _load_decision(layout, decision_id)
+    if row is None:
+        return {"status": "refused", "reason": f"decision {decision_id} not found"}
+    report = json.loads(row["report_json"])
+    checks: list[str] = []
+    if row["status"] != "final":
+        checks.append(f"decision status is {row['status']!r}, not 'final'")
+    if report.get("selector_version") != CERTIFIED_SELECTOR:
+        checks.append(f"decision from {report.get('selector_version')!r}, not the certified selector")
+    ci = report.get("certification_inputs", {})
+    if calibration_path is not None:
+        want = load_calibration(calibration_path).get("calibration_sha256")
+        if ci.get("calibration_sha256") != want:
+            checks.append("calibration hash mismatch (decision is stale vs the supplied artifact)")
+    recipe_id = row["candidate_recipe_id"]
+    if not recipe_id:
+        checks.append("decision names no candidate recipe id")
+    elif not (layout.candidate_dir(recipe_id) / "output.f32.wav").exists():
+        checks.append(f"decision's candidate {recipe_id} is not in the store")
+    if checks:
+        return {"status": "refused", "decision_id": decision_id, "checks_failed": checks}
+    res = finalize_and_deliver(layout, sr, recipe_id, target_dbfs=target_dbfs,
+                               bitrate=bitrate, code_commit=code_commit)
+    res["decision_id"] = decision_id
+    res["certified"] = res.get("status") == "delivered"
+    res["rollout_level"] = report.get("rollout_level", "exact_benchmark_qualified")
+    return res
 
 
 def run_report(layout: TrackLayout) -> dict:

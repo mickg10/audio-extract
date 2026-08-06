@@ -259,6 +259,10 @@ def select_v3(candidates: dict[str, dict], taus: dict[str, dict], *,
         report[cid] = {"hard_failed": failed_hard, "ucbs": ucbs,
                        "infeasible_defects": infeasible,
                        "secondary": round(float(c.get("secondary", 0.0)), 4)}
+        if "secondary_lower" in c:
+            report[cid]["secondary_lower"] = round(float(c["secondary_lower"]), 4)
+        if "secondary_upper" in c:
+            report[cid]["secondary_upper"] = round(float(c["secondary_upper"]), 4)
         if ok_hard and not infeasible:
             feasible.append(cid)
 
@@ -301,17 +305,31 @@ def select_v3(candidates: dict[str, dict], taus: dict[str, dict], *,
             loeo_ok = False
             break
 
-    # regret (§16.4): winner's secondary vs best alternative, bounded by ε
+    # separation (§16.4, oracle P0 §3.1): the winner must be provably SEPARATED
+    # from the runner-up, not merely have a lower point estimate. The old check
+    # (star.secondary − runner.secondary ≤ ε) was always true because star already
+    # sorts lowest — it never tested anything. Correct margin test (lower=better):
+    #   runner.secondary_lower − winner.secondary_upper ≥ margin
+    # When secondary bounds are unavailable, fall back to a point-gap margin and
+    # flag the decision as unseparated so it cannot certify on a coincidental tie.
     regret_ok = True
+    separation = None
     if len(ranked) > 1:
-        regret_ok = (report[star]["secondary"] - report[ranked[1]]["secondary"]
-                     ) <= epsilon_regret
+        runner = ranked[1]
+        s_star = report[star]["secondary"]
+        s_run = report[runner]["secondary"]
+        star_hi = report[star].get("secondary_upper", s_star)
+        run_lo = report[runner].get("secondary_lower", s_run)
+        separation = round(run_lo - star_hi, 4)
+        regret_ok = separation >= epsilon_regret
+        base["separation"] = {"winner": star, "runner_up": runner,
+                              "margin": separation, "required": epsilon_regret}
 
     if loeo_ok and regret_ok:
         return {**base, "status": "final", "candidate_id": star,
                 "mode": "feasible_certified",
                 "reason": "passes hard + calibrated gates; leave-one-evidence-out "
-                          "stable; regret within ε"}
+                          "stable; separated from runner-up by >= margin"}
     if probe_budget_left:
         return {**base, "status": "needs_probe", "candidate_id": star,
                 "reason": ("evidence-removal instability" if not loeo_ok

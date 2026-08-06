@@ -557,8 +557,9 @@ def cmd_candidate_ensemble(args: argparse.Namespace) -> int:
 
 
 def cmd_finalists_render(args: argparse.Namespace) -> int:
-    """Revalidate the finalist on its mined passages, then deliver (v3 §11 + WP14)."""
-    from .cli_autonomous import finalize_and_deliver
+    """Certified delivery is bound to an immutable decision (--decision-id). Direct
+    candidate rendering is allowed ONLY as an explicit --uncertified-preview (§9)."""
+    from .cli_autonomous import finalize_and_deliver, finalize_from_decision
 
     layout = TrackLayout(args.lib, args.run_id)
     src_json = layout.source_dir / "source.json"
@@ -566,9 +567,21 @@ def cmd_finalists_render(args: argparse.Namespace) -> int:
         return _emit(_envelope("finalists.render", "error", args.run_id,
                                message=f"run {args.run_id!r} not ingested"), code=2)
     sr = json.loads(src_json.read_text())["sample_rate_hz"]
-    res = finalize_and_deliver(layout, sr, args.candidate_id,
-                               target_dbfs=args.target_dbfs, bitrate=args.bitrate,
-                               code_commit=_code_commit())
+    if args.decision_id:
+        res = finalize_from_decision(layout, sr, args.decision_id,
+                                     calibration_path=args.calibration,
+                                     target_dbfs=args.target_dbfs, bitrate=args.bitrate,
+                                     code_commit=_code_commit())
+    elif args.uncertified_preview and args.candidate_id:
+        res = finalize_and_deliver(layout, sr, args.candidate_id,
+                                   target_dbfs=args.target_dbfs, bitrate=args.bitrate,
+                                   code_commit=_code_commit())
+        res["certified"] = False
+        res["rollout_level"] = "engineering_preview"
+    else:
+        return _emit(_envelope("finalists.render", "error", args.run_id,
+                               message="certified render requires --decision-id; a direct "
+                               "--candidate-id render requires --uncertified-preview"), code=2)
     ok = res["status"] == "delivered"
     return _emit(_envelope("finalists.render", "ok" if ok else "error", args.run_id, **res),
                  code=0 if ok else 3)
@@ -578,7 +591,9 @@ def cmd_select_autonomous(args: argparse.Namespace) -> int:
     from . import cli_autonomous as auto
 
     layout = TrackLayout(args.lib, args.run_id)
-    decision = auto.select_autonomous(layout)
+    decision = auto.select_autonomous(
+        layout, calibration_path=args.calibration, target_risk=args.target_risk,
+        task=args.task, domain=args.domain)
     return _emit(_envelope("select.autonomous", "ok", args.run_id, decision=decision))
 
 
@@ -754,6 +769,11 @@ def build_parser() -> argparse.ArgumentParser:
     g_sel = sub.add_parser("select", help="autonomous selection").add_subparsers(dest="cmd", required=True)
     sp = g_sel.add_parser("autonomous", help="run the robust selector over stored challenge results")
     sp.add_argument("--run-id", required=True)
+    sp.add_argument("--calibration", help="frozen calibration artifact (certified path); "
+                    "omit for an uncertified engineering preview")
+    sp.add_argument("--target-risk", default="0.1", choices=["0.1", "0.15", "0.2"])
+    sp.add_argument("--task", default="soloist_vs_rest")
+    sp.add_argument("--domain", help="target domain/coverage class descriptor")
     sp.add_argument("--json", action="store_true")
     sp.set_defaults(func=cmd_select_autonomous)
 
@@ -787,9 +807,14 @@ def build_parser() -> argparse.ArgumentParser:
 
     # finalists — revalidate on mined passages, then deliver (the last mile)
     g_fin = sub.add_parser("finalists", help="finalist revalidation + delivery").add_subparsers(dest="cmd", required=True)
-    sp = g_fin.add_parser("render", help="revalidate the finalist per-passage, then run the delivery DAG")
+    sp = g_fin.add_parser("render", help="decision-bound certified delivery (--decision-id), "
+                          "or --uncertified-preview --candidate-id")
     sp.add_argument("--run-id", required=True)
-    sp.add_argument("--candidate-id", required=True)
+    sp.add_argument("--decision-id", help="immutable selection decision to render (certified path)")
+    sp.add_argument("--candidate-id", help="direct candidate (requires --uncertified-preview)")
+    sp.add_argument("--uncertified-preview", action="store_true",
+                    help="render a candidate directly, labeled uncertified")
+    sp.add_argument("--calibration", help="artifact to re-verify the decision's hash against")
     sp.add_argument("--target-dbfs", type=float, default=-5.0)
     sp.add_argument("--bitrate", default="256k")
     sp.add_argument("--json", action="store_true")

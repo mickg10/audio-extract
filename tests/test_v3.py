@@ -89,11 +89,26 @@ def _cand(level, secondary, n=10, u=0.01, evidence_split=True):
     return {"cells": cells, "secondary": secondary, "evidence": ev, "gates": {}}
 
 
-def test_v3_final_when_feasible_robust_low_regret():
+def test_v3_final_when_feasible_robust_separated():
+    # a's secondary 0.10 vs b's 0.50 -> separation 0.40 >= margin 0.10 -> final
     d = sel.select_v3({"a": _cand(0.2, 0.10), "b": _cand(0.3, 0.50)}, _taus(),
-                      epsilon_regret=1.0)
+                      epsilon_regret=0.10)
     assert d["status"] == "final" and d["candidate_id"] == "a"
     assert d["certification"] == "autonomous_proxy_certified"
+    assert d["separation"]["margin"] == 0.40
+
+
+def test_v3_unseparated_runnerup_does_not_certify():
+    # near-tie on secondary (0.30 vs 0.32) -> separation 0.02 < margin 0.10.
+    # The OLD regret check (star-runner <= eps) passed this vacuously; it must not.
+    d = sel.select_v3({"a": _cand(0.2, 0.30), "b": _cand(0.2, 0.32)}, _taus(),
+                      epsilon_regret=0.10, probe_budget_left=False)
+    assert d["status"] == "no_acceptable_candidate"
+    assert "runner" in d["reason"] or "separation" in str(d)
+    # with probe budget, it asks for a discriminating probe instead of certifying
+    d2 = sel.select_v3({"a": _cand(0.2, 0.30), "b": _cand(0.2, 0.32)}, _taus(),
+                       epsilon_regret=0.10, probe_budget_left=True)
+    assert d2["status"] == "needs_probe"
 
 
 def test_v3_infeasible_routes_to_probe_then_abstain():
