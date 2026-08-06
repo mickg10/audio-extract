@@ -270,9 +270,19 @@ def cmd_panel_render(args: argparse.Namespace) -> int:
                            construction=args.construction, rendered=rendered, errors=errors))
 
 
+def _candidate_role(construction: str, target: str) -> str:
+    """Semantic role of a separator candidate's output stem, so only accompaniment
+    candidates enter one ranking round (oracle review P0 #1)."""
+    if construction == "native_primary":
+        out = target
+    else:  # native_secondary / mixture_minus_*: the complement of the target stem
+        out = "instrumental" if target == "vocals" else "vocals"
+    return "accompaniment" if out == "instrumental" else "vocal"
+
+
 def _score_store(layout: "TrackLayout", sr: int, *, write_metrics: bool = True):
-    """Score every candidate in the store against a consensus reference. Returns
-    ``(scored, report)``; shared by `qa score` and `conduct`."""
+    """Score every accompaniment candidate in the store against a consensus
+    reference. Returns ``(scored, report)``; shared by `qa score` and `conduct`."""
     import soundfile as sf
 
     from . import panel_runner as pr
@@ -281,11 +291,19 @@ def _score_store(layout: "TrackLayout", sr: int, *, write_metrics: bool = True):
     cands: dict[str, Any] = {}
     for d in sorted(layout.candidates_dir.glob("sha256_*")):
         wav = d / "output.f32.wav"
-        if wav.exists():
-            arr, _ = sf.read(str(wav), dtype="float64", always_2d=True)
-            cands[d.name.replace("sha256_", "sha256:")] = arr
+        if not wav.exists():
+            continue
+        # Only accompaniment-eligible candidates enter one ranking round — never mix
+        # native vocals or auxiliary outputs into the instrumental consensus.
+        rj = d / "recipe.json"
+        if rj.exists():
+            op = json.loads(rj.read_text()).get("operation", {})
+            if _candidate_role(op.get("construction", ""), op.get("target", "")) != "accompaniment":
+                continue
+        arr, _ = sf.read(str(wav), dtype="float64", always_2d=True)
+        cands[d.name.replace("sha256_", "sha256:")] = arr
     if not cands:
-        return [], {"ranking": [], "pareto_frontier": [], "candidate_count": 0, "axes": pr.AXES}
+        return [], {"ranking": [], "pareto_frontier": [], "candidate_count": 0, "axes": []}
 
     reference = pr.consensus_reference(list(cands.values())) if len(cands) > 1 else next(iter(cands.values()))
     pv = layout.source_dir / "provisional_vocal.f32.wav"
@@ -305,7 +323,7 @@ def _score_store(layout: "TrackLayout", sr: int, *, write_metrics: bool = True):
                                        "metric": f"{axis}/v1", "value": val, "unit": "", "details": {}})
     report = {
         "candidate_count": len(scored),
-        "axes": pr.AXES,
+        "axes": pr._axes_for(scored),
         "pareto_frontier": [s.recipe_id for s in pr.pareto_frontier(scored)],
         "ranking": [{"recipe_id": s.recipe_id, "costs": s.costs} for s in pr.rank_by_scalarized(scored)],
     }

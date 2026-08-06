@@ -20,7 +20,7 @@ def _small_cfg():
 
 
 def _mine():
-    vocal, _ = fx.synth_vocal(SR, DUR)  # default f0 = C5 (523.25 Hz)
+    vocal, _ = fx.synth_vocal(SR, DUR)  # default f0 = C5
     orch = fx.synth_orchestra(SR, DUR)
     n = min(len(vocal), len(orch))
     return pm.mine_passages(vocal[:n], orch[:n], SR, _small_cfg()), n
@@ -33,11 +33,22 @@ def test_miner_returns_passages_within_bounds():
         assert 0 <= p.start_sample < p.end_sample <= n
 
 
-def test_miner_tags_high_soprano_and_controls():
+def test_miner_tags_controls():
     passages, _ = _mine()
     all_tags = {t for p in passages for t in p.tags}
-    assert "high_soprano" in all_tags       # f0 = C5, above the C5 threshold
     assert "no_vocal_control" in all_tags    # inactive spans between phrases
+    # (soprano tagging is covered deterministically by test_soprano_tags)
+
+
+def test_soprano_tags():
+    from audio_extract.passages import soprano_tags
+    # absolutely high on a low-pitched track -> tagged (max reduces to the C5 threshold)
+    assert "high_soprano" in soprano_tags(660.0, 700.0, p80=250.0, p95=260.0, has_voiced=True)
+    # low note on a low track -> NOT tagged (the old `or`/`min` over-fired here)
+    assert "high_soprano" not in soprano_tags(400.0, 420.0, p80=250.0, p95=260.0, has_voiced=True)
+    # high but below the track's top-20% on a soprano track -> NOT high
+    assert "high_soprano" not in soprano_tags(600.0, 650.0, p80=700.0, p95=750.0, has_voiced=True)
+    assert "extreme_soprano" in soprano_tags(720.0, 760.0, p80=250.0, p95=260.0, has_voiced=True)
 
 
 def test_miner_nms_limits_overlap():

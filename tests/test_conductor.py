@@ -70,7 +70,7 @@ def test_needs_human_ab_path():
     assert decision["candidate_a"] == "a" and decision["candidate_b"] == "b"
 
 
-def test_two_round_cap_auto_finalizes():
+def test_two_round_cap_defers_to_human():
     proposals = [
         {"actions": [{"type": "change_overlap", "overlap": 2, "changes_one_variable": True}]},
         {"actions": [{"type": "change_overlap", "overlap": 4, "changes_one_variable": True}]},
@@ -78,7 +78,8 @@ def test_two_round_cap_auto_finalizes():
     ]
     c, calls = _mk(proposals, cd.Budget(max_rounds=2))
     decision = c.run([{"recipe_id": "base"}], {"ranking": [{"recipe_id": "base"}]})
-    assert decision["status"] == "final"          # auto-finalized at the round cap
+    # No fabricated final at the cap: with >=2 candidates, hand off to human A/B.
+    assert decision["status"] == "needs_human_ab"
     assert calls["execute"] == 2                  # exactly two rounds ran
 
 

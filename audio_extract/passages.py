@@ -140,6 +140,22 @@ def _farthest_point(feature_rows: np.ndarray, k: int) -> list[int]:
     return chosen
 
 
+def soprano_tags(med_f0: float, peak_f0: float, p80: float, p95: float,
+                 has_voiced: bool) -> list[str]:
+    """High/extreme-soprano tags: a note must be absolutely high (C5/F5) AND, on a
+    high-voiced track, also above the track percentile — ``max(absolute, relative)``
+    (oracle review §3). ``max`` avoids the over-fire of the earlier ``or`` (which
+    reduced to ``min`` and tagged low notes on low-pitched tracks)."""
+    hi_thr = max(C5_HZ, p80) if has_voiced else C5_HZ
+    ex_thr = max(F5_HZ, p95) if has_voiced else F5_HZ
+    tags: list[str] = []
+    if med_f0 >= hi_thr:
+        tags.append("high_soprano")
+    if peak_f0 >= ex_thr:
+        tags.append("extreme_soprano")
+    return tags
+
+
 def mine_passages(vocal: np.ndarray, accompaniment: np.ndarray, sr: int,
                   config: MinerConfig | None = None) -> list[Passage]:
     cfg = config or MinerConfig()
@@ -155,12 +171,15 @@ def mine_passages(vocal: np.ndarray, accompaniment: np.ndarray, sr: int,
     # activity score: normalized vocal loudness fused with pitch confidence
     noise_floor = np.percentile(v_rms, 20)
     p35, p85 = np.percentile(v_rms, 35), np.percentile(v_rms, 85)
-    loud = (v_rms >= max(noise_floor + 10.0, p35)) | (v_rms >= p85)
+    # design rule: (loud AND pitch-confident) OR exposed — pitch_conf is applied here
+    voiced_loud = (v_rms >= max(noise_floor + 10.0, p35)) & (vprob >= cfg.pitch_conf)
+    exposed = v_rms >= p85
+    eligible = voiced_loud | exposed
     score = 0.5 * np.clip((v_rms - noise_floor) / 40.0, 0, 1) + 0.5 * vprob
     active = np.zeros(T, dtype=bool)
     on = False
     for i in range(T):
-        if not on and score[i] >= cfg.on_threshold and (loud[i] or voiced[i]):
+        if not on and score[i] >= cfg.on_threshold and eligible[i]:
             on = True
         elif on and score[i] <= cfg.off_threshold:
             on = False
@@ -185,14 +204,10 @@ def mine_passages(vocal: np.ndarray, accompaniment: np.ndarray, sr: int,
     for (e0, e1) in events:
         ef0 = f0[e0:e1][voiced[e0:e1] & (f0[e0:e1] > 0)]
         med_f0 = float(np.median(ef0)) if ef0.size else 0.0
-        peak_f0 = float(np.max(ef0)) if ef0.size else 0.0
+        peak_f0 = float(np.percentile(ef0, 95)) if ef0.size else 0.0  # smoothed, not raw max (octave-robust)
         var_db = float(np.mean(v_rms[e0:e1]) - np.mean(a_rms[e0:e1]))
         acc_loud_pct = float((a_rms < np.mean(a_rms[e0:e1])).mean())
-        tags = []
-        if med_f0 >= C5_HZ or (voiced_f0.size and med_f0 >= p80):
-            tags.append("high_soprano")
-        if peak_f0 >= F5_HZ or (voiced_f0.size and peak_f0 >= p95):
-            tags.append("extreme_soprano")
+        tags = soprano_tags(med_f0, peak_f0, p80, p95, bool(voiced_f0.size))
         if var_db > 3.0:
             tags.append("quiet_backing")
         if acc_loud_pct >= 0.80:

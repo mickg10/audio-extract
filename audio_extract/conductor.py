@@ -239,12 +239,13 @@ class Conductor:
             if not executed_any:
                 break
 
-        # Loop ended without an explicit terminal: auto-finalize the top-ranked.
+        # Budget/round exhausted without the planner finalizing. Do NOT fabricate a
+        # confident final (oracle review P0 #11); hand off to human review, or declare
+        # no acceptable candidate when there isn't even a comparable pair.
         ranking = report.get("ranking", [])
-        if len(ranking) >= 2 and report.get("uncertain_top2"):
+        if len(ranking) >= 2:
             return {"status": "needs_human_ab", "candidate_a": ranking[0]["recipe_id"],
                     "candidate_b": ranking[1]["recipe_id"], "passages": report.get("decisive_passages", []),
-                    "question": "Top two are close — which preserves the orchestra more naturally?"}
-        best = ranking[0]["recipe_id"] if ranking else None
-        return {"status": "final", "candidate_id": best, "confidence": 0.6,
-                "reason": "budget/round cap reached; auto-finalized top-ranked"}
+                    "question": "Budget reached with no clear winner — which preserves the orchestra more naturally?"}
+        return {"status": "no_acceptable_candidate",
+                "reason": "budget/round cap reached without a clear winner or a comparable pair"}

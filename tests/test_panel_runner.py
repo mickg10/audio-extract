@@ -61,6 +61,16 @@ def test_successive_halving_narrows():
     assert kept[0].recipe_id == "clean"
 
 
+def test_score_candidate_omits_missing_evidence():
+    vocal, orch, _ = _base()
+    # no vocal_ref / no activity -> leakage + hall are OMITTED, never scored 0 (best)
+    costs = pr.score_candidate(orch, SR, reference=orch)
+    assert "leakage" not in costs and "hall_damage_db" not in costs
+    assert {"holes_db", "pump_depth_db", "brightness_deviation", "stereo_deviation"} <= set(costs)
+    # supplying the vocal estimate brings leakage back
+    assert "leakage" in pr.score_candidate(orch, SR, reference=orch, vocal_ref=vocal)
+
+
 def test_dominates_semantics():
     a = {k: 0.0 for k in pr.AXES}
     b = {k: 1.0 for k in pr.AXES}
