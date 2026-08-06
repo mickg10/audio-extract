@@ -200,6 +200,8 @@ def render_candidate(layout, source_record: dict, *, model_filename: str, target
 
     sep = Separator(model_filename, overlap=overlap, model_dir=model_dir)
     out = sep.separate_file(canonical)
+    if out.model_sha256 == "unknown":  # an unidentified model cannot produce a trustworthy cache key
+        raise RuntimeError(f"refusing to render candidate: model {model_filename!r} has no checkpoint hash")
     sr = out.sr
     mix, _ = sf.read(str(canonical), dtype="float64", always_2d=True)
 

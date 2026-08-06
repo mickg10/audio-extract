@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 
 import numpy as np
 import soundfile as sf
@@ -58,21 +59,30 @@ def _make_run(tmp_path):
 def test_deliver_produces_child_dag(tmp_path):
     layout, source_record, recipe_id = _make_run(tmp_path)
     report = dv.deliver(layout, source_record, recipe_id, target_dbfs=-5.0, code_commit="test")
-    rdir = layout.render_dir(recipe_id)
-    assert (rdir / "master_gain.f32.wav").exists()
-    assert (rdir / "delivery_pcm24.wav").exists()
-    assert (rdir / "delivery_pcm16.wav").exists()
-    assert (rdir / "repro.json").exists()
+    by_op = {n["operation"]: n for n in report["delivery_nodes"]}
+    assert {"global_gain", "dither_quantize", "encode_delivery"} <= set(by_op)
 
-    # float master is FLOAT subtype; pcm24 is PCM_24
-    assert sf.info(str(rdir / "master_gain.f32.wav")).subtype == "FLOAT"
-    assert sf.info(str(rdir / "delivery_pcm24.wav")).subtype == "PCM_24"
+    # each child lives under its OWN node-id dir (per-node paths in the report)
+    gain = by_op["global_gain"]
+    assert Path(gain["path"]).exists() and sf.info(gain["path"]).subtype == "FLOAT"
+    pcm24 = next(n for n in report["delivery_nodes"]
+                 if n["operation"] == "dither_quantize" and n["sample_format"] == "pcm_s24")
+    assert Path(pcm24["path"]).exists() and sf.info(pcm24["path"]).subtype == "PCM_24"
+    assert (layout.render_dir(recipe_id) / "repro.json").exists()
 
-    ops = {n["operation"] for n in report["delivery_nodes"]}
-    assert {"global_gain", "dither_quantize"} <= ops
-    # every delivery node parents back toward the finalist candidate
-    gain = next(n for n in report["delivery_nodes"] if n["operation"] == "global_gain")
+    # lineage: gain off the candidate; dithers off the gain master
     assert gain["parents"] == [recipe_id]
-    dith = [n for n in report["delivery_nodes"] if n["operation"] == "dither_quantize"]
-    assert all(n["parents"] == [gain["recipe_id"]] for n in dith)   # dither off the gain master, not the raw candidate
+    assert all(n["parents"] == [gain["recipe_id"]]
+               for n in report["delivery_nodes"] if n["operation"] == "dither_quantize")
     assert report["finalist_candidate"] == recipe_id
+
+
+def test_deliver_no_overwrite_on_reparam(tmp_path):
+    # Different target level -> different node ids -> different dirs; nothing overwritten.
+    layout, source_record, recipe_id = _make_run(tmp_path)
+    r1 = dv.deliver(layout, source_record, recipe_id, target_dbfs=-5.0, code_commit="t")
+    r2 = dv.deliver(layout, source_record, recipe_id, target_dbfs=-3.0, code_commit="t")
+    g1 = next(n for n in r1["delivery_nodes"] if n["operation"] == "global_gain")
+    g2 = next(n for n in r2["delivery_nodes"] if n["operation"] == "global_gain")
+    assert g1["recipe_id"] != g2["recipe_id"] and g1["path"] != g2["path"]
+    assert Path(g1["path"]).exists() and Path(g2["path"]).exists()

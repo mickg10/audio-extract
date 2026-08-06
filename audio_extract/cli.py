@@ -285,6 +285,7 @@ def _score_store(layout: "TrackLayout", sr: int, *, write_metrics: bool = True):
     reference. Returns ``(scored, report)``; shared by `qa score` and `conduct`."""
     import soundfile as sf
 
+    from . import metrics as mx
     from . import panel_runner as pr
     from .manifest import Manifest
 
@@ -301,6 +302,8 @@ def _score_store(layout: "TrackLayout", sr: int, *, write_metrics: bool = True):
             if _candidate_role(op.get("construction", ""), op.get("target", "")) != "accompaniment":
                 continue
         arr, _ = sf.read(str(wav), dtype="float64", always_2d=True)
+        if not mx.hard_checks(arr, sr)["ok"]:   # hard-reject (NaN/clip/silence/DC) BEFORE Pareto ranking
+            continue
         cands[d.name.replace("sha256_", "sha256:")] = arr
     if not cands:
         return [], {"ranking": [], "pareto_frontier": [], "candidate_count": 0, "axes": []}
