@@ -1,0 +1,2464 @@
+{
+ "schema": "audio-extract/calibration/v1",
+ "delta": 0.05,
+ "uncertainty_u": 0.05,
+ "splits": {
+  "12_13_scarydog_stabat_mater_tobacco_2026_07_06": "dev",
+  "15_irish_dance_tobacco_2026_07_06": "calibration",
+  "16_doll_track_novoice_gb_tobacco_05_18_2026": "calibration",
+  "17_marseillaise_applause_tobacco_05_17_26": "regression",
+  "19_cabaret_drumroll_new_tobacco_2026_07_09": "dev",
+  "1_habanera_last_tobacco_2026_06_18": "dev",
+  "21_barber_agnus_dei_tobacco_2026_06_22": "dev",
+  "22_valkyries_new_7242026": "calibration",
+  "2_mosquito_tobacco_2026_02_07_1": "dev",
+  "3_bedbug_tchaik_long_7242026": "regression",
+  "5_fly_swan_traviata_2026_05_02": "regression",
+  "6_la_wally_children_tobacco_2026_07_06_1": "calibration",
+  "bedbug_tchaik_old_tobacco_2026_06_22": "calibration",
+  "cabaret_willkommen_tobacco_05_18_2026": "calibration",
+  "doll_draft_tobacco_05_14_2026": "calibration",
+  "marseillaise_appl_police_7_23_26": "dev",
+  "yt_donna_a8_vzjny10k": "regression",
+  "yt_nessun_suj_2sbsfks": "dev"
+ },
+ "fit_works": [
+  "12_13_scarydog_stabat_mater_tobacco_2026_07_06",
+  "15_irish_dance_tobacco_2026_07_06",
+  "16_doll_track_novoice_gb_tobacco_05_18_2026",
+  "19_cabaret_drumroll_new_tobacco_2026_07_09",
+  "1_habanera_last_tobacco_2026_06_18",
+  "21_barber_agnus_dei_tobacco_2026_06_22",
+  "22_valkyries_new_7242026",
+  "2_mosquito_tobacco_2026_02_07_1",
+  "6_la_wally_children_tobacco_2026_07_06_1",
+  "bedbug_tchaik_old_tobacco_2026_06_22",
+  "cabaret_willkommen_tobacco_05_18_2026",
+  "doll_draft_tobacco_05_14_2026",
+  "marseillaise_appl_police_7_23_26",
+  "yt_nessun_suj_2sbsfks"
+ ],
+ "held_out_works": [
+  "17_marseillaise_applause_tobacco_05_17_26",
+  "3_bedbug_tchaik_long_7242026",
+  "5_fly_swan_traviata_2026_05_02",
+  "yt_donna_a8_vzjny10k"
+ ],
+ "truth_definitions": {
+  "event_hole": "truth_sev = clip(1 - min_case_si_sdr/30, 0, 1) over exact-reference remix cases; truly_bad iff min case SI-SDR < 6.0 dB. proxy_raw = clip(1 - min_rc_si_sdr/30, 0, 1) (seed formula on the actual-construction A-V(A) vs A SI-SDR over genuine controls; deployable without synthetic truth).",
+  "orchestral_theft": "truth_sev = clip(1 - min_rc_si_sdr/40, 0, 1); truly_bad iff min over controls of actual-construction SI-SDR < 20.0 dB (A is exact truth for a control). proxy_raw = theft_mean (mean broadband stem-energy theft ratio on controls).",
+  "fullness": "truth_sev = clip(mean_case_band_envelope_err/30, 0, 1) over exact cases; truly_bad iff mean case band_envelope_err > 6.0 dB. proxy_raw = clip(mean_rc_band_envelope_err/30, 0, 1) on controls (seed formula). NOTE: fullness is not in CRITICAL_DEFECTS; calibrated for reporting.",
+  "vocal_leakage": "OMITTED: per-case residual audio is not persisted by challenges run, so the injected-vocal correlation label would require re-separation; out of scope here."
+ },
+ "defects": {
+  "event_hole": {
+   "map_knots": {
+    "xs": [
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.02287,
+     0.0272,
+     0.0636,
+     0.07053,
+     0.08733,
+     0.08907,
+     0.09373,
+     0.13823,
+     0.13857,
+     0.15127,
+     0.16417,
+     0.1779,
+     0.2412,
+     0.25023,
+     0.30547,
+     0.33167,
+     0.3855,
+     0.39567,
+     0.40177,
+     0.4093,
+     0.45073,
+     0.5357,
+     0.54047,
+     0.5842,
+     0.6158,
+     0.6639,
+     0.81647,
+     0.98897,
+     1.0
+    ],
+    "ys": [
+     0.82574,
+     0.82574,
+     0.82574,
+     0.82574,
+     0.82574,
+     0.82574,
+     0.82574,
+     0.82574,
+     0.82574,
+     0.82574,
+     0.82574,
+     0.82574,
+     0.97849,
+     0.97849,
+     0.97849,
+     0.97849,
+     0.97849,
+     0.97849,
+     0.97849,
+     0.97849,
+     0.97849,
+     0.97849,
+     0.97849,
+     0.97849,
+     0.97849,
+     0.97849,
+     0.97849,
+     0.97849,
+     0.97849,
+     0.97849,
+     0.97849,
+     0.97849,
+     0.97849,
+     0.97849,
+     0.97849,
+     0.97849,
+     0.97849,
+     0.97849,
+     0.97849,
+     0.97849,
+     0.97849,
+     0.97849,
+     0.97849,
+     0.97849,
+     0.97849,
+     0.97849,
+     0.97849,
+     0.97849,
+     0.97849,
+     0.97849,
+     0.97849,
+     0.97849,
+     0.97849,
+     0.97849,
+     0.97849,
+     0.97849,
+     0.97849,
+     0.97849,
+     0.97849,
+     0.97849,
+     0.97849,
+     0.97849,
+     0.97849,
+     0.97849,
+     0.97849,
+     0.97849,
+     0.97849,
+     0.97849,
+     0.97849,
+     0.97849
+    ]
+   },
+   "fit_units": 70,
+   "fit_truly_bad": 36,
+   "learn_then_test_unit=work_model": {
+    "0.1": {
+     "tau": 0.0,
+     "risk_ucb": 1.0,
+     "n_groups": 70,
+     "certifiable": false
+    },
+    "0.15": {
+     "tau": 0.0,
+     "risk_ucb": 1.0,
+     "n_groups": 70,
+     "certifiable": false
+    },
+    "0.2": {
+     "tau": 0.0,
+     "risk_ucb": 1.0,
+     "n_groups": 70,
+     "certifiable": false
+    }
+   },
+   "learn_then_test_unit=work (sensitivity)": {
+    "0.1": {
+     "tau": 0.0,
+     "risk_ucb": 1.0,
+     "n_groups": 14,
+     "certifiable": false
+    },
+    "0.15": {
+     "tau": 0.0,
+     "risk_ucb": 1.0,
+     "n_groups": 14,
+     "certifiable": false
+    },
+    "0.2": {
+     "tau": 0.0,
+     "risk_ucb": 1.0,
+     "n_groups": 14,
+     "certifiable": false
+    }
+   },
+   "strongest_certifiable_target": null
+  },
+  "orchestral_theft": {
+   "map_knots": {
+    "xs": [
+     0.0,
+     0.00015,
+     0.00017,
+     0.00178,
+     0.00184,
+     0.00196,
+     0.00201,
+     0.00204,
+     0.00217,
+     0.00219,
+     0.00221,
+     0.00223,
+     0.00252,
+     0.00259,
+     0.00264,
+     0.00264,
+     0.00312,
+     0.00315,
+     0.00315,
+     0.00336,
+     0.00343,
+     0.00511,
+     0.00541,
+     0.00549,
+     0.00624,
+     0.00644,
+     0.00697,
+     0.00743,
+     0.00751,
+     0.00781,
+     0.00883,
+     0.00883,
+     0.00894,
+     0.00931,
+     0.01052,
+     0.01215,
+     0.01252,
+     0.01347,
+     0.01484,
+     0.01672,
+     0.01735,
+     0.01744,
+     0.01901,
+     0.0205,
+     0.02089,
+     0.02311,
+     0.02481,
+     0.0254,
+     0.02589,
+     0.02928,
+     0.03017,
+     0.03816,
+     0.03872,
+     0.03873,
+     0.04155,
+     0.04197,
+     0.0484,
+     0.05444,
+     0.06953,
+     0.07232,
+     0.07419,
+     0.08988,
+     0.12174,
+     0.13371,
+     0.1413,
+     0.15855,
+     0.20162,
+     0.26855,
+     0.29391,
+     0.63565
+    ],
+    "ys": [
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.05172,
+     0.05172,
+     0.08155,
+     0.08155,
+     0.08155,
+     0.08155,
+     0.08155,
+     0.08155,
+     0.14288,
+     0.14288,
+     0.14288,
+     0.15208,
+     0.15208,
+     0.15208,
+     0.15208,
+     0.28802,
+     0.28802,
+     0.28802,
+     0.28802,
+     0.28802,
+     0.35393,
+     0.36345,
+     0.38629,
+     0.38629,
+     0.38629,
+     0.38629,
+     0.38629,
+     0.38629,
+     0.43594,
+     0.43594,
+     0.50911,
+     0.50911,
+     0.56643,
+     0.56643,
+     0.56643,
+     0.61477,
+     0.61477,
+     0.61477,
+     0.7,
+     0.7,
+     0.86235,
+     0.87396,
+     0.87396,
+     0.99172
+    ]
+   },
+   "fit_units": 70,
+   "fit_truly_bad": 13,
+   "learn_then_test_unit=work_model": {
+    "0.1": {
+     "tau": 0.5091125000000001,
+     "risk_ucb": 0.0792,
+     "n_groups": 58,
+     "certifiable": true
+    },
+    "0.15": {
+     "tau": 0.5664307987296621,
+     "risk_ucb": 0.1438,
+     "n_groups": 61,
+     "certifiable": true
+    },
+    "0.2": {
+     "tau": 0.6147720426601465,
+     "risk_ucb": 0.1956,
+     "n_groups": 64,
+     "certifiable": true
+    }
+   },
+   "learn_then_test_unit=work (sensitivity)": {
+    "0.1": {
+     "tau": 0.0,
+     "risk_ucb": 1.0,
+     "n_groups": 14,
+     "certifiable": false
+    },
+    "0.15": {
+     "tau": 0.0,
+     "risk_ucb": 1.0,
+     "n_groups": 14,
+     "certifiable": false
+    },
+    "0.2": {
+     "tau": 0.0,
+     "risk_ucb": 1.0,
+     "n_groups": 14,
+     "certifiable": false
+    }
+   },
+   "strongest_certifiable_target": 0.1
+  },
+  "fullness": {
+   "map_knots": {
+    "xs": [
+     0.0,
+     0.0,
+     0.00011,
+     0.00012,
+     0.00017,
+     0.00032,
+     0.00043,
+     0.00043,
+     0.00047,
+     0.00058,
+     0.00063,
+     0.00071,
+     0.00087,
+     0.00088,
+     0.00097,
+     0.00113,
+     0.00128,
+     0.00133,
+     0.00147,
+     0.00168,
+     0.00208,
+     0.00297,
+     0.00317,
+     0.00332,
+     0.00353,
+     0.00385,
+     0.00405,
+     0.00413,
+     0.00533,
+     0.0075,
+     0.00769,
+     0.0084,
+     0.01154,
+     0.01357,
+     0.01367,
+     0.0141,
+     0.01787,
+     0.01972,
+     0.02006,
+     0.02062,
+     0.02234,
+     0.02608,
+     0.02702,
+     0.02776,
+     0.02963,
+     0.03207,
+     0.0342,
+     0.04666,
+     0.05012,
+     0.06659,
+     0.06708,
+     0.06729,
+     0.0678,
+     0.07038,
+     0.0713,
+     0.08743,
+     0.08917,
+     0.08923,
+     0.1071,
+     0.10753,
+     0.10925,
+     0.10947,
+     0.1389,
+     0.1399,
+     0.14118,
+     0.14517,
+     0.45087,
+     0.45547,
+     0.48837,
+     0.49274
+    ],
+    "ys": [
+     0.00642,
+     0.34399,
+     0.34399,
+     0.34399,
+     0.34399,
+     0.34399,
+     0.34399,
+     0.34399,
+     0.34399,
+     0.34399,
+     0.34399,
+     0.34399,
+     0.37995,
+     0.37995,
+     0.37995,
+     0.37995,
+     0.37995,
+     0.37995,
+     0.37995,
+     0.37995,
+     0.37995,
+     0.37995,
+     0.37995,
+     0.37995,
+     0.37995,
+     0.37995,
+     0.37995,
+     0.37995,
+     0.37995,
+     0.37995,
+     0.37995,
+     0.37995,
+     0.37995,
+     0.37995,
+     0.43073,
+     0.43073,
+     0.43073,
+     0.43073,
+     0.43073,
+     0.43073,
+     0.43073,
+     0.43073,
+     0.43073,
+     0.43073,
+     0.43073,
+     0.43073,
+     0.43073,
+     0.43073,
+     0.43073,
+     0.43073,
+     0.43073,
+     0.43073,
+     0.43073,
+     0.43073,
+     0.43073,
+     0.43073,
+     0.43073,
+     0.43073,
+     0.43073,
+     0.43073,
+     0.43073,
+     0.43073,
+     0.67152,
+     0.67152,
+     0.67152,
+     0.67152,
+     0.67152,
+     0.67152,
+     0.67152,
+     0.67152
+    ]
+   },
+   "fit_units": 70,
+   "fit_truly_bad": 32,
+   "learn_then_test_unit=work_model": {
+    "0.1": {
+     "tau": 0.0,
+     "risk_ucb": 1.0,
+     "n_groups": 70,
+     "certifiable": false
+    },
+    "0.15": {
+     "tau": 0.0,
+     "risk_ucb": 1.0,
+     "n_groups": 70,
+     "certifiable": false
+    },
+    "0.2": {
+     "tau": 0.0,
+     "risk_ucb": 1.0,
+     "n_groups": 70,
+     "certifiable": false
+    }
+   },
+   "learn_then_test_unit=work (sensitivity)": {
+    "0.1": {
+     "tau": 0.0,
+     "risk_ucb": 1.0,
+     "n_groups": 14,
+     "certifiable": false
+    },
+    "0.15": {
+     "tau": 0.0,
+     "risk_ucb": 1.0,
+     "n_groups": 14,
+     "certifiable": false
+    },
+    "0.2": {
+     "tau": 0.0,
+     "risk_ucb": 1.0,
+     "n_groups": 14,
+     "certifiable": false
+    }
+   },
+   "strongest_certifiable_target": null
+  }
+ },
+ "units": [
+  {
+   "work": "12_13_scarydog_stabat_mater_tobacco_2026_07_06",
+   "model": "kim_vocal_2_onnx",
+   "n_cases": 8,
+   "n_controls": 3,
+   "min_case_si": 3.107,
+   "mean_case_band": 4.1309,
+   "mean_case_stft": 1.2016,
+   "min_rc_si": 40.305,
+   "mean_rc_band": 2.0187,
+   "theft_mean": 0.0062,
+   "split": "dev"
+  },
+  {
+   "work": "12_13_scarydog_stabat_mater_tobacco_2026_07_06",
+   "model": "uvr_mdx_net_voc_ft_onnx",
+   "n_cases": 8,
+   "n_controls": 3,
+   "min_case_si": 3.015,
+   "mean_case_band": 3.9919,
+   "mean_case_stft": 1.1931,
+   "min_rc_si": 47.396,
+   "mean_rc_band": 1.9977,
+   "theft_mean": 0.0022,
+   "split": "dev"
+  },
+  {
+   "work": "12_13_scarydog_stabat_mater_tobacco_2026_07_06",
+   "model": "mdx23c_8kfft_instvoc_hq_ckpt",
+   "n_cases": 8,
+   "n_controls": 3,
+   "min_case_si": 8.751,
+   "mean_case_band": 3.6608,
+   "mean_case_stft": 1.4276,
+   "min_rc_si": 36.054,
+   "mean_rc_band": 0.8327,
+   "theft_mean": 0.0088,
+   "split": "dev"
+  },
+  {
+   "work": "12_13_scarydog_stabat_mater_tobacco_2026_07_06",
+   "model": "vocals_mel_band_roformer_ckpt",
+   "n_cases": 8,
+   "n_controls": 3,
+   "min_case_si": 10.891,
+   "mean_case_band": 2.9491,
+   "mean_case_stft": 0.8569,
+   "min_rc_si": 45.791,
+   "mean_rc_band": 0.0033,
+   "theft_mean": 0.002,
+   "split": "dev"
+  },
+  {
+   "work": "12_13_scarydog_stabat_mater_tobacco_2026_07_06",
+   "model": "model_bs_roformer_ep_317_sdr_12_9755_ckpt",
+   "n_cases": 8,
+   "n_controls": 3,
+   "min_case_si": -2.586,
+   "mean_case_band": 3.2691,
+   "mean_case_stft": 0.8589,
+   "min_rc_si": 25.843,
+   "mean_rc_band": 0.0503,
+   "theft_mean": 0.0248,
+   "split": "dev"
+  },
+  {
+   "work": "15_irish_dance_tobacco_2026_07_06",
+   "model": "kim_vocal_2_onnx",
+   "n_cases": 8,
+   "n_controls": 2,
+   "min_case_si": 9.958,
+   "mean_case_band": 0.2064,
+   "mean_case_stft": 1.1214,
+   "min_rc_si": 47.608,
+   "mean_rc_band": 0.0175,
+   "theft_mean": 0.0031,
+   "split": "calibration"
+  },
+  {
+   "work": "15_irish_dance_tobacco_2026_07_06",
+   "model": "uvr_mdx_net_voc_ft_onnx",
+   "n_cases": 8,
+   "n_controls": 2,
+   "min_case_si": 8.864,
+   "mean_case_band": 0.221,
+   "mean_case_stft": 1.1089,
+   "min_rc_si": 49.189,
+   "mean_rc_band": 0.013,
+   "theft_mean": 0.0026,
+   "split": "calibration"
+  },
+  {
+   "work": "15_irish_dance_tobacco_2026_07_06",
+   "model": "mdx23c_8kfft_instvoc_hq_ckpt",
+   "n_cases": 8,
+   "n_controls": 2,
+   "min_case_si": 12.522,
+   "mean_case_band": 0.1901,
+   "mean_case_stft": 1.4093,
+   "min_rc_si": 45.357,
+   "mean_rc_band": 0.0385,
+   "theft_mean": 0.0064,
+   "split": "calibration"
+  },
+  {
+   "work": "15_irish_dance_tobacco_2026_07_06",
+   "model": "vocals_mel_band_roformer_ckpt",
+   "n_cases": 8,
+   "n_controls": 2,
+   "min_case_si": 8.882,
+   "mean_case_band": 0.1926,
+   "mean_case_stft": 0.938,
+   "min_rc_si": 74.928,
+   "mean_rc_band": 0.0,
+   "theft_mean": 0.0002,
+   "split": "calibration"
+  },
+  {
+   "work": "15_irish_dance_tobacco_2026_07_06",
+   "model": "model_bs_roformer_ep_317_sdr_12_9755_ckpt",
+   "n_cases": 8,
+   "n_controls": 2,
+   "min_case_si": 11.908,
+   "mean_case_band": 0.1746,
+   "mean_case_stft": 0.5933,
+   "min_rc_si": 31.438,
+   "mean_rc_band": 0.014,
+   "theft_mean": 0.0231,
+   "split": "calibration"
+  },
+  {
+   "work": "16_doll_track_novoice_gb_tobacco_05_18_2026",
+   "model": "kim_vocal_2_onnx",
+   "n_cases": 4,
+   "n_controls": 1,
+   "min_case_si": 48.085,
+   "mean_case_band": 10.8203,
+   "mean_case_stft": 1.0979,
+   "min_rc_si": 52.134,
+   "mean_rc_band": 2.677,
+   "theft_mean": 0.0022,
+   "split": "calibration"
+  },
+  {
+   "work": "16_doll_track_novoice_gb_tobacco_05_18_2026",
+   "model": "uvr_mdx_net_voc_ft_onnx",
+   "n_cases": 4,
+   "n_controls": 1,
+   "min_case_si": 48.198,
+   "mean_case_band": 10.7108,
+   "mean_case_stft": 1.0691,
+   "min_rc_si": 52.255,
+   "mean_rc_band": 2.623,
+   "theft_mean": 0.0022,
+   "split": "calibration"
+  },
+  {
+   "work": "16_doll_track_novoice_gb_tobacco_05_18_2026",
+   "model": "mdx23c_8kfft_instvoc_hq_ckpt",
+   "n_cases": 4,
+   "n_controls": 1,
+   "min_case_si": 36.604,
+   "mean_case_band": 10.2982,
+   "mean_case_stft": 1.2362,
+   "min_rc_si": 17.947,
+   "mean_rc_band": 0.962,
+   "theft_mean": 0.1337,
+   "split": "calibration"
+  },
+  {
+   "work": "16_doll_track_novoice_gb_tobacco_05_18_2026",
+   "model": "vocals_mel_band_roformer_ckpt",
+   "n_cases": 4,
+   "n_controls": 1,
+   "min_case_si": 48.35,
+   "mean_case_band": 10.1943,
+   "mean_case_stft": 0.9675,
+   "min_rc_si": 34.027,
+   "mean_rc_band": 0.04,
+   "theft_mean": 0.0174,
+   "split": "calibration"
+  },
+  {
+   "work": "16_doll_track_novoice_gb_tobacco_05_18_2026",
+   "model": "model_bs_roformer_ep_317_sdr_12_9755_ckpt",
+   "n_cases": 4,
+   "n_controls": 1,
+   "min_case_si": 33.1,
+   "mean_case_band": 10.334,
+   "mean_case_stft": 1.0017,
+   "min_rc_si": 27.328,
+   "mean_rc_band": 0.423,
+   "theft_mean": 0.0387,
+   "split": "calibration"
+  },
+  {
+   "work": "17_marseillaise_applause_tobacco_05_17_26",
+   "model": "kim_vocal_2_onnx",
+   "n_cases": 8,
+   "n_controls": 2,
+   "min_case_si": 20.46,
+   "mean_case_band": 6.7419,
+   "mean_case_stft": 1.2707,
+   "min_rc_si": 36.599,
+   "mean_rc_band": 1.0145,
+   "theft_mean": 0.0081,
+   "split": "regression"
+  },
+  {
+   "work": "17_marseillaise_applause_tobacco_05_17_26",
+   "model": "uvr_mdx_net_voc_ft_onnx",
+   "n_cases": 8,
+   "n_controls": 2,
+   "min_case_si": 20.559,
+   "mean_case_band": 6.7259,
+   "mean_case_stft": 1.2629,
+   "min_rc_si": 40.503,
+   "mean_rc_band": 0.9755,
+   "theft_mean": 0.0054,
+   "split": "regression"
+  },
+  {
+   "work": "17_marseillaise_applause_tobacco_05_17_26",
+   "model": "mdx23c_8kfft_instvoc_hq_ckpt",
+   "n_cases": 8,
+   "n_controls": 2,
+   "min_case_si": 22.829,
+   "mean_case_band": 6.4588,
+   "mean_case_stft": 1.4756,
+   "min_rc_si": 48.367,
+   "mean_rc_band": 0.1345,
+   "theft_mean": 0.0033,
+   "split": "regression"
+  },
+  {
+   "work": "17_marseillaise_applause_tobacco_05_17_26",
+   "model": "vocals_mel_band_roformer_ckpt",
+   "n_cases": 8,
+   "n_controls": 2,
+   "min_case_si": 16.834,
+   "mean_case_band": 6.6789,
+   "mean_case_stft": 1.2346,
+   "min_rc_si": 25.203,
+   "mean_rc_band": 0.141,
+   "theft_mean": 0.0326,
+   "split": "regression"
+  },
+  {
+   "work": "17_marseillaise_applause_tobacco_05_17_26",
+   "model": "model_bs_roformer_ep_317_sdr_12_9755_ckpt",
+   "n_cases": 8,
+   "n_controls": 2,
+   "min_case_si": 21.063,
+   "mean_case_band": 6.6051,
+   "mean_case_stft": 1.2385,
+   "min_rc_si": 31.283,
+   "mean_rc_band": 0.05,
+   "theft_mean": 0.0162,
+   "split": "regression"
+  },
+  {
+   "work": "19_cabaret_drumroll_new_tobacco_2026_07_09",
+   "model": "kim_vocal_2_onnx",
+   "n_cases": 8,
+   "n_controls": 2,
+   "min_case_si": -1.313,
+   "mean_case_band": 10.5224,
+   "mean_case_stft": 1.4254,
+   "min_rc_si": 25.853,
+   "mean_rc_band": 3.284,
+   "theft_mean": 0.0293,
+   "split": "dev"
+  },
+  {
+   "work": "19_cabaret_drumroll_new_tobacco_2026_07_09",
+   "model": "uvr_mdx_net_voc_ft_onnx",
+   "n_cases": 8,
+   "n_controls": 2,
+   "min_case_si": -1.443,
+   "mean_case_band": 10.604,
+   "mean_case_stft": 1.4259,
+   "min_rc_si": 27.38,
+   "mean_rc_band": 3.2775,
+   "theft_mean": 0.0382,
+   "split": "dev"
+  },
+  {
+   "work": "19_cabaret_drumroll_new_tobacco_2026_07_09",
+   "model": "mdx23c_8kfft_instvoc_hq_ckpt",
+   "n_cases": 8,
+   "n_controls": 2,
+   "min_case_si": -4.047,
+   "mean_case_band": 9.9744,
+   "mean_case_stft": 1.7359,
+   "min_rc_si": 38.257,
+   "mean_rc_band": 0.889,
+   "theft_mean": 0.0125,
+   "split": "dev"
+  },
+  {
+   "work": "19_cabaret_drumroll_new_tobacco_2026_07_09",
+   "model": "vocals_mel_band_roformer_ckpt",
+   "n_cases": 8,
+   "n_controls": 2,
+   "min_case_si": -4.489,
+   "mean_case_band": 8.6813,
+   "mean_case_stft": 1.1622,
+   "min_rc_si": 34.146,
+   "mean_rc_band": 0.044,
+   "theft_mean": 0.0105,
+   "split": "dev"
+  },
+  {
+   "work": "19_cabaret_drumroll_new_tobacco_2026_07_09",
+   "model": "model_bs_roformer_ep_317_sdr_12_9755_ckpt",
+   "n_cases": 8,
+   "n_controls": 2,
+   "min_case_si": -5.537,
+   "mean_case_band": 8.504,
+   "mean_case_stft": 1.2609,
+   "min_rc_si": 40.598,
+   "mean_rc_band": 0.029,
+   "theft_mean": 0.0051,
+   "split": "dev"
+  },
+  {
+   "work": "1_habanera_last_tobacco_2026_06_18",
+   "model": "kim_vocal_2_onnx",
+   "n_cases": 8,
+   "n_controls": 3,
+   "min_case_si": -0.621,
+   "mean_case_band": 29.3113,
+   "mean_case_stft": 2.1319,
+   "min_rc_si": 22.493,
+   "mean_rc_band": 4.167,
+   "theft_mean": 0.0302,
+   "split": "dev"
+  },
+  {
+   "work": "1_habanera_last_tobacco_2026_06_18",
+   "model": "uvr_mdx_net_voc_ft_onnx",
+   "n_cases": 8,
+   "n_controls": 3,
+   "min_case_si": -6.418,
+   "mean_case_band": 29.789,
+   "mean_case_stft": 2.1545,
+   "min_rc_si": 22.764,
+   "mean_rc_band": 4.197,
+   "theft_mean": 0.0259,
+   "split": "dev"
+  },
+  {
+   "work": "1_habanera_last_tobacco_2026_06_18",
+   "model": "mdx23c_8kfft_instvoc_hq_ckpt",
+   "n_cases": 8,
+   "n_controls": 3,
+   "min_case_si": -6.56,
+   "mean_case_band": 25.6581,
+   "mean_case_stft": 2.1158,
+   "min_rc_si": 27.884,
+   "mean_rc_band": 0.6017,
+   "theft_mean": 0.019,
+   "split": "dev"
+  },
+  {
+   "work": "1_habanera_last_tobacco_2026_06_18",
+   "model": "vocals_mel_band_roformer_ckpt",
+   "n_cases": 8,
+   "n_controls": 3,
+   "min_case_si": -2.587,
+   "mean_case_band": 21.9766,
+   "mean_case_stft": 1.5461,
+   "min_rc_si": 25.462,
+   "mean_rc_band": 0.16,
+   "theft_mean": 0.0254,
+   "split": "dev"
+  },
+  {
+   "work": "1_habanera_last_tobacco_2026_06_18",
+   "model": "model_bs_roformer_ep_317_sdr_12_9755_ckpt",
+   "n_cases": 8,
+   "n_controls": 3,
+   "min_case_si": 3.15,
+   "mean_case_band": 21.5846,
+   "mean_case_stft": 1.5767,
+   "min_rc_si": 24.663,
+   "mean_rc_band": 0.41,
+   "theft_mean": 0.0387,
+   "split": "dev"
+  },
+  {
+   "work": "21_barber_agnus_dei_tobacco_2026_06_22",
+   "model": "kim_vocal_2_onnx",
+   "n_cases": 8,
+   "n_controls": 2,
+   "min_case_si": -5.811,
+   "mean_case_band": 3.4811,
+   "mean_case_stft": 1.4827,
+   "min_rc_si": 50.056,
+   "mean_rc_band": 0.1215,
+   "theft_mean": 0.0026,
+   "split": "dev"
+  },
+  {
+   "work": "21_barber_agnus_dei_tobacco_2026_06_22",
+   "model": "uvr_mdx_net_voc_ft_onnx",
+   "n_cases": 8,
+   "n_controls": 2,
+   "min_case_si": -7.282,
+   "mean_case_band": 3.6593,
+   "mean_case_stft": 1.4887,
+   "min_rc_si": 52.859,
+   "mean_rc_band": 0.0995,
+   "theft_mean": 0.0018,
+   "split": "dev"
+  },
+  {
+   "work": "21_barber_agnus_dei_tobacco_2026_06_22",
+   "model": "mdx23c_8kfft_instvoc_hq_ckpt",
+   "n_cases": 8,
+   "n_controls": 2,
+   "min_case_si": -3.48,
+   "mean_case_band": 5.8349,
+   "mean_case_stft": 1.9025,
+   "min_rc_si": 10.083,
+   "mean_rc_band": 2.675,
+   "theft_mean": 0.2939,
+   "split": "dev"
+  },
+  {
+   "work": "21_barber_agnus_dei_tobacco_2026_06_22",
+   "model": "vocals_mel_band_roformer_ckpt",
+   "n_cases": 8,
+   "n_controls": 2,
+   "min_case_si": -12.349,
+   "mean_case_band": 3.0922,
+   "mean_case_stft": 1.3113,
+   "min_rc_si": 12.474,
+   "mean_rc_band": 0.536,
+   "theft_mean": 0.1585,
+   "split": "dev"
+  },
+  {
+   "work": "21_barber_agnus_dei_tobacco_2026_06_22",
+   "model": "model_bs_roformer_ep_317_sdr_12_9755_ckpt",
+   "n_cases": 8,
+   "n_controls": 2,
+   "min_case_si": -0.27,
+   "mean_case_band": 4.8376,
+   "mean_case_stft": 1.4596,
+   "min_rc_si": 0.331,
+   "mean_rc_band": 4.2355,
+   "theft_mean": 0.6356,
+   "split": "dev"
+  },
+  {
+   "work": "22_valkyries_new_7242026",
+   "model": "kim_vocal_2_onnx",
+   "n_cases": 8,
+   "n_controls": 3,
+   "min_case_si": 6.141,
+   "mean_case_band": 0.7863,
+   "mean_case_stft": 0.872,
+   "min_rc_si": 27.188,
+   "mean_rc_band": 14.7823,
+   "theft_mean": 0.0209,
+   "split": "calibration"
+  },
+  {
+   "work": "22_valkyries_new_7242026",
+   "model": "uvr_mdx_net_voc_ft_onnx",
+   "n_cases": 8,
+   "n_controls": 3,
+   "min_case_si": 3.625,
+   "mean_case_band": 0.781,
+   "mean_case_stft": 0.8645,
+   "min_rc_si": 30.398,
+   "mean_rc_band": 14.651,
+   "theft_mean": 0.0121,
+   "split": "calibration"
+  },
+  {
+   "work": "22_valkyries_new_7242026",
+   "model": "mdx23c_8kfft_instvoc_hq_ckpt",
+   "n_cases": 8,
+   "n_controls": 3,
+   "min_case_si": 0.544,
+   "mean_case_band": 0.9782,
+   "mean_case_stft": 1.1346,
+   "min_rc_si": 32.856,
+   "mean_rc_band": 0.6703,
+   "theft_mean": 0.0135,
+   "split": "calibration"
+  },
+  {
+   "work": "22_valkyries_new_7242026",
+   "model": "vocals_mel_band_roformer_ckpt",
+   "n_cases": 8,
+   "n_controls": 3,
+   "min_case_si": 6.062,
+   "mean_case_band": 0.4454,
+   "mean_case_stft": 0.6234,
+   "min_rc_si": 68.451,
+   "mean_rc_band": 0.0213,
+   "theft_mean": 0.0002,
+   "split": "calibration"
+  },
+  {
+   "work": "22_valkyries_new_7242026",
+   "model": "model_bs_roformer_ep_317_sdr_12_9755_ckpt",
+   "n_cases": 8,
+   "n_controls": 3,
+   "min_case_si": 2.064,
+   "mean_case_band": 0.7066,
+   "mean_case_stft": 0.6946,
+   "min_rc_si": 18.13,
+   "mean_rc_band": 0.225,
+   "theft_mean": 0.0742,
+   "split": "calibration"
+  },
+  {
+   "work": "2_mosquito_tobacco_2026_02_07_1",
+   "model": "kim_vocal_2_onnx",
+   "n_cases": 8,
+   "n_controls": 2,
+   "min_case_si": 12.548,
+   "mean_case_band": 4.4296,
+   "mean_case_stft": 0.718,
+   "min_rc_si": 40.695,
+   "mean_rc_band": 2.139,
+   "theft_mean": 0.0074,
+   "split": "dev"
+  },
+  {
+   "work": "2_mosquito_tobacco_2026_02_07_1",
+   "model": "uvr_mdx_net_voc_ft_onnx",
+   "n_cases": 8,
+   "n_controls": 2,
+   "min_case_si": 12.45,
+   "mean_case_band": 4.4127,
+   "mean_case_stft": 0.7116,
+   "min_rc_si": 47.38,
+   "mean_rc_band": 2.1115,
+   "theft_mean": 0.0034,
+   "split": "dev"
+  },
+  {
+   "work": "2_mosquito_tobacco_2026_02_07_1",
+   "model": "mdx23c_8kfft_instvoc_hq_ckpt",
+   "n_cases": 8,
+   "n_controls": 2,
+   "min_case_si": 16.655,
+   "mean_case_band": 3.7259,
+   "mean_case_stft": 0.9909,
+   "min_rc_si": 40.211,
+   "mean_rc_band": 0.407,
+   "theft_mean": 0.0093,
+   "split": "dev"
+  },
+  {
+   "work": "2_mosquito_tobacco_2026_02_07_1",
+   "model": "vocals_mel_band_roformer_ckpt",
+   "n_cases": 8,
+   "n_controls": 2,
+   "min_case_si": 12.905,
+   "mean_case_band": 3.0939,
+   "mean_case_stft": 0.5528,
+   "min_rc_si": 46.118,
+   "mean_rc_band": 0.0035,
+   "theft_mean": 0.0054,
+   "split": "dev"
+  },
+  {
+   "work": "2_mosquito_tobacco_2026_02_07_1",
+   "model": "model_bs_roformer_ep_317_sdr_12_9755_ckpt",
+   "n_cases": 8,
+   "n_controls": 2,
+   "min_case_si": 12.401,
+   "mean_case_band": 4.1054,
+   "mean_case_stft": 0.5836,
+   "min_rc_si": 25.075,
+   "mean_rc_band": 0.0625,
+   "theft_mean": 0.042,
+   "split": "dev"
+  },
+  {
+   "work": "3_bedbug_tchaik_long_7242026",
+   "model": "kim_vocal_2_onnx",
+   "n_cases": 8,
+   "n_controls": 3,
+   "min_case_si": 20.292,
+   "mean_case_band": 6.715,
+   "mean_case_stft": 1.1901,
+   "min_rc_si": 47.809,
+   "mean_rc_band": 3.0203,
+   "theft_mean": 0.0036,
+   "split": "regression"
+  },
+  {
+   "work": "3_bedbug_tchaik_long_7242026",
+   "model": "uvr_mdx_net_voc_ft_onnx",
+   "n_cases": 8,
+   "n_controls": 3,
+   "min_case_si": 19.083,
+   "mean_case_band": 6.6937,
+   "mean_case_stft": 1.1793,
+   "min_rc_si": 53.738,
+   "mean_rc_band": 3.0197,
+   "theft_mean": 0.0017,
+   "split": "regression"
+  },
+  {
+   "work": "3_bedbug_tchaik_long_7242026",
+   "model": "mdx23c_8kfft_instvoc_hq_ckpt",
+   "n_cases": 8,
+   "n_controls": 3,
+   "min_case_si": 20.087,
+   "mean_case_band": 6.9244,
+   "mean_case_stft": 1.3779,
+   "min_rc_si": 47.179,
+   "mean_rc_band": 0.5003,
+   "theft_mean": 0.0039,
+   "split": "regression"
+  },
+  {
+   "work": "3_bedbug_tchaik_long_7242026",
+   "model": "vocals_mel_band_roformer_ckpt",
+   "n_cases": 8,
+   "n_controls": 3,
+   "min_case_si": 19.785,
+   "mean_case_band": 6.625,
+   "mean_case_stft": 1.0399,
+   "min_rc_si": 45.349,
+   "mean_rc_band": 0.001,
+   "theft_mean": 0.002,
+   "split": "regression"
+  },
+  {
+   "work": "3_bedbug_tchaik_long_7242026",
+   "model": "model_bs_roformer_ep_317_sdr_12_9755_ckpt",
+   "n_cases": 8,
+   "n_controls": 3,
+   "min_case_si": 18.76,
+   "mean_case_band": 6.3191,
+   "mean_case_stft": 0.9746,
+   "min_rc_si": 28.59,
+   "mean_rc_band": 0.1487,
+   "theft_mean": 0.0154,
+   "split": "regression"
+  },
+  {
+   "work": "5_fly_swan_traviata_2026_05_02",
+   "model": "kim_vocal_2_onnx",
+   "n_cases": 8,
+   "n_controls": 3,
+   "min_case_si": 38.993,
+   "mean_case_band": 5.3856,
+   "mean_case_stft": 1.0829,
+   "min_rc_si": 42.252,
+   "mean_rc_band": 2.6607,
+   "theft_mean": 0.0041,
+   "split": "regression"
+  },
+  {
+   "work": "5_fly_swan_traviata_2026_05_02",
+   "model": "uvr_mdx_net_voc_ft_onnx",
+   "n_cases": 8,
+   "n_controls": 3,
+   "min_case_si": 38.997,
+   "mean_case_band": 5.3759,
+   "mean_case_stft": 1.081,
+   "min_rc_si": 37.448,
+   "mean_rc_band": 2.6637,
+   "theft_mean": 0.0059,
+   "split": "regression"
+  },
+  {
+   "work": "5_fly_swan_traviata_2026_05_02",
+   "model": "mdx23c_8kfft_instvoc_hq_ckpt",
+   "n_cases": 8,
+   "n_controls": 3,
+   "min_case_si": 39.823,
+   "mean_case_band": 5.1664,
+   "mean_case_stft": 1.2399,
+   "min_rc_si": 25.176,
+   "mean_rc_band": 0.539,
+   "theft_mean": 0.0209,
+   "split": "regression"
+  },
+  {
+   "work": "5_fly_swan_traviata_2026_05_02",
+   "model": "vocals_mel_band_roformer_ckpt",
+   "n_cases": 8,
+   "n_controls": 3,
+   "min_case_si": 9.975,
+   "mean_case_band": 5.4374,
+   "mean_case_stft": 1.0351,
+   "min_rc_si": 13.254,
+   "mean_rc_band": 0.9033,
+   "theft_mean": 0.1701,
+   "split": "regression"
+  },
+  {
+   "work": "5_fly_swan_traviata_2026_05_02",
+   "model": "model_bs_roformer_ep_317_sdr_12_9755_ckpt",
+   "n_cases": 8,
+   "n_controls": 3,
+   "min_case_si": 10.081,
+   "mean_case_band": 6.365,
+   "mean_case_stft": 1.1696,
+   "min_rc_si": 5.434,
+   "mean_rc_band": 4.562,
+   "theft_mean": 0.2846,
+   "split": "regression"
+  },
+  {
+   "work": "6_la_wally_children_tobacco_2026_07_06_1",
+   "model": "kim_vocal_2_onnx",
+   "n_cases": 8,
+   "n_controls": 3,
+   "min_case_si": -3.278,
+   "mean_case_band": 9.6285,
+   "mean_case_stft": 1.5352,
+   "min_rc_si": 28.092,
+   "mean_rc_band": 2.034,
+   "theft_mean": 0.0174,
+   "split": "calibration"
+  },
+  {
+   "work": "6_la_wally_children_tobacco_2026_07_06_1",
+   "model": "uvr_mdx_net_voc_ft_onnx",
+   "n_cases": 8,
+   "n_controls": 3,
+   "min_case_si": -2.845,
+   "mean_case_band": 9.5676,
+   "mean_case_stft": 1.5375,
+   "min_rc_si": 36.683,
+   "mean_rc_band": 2.0123,
+   "theft_mean": 0.0088,
+   "split": "calibration"
+  },
+  {
+   "work": "6_la_wally_children_tobacco_2026_07_06_1",
+   "model": "mdx23c_8kfft_instvoc_hq_ckpt",
+   "n_cases": 8,
+   "n_controls": 3,
+   "min_case_si": 2.679,
+   "mean_case_band": 8.2497,
+   "mean_case_stft": 1.5898,
+   "min_rc_si": 41.925,
+   "mean_rc_band": 0.252,
+   "theft_mean": 0.0055,
+   "split": "calibration"
+  },
+  {
+   "work": "6_la_wally_children_tobacco_2026_07_06_1",
+   "model": "vocals_mel_band_roformer_ckpt",
+   "n_cases": 8,
+   "n_controls": 3,
+   "min_case_si": 3.611,
+   "mean_case_band": 7.6692,
+   "mean_case_stft": 1.312,
+   "min_rc_si": 20.836,
+   "mean_rc_band": 0.034,
+   "theft_mean": 0.0544,
+   "split": "calibration"
+  },
+  {
+   "work": "6_la_wally_children_tobacco_2026_07_06_1",
+   "model": "model_bs_roformer_ep_317_sdr_12_9755_ckpt",
+   "n_cases": 8,
+   "n_controls": 3,
+   "min_case_si": 3.546,
+   "mean_case_band": 6.6402,
+   "mean_case_stft": 1.2603,
+   "min_rc_si": 18.435,
+   "mean_rc_band": 0.019,
+   "theft_mean": 0.0484,
+   "split": "calibration"
+  },
+  {
+   "work": "bedbug_tchaik_old_tobacco_2026_06_22",
+   "model": "kim_vocal_2_onnx",
+   "n_cases": 4,
+   "n_controls": 1,
+   "min_case_si": 47.571,
+   "mean_case_band": 23.2218,
+   "mean_case_stft": 1.9526,
+   "min_rc_si": 49.698,
+   "mean_rc_band": 13.664,
+   "theft_mean": 0.0034,
+   "split": "calibration"
+  },
+  {
+   "work": "bedbug_tchaik_old_tobacco_2026_06_22",
+   "model": "uvr_mdx_net_voc_ft_onnx",
+   "n_cases": 4,
+   "n_controls": 1,
+   "min_case_si": 47.57,
+   "mean_case_band": 23.0828,
+   "mean_case_stft": 1.9292,
+   "min_rc_si": 52.58,
+   "mean_rc_band": 13.526,
+   "theft_mean": 0.0025,
+   "split": "calibration"
+  },
+  {
+   "work": "bedbug_tchaik_old_tobacco_2026_06_22",
+   "model": "mdx23c_8kfft_instvoc_hq_ckpt",
+   "n_cases": 4,
+   "n_controls": 1,
+   "min_case_si": 44.906,
+   "mean_case_band": 23.263,
+   "mean_case_stft": 2.0627,
+   "min_rc_si": 49.88,
+   "mean_rc_band": 1.026,
+   "theft_mean": 0.0032,
+   "split": "calibration"
+  },
+  {
+   "work": "bedbug_tchaik_old_tobacco_2026_06_22",
+   "model": "vocals_mel_band_roformer_ckpt",
+   "n_cases": 4,
+   "n_controls": 1,
+   "min_case_si": 46.464,
+   "mean_case_band": 22.156,
+   "mean_case_stft": 1.6666,
+   "min_rc_si": 107.668,
+   "mean_rc_band": 0.0,
+   "theft_mean": 0.0,
+   "split": "calibration"
+  },
+  {
+   "work": "bedbug_tchaik_old_tobacco_2026_06_22",
+   "model": "model_bs_roformer_ep_317_sdr_12_9755_ckpt",
+   "n_cases": 4,
+   "n_controls": 1,
+   "min_case_si": 38.491,
+   "mean_case_band": 21.627,
+   "mean_case_stft": 1.5417,
+   "min_rc_si": 39.305,
+   "mean_rc_band": 0.026,
+   "theft_mean": 0.0167,
+   "split": "calibration"
+  },
+  {
+   "work": "cabaret_willkommen_tobacco_05_18_2026",
+   "model": "kim_vocal_2_onnx",
+   "n_cases": 8,
+   "n_controls": 2,
+   "min_case_si": 20.136,
+   "mean_case_band": 6.5959,
+   "mean_case_stft": 0.7935,
+   "min_rc_si": 51.749,
+   "mean_rc_band": 3.213,
+   "theft_mean": 0.002,
+   "split": "calibration"
+  },
+  {
+   "work": "cabaret_willkommen_tobacco_05_18_2026",
+   "model": "uvr_mdx_net_voc_ft_onnx",
+   "n_cases": 8,
+   "n_controls": 2,
+   "min_case_si": 19.897,
+   "mean_case_band": 6.5408,
+   "mean_case_stft": 0.7889,
+   "min_rc_si": 51.934,
+   "mean_rc_band": 3.226,
+   "theft_mean": 0.002,
+   "split": "calibration"
+  },
+  {
+   "work": "cabaret_willkommen_tobacco_05_18_2026",
+   "model": "mdx23c_8kfft_instvoc_hq_ckpt",
+   "n_cases": 8,
+   "n_controls": 2,
+   "min_case_si": 22.248,
+   "mean_case_band": 6.4936,
+   "mean_case_stft": 1.1371,
+   "min_rc_si": 38.752,
+   "mean_rc_band": 0.7825,
+   "theft_mean": 0.0089,
+   "split": "calibration"
+  },
+  {
+   "work": "cabaret_willkommen_tobacco_05_18_2026",
+   "model": "vocals_mel_band_roformer_ckpt",
+   "n_cases": 8,
+   "n_controls": 2,
+   "min_case_si": 21.03,
+   "mean_case_band": 6.5356,
+   "mean_case_stft": 0.7478,
+   "min_rc_si": 29.184,
+   "mean_rc_band": 0.005,
+   "theft_mean": 0.0148,
+   "split": "calibration"
+  },
+  {
+   "work": "cabaret_willkommen_tobacco_05_18_2026",
+   "model": "model_bs_roformer_ep_317_sdr_12_9755_ckpt",
+   "n_cases": 8,
+   "n_controls": 2,
+   "min_case_si": 16.674,
+   "mean_case_band": 6.1513,
+   "mean_case_stft": 0.6029,
+   "min_rc_si": 29.314,
+   "mean_rc_band": 0.013,
+   "theft_mean": 0.0205,
+   "split": "calibration"
+  },
+  {
+   "work": "doll_draft_tobacco_05_14_2026",
+   "model": "kim_vocal_2_onnx",
+   "n_cases": 8,
+   "n_controls": 2,
+   "min_case_si": -0.199,
+   "mean_case_band": 2.69,
+   "mean_case_stft": 1.4138,
+   "min_rc_si": 49.752,
+   "mean_rc_band": 0.089,
+   "theft_mean": 0.0022,
+   "split": "calibration"
+  },
+  {
+   "work": "doll_draft_tobacco_05_14_2026",
+   "model": "uvr_mdx_net_voc_ft_onnx",
+   "n_cases": 8,
+   "n_controls": 2,
+   "min_case_si": -0.199,
+   "mean_case_band": 2.6543,
+   "mean_case_stft": 1.4242,
+   "min_rc_si": 52.882,
+   "mean_rc_band": 0.095,
+   "theft_mean": 0.0018,
+   "split": "calibration"
+  },
+  {
+   "work": "doll_draft_tobacco_05_14_2026",
+   "model": "mdx23c_8kfft_instvoc_hq_ckpt",
+   "n_cases": 8,
+   "n_controls": 2,
+   "min_case_si": -4.084,
+   "mean_case_band": 3.2805,
+   "mean_case_stft": 1.4738,
+   "min_rc_si": 37.667,
+   "mean_rc_band": 0.106,
+   "theft_mean": 0.0078,
+   "split": "calibration"
+  },
+  {
+   "work": "doll_draft_tobacco_05_14_2026",
+   "model": "vocals_mel_band_roformer_ckpt",
+   "n_cases": 8,
+   "n_controls": 2,
+   "min_case_si": -5.377,
+   "mean_case_band": 2.9591,
+   "mean_case_stft": 1.3059,
+   "min_rc_si": 35.477,
+   "mean_rc_band": 0.0265,
+   "theft_mean": 0.0075,
+   "split": "calibration"
+  },
+  {
+   "work": "doll_draft_tobacco_05_14_2026",
+   "model": "model_bs_roformer_ep_317_sdr_12_9755_ckpt",
+   "n_cases": 8,
+   "n_controls": 2,
+   "min_case_si": -5.377,
+   "mean_case_band": 3.634,
+   "mean_case_stft": 1.3455,
+   "min_rc_si": 35.862,
+   "mean_rc_band": 0.0095,
+   "theft_mean": 0.007,
+   "split": "calibration"
+  },
+  {
+   "work": "marseillaise_appl_police_7_23_26",
+   "model": "kim_vocal_2_onnx",
+   "n_cases": 8,
+   "n_controls": 3,
+   "min_case_si": 16.725,
+   "mean_case_band": 4.1997,
+   "mean_case_stft": 0.8762,
+   "min_rc_si": 20.05,
+   "mean_rc_band": 1.5037,
+   "theft_mean": 0.0415,
+   "split": "dev"
+  },
+  {
+   "work": "marseillaise_appl_police_7_23_26",
+   "model": "uvr_mdx_net_voc_ft_onnx",
+   "n_cases": 8,
+   "n_controls": 3,
+   "min_case_si": 16.74,
+   "mean_case_band": 4.1644,
+   "mean_case_stft": 0.8668,
+   "min_rc_si": -1.6,
+   "mean_rc_band": 4.355,
+   "theft_mean": 0.2686,
+   "split": "dev"
+  },
+  {
+   "work": "marseillaise_appl_police_7_23_26",
+   "model": "mdx23c_8kfft_instvoc_hq_ckpt",
+   "n_cases": 8,
+   "n_controls": 3,
+   "min_case_si": 17.033,
+   "mean_case_band": 3.8521,
+   "mean_case_stft": 1.1103,
+   "min_rc_si": 11.526,
+   "mean_rc_band": 1.3997,
+   "theft_mean": 0.1413,
+   "split": "dev"
+  },
+  {
+   "work": "marseillaise_appl_police_7_23_26",
+   "model": "vocals_mel_band_roformer_ckpt",
+   "n_cases": 8,
+   "n_controls": 3,
+   "min_case_si": 16.712,
+   "mean_case_band": 4.1288,
+   "mean_case_stft": 0.8635,
+   "min_rc_si": 5.506,
+   "mean_rc_band": 0.3463,
+   "theft_mean": 0.2016,
+   "split": "dev"
+  },
+  {
+   "work": "marseillaise_appl_police_7_23_26",
+   "model": "model_bs_roformer_ep_317_sdr_12_9755_ckpt",
+   "n_cases": 8,
+   "n_controls": 3,
+   "min_case_si": 22.077,
+   "mean_case_band": 4.0083,
+   "mean_case_stft": 0.8372,
+   "min_rc_si": 17.721,
+   "mean_rc_band": 0.2307,
+   "theft_mean": 0.0723,
+   "split": "dev"
+  },
+  {
+   "work": "yt_donna_a8_vzjny10k",
+   "model": "kim_vocal_2_onnx",
+   "n_cases": 4,
+   "n_controls": 1,
+   "min_case_si": -2.306,
+   "mean_case_band": 1.3265,
+   "mean_case_stft": 0.3701,
+   "min_rc_si": 46.106,
+   "mean_rc_band": 0.517,
+   "theft_mean": 0.0048,
+   "split": "regression"
+  },
+  {
+   "work": "yt_donna_a8_vzjny10k",
+   "model": "uvr_mdx_net_voc_ft_onnx",
+   "n_cases": 4,
+   "n_controls": 1,
+   "min_case_si": -2.301,
+   "mean_case_band": 1.3848,
+   "mean_case_stft": 0.3742,
+   "min_rc_si": 47.133,
+   "mean_rc_band": 0.488,
+   "theft_mean": 0.0042,
+   "split": "regression"
+  },
+  {
+   "work": "yt_donna_a8_vzjny10k",
+   "model": "mdx23c_8kfft_instvoc_hq_ckpt",
+   "n_cases": 4,
+   "n_controls": 1,
+   "min_case_si": -1.524,
+   "mean_case_band": 2.1258,
+   "mean_case_stft": 0.626,
+   "min_rc_si": 28.406,
+   "mean_rc_band": 0.505,
+   "theft_mean": 0.0508,
+   "split": "regression"
+  },
+  {
+   "work": "yt_donna_a8_vzjny10k",
+   "model": "vocals_mel_band_roformer_ckpt",
+   "n_cases": 4,
+   "n_controls": 1,
+   "min_case_si": -2.365,
+   "mean_case_band": 1.098,
+   "mean_case_stft": 0.2976,
+   "min_rc_si": 26.628,
+   "mean_rc_band": 0.103,
+   "theft_mean": 0.0411,
+   "split": "regression"
+  },
+  {
+   "work": "yt_donna_a8_vzjny10k",
+   "model": "model_bs_roformer_ep_317_sdr_12_9755_ckpt",
+   "n_cases": 4,
+   "n_controls": 1,
+   "min_case_si": -2.429,
+   "mean_case_band": 1.155,
+   "mean_case_stft": 0.3134,
+   "min_rc_si": 20.99,
+   "mean_rc_band": 0.184,
+   "theft_mean": 0.0808,
+   "split": "regression"
+  },
+  {
+   "work": "yt_nessun_suj_2sbsfks",
+   "model": "kim_vocal_2_onnx",
+   "n_cases": 8,
+   "n_controls": 2,
+   "min_case_si": -18.28,
+   "mean_case_band": 8.872,
+   "mean_case_stft": 1.5611,
+   "min_rc_si": 47.062,
+   "mean_rc_band": 0.124,
+   "theft_mean": 0.0031,
+   "split": "dev"
+  },
+  {
+   "work": "yt_nessun_suj_2sbsfks",
+   "model": "uvr_mdx_net_voc_ft_onnx",
+   "n_cases": 8,
+   "n_controls": 2,
+   "min_case_si": -18.321,
+   "mean_case_band": 8.772,
+   "mean_case_stft": 1.5531,
+   "min_rc_si": 50.551,
+   "mean_rc_band": 0.1155,
+   "theft_mean": 0.0026,
+   "split": "dev"
+  },
+  {
+   "work": "yt_nessun_suj_2sbsfks",
+   "model": "mdx23c_8kfft_instvoc_hq_ckpt",
+   "n_cases": 8,
+   "n_controls": 2,
+   "min_case_si": 1.897,
+   "mean_case_band": 3.201,
+   "mean_case_stft": 1.5087,
+   "min_rc_si": 16.478,
+   "mean_rc_band": 0.6185,
+   "theft_mean": 0.0695,
+   "split": "dev"
+  },
+  {
+   "work": "yt_nessun_suj_2sbsfks",
+   "model": "vocals_mel_band_roformer_ckpt",
+   "n_cases": 8,
+   "n_controls": 2,
+   "min_case_si": 5.382,
+   "mean_case_band": 2.7374,
+   "mean_case_stft": 1.0672,
+   "min_rc_si": 13.929,
+   "mean_rc_band": 0.5915,
+   "theft_mean": 0.0899,
+   "split": "dev"
+  },
+  {
+   "work": "yt_nessun_suj_2sbsfks",
+   "model": "model_bs_roformer_ep_317_sdr_12_9755_ckpt",
+   "n_cases": 8,
+   "n_controls": 2,
+   "min_case_si": -16.425,
+   "mean_case_band": 5.6994,
+   "mean_case_stft": 1.2438,
+   "min_rc_si": 13.786,
+   "mean_rc_band": 0.8105,
+   "theft_mean": 0.1217,
+   "split": "dev"
+  }
+ ],
+ "held_out_violation": {
+  "event_hole": {
+   "n_units": 20,
+   "per_target": {
+    "0.1": {
+     "certifiable": false
+    },
+    "0.15": {
+     "certifiable": false
+    },
+    "0.2": {
+     "certifiable": false
+    }
+   },
+   "rows": [
+    {
+     "work": "17_marseillaise_applause_tobacco_05_17_26",
+     "model": "kim_vocal_2_onnx",
+     "pred": 0.9785,
+     "bad": false
+    },
+    {
+     "work": "17_marseillaise_applause_tobacco_05_17_26",
+     "model": "uvr_mdx_net_voc_ft_onnx",
+     "pred": 0.9785,
+     "bad": false
+    },
+    {
+     "work": "17_marseillaise_applause_tobacco_05_17_26",
+     "model": "mdx23c_8kfft_instvoc_hq_ckpt",
+     "pred": 0.9785,
+     "bad": false
+    },
+    {
+     "work": "17_marseillaise_applause_tobacco_05_17_26",
+     "model": "vocals_mel_band_roformer_ckpt",
+     "pred": 0.9785,
+     "bad": false
+    },
+    {
+     "work": "17_marseillaise_applause_tobacco_05_17_26",
+     "model": "model_bs_roformer_ep_317_sdr_12_9755_ckpt",
+     "pred": 0.9785,
+     "bad": false
+    },
+    {
+     "work": "3_bedbug_tchaik_long_7242026",
+     "model": "kim_vocal_2_onnx",
+     "pred": 0.9785,
+     "bad": false
+    },
+    {
+     "work": "3_bedbug_tchaik_long_7242026",
+     "model": "uvr_mdx_net_voc_ft_onnx",
+     "pred": 0.9785,
+     "bad": false
+    },
+    {
+     "work": "3_bedbug_tchaik_long_7242026",
+     "model": "mdx23c_8kfft_instvoc_hq_ckpt",
+     "pred": 0.9785,
+     "bad": false
+    },
+    {
+     "work": "3_bedbug_tchaik_long_7242026",
+     "model": "vocals_mel_band_roformer_ckpt",
+     "pred": 0.9785,
+     "bad": false
+    },
+    {
+     "work": "3_bedbug_tchaik_long_7242026",
+     "model": "model_bs_roformer_ep_317_sdr_12_9755_ckpt",
+     "pred": 0.9785,
+     "bad": false
+    },
+    {
+     "work": "5_fly_swan_traviata_2026_05_02",
+     "model": "kim_vocal_2_onnx",
+     "pred": 0.9785,
+     "bad": false
+    },
+    {
+     "work": "5_fly_swan_traviata_2026_05_02",
+     "model": "uvr_mdx_net_voc_ft_onnx",
+     "pred": 0.9785,
+     "bad": false
+    },
+    {
+     "work": "5_fly_swan_traviata_2026_05_02",
+     "model": "mdx23c_8kfft_instvoc_hq_ckpt",
+     "pred": 0.9785,
+     "bad": false
+    },
+    {
+     "work": "5_fly_swan_traviata_2026_05_02",
+     "model": "vocals_mel_band_roformer_ckpt",
+     "pred": 0.9785,
+     "bad": false
+    },
+    {
+     "work": "5_fly_swan_traviata_2026_05_02",
+     "model": "model_bs_roformer_ep_317_sdr_12_9755_ckpt",
+     "pred": 0.9785,
+     "bad": false
+    },
+    {
+     "work": "yt_donna_a8_vzjny10k",
+     "model": "kim_vocal_2_onnx",
+     "pred": 0.9785,
+     "bad": true
+    },
+    {
+     "work": "yt_donna_a8_vzjny10k",
+     "model": "uvr_mdx_net_voc_ft_onnx",
+     "pred": 0.9785,
+     "bad": true
+    },
+    {
+     "work": "yt_donna_a8_vzjny10k",
+     "model": "mdx23c_8kfft_instvoc_hq_ckpt",
+     "pred": 0.9785,
+     "bad": true
+    },
+    {
+     "work": "yt_donna_a8_vzjny10k",
+     "model": "vocals_mel_band_roformer_ckpt",
+     "pred": 0.9785,
+     "bad": true
+    },
+    {
+     "work": "yt_donna_a8_vzjny10k",
+     "model": "model_bs_roformer_ep_317_sdr_12_9755_ckpt",
+     "pred": 0.9785,
+     "bad": true
+    }
+   ]
+  },
+  "orchestral_theft": {
+   "n_units": 20,
+   "per_target": {
+    "0.1": {
+     "tau": 0.5091125000000001,
+     "n_certified": 17,
+     "n_violations": 0,
+     "observed_rate": 0.0,
+     "claimed_bound": 0.1,
+     "violating": []
+    },
+    "0.15": {
+     "tau": 0.5664307987296621,
+     "n_certified": 17,
+     "n_violations": 0,
+     "observed_rate": 0.0,
+     "claimed_bound": 0.15,
+     "violating": []
+    },
+    "0.2": {
+     "tau": 0.6147720426601465,
+     "n_certified": 18,
+     "n_violations": 0,
+     "observed_rate": 0.0,
+     "claimed_bound": 0.2,
+     "violating": []
+    }
+   },
+   "rows": [
+    {
+     "work": "17_marseillaise_applause_tobacco_05_17_26",
+     "model": "kim_vocal_2_onnx",
+     "pred": 0.0816,
+     "bad": false
+    },
+    {
+     "work": "17_marseillaise_applause_tobacco_05_17_26",
+     "model": "uvr_mdx_net_voc_ft_onnx",
+     "pred": 0.0,
+     "bad": false
+    },
+    {
+     "work": "17_marseillaise_applause_tobacco_05_17_26",
+     "model": "mdx23c_8kfft_instvoc_hq_ckpt",
+     "pred": 0.0,
+     "bad": false
+    },
+    {
+     "work": "17_marseillaise_applause_tobacco_05_17_26",
+     "model": "vocals_mel_band_roformer_ckpt",
+     "pred": 0.3863,
+     "bad": false
+    },
+    {
+     "work": "17_marseillaise_applause_tobacco_05_17_26",
+     "model": "model_bs_roformer_ep_317_sdr_12_9755_ckpt",
+     "pred": 0.1521,
+     "bad": false
+    },
+    {
+     "work": "3_bedbug_tchaik_long_7242026",
+     "model": "kim_vocal_2_onnx",
+     "pred": 0.0,
+     "bad": false
+    },
+    {
+     "work": "3_bedbug_tchaik_long_7242026",
+     "model": "uvr_mdx_net_voc_ft_onnx",
+     "pred": 0.0,
+     "bad": false
+    },
+    {
+     "work": "3_bedbug_tchaik_long_7242026",
+     "model": "mdx23c_8kfft_instvoc_hq_ckpt",
+     "pred": 0.0,
+     "bad": false
+    },
+    {
+     "work": "3_bedbug_tchaik_long_7242026",
+     "model": "vocals_mel_band_roformer_ckpt",
+     "pred": 0.0,
+     "bad": false
+    },
+    {
+     "work": "3_bedbug_tchaik_long_7242026",
+     "model": "model_bs_roformer_ep_317_sdr_12_9755_ckpt",
+     "pred": 0.1521,
+     "bad": false
+    },
+    {
+     "work": "5_fly_swan_traviata_2026_05_02",
+     "model": "kim_vocal_2_onnx",
+     "pred": 0.0,
+     "bad": false
+    },
+    {
+     "work": "5_fly_swan_traviata_2026_05_02",
+     "model": "uvr_mdx_net_voc_ft_onnx",
+     "pred": 0.0,
+     "bad": false
+    },
+    {
+     "work": "5_fly_swan_traviata_2026_05_02",
+     "model": "mdx23c_8kfft_instvoc_hq_ckpt",
+     "pred": 0.288,
+     "bad": false
+    },
+    {
+     "work": "5_fly_swan_traviata_2026_05_02",
+     "model": "vocals_mel_band_roformer_ckpt",
+     "pred": 0.7434,
+     "bad": true
+    },
+    {
+     "work": "5_fly_swan_traviata_2026_05_02",
+     "model": "model_bs_roformer_ep_317_sdr_12_9755_ckpt",
+     "pred": 0.874,
+     "bad": true
+    },
+    {
+     "work": "yt_donna_a8_vzjny10k",
+     "model": "kim_vocal_2_onnx",
+     "pred": 0.0,
+     "bad": false
+    },
+    {
+     "work": "yt_donna_a8_vzjny10k",
+     "model": "uvr_mdx_net_voc_ft_onnx",
+     "pred": 0.0,
+     "bad": false
+    },
+    {
+     "work": "yt_donna_a8_vzjny10k",
+     "model": "mdx23c_8kfft_instvoc_hq_ckpt",
+     "pred": 0.5091,
+     "bad": false
+    },
+    {
+     "work": "yt_donna_a8_vzjny10k",
+     "model": "vocals_mel_band_roformer_ckpt",
+     "pred": 0.4285,
+     "bad": false
+    },
+    {
+     "work": "yt_donna_a8_vzjny10k",
+     "model": "model_bs_roformer_ep_317_sdr_12_9755_ckpt",
+     "pred": 0.5869,
+     "bad": false
+    }
+   ]
+  },
+  "fullness": {
+   "n_units": 20,
+   "per_target": {
+    "0.1": {
+     "certifiable": false
+    },
+    "0.15": {
+     "certifiable": false
+    },
+    "0.2": {
+     "certifiable": false
+    }
+   },
+   "rows": [
+    {
+     "work": "17_marseillaise_applause_tobacco_05_17_26",
+     "model": "kim_vocal_2_onnx",
+     "pred": 0.4307,
+     "bad": true
+    },
+    {
+     "work": "17_marseillaise_applause_tobacco_05_17_26",
+     "model": "uvr_mdx_net_voc_ft_onnx",
+     "pred": 0.4307,
+     "bad": true
+    },
+    {
+     "work": "17_marseillaise_applause_tobacco_05_17_26",
+     "model": "mdx23c_8kfft_instvoc_hq_ckpt",
+     "pred": 0.38,
+     "bad": true
+    },
+    {
+     "work": "17_marseillaise_applause_tobacco_05_17_26",
+     "model": "vocals_mel_band_roformer_ckpt",
+     "pred": 0.38,
+     "bad": true
+    },
+    {
+     "work": "17_marseillaise_applause_tobacco_05_17_26",
+     "model": "model_bs_roformer_ep_317_sdr_12_9755_ckpt",
+     "pred": 0.38,
+     "bad": true
+    },
+    {
+     "work": "3_bedbug_tchaik_long_7242026",
+     "model": "kim_vocal_2_onnx",
+     "pred": 0.4307,
+     "bad": true
+    },
+    {
+     "work": "3_bedbug_tchaik_long_7242026",
+     "model": "uvr_mdx_net_voc_ft_onnx",
+     "pred": 0.4307,
+     "bad": true
+    },
+    {
+     "work": "3_bedbug_tchaik_long_7242026",
+     "model": "mdx23c_8kfft_instvoc_hq_ckpt",
+     "pred": 0.4307,
+     "bad": true
+    },
+    {
+     "work": "3_bedbug_tchaik_long_7242026",
+     "model": "vocals_mel_band_roformer_ckpt",
+     "pred": 0.344,
+     "bad": true
+    },
+    {
+     "work": "3_bedbug_tchaik_long_7242026",
+     "model": "model_bs_roformer_ep_317_sdr_12_9755_ckpt",
+     "pred": 0.38,
+     "bad": true
+    },
+    {
+     "work": "5_fly_swan_traviata_2026_05_02",
+     "model": "kim_vocal_2_onnx",
+     "pred": 0.4307,
+     "bad": false
+    },
+    {
+     "work": "5_fly_swan_traviata_2026_05_02",
+     "model": "uvr_mdx_net_voc_ft_onnx",
+     "pred": 0.4307,
+     "bad": false
+    },
+    {
+     "work": "5_fly_swan_traviata_2026_05_02",
+     "model": "mdx23c_8kfft_instvoc_hq_ckpt",
+     "pred": 0.4307,
+     "bad": false
+    },
+    {
+     "work": "5_fly_swan_traviata_2026_05_02",
+     "model": "vocals_mel_band_roformer_ckpt",
+     "pred": 0.4307,
+     "bad": false
+    },
+    {
+     "work": "5_fly_swan_traviata_2026_05_02",
+     "model": "model_bs_roformer_ep_317_sdr_12_9755_ckpt",
+     "pred": 0.6715,
+     "bad": true
+    },
+    {
+     "work": "yt_donna_a8_vzjny10k",
+     "model": "kim_vocal_2_onnx",
+     "pred": 0.4307,
+     "bad": false
+    },
+    {
+     "work": "yt_donna_a8_vzjny10k",
+     "model": "uvr_mdx_net_voc_ft_onnx",
+     "pred": 0.4307,
+     "bad": false
+    },
+    {
+     "work": "yt_donna_a8_vzjny10k",
+     "model": "mdx23c_8kfft_instvoc_hq_ckpt",
+     "pred": 0.4307,
+     "bad": false
+    },
+    {
+     "work": "yt_donna_a8_vzjny10k",
+     "model": "vocals_mel_band_roformer_ckpt",
+     "pred": 0.38,
+     "bad": false
+    },
+    {
+     "work": "yt_donna_a8_vzjny10k",
+     "model": "model_bs_roformer_ep_317_sdr_12_9755_ckpt",
+     "pred": 0.38,
+     "bad": false
+    }
+   ]
+  }
+ },
+ "reselect_v3": {
+  "taus_passed": {
+   "orchestral_theft": {
+    "tau": 0.5091125000000001,
+    "certifiable": true
+   }
+  },
+  "secondary_def": "mean exact-case stft_distance (lower=better)",
+  "note": "all three flow tracks are in FIT split works (in-domain)",
+  "decisions": {
+   "yt_nessun_suj_2sbsfks": {
+    "selector_version": "autonomous-selector/v3",
+    "certification": "autonomous_proxy_certified",
+    "distribution": "in_calibration_domain",
+    "taus": {
+     "orchestral_theft": {
+      "tau": 0.5091125000000001,
+      "certifiable": true
+     }
+    },
+    "candidates": {
+     "kim_vocal_2_onnx": {
+      "hard_failed": [],
+      "ucbs": {
+       "orchestral_theft": 0.05,
+       "event_hole": 1.0285
+      },
+      "infeasible_defects": [
+       "event_hole"
+      ],
+      "secondary": 1.5611
+     },
+     "uvr_mdx_net_voc_ft_onnx": {
+      "hard_failed": [],
+      "ucbs": {
+       "orchestral_theft": 0.05,
+       "event_hole": 1.0285
+      },
+      "infeasible_defects": [
+       "event_hole"
+      ],
+      "secondary": 1.5531
+     },
+     "mdx23c_8kfft_instvoc_hq_ckpt": {
+      "hard_failed": [],
+      "ucbs": {
+       "orchestral_theft": 0.6648,
+       "event_hole": 1.0285
+      },
+      "infeasible_defects": [
+       "orchestral_theft",
+       "event_hole"
+      ],
+      "secondary": 1.5087
+     },
+     "vocals_mel_band_roformer_ckpt": {
+      "hard_failed": [],
+      "ucbs": {
+       "orchestral_theft": 0.7976,
+       "event_hole": 1.0285
+      },
+      "infeasible_defects": [
+       "orchestral_theft",
+       "event_hole"
+      ],
+      "secondary": 1.0672
+     },
+     "model_bs_roformer_ep_317_sdr_12_9755_ckpt": {
+      "hard_failed": [],
+      "ucbs": {
+       "orchestral_theft": 0.8096,
+       "event_hole": 1.0285
+      },
+      "infeasible_defects": [
+       "orchestral_theft",
+       "event_hole"
+      ],
+      "secondary": 1.2438
+     }
+    },
+    "status": "no_acceptable_candidate",
+    "best_available": "uvr_mdx_net_voc_ft_onnx",
+    "failed_gates": [
+     "event_hole"
+    ],
+    "reason": "no candidate passes the calibrated risk gates"
+   },
+   "22_valkyries_new_7242026": {
+    "selector_version": "autonomous-selector/v3",
+    "certification": "autonomous_proxy_certified",
+    "distribution": "in_calibration_domain",
+    "taus": {
+     "orchestral_theft": {
+      "tau": 0.5091125000000001,
+      "certifiable": true
+     }
+    },
+    "candidates": {
+     "kim_vocal_2_onnx": {
+      "hard_failed": [],
+      "ucbs": {
+       "orchestral_theft": 0.4491,
+       "event_hole": 1.0285
+      },
+      "infeasible_defects": [
+       "event_hole"
+      ],
+      "secondary": 0.872
+     },
+     "uvr_mdx_net_voc_ft_onnx": {
+      "hard_failed": [],
+      "ucbs": {
+       "orchestral_theft": 0.4363,
+       "event_hole": 1.0285
+      },
+      "infeasible_defects": [
+       "event_hole"
+      ],
+      "secondary": 0.8645
+     },
+     "mdx23c_8kfft_instvoc_hq_ckpt": {
+      "hard_failed": [],
+      "ucbs": {
+       "orchestral_theft": 0.4363,
+       "event_hole": 1.0285
+      },
+      "infeasible_defects": [
+       "event_hole"
+      ],
+      "secondary": 1.1346
+     },
+     "vocals_mel_band_roformer_ckpt": {
+      "hard_failed": [],
+      "ucbs": {
+       "orchestral_theft": 0.05,
+       "event_hole": 1.0285
+      },
+      "infeasible_defects": [
+       "event_hole"
+      ],
+      "secondary": 0.6234
+     },
+     "model_bs_roformer_ep_317_sdr_12_9755_ckpt": {
+      "hard_failed": [],
+      "ucbs": {
+       "orchestral_theft": 0.6648,
+       "event_hole": 1.0285
+      },
+      "infeasible_defects": [
+       "orchestral_theft",
+       "event_hole"
+      ],
+      "secondary": 0.6946
+     }
+    },
+    "status": "no_acceptable_candidate",
+    "best_available": "vocals_mel_band_roformer_ckpt",
+    "failed_gates": [
+     "event_hole"
+    ],
+    "reason": "no candidate passes the calibrated risk gates"
+   },
+   "12_13_scarydog_stabat_mater_tobacco_2026_07_06": {
+    "selector_version": "autonomous-selector/v3",
+    "certification": "autonomous_proxy_certified",
+    "distribution": "in_calibration_domain",
+    "taus": {
+     "orchestral_theft": {
+      "tau": 0.5091125000000001,
+      "certifiable": true
+     }
+    },
+    "candidates": {
+     "kim_vocal_2_onnx": {
+      "hard_failed": [],
+      "ucbs": {
+       "orchestral_theft": 0.1316,
+       "event_hole": 1.0285
+      },
+      "infeasible_defects": [
+       "event_hole"
+      ],
+      "secondary": 1.2016
+     },
+     "uvr_mdx_net_voc_ft_onnx": {
+      "hard_failed": [],
+      "ucbs": {
+       "orchestral_theft": 0.05,
+       "event_hole": 1.0285
+      },
+      "infeasible_defects": [
+       "event_hole"
+      ],
+      "secondary": 1.1931
+     },
+     "mdx23c_8kfft_instvoc_hq_ckpt": {
+      "hard_failed": [],
+      "ucbs": {
+       "orchestral_theft": 0.338,
+       "event_hole": 1.0285
+      },
+      "infeasible_defects": [
+       "event_hole"
+      ],
+      "secondary": 1.4276
+     },
+     "vocals_mel_band_roformer_ckpt": {
+      "hard_failed": [],
+      "ucbs": {
+       "orchestral_theft": 0.05,
+       "event_hole": 1.0285
+      },
+      "infeasible_defects": [
+       "event_hole"
+      ],
+      "secondary": 0.8569
+     },
+     "model_bs_roformer_ep_317_sdr_12_9755_ckpt": {
+      "hard_failed": [],
+      "ucbs": {
+       "orchestral_theft": 0.5591,
+       "event_hole": 1.0285
+      },
+      "infeasible_defects": [
+       "orchestral_theft",
+       "event_hole"
+      ],
+      "secondary": 0.8589
+     }
+    },
+    "status": "no_acceptable_candidate",
+    "best_available": "vocals_mel_band_roformer_ckpt",
+    "failed_gates": [
+     "event_hole"
+    ],
+    "reason": "no candidate passes the calibrated risk gates"
+   }
+  }
+ }
+}

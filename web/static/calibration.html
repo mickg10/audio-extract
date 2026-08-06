@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Calibration · audio-extract v2 autonomous</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <link rel="stylesheet" href="/static/passages.css">
+  <link rel="stylesheet" href="/static/v2ui.css">
+</head>
+<body>
+  <div class="topbar">
+    <h1><span class="brand">audio-extract</span> · calibration</h1>
+    <span class="spacer"></span>
+    <nav class="nav-links">
+      <a href="/">Dashboard</a>
+      <a href="/calibration" class="active">Calibration</a>
+      <a href="/runs">Run picker</a>
+    </nav>
+    <button class="btn small" id="refreshBtn" title="Reload">Refresh</button>
+  </div>
+
+  <div class="wrap wide">
+    <div class="file-head">
+      <h2>Learn-Then-Test calibration</h2>
+      <div class="sub" id="calMeta">how the autonomous selector earns its risk guarantees</div>
+    </div>
+
+    <div id="calBody">
+      <div class="empty-state"><span class="spin"></span> loading calibration…</div>
+    </div>
+  </div>
+
+  <script src="/static/common.js"></script>
+  <script src="/static/charts.js"></script>
+  <script src="/static/calibration.js"></script>
+</body>
+</html>
