@@ -44,7 +44,23 @@ const S = {
   decision: null,        // /api/v2/decision payload (autonomous audit panel)
   challenges: null,      // /api/v2/challenges payload
   actions: null,         // /api/v2/actions payload
+  calibration: null,     // /api/v2/calibration payload (for the theft gate τ)
 };
+
+/* Executed-backend chip: audio-separator (CUDA/CPU box) vs separator-ttnn (TT). */
+function backendChipHtml(b) {
+  if (!b || !b.adapter) return "";
+  const cls = b.kind === "tt" ? "tt" : (b.kind === "cuda" ? "cuda" : "");
+  const hash = b.bundle_prefix
+    ? ' <span class="bh">' + escapeHtml(String(b.bundle_prefix).replace(/^sha256:/, "").slice(0, 8)) + "</span>"
+    : "";
+  return ' <span class="backend-chip ' + cls + '" title="executed adapter' +
+    (b.bundle_prefix ? " · bundle " + escapeHtml(b.bundle_prefix) : "") + '">' +
+    escapeHtml(b.adapter) + hash + "</span>";
+}
+function backendFor(cid) {
+  return (S.challenges && S.challenges.backends && S.challenges.backends[cid]) || null;
+}
 
 /* =======================================================================
  * PassageTimeline — peaks + colored passage regions + playhead on a canvas.
@@ -421,7 +437,8 @@ function renderCandTable() {
     const btns = SLOTS.map((s) =>
       '<button class="mini-btn slot-btn" data-slot="' + s + '" data-dir="' + c.dir + '">' + s + "</button>").join(" ");
     return "<tr data-dir=\"" + c.dir + "\"><td>" + par + "</td>" +
-      '<td class="lbl">' + escapeHtml(c.label) + '<div class="cand-sub" style="font-family:var(--mono);color:var(--text-mute);font-size:11px;">' +
+      '<td class="lbl">' + escapeHtml(c.label) + backendChipHtml(c.backend) +
+      '<div class="cand-sub" style="font-family:var(--mono);color:var(--text-mute);font-size:11px;">' +
       escapeHtml(c.short_id) + "</div></td>" + cells + "<td>" + btns + "</td></tr>";
   }).join("") + "</tbody>";
   const t = document.getElementById("candTable");
@@ -496,7 +513,7 @@ function renderABGrid() {
       : '<div class="col-costs muted">no costs — run qa score</div>';
     return '<div class="ab-col" data-slot="' + s + '">' +
       '<div><span class="slot-letter">' + s + '</span><span class="cand-label">' + escapeHtml(c.label) + par + "</span>" +
-      '<div class="cand-sub">' + escapeHtml(c.short_id) + "</div></div>" +
+      '<div class="cand-sub">' + escapeHtml(c.short_id) + backendChipHtml(c.backend) + "</div></div>" +
       '<audio controls preload="none" src="' + c.audio_url + '"></audio>' +
       '<div class="spec"><img loading="lazy" alt="spectrogram" src="' + c.spectrogram_url + qs + '"></div>' +
       costs + "</div>";
@@ -769,7 +786,8 @@ function decMatrixHtml(chal, dec) {
         : "no challenge cases recorded for this run") + "</div>";
   }
   let head = "<thead><tr><th>challenge case</th>" + cols.map((c) =>
-    '<th class="numc" title="' + escapeHtml(c) + '">' + decCandName(c) + "</th>").join("") +
+    '<th class="numc" title="' + escapeHtml(c) + '">' + decCandName(c) +
+    backendChipHtml(backendFor(c)) + "</th>").join("") +
     "</tr></thead>";
   const body = cases.map((cs) => {
     const row = results[cs.challenge_id] || {};
@@ -801,6 +819,200 @@ function decMatrixHtml(chal, dec) {
     '<span class="muted">(exact-reference cases; SI-SDR higher is better, errors lower)</span></div>' +
     '<div class="table-scroll"><table class="cands dec-matrix">' + head +
     "<tbody>" + body + "</tbody></table></div>";
+}
+
+/* ============= challenge visualizations (exact-reference evidence) ========
+   Three dependency-free inline-SVG views over the /api/v2/challenges payload,
+   rendered into #chalVizBody:
+     1. SI-SDR heatmap    — exact-reference cases × models (brighter = cleaner)
+     2. theft-assay bars  — mean broadband theft per model on a log axis, drawn
+                            against the calibrated orchestral-theft gate
+     3. SI-SDR spread     — each model's min · median · max across the cases
+   Every view is defensive: a missing metric/table degrades to a muted note. */
+
+function chalCaseById(id) {
+  const cases = (S.challenges && S.challenges.cases) || [];
+  return cases.find((c) => c.challenge_id === id) || null;
+}
+function chalCaseLabel(cs) {
+  if (!cs) return "?";
+  const cl = cs.class || {};
+  if (cs.challenge_type === "track_remix" && cl.vocal_level_db != null) {
+    return "remix " + (cl.vocal_level_db > 0 ? "+" : "") + cl.vocal_level_db + " dB";
+  }
+  return String(cs.challenge_type || "case").replace(/_/g, " ");
+}
+function chalCaseSub(cs) {
+  const cl = (cs && cs.class) || {};
+  if (cl.pan && cl.pan !== "center") return String(cl.pan);
+  if (cl.probe) return String(cl.probe);
+  return "";
+}
+function chalModelName(cid) { const i = decCandInfo(cid); return i.label || i.short; }
+function chalShort(cid) { return decCandInfo(cid).short; }
+
+/* raw theft_mean gate: invert the orchestral_theft severity map at its certified
+   τ (smallest raw whose calibrated severity reaches τ). null when uncertified. */
+function theftGateFromCal(cal) {
+  const d = cal && cal.calibration && cal.calibration.defects
+    ? cal.calibration.defects.orchestral_theft
+    : (cal && cal.defects && cal.defects.orchestral_theft);
+  const mk = d && d.map_knots;
+  if (!d || !mk || !Array.isArray(mk.xs) || !mk.xs.length) return null;
+  const ltt = d["learn_then_test_unit=work_model"] || {};
+  let tau = null;
+  const strongest = d.strongest_certifiable_target;
+  if (strongest != null && ltt[String(strongest)] && ltt[String(strongest)].certifiable) {
+    tau = ltt[String(strongest)].tau;
+  } else {
+    for (const k of Object.keys(ltt)) if (ltt[k] && ltt[k].certifiable) { tau = ltt[k].tau; break; }
+  }
+  if (tau == null) return null;
+  const xs = mk.xs, ys = mk.ys || [];
+  for (let i = 0; i < xs.length; i++) if (ys[i] >= tau - 1e-9) return { raw: xs[i], tau: tau };
+  return null;
+}
+
+function median(sorted) {
+  const n = sorted.length;
+  if (!n) return null;
+  return n % 2 ? sorted[(n - 1) / 2] : (sorted[n / 2 - 1] + sorted[n / 2]) / 2;
+}
+
+function renderChallengeViz() {
+  const host = document.getElementById("chalVizBody");
+  const meta = document.getElementById("chalVizMeta");
+  if (!host) return;
+  if (meta) meta.textContent = "";
+  const chal = S.challenges;
+  if (!chal || !chal.available) {
+    host.innerHTML = '<div class="muted">no challenge cases recorded for this run — run ' +
+      "<code>challenges build</code> then <code>challenges run</code>.</div>";
+    return;
+  }
+  const cases = chal.cases || [];
+  const results = chal.results || {};
+  let cols = (chal.candidates || []).slice();
+  if (!cols.length) {
+    host.innerHTML = '<div class="muted">challenge cases exist but no per-candidate results yet.</div>';
+    return;
+  }
+  // model column order: mirror the decision-report risk order when available
+  const rep = (S.decision && S.decision.report) || {};
+  if (rep.candidates) {
+    const known = Object.keys(rep.candidates)
+      .sort((a, b) => (rep.candidates[a].risk_mean || 0) - (rep.candidates[b].risk_mean || 0))
+      .filter((c) => cols.includes(c));
+    cols = known.concat(cols.filter((c) => !known.includes(c)));
+  }
+  const colObjs = cols.map((c) => ({ id: c, label: chalModelName(c), sub: chalShort(c) }));
+
+  host.innerHTML = "";
+  let nViews = 0;
+
+  const siOf = (chid, cid) => {
+    const cell = (results[chid] || {})[cid];
+    const v = cell && cell.metrics && cell.metrics.si_sdr_db;
+    return typeof v === "number" && isFinite(v) ? v : null;
+  };
+  const siCases = cases.filter((cs) => cols.some((c) => siOf(cs.challenge_id, c) != null));
+
+  // ---------------- (1) SI-SDR heatmap: cases × models --------------------
+  if (siCases.length) {
+    const sec = document.createElement("div");
+    sec.className = "chal-viz-section";
+    sec.innerHTML = '<div class="dec-subhead">SI-SDR by case × model ' +
+      '<span class="muted">(dB vs the exact remix target — brighter is cleaner)</span></div>';
+    const heat = svgHeatmap({
+      rows: siCases.map((cs) => ({ id: cs.challenge_id, label: chalCaseLabel(cs), sub: chalCaseSub(cs) })),
+      cols: colObjs,
+      value: (rid, cid) => siOf(rid, cid),
+      fmt: (v) => v.toFixed(1),
+      higherBetter: true,
+      tip: (rid, cid) => {
+        const m = ((results[rid] || {})[cid] || {}).metrics || {};
+        const bits = [];
+        if (typeof m.si_sdr_db === "number") bits.push("SI-SDR <b>" + m.si_sdr_db.toFixed(2) + " dB</b>");
+        if (typeof m.stft_distance === "number") bits.push("STFT dist " + m.stft_distance.toFixed(4));
+        if (typeof m.band_envelope_err_db === "number") bits.push("band-env err " + m.band_envelope_err_db.toFixed(2) + " dB");
+        return chalModelName(cid) + " · " + chalCaseLabel(chalCaseById(rid)) + "<br>" + bits.join("<br>");
+      },
+    });
+    const scroll = document.createElement("div"); scroll.className = "viz-scroll";
+    scroll.appendChild(heat.el); sec.appendChild(scroll);
+    sec.appendChild(seqLegend(heat.min, heat.max, "SI-SDR (dB) · higher = cleaner extraction", (v) => v.toFixed(1)));
+    host.appendChild(sec); nViews++;
+  }
+
+  // ---------------- (2) no-vocal theft assay bars -------------------------
+  let theftRow = results["theft_assay"] || null;
+  if (!theftRow) {
+    const tc = cases.find((cs) => cs.challenge_type === "theft_assay");
+    if (tc) theftRow = results[tc.challenge_id] || null;
+  }
+  if (theftRow) {
+    const gate = theftGateFromCal(S.calibration);
+    const gateRaw = gate ? gate.raw : null;
+    const items = cols.filter((c) => theftRow[c]).map((c) => {
+      const cell = theftRow[c] || {}; const m = cell.metrics || {};
+      let tm = typeof m.theft_mean === "number" ? m.theft_mean
+        : (cell.primary && cell.primary.metric === "theft_mean" ? cell.primary.value : null);
+      let verdict = null;
+      if (gateRaw != null && tm != null) verdict = tm <= gateRaw ? { word: "within", kind: "ok" } : { word: "steals", kind: "crit" };
+      return {
+        label: chalModelName(c), sub: chalShort(c), value: tm, verdict,
+        tip: chalModelName(c) + " · mean broadband theft <b>" + (tm != null ? tm.toFixed(4) : "—") + "</b>" +
+          (gateRaw != null ? "<br>gate ≤ <b>" + gateRaw.toFixed(4) + "</b> (τ = " + gate.tau.toFixed(2) + ")" : ""),
+      };
+    });
+    const sec = document.createElement("div");
+    sec.className = "chal-viz-section";
+    sec.innerHTML = '<div class="dec-subhead">No-vocal theft assay ' +
+      '<span class="muted">(mean broadband energy taken from genuine controls — lower is better)</span></div>';
+    const scroll = document.createElement("div"); scroll.className = "viz-scroll";
+    scroll.appendChild(svgLogBars({
+      items, gate: gateRaw,
+      gateLabel: gate ? "gate ≤ " + gateRaw.toFixed(3) : null,
+      xLabel: "mean broadband theft ratio (log scale)",
+      fmt: (v) => (v == null ? "—" : v.toFixed(4)),
+    }));
+    sec.appendChild(scroll);
+    sec.insertAdjacentHTML("beforeend", gate
+      ? '<div class="explain">Gate is the raw theft ratio at the certified orchestral-theft threshold ' +
+        "τ = " + gate.tau.toFixed(2) + " (inverted through the severity map on the calibration page). " +
+        "Bars past it exceed the certified feasibility limit.</div>"
+      : '<div class="explain">No certified orchestral-theft gate in the loaded calibration — bars are drawn ' +
+        "without a gate line.</div>");
+    host.appendChild(sec); nViews++;
+  }
+
+  // ---------------- (3) per-model SI-SDR spread ---------------------------
+  if (siCases.length) {
+    const items = cols.map((c) => {
+      const vals = [];
+      for (const cs of siCases) { const v = siOf(cs.challenge_id, c); if (v != null) vals.push(v); }
+      vals.sort((a, b) => a - b);
+      return {
+        label: chalModelName(c), sub: chalShort(c),
+        min: vals.length ? vals[0] : null, med: median(vals), max: vals.length ? vals[vals.length - 1] : null,
+        tip: chalModelName(c) + " · SI-SDR over " + vals.length + " exact-reference case" + (vals.length === 1 ? "" : "s"),
+      };
+    });
+    const sec = document.createElement("div");
+    sec.className = "chal-viz-section";
+    sec.innerHTML = '<div class="dec-subhead">SI-SDR spread per model ' +
+      '<span class="muted">(min · median · max across exact-reference cases — right is better)</span></div>';
+    const scroll = document.createElement("div"); scroll.className = "viz-scroll";
+    scroll.appendChild(svgRangeBars({ items, xLabel: "SI-SDR (dB)", fmt: (v) => (v == null ? "—" : v.toFixed(1)) }));
+    sec.appendChild(scroll);
+    host.appendChild(sec); nViews++;
+  }
+
+  if (!nViews) {
+    host.innerHTML = '<div class="muted">challenge results present but no SI-SDR or theft metrics to plot.</div>';
+    return;
+  }
+  if (meta) meta.textContent = cases.length + " cases · " + cols.length + " models";
 }
 
 function decActionsHtml(act) {
@@ -857,16 +1069,21 @@ function decFooterHtml(dec) {
 
 async function loadDecisionPanel(tid) {
   const body = document.getElementById("decisionBody");
+  const chalBody = document.getElementById("chalVizBody");
+  if (chalBody) chalBody.innerHTML = '<div class="muted"><span class="spin"></span> loading challenges…</div>';
   const get = (url) => fetchJSON(url).catch(() => null);
   const q = encodeURIComponent(tid);
-  const [dec, chal, act] = await Promise.all([
+  const [dec, chal, act, cal] = await Promise.all([
     get("/api/v2/decision/" + q),
     get("/api/v2/challenges/" + q),
     get("/api/v2/actions/" + q),
+    S.calibration ? Promise.resolve(S.calibration) : get("/api/v2/calibration"),
   ]);
   if (S.tid !== tid) return;   // user already switched runs
-  S.decision = dec; S.challenges = chal; S.actions = act;
+  S.decision = dec; S.challenges = chal; S.actions = act; S.calibration = cal;
   renderDecisionPanel(body);
+  renderChallengeViz();
+  renderCandTable();           // backend chips may now resolve via the lock
 }
 
 function renderDecisionPanel(body) {
