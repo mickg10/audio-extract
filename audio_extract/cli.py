@@ -267,7 +267,7 @@ def cmd_passages_mine(args: argparse.Namespace) -> int:
                                message=f"run {args.run_id!r} not ingested"), code=2)
 
     from .separate import provisional_vocal
-    from .passages import mine_passages, write_passages, MinerConfig
+    from .passages import activity_timebase, mine_passages, write_passages, MinerConfig
     from .manifest import Manifest
 
     vocal, accomp, sr, out = provisional_vocal(
@@ -281,7 +281,8 @@ def cmd_passages_mine(args: argparse.Namespace) -> int:
     passages = mine_passages(vocal, accomp, sr, cfg)
 
     layout.passages_dir.mkdir(parents=True, exist_ok=True)
-    write_passages(passages, layout.passages_dir / "passages.v1.json")
+    write_passages(passages, layout.passages_dir / "passages.v1.json",
+                   timebase=activity_timebase(sr, cfg))
     with Manifest(layout.manifest_sqlite) as man:
         man.upsert_passages([asdict(p) for p in passages])
         man.set_state(args.run_id, "MINING_PASSAGES")

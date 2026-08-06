@@ -42,8 +42,10 @@ class MinerConfig:
     max_iou: float = 0.25
     min_center_distance_s: float = 8.0
     quotas: dict = field(default_factory=lambda: {
-        "high_soprano": 3, "dense_accompaniment": 3, "quiet_backing": 2,
-        "hall_tail": 4, "no_vocal_control": 4, "random_control": 3,
+        "high_soprano": 3, "extreme_soprano": 1, "voice_dominant": 2,
+        "difficult_overlap": 3, "dense_tutti": 2, "quiet_backing": 2,
+        "abrupt_forte": 1, "hall_tail": 3, "no_vocal_control": 3,
+        "random_control": 2, "vocal_overlap": 2,
     })
     seed: int = 0
 
@@ -200,18 +202,67 @@ def mine_passages(vocal: np.ndarray, accompaniment: np.ndarray, sr: int,
     def frame_to_sample(fr: int) -> int:
         return int(fr * hop)
 
-    proposals: list[tuple[tuple[int, int], float, dict, list[str]]] = []
+    # --- accompaniment context (v2.1 §8.2): loudness, band occupancy, flux ----
+    band_env = dsp.band_envelope_db(accompaniment, sr, dsp.PUMP_BANDS, cfg.win_ms, cfg.hop_ms)
+    Tb = min(T, band_env.shape[1])
+    band_env = band_env[:, :Tb]
+    occ = (band_env > np.percentile(band_env, 30, axis=1, keepdims=True)).sum(axis=0).astype(np.float64)
+    flux = np.concatenate([[0.0], np.clip(np.diff(band_env.sum(axis=0)), 0, None)])
+    occ_p70 = float(np.percentile(occ, 70))
+    flux_p70 = float(np.percentile(flux, 70))
+    a_p80 = float(np.percentile(a_rms[:Tb], 80))
+    silent = a_rms[:Tb] < (np.percentile(a_rms[:Tb], 10) + 3.0)
+
+    def _dense_fraction(e0: int, e1: int) -> float:
+        """Fraction of event frames meeting >=3 of the 4 dense-tutti conditions."""
+        e0c, e1c = min(e0, Tb - 1), min(e1, Tb)
+        if e1c <= e0c:
+            return 0.0
+        conds = ((a_rms[e0c:e1c] >= a_p80).astype(int)
+                 + (occ[e0c:e1c] >= occ_p70).astype(int)
+                 + (flux[e0c:e1c] >= flux_p70).astype(int)
+                 + (~silent[e0c:e1c]).astype(int))
+        return float((conds >= 3).mean())
+
+    acc2 = dsp.as2d(accompaniment)
+    hi_share_bands = band_env[3:, :]  # >=2 kHz bands as the brightness proxy
+
+    def _span_features(span: tuple[int, int]) -> dict:
+        f0_, f1_ = int(span[0] / hop), max(int(span[0] / hop) + 1, int(span[1] / hop))
+        f0_, f1_ = min(f0_, Tb - 1), min(f1_, Tb)
+        density = float((occ[f0_:f1_] / max(1, len(dsp.PUMP_BANDS))).mean()) if f1_ > f0_ else 0.0
+        total = band_env[:, f0_:f1_].sum() if f1_ > f0_ else 0.0
+        bright = float(hi_share_bands[:, f0_:f1_].sum() / total) if total else 0.0
+        width = float(dsp.stereo_side_ratio(acc2[span[0]:span[1]]))
+        return {"density": round(density, 3), "brightness_share": round(bright, 3),
+                "stereo_width": round(width, 4)}
+
+    proposals: list[dict] = []
+
+    def _add(span, score, feats, tags):
+        proposals.append({"span": (int(span[0]), int(span[1])), "score": float(score),
+                          "feats": feats, "tags": tags})
+
     for (e0, e1) in events:
         ef0 = f0[e0:e1][voiced[e0:e1] & (f0[e0:e1] > 0)]
         med_f0 = float(np.median(ef0)) if ef0.size else 0.0
-        peak_f0 = float(np.percentile(ef0, 95)) if ef0.size else 0.0  # smoothed, not raw max (octave-robust)
+        peak_f0 = float(np.percentile(ef0, 95)) if ef0.size else 0.0  # octave-robust
         var_db = float(np.mean(v_rms[e0:e1]) - np.mean(a_rms[e0:e1]))
-        acc_loud_pct = float((a_rms < np.mean(a_rms[e0:e1])).mean())
+        dense_frac = _dense_fraction(e0, e1)
+        event_ms = (e1 - e0) * cfg.hop_ms
+
         tags = soprano_tags(med_f0, peak_f0, p80, p95, bool(voiced_f0.size))
         if var_db > 3.0:
             tags.append("quiet_backing")
-        if acc_loud_pct >= 0.80:
-            tags.append("dense_accompaniment")
+        if var_db >= -6.0:
+            tags.append("voice_dominant")
+        if dense_frac >= 0.5 and event_ms >= 500.0:
+            tags.append("dense_tutti")
+        if -12.0 <= var_db <= 3.0 and dense_frac >= 0.3:
+            tags.append("difficult_overlap")
+        onset_win = a_rms[e0:min(e0 + int(300 / cfg.hop_ms), Tb)]
+        if onset_win.size > 1 and float(np.max(np.diff(onset_win))) >= 10.0:
+            tags.append("abrupt_forte")
 
         center = frame_to_sample((e0 + e1) // 2)
         half = max(min_w, min(max_w, default_w)) // 2
@@ -220,73 +271,116 @@ def mine_passages(vocal: np.ndarray, accompaniment: np.ndarray, sr: int,
             "median_f0_hz": round(med_f0, 2),
             "peak_f0_hz": round(peak_f0, 2),
             "vocal_accompaniment_ratio_db": round(var_db, 2),
-            "event_duration_ms": round((e1 - e0) * cfg.hop_ms, 1),
+            "dense_fraction": round(dense_frac, 3),
+            "event_duration_ms": round(event_ms, 1),
+            **_span_features(span),
         }
         score_e = (e1 - e0) + (1000 if "high_soprano" in tags else 0)
-        proposals.append((span, float(score_e), feats, tags or ["vocal_overlap"]))
+        _add(span, score_e, feats, tags or ["vocal_overlap"])
 
-        # hall-tail window just after the offset
+        # hall-tail child just after the offset (kept adjacent to its parent event)
         tail0 = frame_to_sample(e1)
         tail1 = min(n_samples, tail0 + int(3.0 * sr))
         if tail1 - tail0 > int(0.5 * sr):
-            proposals.append(((tail0, tail1), float(e1 - e0), {"tail_after_offset": True}, ["hall_tail"]))
+            _add((tail0, tail1), e1 - e0,
+                 {"tail_after_offset": True, "parent_span": [span[0], span[1]],
+                  **_span_features((tail0, tail1))}, ["hall_tail"])
 
-    # no-vocal controls: sustained inactive spans
+    # controls
     inactive_events = _events_from_activity(~active, int(1000 / cfg.hop_ms), 0)
     for (i0, i1) in inactive_events:
         c = frame_to_sample((i0 + i1) // 2)
         half = default_w // 2
-        proposals.append(((max(0, c - half), min(n_samples, c + half)),
-                          float(i1 - i0), {"control": "no_vocal"}, ["no_vocal_control"]))
+        span = (max(0, c - half), min(n_samples, c + half))
+        _add(span, i1 - i0, {"control": "no_vocal", **_span_features(span)}, ["no_vocal_control"])
 
-    # random controls
     rng = np.random.default_rng(cfg.seed)
     for _ in range(4):
-        if n_samples <= default_w:
-            s = 0
-        else:
-            s = int(rng.integers(0, n_samples - default_w))
-        proposals.append(((s, min(n_samples, s + default_w)), 0.1, {"control": "random"}, ["random_control"]))
+        s = 0 if n_samples <= default_w else int(rng.integers(0, n_samples - default_w))
+        span = (s, min(n_samples, s + default_w))
+        _add(span, 0.1, {"control": "random", **_span_features(span)}, ["random_control"])
 
-    # interval NMS across all proposals
-    spans_scored = [(p[0], p[1]) for p in proposals]
-    kept = set(_interval_nms(spans_scored, cfg.max_iou, int(cfg.min_center_distance_s * sr)))
-    proposals = [p for p in proposals if p[0] in kept]
+    # --- selection v2 (§8.5): NMS WITHIN category first --------------------
+    by_cat_all: dict[str, list[int]] = {}
+    for i, p in enumerate(proposals):
+        for t in p["tags"]:
+            by_cat_all.setdefault(t, []).append(i)
+    kept_idx: set[int] = set()
+    for cat, idxs in by_cat_all.items():
+        spans_scored = [(proposals[i]["span"], proposals[i]["score"]) for i in idxs]
+        kept_spans = set(_interval_nms(spans_scored, cfg.max_iou, int(cfg.min_center_distance_s * sr)))
+        kept_idx.update(i for i in idxs if proposals[i]["span"] in kept_spans)
 
-    # stratified selection: per category, farthest-point up to quota
-    by_cat: dict[str, list[int]] = {}
-    for idx, (_span, _sc, _f, tags) in enumerate(proposals):
-        cat = tags[0]
-        by_cat.setdefault(cat, []).append(idx)
+    # light cross-category dedup; hall-tail children stay near their parent event
+    pool: list[int] = []
+    for i in sorted(kept_idx, key=lambda i: -proposals[i]["score"]):
+        dup = False
+        for j in pool:
+            if _iou(proposals[i]["span"], proposals[j]["span"]) > 0.6:
+                if ("hall_tail" in proposals[i]["tags"]) != ("hall_tail" in proposals[j]["tags"]):
+                    continue  # parent/child pair is exempt
+                dup = True
+                break
+        if not dup:
+            pool.append(i)
 
-    selected_idx: list[int] = []
-    for cat, idxs in by_cat.items():
-        quota = cfg.quotas.get(cat, 2)
-        rows = np.array([
-            [proposals[i][0][0], proposals[i][0][1] - proposals[i][0][0],
-             proposals[i][2].get("median_f0_hz", 0.0),
-             proposals[i][2].get("vocal_accompaniment_ratio_db", 0.0)]
-            for i in idxs
-        ], dtype=np.float64)
-        pick = _farthest_point(rows, quota)
-        selected_idx.extend(idxs[p] for p in pick)
+    # multi-label quota accounting: a passage counts toward EVERY tag it carries
+    def _row(i: int) -> list[float]:
+        p = proposals[i]
+        f = p["feats"]
+        return [p["span"][0] / max(1, n_samples), p["span"][1] - p["span"][0],
+                f.get("median_f0_hz", 0.0), f.get("vocal_accompaniment_ratio_db", 0.0),
+                f.get("density", 0.0), f.get("brightness_share", 0.0),
+                f.get("stereo_width", 0.0), 1.0 if "hall_tail" in p["tags"] else 0.0]
 
-    selected_idx.sort(key=lambda i: proposals[i][0][0])
+    counts: dict[str, int] = {c: 0 for c in cfg.quotas}
+    sel_set: set[int] = set()
+    for cat, quota in cfg.quotas.items():
+        need = quota - counts.get(cat, 0)
+        if need <= 0:
+            continue
+        cands = [i for i in pool if cat in proposals[i]["tags"] and i not in sel_set]
+        if not cands:
+            continue
+        rows = np.array([_row(i) for i in cands], dtype=np.float64)
+        for k in _farthest_point(rows, min(need, len(cands))):
+            i = cands[k]
+            sel_set.add(i)
+            for t in proposals[i]["tags"]:
+                if t in counts:
+                    counts[t] += 1
+
+    selected_idx = sorted(sel_set, key=lambda i: proposals[i]["span"][0])
     out: list[Passage] = []
     for n_, i in enumerate(selected_idx):
-        span, _sc, feats, tags = proposals[i]
+        p = proposals[i]
         out.append(Passage(
             passage_id=f"p_{n_:04d}",
-            start_sample=int(span[0]),
-            end_sample=int(span[1]),
-            tags=tags,
-            features=feats,
-            detectors={"pitch": "librosa-pyin", "activity": "audio-extract-vocal-activity/v1"},
-            reason=f"selected for category {tags[0]}",
+            start_sample=p["span"][0],
+            end_sample=p["span"][1],
+            tags=p["tags"],
+            features=p["feats"],
+            detectors={"pitch": "librosa-pyin", "activity": "audio-extract-vocal-activity/v2"},
+            reason=f"selected for categories {p['tags']}",
         ))
     return out
 
 
-def write_passages(passages: list[Passage], path: str | Path) -> None:
+def activity_timebase(sr: int, cfg: MinerConfig) -> dict:
+    """Explicit activity timebase record (v2.1 §8.3) — declares the frame grid so
+    consumers never guess sample-vs-frame indexing."""
+    return {
+        "schema": "audio-extract/activity/v2",
+        "hop_samples": max(1, int(sr * cfg.hop_ms / 1000.0)),
+        "frame_length_samples": max(8, int(sr * cfg.win_ms / 1000.0)),
+        "frame_origin_sample": 0,
+        "thresholds": {"on": cfg.on_threshold, "off": cfg.off_threshold,
+                       "pitch_conf": cfg.pitch_conf},
+    }
+
+
+def write_passages(passages: list[Passage], path: str | Path, timebase: dict | None = None) -> None:
     doc = {"schema": "audio-extract/passages/v1", "passages": [asdict(p) for p in passages]}
+    if timebase is not None:
+        doc["activity_timebase"] = timebase
     Path(path).write_text(json.dumps(doc, indent=2))

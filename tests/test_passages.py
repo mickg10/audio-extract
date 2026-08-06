@@ -62,8 +62,18 @@ def test_miner_nms_limits_overlap():
 def test_write_passages(tmp_path):
     passages, _ = _mine()
     out = tmp_path / "passages.v1.json"
-    pm.write_passages(passages, out)
+    tb = pm.activity_timebase(SR, _small_cfg())
+    pm.write_passages(passages, out, timebase=tb)
     doc = json.loads(out.read_text())
     assert doc["schema"] == "audio-extract/passages/v1"
     assert len(doc["passages"]) == len(passages)
     assert "detectors" in doc["passages"][0]
+    # explicit activity timebase (v2.1 §8.3): consumers never guess frame vs sample
+    assert doc["activity_timebase"]["schema"] == "audio-extract/activity/v2"
+    assert doc["activity_timebase"]["hop_samples"] == 441
+
+
+def test_span_features_present():
+    passages, _ = _mine()
+    f = passages[0].features
+    assert {"density", "brightness_share", "stereo_width"} <= set(f)
