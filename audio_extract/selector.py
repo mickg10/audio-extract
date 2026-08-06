@@ -145,6 +145,184 @@ def lexicographic_key(per_defect: dict[str, float],
 # ---------------------------------------------------------------------------
 # the terminal decision (§13.7–13.8)
 # ---------------------------------------------------------------------------
+# ===========================================================================
+# v3 (Phases K/L): Learn-Then-Test calibration + calibrated constrained
+# feasibility. CVaR (above) is demoted to a stress summary; feasibility gates +
+# robustness + regret own the terminal. No LLM can override this state machine.
+# ===========================================================================
+SELECTOR_V3_VERSION = "autonomous-selector/v3"
+CRITICAL_DEFECTS = ("orchestral_theft", "vocal_leakage", "event_hole", "severe_artifact")
+
+
+def _log_binom_cdf(k: int, n: int, p: float) -> float:
+    """log P(X <= k) for X ~ Binomial(n, p), via log-sum-exp over exact terms."""
+    if p <= 0.0:
+        return 0.0
+    if p >= 1.0:
+        return 0.0 if k >= n else -math.inf
+    logs = []
+    lp, lq = math.log(p), math.log(1.0 - p)
+    for i in range(0, k + 1):
+        logs.append(math.lgamma(n + 1) - math.lgamma(i + 1) - math.lgamma(n - i + 1)
+                    + i * lp + (n - i) * lq)
+    m = max(logs)
+    return m + math.log(sum(math.exp(x - m) for x in logs))
+
+
+def _binomial_ucb(k: int, n: int, delta: float = 0.05) -> float:
+    """Exact one-sided Clopper–Pearson upper bound: the smallest p with
+    P(X <= k; n, p) <= delta. Small n ⇒ wide bound ⇒ strict thresholds (by design);
+    at k=0 this is 1 - delta^(1/n) — the standard Learn-Then-Test choice."""
+    if n == 0:
+        return 1.0
+    if k >= n:
+        return 1.0
+    lo, hi = k / n, 1.0
+    log_delta = math.log(delta)
+    for _ in range(60):  # binary search to ~1e-18 precision
+        mid = 0.5 * (lo + hi)
+        if _log_binom_cdf(k, n, mid) > log_delta:
+            lo = mid
+        else:
+            hi = mid
+    return min(1.0, hi)
+
+
+def learn_then_test(calibration: list[tuple[str, float, bool]], *, target_risk: float = 0.10,
+                    delta: float = 0.05) -> dict:
+    """Choose a certification threshold τ for ONE defect from grouped calibration
+    data (§15.3): ``(group_id, predicted_severity, truly_bad)`` triples, where
+    truth comes from exact-target labels. Group-atomic: each group contributes its
+    worst case once. Scans τ from strict→loose (fixed-sequence testing) and keeps
+    the loosest τ whose *upper-bounded* certified-risk stays ≤ target_risk.
+    Data choose the threshold — never an attractive constant (§15.5)."""
+    per_group: dict[str, tuple[float, bool]] = {}
+    for gid, sev, bad in calibration:
+        prev = per_group.get(gid)
+        if prev is None or sev > prev[0] or (bad and not prev[1]):
+            per_group[gid] = (max(sev, prev[0]) if prev else sev, bad or (prev[1] if prev else False))
+    units = sorted(per_group.values())
+    if not units:
+        return {"tau": 0.0, "risk_ucb": 1.0, "n_groups": 0, "certifiable": False}
+    grid = sorted({s for s, _ in units})   # exact severities: tau lands ON a unit,
+    # so the first bad case fails its own grid point rather than being excluded
+    # by a rounding epsilon (tau settles on the largest certifiably-good unit)
+    best = None
+    for tau in grid:  # strict -> loose
+        certified = [(s, b) for s, b in units if s <= tau]
+        n = len(certified)
+        k = sum(1 for _, b in certified if b)
+        ucb = _binomial_ucb(k, n, delta)
+        if n > 0 and ucb <= target_risk:
+            best = {"tau": float(tau), "risk_ucb": round(ucb, 4), "n_groups": n,
+                    "certifiable": True}
+        elif best is not None:
+            break  # fixed-sequence: stop at the first failure after a success
+    return best or {"tau": 0.0, "risk_ucb": 1.0, "n_groups": len(units), "certifiable": False}
+
+
+def calibrate_taus(calibration_by_defect: dict[str, list[tuple[str, float, bool]]],
+                   *, target_risk: float = 0.10, delta: float = 0.05) -> dict[str, dict]:
+    return {d: learn_then_test(rows, target_risk=target_risk, delta=delta)
+            for d, rows in calibration_by_defect.items()}
+
+
+def _defect_ucb(cells: dict[str, list[tuple[float, float]]], defect: str, *,
+                n_boot: int = 200, seed: int = 0) -> float:
+    pairs = cells.get(defect)
+    if not pairs:
+        return 1.0  # missing evidence on a critical defect is NOT feasibility
+    vals = [s + u for s, u in pairs]
+    rng = np.random.default_rng(seed)
+    boots = [max(float(np.max(rng.choice(vals, size=len(vals), replace=True))), 0.0)
+             for _ in range(n_boot)]
+    return float(np.percentile(boots, 95))
+
+
+def select_v3(candidates: dict[str, dict], taus: dict[str, dict], *,
+              epsilon_regret: float = 0.10, probe_budget_left: bool = False,
+              distribution_flag: str = "in_calibration_domain",
+              n_boot: int = 200, seed: int = 0) -> dict:
+    """§16 terminal logic. ``candidates``: id -> {"cells": {defect: [(s,u)...]},
+    "secondary": float, "evidence": {family: cells-dict}, "gates": {...}}.
+    Outcomes: final | needs_probe (budget permitting) | no_acceptable_candidate.
+    Certification: autonomous_proxy_certified (+ the distribution flag)."""
+    report: dict[str, dict] = {}
+    feasible: list[str] = []
+    for cid, c in candidates.items():
+        ok_hard, failed_hard = hard_gates(c.get("gates", {}))
+        ucbs = {d: round(_defect_ucb(c["cells"], d, n_boot=n_boot, seed=seed), 4)
+                for d in CRITICAL_DEFECTS if d in c["cells"] or d in taus}
+        infeasible = [d for d, u in ucbs.items()
+                      if not taus.get(d, {}).get("certifiable", False)
+                      or u > taus[d]["tau"]]
+        report[cid] = {"hard_failed": failed_hard, "ucbs": ucbs,
+                       "infeasible_defects": infeasible,
+                       "secondary": round(float(c.get("secondary", 0.0)), 4)}
+        if ok_hard and not infeasible:
+            feasible.append(cid)
+
+    base = {"selector_version": SELECTOR_V3_VERSION,
+            "certification": "autonomous_proxy_certified",
+            "distribution": distribution_flag,
+            "taus": taus, "candidates": report}
+    if distribution_flag == "out_of_domain":
+        return {**base, "status": "no_acceptable_candidate", "best_available": None,
+                "reason": "out of calibration domain: bounds are not valid here (§15.4)"}
+    if not feasible:
+        if probe_budget_left:
+            return {**base, "status": "needs_probe",
+                    "reason": "no candidate currently feasible; a probe may separate"}
+        best = min(report, key=lambda c: (len(report[c]["infeasible_defects"]),
+                                          report[c]["secondary"])) if report else None
+        return {**base, "status": "no_acceptable_candidate", "best_available": best,
+                "failed_gates": report[best]["infeasible_defects"] if best else [],
+                "reason": "no candidate passes the calibrated risk gates"}
+
+    ranked = sorted(feasible, key=lambda c: report[c]["secondary"])
+    star = ranked[0]
+
+    # robustness (§16.2): still feasible with any one evidence family removed
+    loeo_ok = True
+    families = candidates[star].get("evidence") or {}
+    for fam in families:
+        reduced: dict[str, list] = {}
+        for other, cells in families.items():
+            if other == fam:
+                continue
+            for d, pairs in cells.items():
+                reduced.setdefault(d, []).extend(pairs)
+        if not reduced:
+            continue
+        u2 = {d: _defect_ucb(reduced, d, n_boot=n_boot, seed=seed)
+              for d in CRITICAL_DEFECTS if d in reduced or d in taus}
+        if any(not taus.get(d, {}).get("certifiable", False) or u > taus[d]["tau"]
+               for d, u in u2.items()):
+            loeo_ok = False
+            break
+
+    # regret (§16.4): winner's secondary vs best alternative, bounded by ε
+    regret_ok = True
+    if len(ranked) > 1:
+        regret_ok = (report[star]["secondary"] - report[ranked[1]]["secondary"]
+                     ) <= epsilon_regret
+
+    if loeo_ok and regret_ok:
+        return {**base, "status": "final", "candidate_id": star,
+                "mode": "feasible_certified",
+                "reason": "passes hard + calibrated gates; leave-one-evidence-out "
+                          "stable; regret within ε"}
+    if probe_budget_left:
+        return {**base, "status": "needs_probe", "candidate_id": star,
+                "reason": ("evidence-removal instability" if not loeo_ok
+                           else "regret bound not met")}
+    return {**base, "status": "no_acceptable_candidate", "best_available": star,
+            "failed_gates": [],
+            "reason": ("not robust to evidence removal and probe budget exhausted"
+                       if not loeo_ok else
+                       "regret bound unmet and probe budget exhausted")}
+
+
 def select(candidates: dict[str, dict], *, lam: float = 0.5, alpha: float = 0.90,
            delta: float = 0.05, max_acceptable_risk: float = 0.65,
            gate_limits: dict[str, float] = DEFAULT_GATE_LIMITS,
