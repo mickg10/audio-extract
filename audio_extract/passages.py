@@ -41,6 +41,10 @@ class MinerConfig:
     # NMS
     max_iou: float = 0.25
     min_center_distance_s: float = 8.0
+    # absolute vocal-absence ceiling for no_vocal_control (GPU-validation finding:
+    # on an all-sung clip, track-relative "inactive" windows still carried 76% vocal
+    # energy and structurally contaminated the theft assays)
+    no_vocal_abs_ratio_max: float = 0.15
     quotas: dict = field(default_factory=lambda: {
         "high_soprano": 3, "extreme_soprano": 1, "voice_dominant": 2,
         "difficult_overlap": 3, "dense_tutti": 2, "quiet_backing": 2,
@@ -286,13 +290,34 @@ def mine_passages(vocal: np.ndarray, accompaniment: np.ndarray, sr: int,
                  {"tail_after_offset": True, "parent_span": [span[0], span[1]],
                   **_span_features((tail0, tail1))}, ["hall_tail"])
 
-    # controls
+    # controls — with an ABSOLUTE vocal-absence gate: a "no-vocal" control must
+    # genuinely lack voice, not merely be track-relatively quiet. A contaminated
+    # control poisons every downstream theft assay and exact-reference challenge.
+    v2_arr = dsp.as2d(vocal)
+    a2_arr = dsp.as2d(accompaniment)
+
+    def _vocal_ratio(span: tuple[int, int]) -> float:
+        vs = v2_arr[span[0]:span[1]]
+        as_ = a2_arr[span[0]:span[1]]
+        ev = float(np.sqrt(np.mean(vs ** 2))) if vs.size else 0.0
+        em = float(np.sqrt(np.mean((vs + as_[: len(vs)]) ** 2))) if vs.size else 1.0
+        return ev / (em + 1e-12)
+
     inactive_events = _events_from_activity(~active, int(1000 / cfg.hop_ms), 0)
     for (i0, i1) in inactive_events:
-        c = frame_to_sample((i0 + i1) // 2)
-        half = default_w // 2
-        span = (max(0, c - half), min(n_samples, c + half))
-        _add(span, i1 - i0, {"control": "no_vocal", **_span_features(span)}, ["no_vocal_control"])
+        # the control window stays INSIDE the inactive event — a window centered on
+        # the gap but spilling into sung phrases is not a control
+        e_s = frame_to_sample(i0)
+        e_e = min(n_samples, frame_to_sample(i1))
+        if e_e - e_s < int(1.0 * sr):
+            continue  # too short to be a usable control
+        span = (e_s, min(e_e, e_s + max_w))
+        ratio = _vocal_ratio(span)
+        if ratio > cfg.no_vocal_abs_ratio_max:
+            continue  # declined: this "quiet" span still carries voice
+        _add(span, i1 - i0,
+             {"control": "no_vocal", "vocal_energy_ratio": round(ratio, 4),
+              **_span_features(span)}, ["no_vocal_control"])
 
     rng = np.random.default_rng(cfg.seed)
     for _ in range(4):

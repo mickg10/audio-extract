@@ -345,30 +345,45 @@ def _candidate_role(construction: str, target: str) -> str:
 def _score_store(layout: "TrackLayout", sr: int, *, write_metrics: bool = True):
     """Score every accompaniment candidate in the store against a consensus
     reference. Returns ``(scored, report)``; shared by `qa score` and `conduct`."""
+    import numpy as np
     import soundfile as sf
 
     from . import metrics as mx
     from . import panel_runner as pr
     from .manifest import Manifest
 
+    # Source peak: float audio can legitimately exceed 1.0 (mp3 decode overshoot);
+    # residuals inherit it. Clipping is judged against the source's own headroom.
+    source_peak = None
+    canonical = layout.source_dir / "canonical.f32.wav"
+    if canonical.exists():
+        src_arr, _ = sf.read(str(canonical), dtype="float64", always_2d=True)
+        source_peak = float(np.max(np.abs(src_arr))) if src_arr.size else None
+
     cands: dict[str, Any] = {}
+    rejected: list[dict] = []
     for d in sorted(layout.candidates_dir.glob("sha256_*")):
         wav = d / "output.f32.wav"
         if not wav.exists():
             continue
+        rid = d.name.replace("sha256_", "sha256:")
         # Only accompaniment-eligible candidates enter one ranking round — never mix
         # native vocals or auxiliary outputs into the instrumental consensus.
         rj = d / "recipe.json"
         if rj.exists():
             op = json.loads(rj.read_text()).get("operation", {})
             if _candidate_role(op.get("construction", ""), op.get("target", "")) != "accompaniment":
+                rejected.append({"recipe_id": rid, "reason": "role", "detail": "not accompaniment"})
                 continue
         arr, _ = sf.read(str(wav), dtype="float64", always_2d=True)
-        if not mx.hard_checks(arr, sr)["ok"]:   # hard-reject (NaN/clip/silence/DC) BEFORE Pareto ranking
+        hc = mx.hard_checks(arr, sr, source_peak=source_peak)
+        if not hc["ok"]:   # hard-reject BEFORE Pareto ranking — but never silently
+            rejected.append({"recipe_id": rid, "reason": "hard_checks", "detail": hc["problems"]})
             continue
-        cands[d.name.replace("sha256_", "sha256:")] = arr
+        cands[rid] = arr
     if not cands:
-        return [], {"ranking": [], "pareto_frontier": [], "candidate_count": 0, "axes": []}
+        return [], {"ranking": [], "pareto_frontier": [], "candidate_count": 0, "axes": [],
+                    "rejected": rejected}
 
     reference = pr.consensus_reference(list(cands.values())) if len(cands) > 1 else next(iter(cands.values()))
     pv = layout.source_dir / "provisional_vocal.f32.wav"
@@ -391,6 +406,7 @@ def _score_store(layout: "TrackLayout", sr: int, *, write_metrics: bool = True):
         "axes": pr._axes_for(scored),
         "pareto_frontier": [s.recipe_id for s in pr.pareto_frontier(scored)],
         "ranking": [{"recipe_id": s.recipe_id, "costs": s.costs} for s in pr.rank_by_scalarized(scored)],
+        "rejected": rejected,
     }
     return scored, report
 

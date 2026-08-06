@@ -36,8 +36,10 @@ def test_miner_returns_passages_within_bounds():
 def test_miner_tags_controls():
     passages, _ = _mine()
     all_tags = {t for p in passages for t in p.tags}
-    assert "no_vocal_control" in all_tags    # inactive spans between phrases
-    # (soprano tagging is covered deterministically by test_soprano_tags)
+    assert "random_control" in all_tags
+    # NOTE: this fixture's "inactive" span overlaps a sung phrase, so the absolute
+    # vocal-absence gate correctly DECLINES no_vocal_control here (the GPU-run bug
+    # in miniature). The accept path is covered in test_no_vocal_control_absolute_gate.
 
 
 def test_soprano_tags():
@@ -71,6 +73,24 @@ def test_write_passages(tmp_path):
     # explicit activity timebase (v2.1 §8.3): consumers never guess frame vs sample
     assert doc["activity_timebase"]["schema"] == "audio-extract/activity/v2"
     assert doc["activity_timebase"]["hop_samples"] == 441
+
+
+def test_no_vocal_control_absolute_gate():
+    # GPU-validation regression: contaminated "controls" poison the theft assays.
+    orch = fx.synth_orchestra(SR, DUR)
+
+    # REJECT path: voice everywhere -> no no_vocal_control anywhere
+    sung, _ = fx.synth_vocal(SR, DUR, phrases=[(0.0, DUR)])
+    n = min(len(sung), len(orch))
+    ps = pm.mine_passages(sung[:n], orch[:n], SR, _small_cfg())
+    assert not any("no_vocal_control" in p.tags for p in ps)
+
+    # ACCEPT path: a long genuinely-silent opening -> control emitted with ~0 ratio
+    late, _ = fx.synth_vocal(SR, DUR, phrases=[(0.65 * DUR, 0.90 * DUR)])
+    n = min(len(late), len(orch))
+    ps2 = pm.mine_passages(late[:n], orch[:n], SR, _small_cfg())
+    tagged = [p for p in ps2 if "no_vocal_control" in p.tags]
+    assert tagged and all(p.features["vocal_energy_ratio"] <= 0.15 for p in tagged)
 
 
 def test_span_features_present():

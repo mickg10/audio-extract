@@ -110,6 +110,18 @@ def test_hard_checks():
     assert "wrong_sample_rate" in mx.hard_checks(orch, SR, expected_sr=48000)["problems"]
 
 
+def test_hard_checks_source_headroom_not_clipping():
+    # GPU-validation regression: an mp3 decoding to float peak 1.296 must not get
+    # its residuals rejected as "clipping" — judge against the source's headroom.
+    t = np.arange(1000) / SR
+    tone = np.sin(2 * np.pi * 440 * t).reshape(-1, 1) * np.ones((1, 2))   # zero-DC
+    hot = tone * 1.29
+    assert "clipping" in mx.hard_checks(hot, SR)["problems"]                      # no context: reject
+    assert mx.hard_checks(hot, SR, source_peak=1.296)["ok"] is True               # inherited headroom: fine
+    hotter = tone * 1.50
+    assert "clipping" in mx.hard_checks(hotter, SR, source_peak=1.296)["problems"]  # beyond source: reject
+
+
 def test_gain_match_equalizes_rms():
     _, orch, _ = _stems()
     quiet = orch * 0.1

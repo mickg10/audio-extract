@@ -31,13 +31,19 @@ def gain_match(cand: np.ndarray, reference: np.ndarray) -> np.ndarray:
 
 # --- hard technical checks ---------------------------------------------------
 def hard_checks(cand: np.ndarray, sr: int, *, expected_sr: int | None = None,
-                expected_frames: int | None = None, expected_channels: int | None = None) -> dict:
+                expected_frames: int | None = None, expected_channels: int | None = None,
+                source_peak: float | None = None) -> dict:
+    """``source_peak``: peak of the source mixture. Float audio legitimately
+    exceeds 1.0 (e.g. mp3 decode overshoot); a candidate inheriting the source's
+    own headroom is NOT clipping (GPU-validation finding: 4/5 residuals were
+    silently rejected because the mp3 decoded to peak 1.296)."""
     a = dsp.as2d(cand)
     problems: list[str] = []
     if not np.all(np.isfinite(a)):
         problems.append("nan_or_inf")
     peak = float(np.max(np.abs(a))) if a.size else 0.0
-    if peak >= 1.0 - 1e-6:
+    clip_limit = max(1.0 - 1e-6, (source_peak or 0.0) * 1.05)
+    if peak >= clip_limit:
         problems.append("clipping")
     if peak <= 1e-5:
         problems.append("unexpected_silence")
