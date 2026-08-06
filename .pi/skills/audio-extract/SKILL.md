@@ -36,7 +36,10 @@ uv run audio-extract run finalize     --run-id "$RUN_ID" --candidate-id "$ID" --
 7. Perform no more than two refinement rounds (≤24 excerpt candidates total).
 8. Render no more than three full-track finalists (≤3 ensembles, ≤1 cleanup per candidate).
 9. Finalize a candidate only when the evidence is clear.
-10. Otherwise request a blinded human A/B comparison, or declare no acceptable candidate.
+10. Otherwise identify the dominant uncertainty and request the registered discriminating
+    probe with the highest expected information gain; after the probe budget is exhausted,
+    return `final` only if the selector's acceptance rules pass, else `no_acceptable_candidate`.
+    **No human A/B in autonomous production.**
 
 ## Required reasoning
 
@@ -61,21 +64,19 @@ Experiments this round:
 {"actions": [{"type": "change_overlap", "overlap": 4, "changes_one_variable": true, "reason": "..."}]}
 ```
 Allowed action types: `run_model_variant` · `run_construction` · `change_overlap` ·
-`build_weighted_ensemble` · `request_human_comparison` · `render_full_track` · `stop_with_reason`.
+`build_weighted_ensemble` · `render_full_track` · `stop_with_reason` (autonomous-selection
+probe actions — `run_track_remix_challenge`, `run_*_intervention_probe`,
+`expand_judge_committee` — land with `challenges.py`).
 
 Terminal — clear winner:
 ```json
 {"status": "final", "candidate_id": "sha256:...", "confidence": 0.87,
  "evidence": {"leakage": "...", "dynamics": "...", "brightness": "...", "hall": "..."}}
 ```
-Terminal — needs human ears:
+Terminal — nothing acceptable (autonomous; no human A/B):
 ```json
-{"status": "needs_human_ab", "candidate_a": "sha256:...", "candidate_b": "sha256:...",
- "passages": ["seg_004", "seg_011"], "question": "..."}
-```
-Terminal — nothing acceptable:
-```json
-{"status": "no_acceptable_candidate", "reason": "..."}
+{"status": "no_acceptable_candidate", "best_available": "sha256:...",
+ "reason": "...", "failed_gates": ["orchestral_theft", "pumping"]}
 ```
 
 The controller validates every proposal (action exists, budget remains, not cached,

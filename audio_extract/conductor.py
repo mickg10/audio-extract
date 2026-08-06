@@ -14,9 +14,13 @@ from dataclasses import dataclass, field
 from typing import Callable, Protocol
 
 # Typed action vocabulary (docs/v2 §6.1). The planner may propose only these.
+# Autonomous production action set (oracle follow-up): no human comparison. Ambiguity
+# is resolved by a registered discriminating probe, not a person. The probe actions
+# (run_track_remix_challenge / run_*_intervention_probe / expand_judge_committee) land
+# with the autonomous-selection subsystem (challenges.py).
 TYPED_ACTIONS = frozenset({
     "run_model_variant", "run_construction", "change_overlap", "build_weighted_ensemble",
-    "request_human_comparison", "render_full_track", "stop_with_reason",
+    "render_full_track", "stop_with_reason",
 })
 
 _EXCERPT_ACTIONS = {"run_model_variant", "run_construction", "change_overlap"}
@@ -208,13 +212,6 @@ class Conductor:
                 if not ok:
                     self.log.append({"event": "rejected_action", "action": action, "reason": reason})
                     continue
-                if action["type"] == "request_human_comparison":
-                    self.log.append({"event": "human_requested", "action": action})
-                    return {"status": "needs_human_ab",
-                            "candidate_a": action.get("candidate_a"),
-                            "candidate_b": action.get("candidate_b"),
-                            "passages": action.get("passages", []),
-                            "question": action.get("question", "Which preserves the orchestra better?")}
                 if action["type"] == "stop_with_reason":
                     best = report.get("ranking", [{}])[0].get("recipe_id")
                     return {"status": "final", "candidate_id": best,
@@ -239,13 +236,11 @@ class Conductor:
             if not executed_any:
                 break
 
-        # Budget/round exhausted without the planner finalizing. Do NOT fabricate a
-        # confident final (oracle review P0 #11); hand off to human review, or declare
-        # no acceptable candidate when there isn't even a comparable pair.
+        # Autonomous production: no human judge (oracle follow-up). At budget/round
+        # exhaustion the run does NOT pause for a person and does NOT fabricate a
+        # confident final — it returns the best available with no_acceptable_candidate.
         ranking = report.get("ranking", [])
-        if len(ranking) >= 2:
-            return {"status": "needs_human_ab", "candidate_a": ranking[0]["recipe_id"],
-                    "candidate_b": ranking[1]["recipe_id"], "passages": report.get("decisive_passages", []),
-                    "question": "Budget reached with no clear winner — which preserves the orchestra more naturally?"}
-        return {"status": "no_acceptable_candidate",
-                "reason": "budget/round cap reached without a clear winner or a comparable pair"}
+        best = ranking[0]["recipe_id"] if ranking else None
+        return {"status": "no_acceptable_candidate", "best_available": best,
+                "reason": "probe/round budget exhausted without the selector accepting a finalist",
+                "failed_gates": report.get("failed_gates", [])}

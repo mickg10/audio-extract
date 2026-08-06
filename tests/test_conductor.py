@@ -61,16 +61,18 @@ def test_duplicate_experiment_rejected():
     assert calls["execute"] == 1  # second is a cache/dup hit
 
 
-def test_needs_human_ab_path():
-    proposals = [{"actions": [{"type": "request_human_comparison", "candidate_a": "a",
-                               "candidate_b": "b", "passages": ["seg_004"], "question": "which?"}]}]
-    c, _ = _mk(proposals)
-    decision = c.run([{"recipe_id": "base"}], {"ranking": []})
-    assert decision["status"] == "needs_human_ab"
-    assert decision["candidate_a"] == "a" and decision["candidate_b"] == "b"
+def test_request_human_comparison_rejected_in_autonomous():
+    # Autonomous production removes the human judge: request_human_comparison is not
+    # a valid action and can never yield a needs_human_ab terminal.
+    proposals = [{"actions": [{"type": "request_human_comparison", "candidate_a": "a", "candidate_b": "b"}]}]
+    c, calls = _mk(proposals)
+    decision = c.run([{"recipe_id": "base"}], {"ranking": [{"recipe_id": "base"}]})
+    assert calls["execute"] == 0
+    assert any(e["event"] == "rejected_action" for e in c.log)
+    assert decision["status"] != "needs_human_ab"
 
 
-def test_two_round_cap_defers_to_human():
+def test_two_round_cap_no_acceptable():
     proposals = [
         {"actions": [{"type": "change_overlap", "overlap": 2, "changes_one_variable": True}]},
         {"actions": [{"type": "change_overlap", "overlap": 4, "changes_one_variable": True}]},
@@ -78,8 +80,9 @@ def test_two_round_cap_defers_to_human():
     ]
     c, calls = _mk(proposals, cd.Budget(max_rounds=2))
     decision = c.run([{"recipe_id": "base"}], {"ranking": [{"recipe_id": "base"}]})
-    # No fabricated final at the cap: with >=2 candidates, hand off to human A/B.
-    assert decision["status"] == "needs_human_ab"
+    # Autonomous: no human pause, no fabricated final -> no_acceptable_candidate.
+    assert decision["status"] == "no_acceptable_candidate"
+    assert "best_available" in decision
     assert calls["execute"] == 2                  # exactly two rounds ran
 
 
