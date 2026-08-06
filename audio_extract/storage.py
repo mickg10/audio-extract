@@ -17,6 +17,7 @@ downstream stage cannot silently mutate a parent.
 from __future__ import annotations
 
 import json
+import shutil
 from pathlib import Path
 
 
@@ -66,7 +67,7 @@ class TrackLayout:
             d.mkdir(parents=True, exist_ok=True)
         return self
 
-    # --- immutable candidate writes -------------------------------------
+    # --- immutable candidate writes (atomic policy, v2.1 §7.5) ------------
     def write_candidate(
         self,
         recipe_id: str,
@@ -75,21 +76,56 @@ class TrackLayout:
         output_f32_path: Path | None,
         artifact_pcm_sha256: str,
     ) -> Path:
-        """Materialize a candidate directory. Refuses to overwrite a completed one.
+        """Materialize a candidate directory atomically:
 
-        ``output_f32_path`` is an already-written float32 WAV to be moved/linked in
-        by the caller; here we only manage the sidecar records and the guard.
+        1. build everything in a temp dir under the same parent;
+        2. verify the written audio by re-hashing it against the expected PCM hash;
+        3. write the ``COMPLETE`` marker last;
+        4. atomically rename into place.
+
+        A crash mid-write leaves only a temp dir, never a half-complete candidate;
+        a completed candidate is never overwritten.
         """
         cdir = self.candidate_dir(recipe_id)
-        out_wav = cdir / "output.f32.wav"
-        if out_wav.exists():
+        if (cdir / "output.f32.wav").exists():
             raise ImmutableWriteError(
                 f"candidate {recipe_id} already has output.f32.wav; candidates are append-only"
             )
-        cdir.mkdir(parents=True, exist_ok=True)
-        (cdir / "recipe.json").write_text(json.dumps(recipe_obj, indent=2, sort_keys=True))
-        (cdir / "execution.json").write_text(json.dumps(execution, indent=2, sort_keys=True))
-        (cdir / "output.pcm.sha256").write_text(artifact_pcm_sha256 + "\n")
-        if output_f32_path is not None:
-            Path(output_f32_path).replace(out_wav)
+        self.candidates_dir.mkdir(parents=True, exist_ok=True)
+        tmp = self.candidates_dir / f".tmp-{cdir.name}"
+        if tmp.exists():
+            shutil.rmtree(tmp)
+        tmp.mkdir(parents=True)
+        try:
+            (tmp / "recipe.json").write_text(json.dumps(recipe_obj, indent=2, sort_keys=True))
+            (tmp / "execution.json").write_text(json.dumps(execution, indent=2, sort_keys=True))
+            (tmp / "output.pcm.sha256").write_text(artifact_pcm_sha256 + "\n")
+            if output_f32_path is not None:
+                Path(output_f32_path).replace(tmp / "output.f32.wav")
+                self._verify_pcm(tmp / "output.f32.wav", artifact_pcm_sha256)
+            (tmp / "COMPLETE").write_text("")
+            if cdir.exists():  # raced by a concurrent writer of the same recipe
+                shutil.rmtree(tmp)
+                raise ImmutableWriteError(f"candidate {recipe_id} completed concurrently")
+            tmp.rename(cdir)
+        except Exception:
+            if tmp.exists():
+                shutil.rmtree(tmp, ignore_errors=True)
+            raise
         return cdir
+
+    @staticmethod
+    def _verify_pcm(wav_path: Path, expected_pcm_sha256: str) -> None:
+        """Read back the written audio and verify it hashes to the expected value."""
+        import soundfile as sf
+
+        from . import identity
+
+        arr, sr = sf.read(str(wav_path), dtype="float32", always_2d=True)
+        layout = {1: ["FC"], 2: ["FL", "FR"]}.get(arr.shape[1],
+                                                  [f"CH{i}" for i in range(arr.shape[1])])
+        actual = identity.artifact_pcm_sha256(arr, int(sr), layout, int(arr.shape[0]))
+        if actual != expected_pcm_sha256:
+            raise ImmutableWriteError(
+                f"read-back hash mismatch for {wav_path.name}: "
+                f"expected {expected_pcm_sha256[:20]}, got {actual[:20]}")
