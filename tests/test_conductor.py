@@ -38,6 +38,14 @@ def test_excerpt_budget_enforced():
     assert any(e["event"] == "rejected_action" for e in c.log)
 
 
+def test_per_round_candidate_cap():
+    big = [{"type": "change_overlap", "overlap": i, "changes_one_variable": True} for i in range(10)]
+    c, calls = _mk([{"actions": big}], cd.Budget(max_new_candidates_per_round=6))
+    c.run([{"recipe_id": "base"}], {"ranking": []})
+    assert calls["execute"] == 6  # 10 proposed in one round, per-round cap is 6
+    assert any("per-round" in e.get("reason", "") for e in c.log)
+
+
 def test_invalid_action_rejected():
     c, calls = _mk([{"actions": [{"type": "teleport"}]}], )
     c.run([{"recipe_id": "base"}], {"ranking": [{"recipe_id": "base"}]})

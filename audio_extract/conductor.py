@@ -24,11 +24,13 @@ _EXCERPT_ACTIONS = {"run_model_variant", "run_construction", "change_overlap"}
 
 @dataclass
 class Budget:
-    # oracle-aligned limits (issue #1): 24 excerpts / 3 finalists / 3 ensembles / 2 rounds
+    # oracle-aligned limits (issue #1 design doc §15): full hard-budget set
     max_excerpt_candidates: int = 24
     max_full_renders: int = 3
     max_ensembles: int = 3
     max_rounds: int = 2
+    max_new_candidates_per_round: int = 6
+    max_cleanup_stages_per_candidate: int = 1
 
 
 @dataclass
@@ -200,6 +202,7 @@ class Conductor:
                 break
 
             executed_any = False
+            rendered_this_round = 0
             for action in decision.get("actions", []):
                 ok, reason = self.validate_action(action, state)
                 if not ok:
@@ -217,11 +220,19 @@ class Conductor:
                     return {"status": "final", "candidate_id": best,
                             "confidence": action.get("confidence", 0.5),
                             "reason": action.get("reason", "planner stop")}
+                is_new_candidate = (action["type"] in _EXCERPT_ACTIONS
+                                    or action["type"] == "build_weighted_ensemble")
+                if is_new_candidate and rendered_this_round >= self.budget.max_new_candidates_per_round:
+                    self.log.append({"event": "rejected_action", "action": action,
+                                     "reason": "per-round new-candidate budget exhausted"})
+                    continue
                 rec = self.execute(action)
                 self._account(action, state)
                 if rec:
                     cands.append(rec)
                     executed_any = True
+                    if is_new_candidate:
+                        rendered_this_round += 1
 
             report = self.score(cands)
             state.round += 1
