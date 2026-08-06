@@ -6,11 +6,16 @@
   <title>Passages · A/B/C · audio-extract v2</title>
   <link rel="stylesheet" href="/static/style.css">
   <link rel="stylesheet" href="/static/passages.css">
+  <link rel="stylesheet" href="/static/v2ui.css">
 </head>
 <body>
   <div class="topbar">
     <h1><span class="brand">audio-extract</span> · v2 passages</h1>
     <span class="spacer"></span>
+    <nav class="nav-links">
+      <a href="/">Dashboard</a>
+      <a href="/calibration">Calibration</a>
+    </nav>
     <label class="toggle" for="runPick" style="gap:6px;">run
       <select id="runPick" title="Choose a run"></select>
     </label>
@@ -76,6 +81,20 @@
         <div id="decisionBody"><div class="muted"><span class="spin"></span> loading decision…</div></div>
       </div>
 
+      <!-- ---- CHALLENGE VISUALIZATIONS (exact-reference evidence) ---- -->
+      <div class="card" id="challengeVizCard">
+        <div class="card-head">
+          <span class="name">Challenge visualizations</span>
+          <span class="kind">exact-reference evidence</span>
+          <span class="spacer" style="flex:1"></span>
+          <span class="muted" id="chalVizMeta"></span>
+        </div>
+        <div class="card-desc">The same challenge results as the matrix above, drawn:
+          SI-SDR per case × model (brighter = better), the no-vocal <b>theft assay</b> against its
+          gate, and each model's SI-SDR spread.</div>
+        <div id="chalVizBody"><div class="muted"><span class="spin"></span> loading challenges…</div></div>
+      </div>
+
       <!-- ---- CANDIDATES OVERVIEW ---- -->
       <div class="card" id="candOverviewCard">
         <div class="card-head"><span class="name">Candidates</span>
@@ -122,6 +141,7 @@
   </div>
 
   <script src="/static/common.js"></script>
+  <script src="/static/charts.js"></script>
   <script src="/static/passages.js"></script>
 </body>
 </html>

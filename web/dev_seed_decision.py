@@ -138,23 +138,78 @@ def synthesize_run(dest: str, track_id: str) -> None:
                        "effective_config": {"overlap_factor": 4}}, fh, indent=2)
 
 
-def ensure_passages(run_dir: str) -> None:
+def ensure_passages(run_dir: str, sr: int = 44100) -> None:
+    """Write a screening-realistic passages.v1.json (controls with
+    vocal_energy_ratio + hard-vocal categories + activity timebase) unless the
+    run already carries a genuinely mined one (recognizable by the absolute
+    vocal-absence feature the real miner records on its controls)."""
     pj = os.path.join(run_dir, "passages", "passages.v1.json")
     if os.path.isfile(pj):
-        return
+        try:
+            with open(pj, encoding="utf-8") as fh:
+                doc = json.load(fh)
+            mined = any(isinstance((p.get("features") or {}).get("vocal_energy_ratio"),
+                                   (int, float))
+                        for p in doc.get("passages", []))
+        except (OSError, ValueError):
+            mined = False
+        if mined:
+            return
     try:
         with open(os.path.join(run_dir, "source", "source.json"), encoding="utf-8") as fh:
             frames = int(json.load(fh).get("frames") or 0)
     except (OSError, ValueError):
         frames = 0
     os.makedirs(os.path.dirname(pj), exist_ok=True)
-    mk = lambda pid, a, b, tag: {"passage_id": pid, "start_sample": int(frames * a),
-                                 "end_sample": int(frames * b), "tags": [tag],
-                                 "features": {}, "reason": "dev seed"}
+
+    def mk(pid, a, b, tags, feats):
+        return {"passage_id": pid, "start_sample": int(frames * a),
+                "end_sample": int(frames * b), "tags": tags,
+                "features": feats, "detectors": {}, "reason": "dev seed"}
+
+    passages = [
+        mk("p_0000", 0.06, 0.16, ["no_vocal_control"],
+           {"control": "no_vocal", "vocal_energy_ratio": 0.041, "rms_db": -21.3}),
+        mk("p_0001", 0.20, 0.29, ["no_vocal_control"],
+           {"control": "no_vocal", "vocal_energy_ratio": 0.112, "rms_db": -18.7}),
+        mk("p_0002", 0.31, 0.37, ["random_control"],
+           {"control": "random", "vocal_energy_ratio": 0.462}),
+        mk("p_0003", 0.40, 0.52, ["high_soprano", "difficult_overlap"],
+           {"median_f0_hz": 588.0, "peak_f0_hz": 1046.5, "dense_fraction": 0.71}),
+        mk("p_0004", 0.55, 0.63, ["extreme_soprano", "quiet_backing"],
+           {"median_f0_hz": 932.0, "peak_f0_hz": 1396.9, "backing_rms_db": -34.0}),
+        mk("p_0005", 0.66, 0.78, ["dense_tutti", "abrupt_forte"],
+           {"dense_fraction": 0.93, "delta_rms_db": 14.2}),
+        mk("p_0006", 0.80, 0.90, ["hall_tail"],
+           {"rt60_s": 1.9, "tail_drop_db": 31.0}),
+        mk("p_0007", 0.91, 0.99, ["vocal_overlap"],
+           {"dense_fraction": 0.55}),
+    ]
+    timebase = {"schema": "audio-extract/activity/v2",
+                "hop_samples": max(1, int(sr * 0.010)),
+                "frame_length_samples": max(8, int(sr * 0.040)),
+                "frame_origin_sample": 0,
+                "thresholds": {"on": 0.6, "off": 0.4, "pitch_conf": 0.55}}
     with open(pj, "w", encoding="utf-8") as fh:
-        json.dump({"schema": "audio-extract/passages/v1",
-                   "passages": [mk("p_0000", 0.10, 0.40, "no_vocal_control"),
-                                mk("p_0001", 0.50, 0.80, "vocal_overlap")]}, fh, indent=2)
+        json.dump({"schema": "audio-extract/passages/v1", "passages": passages,
+                   "activity_timebase": timebase}, fh, indent=2)
+
+
+def set_job_state(run_dir: str, track_id: str, state: str) -> None:
+    """Write the v1 job-state row (the dashboard strip reads it). Clears any
+    stale row copied from a base run whose track_id differs."""
+    man = os.path.join(run_dir, "manifest.sqlite")
+    conn = sqlite3.connect(man)
+    try:
+        conn.execute("""CREATE TABLE IF NOT EXISTS job (
+            track_id TEXT PRIMARY KEY, state TEXT NOT NULL,
+            pi_session TEXT, updated_at TEXT)""")
+        conn.execute("DELETE FROM job")
+        conn.execute("INSERT INTO job (track_id, state, pi_session, updated_at) "
+                     "VALUES (?,?,NULL,?)", (track_id, state, "2026-08-06T12:00:00Z"))
+        conn.commit()
+    finally:
+        conn.close()
 
 
 def candidate_ids(run_dir: str) -> list[str]:
@@ -274,12 +329,14 @@ def build_challenge_rows(sr: int, frames: int, cids: list[str], quality_rank: li
             j = float(rng.normal(0, 0.4))
             if case["challenge_type"] == "track_remix":
                 level = case["klass"]["vocal_level_db"]
-                res = {"si_sdr_db": round(16.0 - 5.5 * k - 0.35 * max(0.0, level + 6) + j, 3),
-                       "stft_distance": round(0.05 + 0.045 * k + 0.002 * abs(level) + abs(j) * 0.01, 5),
-                       "band_envelope_err_db": round(0.8 + 1.1 * k + abs(j) * 0.3, 3),
-                       "stereo_width_err": round(0.01 + 0.02 * k, 5),
-                       "alignment": {"delay": 0, "confidence": round(0.99 - 0.03 * k, 4),
-                                     "residual_db": round(-38.0 + 6.0 * k, 2)}}
+                # the REAL engine nests exact-target metrics under exact_reference
+                res = {"exact_reference": {
+                    "si_sdr_db": round(16.0 - 5.5 * k - 0.35 * max(0.0, level + 6) + j, 3),
+                    "stft_distance": round(0.05 + 0.045 * k + 0.002 * abs(level) + abs(j) * 0.01, 5),
+                    "band_envelope_err_db": round(0.8 + 1.1 * k + abs(j) * 0.3, 3),
+                    "stereo_width_err": round(0.01 + 0.02 * k, 5),
+                    "alignment": {"delay": 0, "confidence": round(0.99 - 0.03 * k, 4),
+                                  "residual_db": round(-38.0 + 6.0 * k, 2)}}}
             elif case["challenge_type"] == "no_vocal_theft":
                 res = {"control_id": "p_0000",
                        "theft_broadband": round(0.01 + 0.06 * k + abs(j) * 0.005, 5),
@@ -293,6 +350,36 @@ def build_challenge_rows(sr: int, frames: int, cids: list[str], quality_rank: li
                 res = {"probe": "brass_onset",
                        "passthrough_error": round(0.06 + 0.11 * k + abs(j) * 0.02, 5)}
             results.append((case["challenge_id"], cid, res))
+
+    # the theft assay row the real `challenges run` writes per candidate:
+    # challenge_id='theft_assay' with theft_rows + theft_mean + the residual-
+    # construction check on each control (v3 review §10)
+    controls = ("p_0000", "p_0001")
+    for cid in cids:
+        k = quality_rank.index(cid) if cid in quality_rank else len(quality_rank)
+        theft_rows = []
+        res_errs = []
+        for ci, ctl in enumerate(controls):
+            wobble = float(abs(rng.normal(0, 0.004)))
+            theft_rows.append({
+                "control_id": ctl,
+                "theft_broadband": round(0.012 + 0.055 * k + 0.006 * ci + wobble, 5),
+                "theft_mid": round(0.014 + 0.06 * k + wobble, 5),
+                "theft_side": round(0.009 + 0.045 * k + wobble, 5),
+                "band_excess_db": [round(0.1 + 0.4 * k + 0.05 * b, 3) for b in range(5)],
+            })
+            res_errs.append({
+                "control_id": ctl,
+                "si_sdr_db": round(30.0 - 7.0 * k - 1.5 * ci + float(rng.normal(0, 0.5)), 3),
+                "stft_distance": round(0.02 + 0.03 * k, 5),
+                "band_envelope_err_db": round(0.3 + 0.8 * k, 3),
+                "stereo_width_err": round(0.004 + 0.01 * k, 5),
+                "alignment": {"delay": 0, "confidence": 0.999, "residual_db": -44.0},
+            })
+        theft_mean = round(sum(r["theft_broadband"] for r in theft_rows) / len(theft_rows), 5)
+        results.append(("theft_assay", cid,
+                        {"theft_rows": theft_rows, "theft_mean": theft_mean,
+                         "residual_construction": res_errs}))
     return cases, results
 
 
@@ -340,7 +427,6 @@ def seed_run(lib: str, run_id: str, scenario: str, base: str | None,
         origin = "cli ingest" if got else "synthesized"
         if not got:
             synthesize_run(dest, run_id)
-    ensure_passages(dest)
 
     cids = candidate_ids(dest)
     if len(cids) < 3:                       # decision needs 3 profiles to be interesting
@@ -352,6 +438,7 @@ def seed_run(lib: str, run_id: str, scenario: str, base: str | None,
         src = json.load(fh)
     sr = int(src.get("sample_rate_hz") or 44100)
     frames = int(src.get("frames") or sr * 4)
+    ensure_passages(dest, sr)
 
     # --- REAL selector decision over synthetic severity cells ---
     cands = build_candidates(scenario, cids)
@@ -416,9 +503,51 @@ def seed_run(lib: str, run_id: str, scenario: str, base: str | None,
                         "SELECTED" if decision["status"] == "final" else "NO_ACCEPTABLE",
                         updated_at="2026-08-06T12:00:00Z")
 
+    # v1 job state per scenario, so the dashboard strip shows three different
+    # positions (COMPLETE / mid-pipeline / FAILED)
+    job_state = {"clear_winner": "COMPLETE", "best_safe": "MEASURING",
+                 "no_acceptable": "FAILED"}[scenario]
+    set_job_state(dest, run_id, job_state)
+
     where = os.path.basename(man_path)
     print(f"  {run_id}: {origin}; {len(cids)} candidates; decision={got[0]}"
-          f"{('/' + got[1]) if got[1] else ''} -> {where}")
+          f"{('/' + got[1]) if got[1] else ''}; job={job_state} -> {where}")
+
+
+def write_dev_lock(lib: str) -> str:
+    """A SYNTHETIC model lock under the lib root (never repo configs/): three
+    panel models appear import-locked so the launcher UI's lock badges render
+    locally. Serve with ``--lock <lib>/dev-model-lock.json`` to use it."""
+    import yaml
+
+    panel = yaml.safe_load(open(os.path.join(REPO, "configs", "panel.yaml")))
+    take = {"kim_vocal_2": "Kim_Vocal_2.onnx", "becruily_inst": None, "mdx23c_hq": None}
+    bundles = []
+    for entry in panel.get("models", []):
+        if entry.get("id") not in take:
+            continue
+        ckpt = entry.get("checkpoint") or {}
+        alias = take[entry["id"]] or ckpt.get("filename")
+        bundles.append({
+            "schema": "audio-extract/executed-model-bundle/v1",
+            "logical_id": entry["id"],
+            "family": entry.get("family"),
+            "target_stem": entry.get("target"),
+            "adapter": {"name": "audio-separator", "version": "dev-seed",
+                        "adapter_revision": "dev-seed (synthetic lock — GUI demo only)"},
+            "registry": {"alias": alias},
+            "files": [{"role": "weights", "filename": ckpt.get("filename"),
+                       "sha256": ckpt.get("sha256")}],
+            "effective_defaults": {"overlap_factor": 8},
+            "bundle_sha256": hashlib.sha256(
+                ("dev-seed-bundle:" + entry["id"]).encode()).hexdigest(),
+        })
+    path = os.path.join(lib, "dev-model-lock.json")
+    with open(path, "w", encoding="utf-8") as fh:
+        json.dump({"schema": "audio-extract/model-lock/v1", "bundles": bundles,
+                   "note": "SYNTHETIC dev-seed lock for GUI demos; not an executed lock"},
+                  fh, indent=2)
+    return path
 
 
 def main() -> int:
@@ -435,7 +564,11 @@ def main() -> int:
     seed_run(args.lib, "dectest", "clear_winner", base, separate_v2_file=False)
     seed_run(args.lib, "dectest-safe", "best_safe", base, separate_v2_file=True)
     seed_run(args.lib, "dectest-none", "no_acceptable", base, separate_v2_file=False)
-    print("done. serve with:\n  uv run python web/server_v2.py --lib %s --port 8752" % args.lib)
+    lock = write_dev_lock(args.lib)
+    print("done. also seed the calibration page:\n"
+          "  uv run python web/dev_seed_calibration.py --lib %s\n"
+          "then serve with:\n  uv run python web/server_v2.py --lib %s --port 8752 --lock %s"
+          % (args.lib, args.lib, lock))
     return 0
 
 
