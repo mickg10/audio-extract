@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dashboard · audio-extract v2 autonomous</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <link rel="stylesheet" href="/static/passages.css">
+  <link rel="stylesheet" href="/static/v2ui.css">
+</head>
+<body>
+  <div class="topbar">
+    <h1><span class="brand">audio-extract</span> · autonomous pipeline</h1>
+    <span class="spacer"></span>
+    <nav class="nav-links">
+      <a href="/" class="active">Dashboard</a>
+      <a href="/calibration">Calibration</a>
+      <a href="/runs">Run picker</a>
+    </nav>
+    <button class="btn small" id="refreshBtn" title="Reload">Refresh</button>
+  </div>
+
+  <div class="wrap wide">
+    <!-- ==================== RUNS + STATE MACHINE ==================== -->
+    <div class="card">
+      <div class="card-head">
+        <span class="name">Runs · pipeline state machine</span>
+        <span class="kind" id="runCount"></span>
+        <span class="spacer" style="flex:1"></span>
+        <span class="muted" id="stateHint"></span>
+      </div>
+      <div class="card-desc">Each run walks
+        <span style="font-family:var(--mono);font-size:11.5px;">INGESTED → MINING_PASSAGES → SCREENING → MEASURING →
+        FINALIST_SELECTED → RENDERING_DELIVERY → FINAL_QC → COMPLETE</span>;
+        filled segments are passed stages, the bright pulsing one is the current stage,
+        red = FAILED / CANCELLED. Click a run to open its audit page.</div>
+      <div id="runsWrap"><div class="empty-state"><span class="spin"></span> loading runs…</div></div>
+    </div>
+
+    <!-- ==================== SCREENING TABLE ==================== -->
+    <div class="card">
+      <div class="card-head"><span class="name">Screening across runs</span>
+        <span class="kind">controls &amp; hard-vocal mining</span></div>
+      <div class="card-desc">What the miner found per track: genuine no-vocal <b>controls</b>
+        (with their absolute vocal-energy ratios — the ≤&nbsp;0.15 gate feeds the theft assay)
+        and which <b>hard-vocal categories</b> fired, next to the terminal decision.</div>
+      <div class="table-scroll"><table class="cands screening" id="screeningTable"></table></div>
+    </div>
+
+    <!-- ==================== RUN LAUNCHER ==================== -->
+    <div class="card" id="launcherCard">
+      <div class="card-head"><span class="name">Run launcher</span>
+        <span class="kind">LOCAL · queue of 1</span>
+        <span class="spacer" style="flex:1"></span>
+        <span class="muted" id="lockNote"></span>
+      </div>
+      <div class="local-note"><b>Local launcher.</b> Jobs run on <b>this machine</b> with the
+        project venv (<span style="font-family:var(--mono)">uv run audio-extract …</span>), one at a
+        time, exactly the CLI sequence the GPU box uses: ingest → passages mine → panel render →
+        qa score → challenges build → challenges run → select autonomous. Models must be
+        <b>import-locked</b> and present in the model dir; on a laptop a run may simply be slow —
+        that is fine, it is the same code path.</div>
+
+      <div class="launch-grid">
+        <div>
+          <div class="launch-field">
+            <label>Separator models (from configs/panel.yaml + model-lock.json)</label>
+            <div class="model-list" id="modelList"><span class="muted"><span class="spin"></span> loading panel…</span></div>
+          </div>
+        </div>
+        <div>
+          <div class="launch-field">
+            <label>Source</label>
+            <div class="src-toggle">
+              <button class="btn small on" id="srcExisting" type="button">existing run</button>
+              <button class="btn small" id="srcUpload" type="button">upload file</button>
+            </div>
+            <div id="srcExistingWrap">
+              <select id="trackPick"></select>
+            </div>
+            <div id="srcUploadWrap" class="hidden">
+              <input type="file" id="fileInput" accept=".mp3,.wav,.flac,.m4a,.ogg,audio/*">
+              <div style="margin-top:8px;">
+                <input type="text" id="runIdInput" placeholder="run id (auto from filename)">
+              </div>
+            </div>
+          </div>
+          <div class="launch-field">
+            <label>Construction</label>
+            <select id="constructionPick">
+              <option value="mixture_minus_primary" selected>mixture_minus_primary (residual — recommended)</option>
+              <option value="native_primary">native_primary</option>
+              <option value="native_secondary">native_secondary</option>
+            </select>
+          </div>
+          <div class="launch-field">
+            <label>Overlap factor</label>
+            <select id="overlapPick">
+              <option value="2">2 (fastest)</option>
+              <option value="4">4</option>
+              <option value="8" selected>8 (best)</option>
+            </select>
+          </div>
+          <button class="btn primary" id="launchBtn">Launch autonomous run</button>
+          <div class="launch-status hidden" id="launchStatus"></div>
+        </div>
+      </div>
+
+      <div class="dec-subhead" style="margin-top:20px;">Launch queue</div>
+      <div class="table-scroll"><table class="cands lq" id="queueTable"></table></div>
+    </div>
+  </div>
+
+  <script src="/static/common.js"></script>
+  <script src="/static/charts.js"></script>
+  <script src="/static/dashboard.js"></script>
+</body>
+</html>
