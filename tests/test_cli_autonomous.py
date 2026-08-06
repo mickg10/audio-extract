@@ -1,0 +1,108 @@
+"""End-to-end WP12 test: build challenges from a synthetic run, run two synthetic
+'models' over them, and let the selector produce a real terminal decision —
+no separators, no GPU, fully deterministic."""
+import json
+
+import numpy as np
+import soundfile as sf
+
+from audio_extract import cli_autonomous as auto
+from audio_extract import fixtures as fx
+from audio_extract.storage import TrackLayout
+
+SR = 44100
+
+
+def _make_run(tmp_path):
+    """Synthetic run: 8s orchestra; vocal only in the second half -> the first
+    ~3.6s is a GENUINE no-vocal control; provisional vocal saved."""
+    dur = 8.0
+    orch = fx.synth_orchestra(SR, dur)
+    vocal, _ = fx.synth_vocal(SR, dur, phrases=[(0.60 * dur, 0.90 * dur)])
+    n = min(len(orch), len(vocal))
+    mix = orch[:n] + vocal[:n]
+
+    layout = TrackLayout(tmp_path, "trk").ensure()
+    sf.write(str(layout.source_dir / "canonical.f32.wav"), mix.astype("float32"), SR, subtype="FLOAT")
+    sf.write(str(layout.source_dir / "provisional_vocal.f32.wav"),
+             vocal[:n].astype("float32"), SR, subtype="FLOAT")
+    (layout.source_dir / "source.json").write_text(json.dumps(
+        {"track_id": "trk", "sample_rate_hz": SR, "channel_layout": ["FL", "FR"],
+         "frames": n, "input_pcm_sha256": "sha256:x"}))
+    control_end = int(0.55 * dur * SR)
+    (layout.passages_dir).mkdir(parents=True, exist_ok=True)
+    (layout.passages_dir / "passages.v1.json").write_text(json.dumps({
+        "schema": "audio-extract/passages/v1",
+        "passages": [
+            {"passage_id": "p_ctl", "start_sample": 0, "end_sample": control_end,
+             "tags": ["no_vocal_control"],
+             "features": {"vocal_energy_ratio": 0.01}, "detectors": {}},
+            {"passage_id": "p_bad", "start_sample": 0, "end_sample": n,
+             "tags": ["no_vocal_control"],
+             "features": {"vocal_energy_ratio": 0.55}, "detectors": {}},  # gated out
+        ]}))
+    return layout
+
+
+def _make_factory(layout):
+    """Two synthetic 'models': 'oracle' recognizes built mixtures and subtracts the
+    EXACT injected vocal (perfect separator; extracts nothing from controls);
+    'bad' claims everything as vocals (residual = silence, total theft)."""
+    def oracle(audio):
+        a = np.asarray(audio, dtype=np.float64)
+        for cdir in (layout.root / "challenges").glob("sha256_*"):
+            m, _ = sf.read(str(cdir / "mixture.f32.wav"), dtype="float64", always_2d=True)
+            if m.shape == a.shape and np.allclose(m, a, atol=1e-4):
+                t, _ = sf.read(str(cdir / "target.f32.wav"), dtype="float64", always_2d=True)
+                return {"vocals": a - t}
+        return {"vocals": np.zeros_like(a)}    # controls: extract nothing
+
+    def factory(name):
+        return oracle if name == "oracle" else (lambda audio: {"vocals": np.asarray(audio).copy()})
+
+    return factory
+
+
+def test_full_autonomous_flow(tmp_path):
+    layout = _make_run(tmp_path)
+
+    # build: only the GENUINE control is used
+    built = auto.build_challenges(layout, SR, count=4)
+    assert built["built"] >= 2
+    assert built["controls"] == ["p_ctl"]          # the contaminated one was gated out
+
+    # run: two synthetic models over the cases + theft assay
+    res = auto.run_challenges(layout, SR, ["oracle", "bad"], _make_factory(layout))
+    assert res["ran"] == built["built"]
+    assert res["matrix"]["oracle"]["theft_mean"] < 0.01   # theft assay separates them
+    assert res["matrix"]["bad"]["theft_mean"] > 0.9
+
+    # oracle's residual == exact target -> huge SI-SDR; bad's residual == silence
+    g_case = next(iter(res["matrix"]["oracle"]["cases"].values()))
+    b_case = next(iter(res["matrix"]["bad"]["cases"].values()))
+    assert g_case["si_sdr_db"] > 30 > b_case["si_sdr_db"]
+
+    # select: the robust selector certifies 'oracle'; 'bad' fails the theft gate
+    decision = auto.select_autonomous(layout, n_boot=50)
+    assert decision["status"] == "final"
+    assert decision["candidate_id"] == "oracle"
+    assert decision["candidates"]["bad"]["gates_passed"] is False
+    assert decision["decision_id"].startswith("sd_")
+
+    # run report: consolidated §17.3 shape
+    rep = auto.run_report(layout)
+    assert rep["status"] == "final"
+    assert rep["candidate"]["id"] == "oracle"
+    assert rep["challenge_summary"]["cases"] >= 2
+
+
+def test_build_declines_without_genuine_controls(tmp_path):
+    layout = _make_run(tmp_path)
+    # poison the passages file: only contaminated controls remain
+    pj = layout.passages_dir / "passages.v1.json"
+    doc = json.loads(pj.read_text())
+    for p in doc["passages"]:
+        p["features"]["vocal_energy_ratio"] = 0.9
+    pj.write_text(json.dumps(doc))
+    built = auto.build_challenges(layout, SR)
+    assert built["built"] == 0 and "genuine" in built["reason"]

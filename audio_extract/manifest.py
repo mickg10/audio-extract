@@ -20,8 +20,10 @@ QUEUE_STATES = (
     "MEASURING",
     "PLANNING_REFINEMENT",
     "REFINING",
-    "AWAITING_HUMAN",
+    "AWAITING_HUMAN",       # audit mode only; autonomous production never enters it
+    "FINALIST_SELECTED",    # v2.1 §19.6: a conductor/selector decision is NOT completion
     "RENDERING_FINALISTS",
+    "RENDERING_DELIVERY",
     "FINAL_QC",
     "COMPLETE",
     "FAILED",

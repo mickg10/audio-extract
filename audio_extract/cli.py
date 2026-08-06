@@ -469,9 +469,82 @@ def cmd_conduct(args: argparse.Namespace) -> int:
     decision = conductor.run([{"recipe_id": r["recipe_id"]} for r in baseline["ranking"]], baseline)
 
     if decision.get("status") == "final" and decision.get("candidate_id"):
+        # §19.6: selection is FINALIST_SELECTED, never COMPLETE — delivery + QC finish the run
         with Manifest(layout.manifest_sqlite) as man:
-            man.set_state(args.run_id, "COMPLETE")
-    return _emit(_envelope("conduct", "ok", args.run_id, decision=decision, rounds_log=conductor.log))
+            man.set_state(args.run_id, "FINALIST_SELECTED")
+    from .cli_autonomous import record_decision
+
+    decision_id = record_decision(layout, decision)
+    return _emit(_envelope("conduct", "ok", args.run_id, decision=decision,
+                           decision_id=decision_id, rounds_log=conductor.log))
+
+
+def _real_estimator_factory(model_dir: str, lock_path: str, sr: int):
+    """model name -> estimator(audio)->stems, via the locked Separator (cached)."""
+    import os
+    import tempfile
+
+    import numpy as np
+    import soundfile as sf
+
+    from .separate import Separator
+
+    cache: dict[str, Any] = {}
+
+    def factory(name: str):
+        if name not in cache:
+            filename, _bid, expected = _resolve_locked_model(lock_path, name, model_dir)
+            del expected
+            cache[name] = Separator(filename, model_dir=model_dir)
+        sep = cache[name]
+
+        def estimate(audio):
+            fd, tmp = tempfile.mkstemp(suffix=".f32.wav")
+            os.close(fd)
+            try:
+                sf.write(tmp, np.asarray(audio, dtype="float32"), sr, subtype="FLOAT")
+                return sep.separate_file(tmp).stems
+            finally:
+                os.unlink(tmp)
+        return estimate
+
+    return factory
+
+
+def cmd_challenges(args: argparse.Namespace) -> int:
+    from . import cli_autonomous as auto
+
+    layout = TrackLayout(args.lib, args.run_id)
+    src_json = layout.source_dir / "source.json"
+    if not src_json.exists():
+        return _emit(_envelope(f"challenges.{args.cmd}", "error", args.run_id,
+                               message=f"run {args.run_id!r} not ingested"), code=2)
+    sr = json.loads(src_json.read_text())["sample_rate_hz"]
+    if args.cmd == "build":
+        res = auto.build_challenges(layout, sr, count=args.count, seed=args.seed)
+    elif args.cmd == "run":
+        models = [m.strip() for m in args.models.split(",") if m.strip()]
+        res = auto.run_challenges(layout, sr, models,
+                                  _real_estimator_factory(args.model_dir, args.lock, sr))
+    else:  # report
+        res = {"cases": len(auto.severity_cells_from_store(layout)),
+               "cells": auto.severity_cells_from_store(layout)}
+    return _emit(_envelope(f"challenges.{args.cmd}", "ok", args.run_id, **res))
+
+
+def cmd_select_autonomous(args: argparse.Namespace) -> int:
+    from . import cli_autonomous as auto
+
+    layout = TrackLayout(args.lib, args.run_id)
+    decision = auto.select_autonomous(layout)
+    return _emit(_envelope("select.autonomous", "ok", args.run_id, decision=decision))
+
+
+def cmd_run_report(args: argparse.Namespace) -> int:
+    from . import cli_autonomous as auto
+
+    layout = TrackLayout(args.lib, args.run_id)
+    return _emit(_envelope("run.report", "ok", args.run_id, report=auto.run_report(layout)))
 
 
 def cmd_deliver(args: argparse.Namespace) -> int:
@@ -603,6 +676,37 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--candidate-id", required=True)
     sp.add_argument("--json", action="store_true")
     sp.set_defaults(func=cmd_run_finalize)
+    sp = g_run.add_parser("report", help="consolidated §17.3 autonomous-run report")
+    sp.add_argument("--run-id", required=True)
+    sp.add_argument("--json", action="store_true")
+    sp.set_defaults(func=cmd_run_report)
+
+    # challenges — exact-reference challenge engine (WP4/WP12)
+    g_ch = sub.add_parser("challenges", help="exact-reference challenges").add_subparsers(dest="cmd", required=True)
+    sp = g_ch.add_parser("build", help="build remix cases from genuine no-vocal controls")
+    sp.add_argument("--run-id", required=True)
+    sp.add_argument("--count", type=int, default=8)
+    sp.add_argument("--seed", type=int, default=0)
+    sp.add_argument("--json", action="store_true")
+    sp.set_defaults(func=cmd_challenges)
+    sp = g_ch.add_parser("run", help="run candidate models over built challenges")
+    sp.add_argument("--run-id", required=True)
+    sp.add_argument("--models", required=True, help="comma-separated lock logical ids")
+    sp.add_argument("--model-dir", default=str(Path.home() / "audio-extract" / "models"))
+    sp.add_argument("--lock", default="configs/model-lock.json")
+    sp.add_argument("--json", action="store_true")
+    sp.set_defaults(func=cmd_challenges)
+    sp = g_ch.add_parser("report", help="stored challenge cells per candidate")
+    sp.add_argument("--run-id", required=True)
+    sp.add_argument("--json", action="store_true")
+    sp.set_defaults(func=cmd_challenges)
+
+    # select — the deterministic terminal authority (WP8/WP12)
+    g_sel = sub.add_parser("select", help="autonomous selection").add_subparsers(dest="cmd", required=True)
+    sp = g_sel.add_parser("autonomous", help="run the robust selector over stored challenge results")
+    sp.add_argument("--run-id", required=True)
+    sp.add_argument("--json", action="store_true")
+    sp.set_defaults(func=cmd_select_autonomous)
 
     # ingest / fingerprint
     sp = sub.add_parser("ingest", help="decode a source to canonical float32 PCM + hashes")

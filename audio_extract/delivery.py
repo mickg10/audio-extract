@@ -61,17 +61,26 @@ def tpdf_dither_float(x: np.ndarray, bits: int, seed: int = 0) -> np.ndarray:
     return np.clip(np.asarray(x, dtype=np.float64) + d, -1.0, 1.0)
 
 
-def encode_aac(master_f32: np.ndarray, sr: int, out_path: Path, bitrate: str = "256k") -> None:
-    """AAC from the float master via ffmpeg — no dithered intermediate."""
+def encode_aac(master_f32: np.ndarray, sr: int, out_path: Path, bitrate: str = "256k") -> dict:
+    """AAC from the float master via ffmpeg — no dithered intermediate. Returns the
+    identity-bearing encoder facts (§19.5): ffmpeg version, encoder, command."""
     import soundfile as sf
 
     fd, tmp = tempfile.mkstemp(suffix=".f32.wav")
     import os
     os.close(fd)
+    cmd = ["ffmpeg", "-y", "-i", tmp, "-c:a", "aac", "-b:a", bitrate, str(out_path)]
     try:
         sf.write(tmp, np.asarray(master_f32, dtype=np.float32), sr, subtype="FLOAT")
-        subprocess.run(["ffmpeg", "-y", "-i", tmp, "-c:a", "aac", "-b:a", bitrate, str(out_path)],
-                       check=True, capture_output=True)
+        subprocess.run(cmd, check=True, capture_output=True)
+        try:
+            ver = subprocess.run(["ffmpeg", "-version"], capture_output=True,
+                                 text=True).stdout.splitlines()[0]
+        except Exception:
+            ver = "unknown"
+        return {"ffmpeg_version": ver, "encoder": "aac", "bitrate_mode": "cbr",
+                "bitrate": bitrate, "sample_rate_hz": sr,
+                "command": " ".join(c if c != tmp else "<master.f32.wav>" for c in cmd)}
     finally:
         Path(tmp).unlink(missing_ok=True)
 
@@ -93,6 +102,9 @@ def deliver(layout, source_record: dict, candidate_recipe_id: str, *, target_dbf
     import soundfile as sf
 
     from .manifest import Manifest
+
+    with Manifest(layout.manifest_sqlite) as man:  # §19.6: delivery is its own state
+        man.set_state(layout.track_id, "RENDERING_DELIVERY")
 
     cand_wav = layout.candidate_dir(candidate_recipe_id) / "output.f32.wav"
     info = sf.info(str(cand_wav))                 # read the ACTUAL candidate metadata
@@ -135,10 +147,12 @@ def deliver(layout, source_record: dict, candidate_recipe_id: str, *, target_dbf
     # --- encode_delivery child (AAC from the float master). FAILURE FAILS THE RUN. ---
     eid = delivery_node_id("encode_delivery", [gain_id], {"codec": "aac", "bitrate": bitrate}, code_commit)
     m4a = _child_dir(eid) / "delivery.m4a"
+    encoder_facts: dict = {}
     if not m4a.exists():
-        encode_aac(gained, sr, m4a, bitrate)     # raises on failure -> run left incomplete
+        encoder_facts = encode_aac(gained, sr, m4a, bitrate)  # raises -> run left incomplete
     nodes.append({"recipe_id": eid, "operation": "encode_delivery", "parents": [gain_id],
                   "sample_format": "aac", "bitrate": bitrate,
+                  "encoder_facts": encoder_facts,             # §19.5 AAC identity
                   "container_sha256": _sha256_file(m4a), "path": str(m4a)})
 
     with Manifest(layout.manifest_sqlite) as man:
