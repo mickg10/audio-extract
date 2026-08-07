@@ -78,7 +78,8 @@ def loo_family_consensus(envs: dict[str, np.ndarray], families: dict[str, str],
 def event_holes(cand_env: np.ndarray, expected_env: np.ndarray, vocal_env: np.ndarray,
                 events: list[tuple[int, int]], *, hop_ms: float = 10.0,
                 contamination_margin_db: float = -6.0,
-                context_frames: int = 30) -> list[dict]:
+                context_frames: int = 30, min_band_db_below_peak: float = 40.0,
+                min_hole_ms: float = 20.0) -> list[dict]:
     """Per vocal event × band deficits against the expected envelope.
 
     * The expected level per (event, band) blends the LOO consensus with the
@@ -88,13 +89,20 @@ def event_holes(cand_env: np.ndarray, expected_env: np.ndarray, vocal_env: np.nd
       expected accompaniment is dominated by voice: it is marked UNKNOWN and feeds
       ``masked_hole_uncertainty`` instead of the deficit (bleed can no longer make
       a candidate look better).
+    * NEAR-SILENT target bands are gated (oracle §8.1): a spectacular dB deficit in
+      a band that carries negligible accompaniment energy is inaudible — cells
+      whose expected level sits ``min_band_db_below_peak`` below the track's peak
+      band energy, or whose hole is shorter than ``min_hole_ms``, are skipped.
 
     Returns observation dicts: event_hole_depth/area/duration/recovery (dB-based)
     + masked_hole_uncertainty, aggregated over the WORST events, not averaged away.
     """
     B, T = cand_env.shape
     Te = min(T, expected_env.shape[1], vocal_env.shape[1])
+    peak_band_db = float(np.max(expected_env[:, :Te])) if Te > 0 else -np.inf
+    silent_floor = peak_band_db - min_band_db_below_peak
     depths, areas, durs, recovs = [], [], [], []
+    silent_cells = 0
     masked_cells = total_cells = 0
     for (e0, e1) in events:
         e0c, e1c = max(0, min(e0, Te - 1)), max(1, min(e1, Te))
@@ -111,6 +119,10 @@ def event_holes(cand_env: np.ndarray, expected_env: np.ndarray, vocal_env: np.nd
             # below the consensus flanks, the difference is candidate level, not a hole
             level_off = float(np.median(flank) - np.median(ctx)) if ctx.size and flank.size else 0.0
             expected_evt = base + level_off
+            # §8.1: near-silent target band -> a big dB deficit here is inaudible
+            if expected_evt.max(initial=-np.inf) < silent_floor:
+                silent_cells += 1
+                continue
             if vocal_env[b, e0c:e1c].max(initial=-np.inf) >= expected_evt.max() + contamination_margin_db:
                 masked_cells += 1
                 continue
@@ -120,9 +132,11 @@ def event_holes(cand_env: np.ndarray, expected_env: np.ndarray, vocal_env: np.nd
             depth = float(deficit.max())
             if depth <= 0.5:  # below measurement noise
                 continue
+            above = deficit > max(1.0, 0.5 * depth)
+            if float(above.sum() * hop_ms) < min_hole_ms:  # §8.1: too brief to matter
+                continue
             depths.append(depth)
             areas.append(float(deficit.sum() * hop_ms / 1000.0))
-            above = deficit > max(1.0, 0.5 * depth)
             durs.append(float(above.sum() * hop_ms))
             rec = np.argmax(~above[::1]) if above.any() else 0
             recovs.append(float(rec * hop_ms))

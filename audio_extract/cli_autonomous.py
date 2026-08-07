@@ -177,19 +177,29 @@ def _exact_case_labels(residual: np.ndarray, target: np.ndarray,
     ve = dsp.band_envelope_db(vin, sr, dsp.PUMP_BANDS)
     holes = m2x.event_holes(ce, te, ve, events)
     hole = {o["metric"].split("/")[0]: o["value"] for o in holes if o["available"]}
-    # vocal interference: projection of e = residual − target onto the V direction
-    e = dsp.mono(res) - dsp.mono(tgt)
+    # §8.2: JOINT source regression Â ≈ α·A + β·V + e_perp (mono). Projecting the
+    # error onto V alone is biased when A and V correlate; the 2-var least-squares
+    # fit decomposes cleanly into accompaniment scaling (α), vocal interference (β),
+    # and orthogonal artifact (e_perp).
+    a = dsp.mono(tgt)
     v = dsp.mono(vin)
-    v_energy = float(np.dot(v, v)) + 1e-12
-    beta = float(np.dot(e, v)) / v_energy
+    ahat = dsp.mono(res)
+    G = np.array([[np.dot(a, a), np.dot(a, v)], [np.dot(a, v), np.dot(v, v)]]) + 1e-9 * np.eye(2)
+    rhs = np.array([np.dot(a, ahat), np.dot(v, ahat)])
+    alpha, beta = np.linalg.solve(G, rhs)
     interf = beta * v
-    si_sir = 10 * np.log10((float(np.dot(interf, interf)) + 1e-12)
-                           / (float(np.dot(e - interf, e - interf)) + 1e-12))
+    e_perp = ahat - alpha * a - interf
+    e_target = alpha * a
+    si_sir = 10 * np.log10((float(np.dot(e_target, e_target)) + 1e-12)
+                           / (float(np.dot(interf, interf)) + 1e-12))
+    artifact_ratio = float(np.sqrt(np.dot(e_perp, e_perp) / (np.dot(a, a) + 1e-12)))
     return {"event_hole_depth_db": hole.get("event_hole_depth"),
             "event_hole_area": hole.get("event_hole_area"),
             "masked_hole_uncertainty": hole.get("masked_hole_uncertainty"),
-            "vocal_interference_ratio": round(abs(beta), 5),
-            "vocal_si_sir_db": round(si_sir, 2),
+            "accompaniment_scaling": round(float(alpha), 5),
+            "vocal_interference_ratio": round(abs(float(beta)), 5),
+            "orthogonal_artifact_ratio": round(artifact_ratio, 5),
+            "vocal_si_sir_db": round(float(si_sir), 2),
             "n_events": len(events)}
 
 
@@ -530,27 +540,52 @@ def revalidate_finalist(layout: TrackLayout, sr: int, candidate_recipe_id: str,
         if source_peak is None and reference.size:
             source_peak = float(np.max(np.abs(reference)))
 
+    # excerpt-screen outputs for scope/chunk-context regression comparison (§10.2):
+    # the same recipe rendered as an independent excerpt vs cut from the full track.
+    excerpts = {}
+    exc_dir = layout.candidate_dir(candidate_recipe_id) / "excerpts"
+    if exc_dir.exists():
+        for w in exc_dir.glob("*.f32.wav"):
+            try:
+                excerpts[w.stem], _ = sf.read(str(w), dtype="float64", always_2d=True)
+            except Exception:
+                pass
+
     per_passage, failures = [], []
     for p in passages:
         s, e = p["start_sample"], min(p["end_sample"], audio.shape[0])
         if e - s < sr // 4:
             continue
         seg = audio[s:e]
+        tags = p["tags"]
         hc = mx.hard_checks(seg, sr, source_peak=source_peak)
-        row = {"passage_id": p["passage_id"], "tags": p["tags"],
+        row = {"passage_id": p["passage_id"], "tags": tags,
                "hard_ok": hc["ok"], "problems": hc["problems"]}
-        if reference is not None and "no_vocal_control" in p["tags"]:
-            # on a genuine control the finalist should preserve the original mix
-            err = m2.fullness_v2(seg, reference[s:e], sr)
-            row["control_band_deficit_db"] = err[0]["value"]
-            if err[0]["value"] is not None and err[0]["value"] > 6.0:
-                failures.append(f"{p['passage_id']}: control deficit {err[0]['value']:.1f} dB")
         if not hc["ok"]:
             failures.append(f"{p['passage_id']}: {hc['problems']}")
+        if reference is not None:
+            ref_seg = reference[s:e]
+            # control retention (§10.3): a genuine no-vocal control must be preserved
+            if "no_vocal_control" in tags:
+                err = m2.fullness_v2(seg, ref_seg, sr)
+                row["control_band_deficit_db"] = err[0]["value"]
+                if err[0]["value"] is not None and err[0]["value"] > 6.0:
+                    failures.append(f"{p['passage_id']}: control deficit {err[0]['value']:.1f} dB")
+            # scope/chunk-context regression (§10.2): full-track cut vs excerpt render
+            if p["passage_id"] in excerpts:
+                ex = excerpts[p["passage_id"]]
+                nn = min(len(seg), len(ex))
+                drift = float(np.sqrt(np.mean((seg[:nn] - ex[:nn]) ** 2)) /
+                              (np.sqrt(np.mean(ex[:nn] ** 2)) + 1e-9))
+                row["excerpt_scope_drift"] = round(drift, 4)
+                if drift > 0.15:
+                    failures.append(f"{p['passage_id']}: full-track render drifts "
+                                    f"{drift:.2f} from the screened excerpt")
         per_passage.append(row)
 
     return {"ok": not failures, "passages_checked": len(per_passage),
-            "failures": failures, "per_passage": per_passage}
+            "failures": failures, "per_passage": per_passage,
+            "excerpt_comparisons": sum(1 for r in per_passage if "excerpt_scope_drift" in r)}
 
 
 def finalize_and_deliver(layout: TrackLayout, sr: int, candidate_recipe_id: str,

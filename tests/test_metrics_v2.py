@@ -128,6 +128,25 @@ def test_missing_evidence_unavailable():
     assert d["available"] is False and d["value"] is None
 
 
+def test_near_silent_band_gated():
+    # a huge deficit confined to a near-silent target band must NOT dominate (§8.1)
+    B, T = 6, 200
+    expected = np.full((B, T), -6.0)
+    expected[5, :] = -70.0                 # band 5 is ~silent (64 dB below peak)
+    vocal = np.full((B, T), -120.0)
+    events = [(40, 120)]
+    # candidate perfectly matches except a giant "hole" in the silent band
+    cand = expected.copy()
+    cand[5, 60:100] = -120.0               # 50 dB deficit, but inaudible band
+    res = m2.event_holes(cand, expected, vocal, events)
+    assert (m2_get := _get(res, "event_hole_depth/v2"))["value"] is None or m2_get["value"] < 5.0
+    # the SAME deficit in a loud band IS counted
+    cand2 = expected.copy()
+    cand2[2, 60:100] = -30.0               # 24 dB deficit in an audible band
+    res2 = m2.event_holes(cand2, expected, vocal, events)
+    assert _get(res2, "event_hole_depth/v2")["value"] > 10.0
+
+
 def test_aggregate_shape():
     agg = m2.aggregate([1.0, 2.0, 8.0, 3.0])
     assert agg["worst"] >= agg["p90"] >= agg["median"]
