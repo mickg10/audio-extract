@@ -193,8 +193,67 @@ def _exact_case_labels(residual: np.ndarray, target: np.ndarray,
             "n_events": len(events)}
 
 
-def run_challenges(layout: TrackLayout, sr: int, models: list[str],
-                   estimator_factory, persist_outputs: bool = True) -> dict:
+def recipe_spec_id(spec: dict) -> str:
+    """Stable recipe id for a bake-off spec (oracle §2 — evaluate recipes, not model
+    names). Each construction is a distinct artifact with its own identity."""
+    canon = {"kind": spec["kind"], "models": sorted(spec.get("models", [])),
+             "algo": spec.get("algo", ""), "overlap": spec.get("overlap", 0),
+             "weights": [int(round(w * 1000)) for w in spec.get("weights", [])]}
+    return "sha256:" + hashlib.sha256(
+        b"audio-extract-recipe-spec-v1\x00" + json.dumps(canon, sort_keys=True).encode()
+    ).hexdigest()
+
+
+def compose_accompaniment(spec: dict, estimator_factory):
+    """Return ``estimate_acc(mix) -> accompaniment`` for a recipe spec.
+
+    ``residual``: A = M − V̂(model);  ``native``: A = model's instrumental stem
+    (falls back to residual if the checkpoint has no native output);
+    ``ensemble_residual``: A = M − aggregate(V̂ over models) with median/weighted-mean.
+    The theft/label layer derives the REMOVED material as M − A for ANY recipe, so
+    every construction is scored exactly as it would be delivered (§10)."""
+    kind = spec["kind"]
+    models = spec["models"]
+
+    def estimate_acc(mix):
+        mix = dsp.as2d(mix)
+        if kind == "native":
+            stems = estimator_factory(models[0])(mix)
+            if "instrumental" in stems:
+                inst = dsp.as2d(stems["instrumental"])
+                n = min(len(mix), len(inst))
+                return inst[:n]
+            v = dsp.as2d(stems.get("vocals", np.zeros_like(mix)))
+            n = min(len(mix), len(v))
+            return mix[:n] - v[:n]
+        if kind == "ensemble_residual":
+            vs = []
+            for m in models:
+                v = dsp.as2d(estimator_factory(m)(mix).get("vocals", np.zeros_like(mix)))
+                vs.append(v)
+            n = min(len(mix), *(len(v) for v in vs))
+            stack = np.stack([v[:n] for v in vs], axis=0)
+            if spec.get("algo", "median") == "median":
+                v_agg = np.median(stack, axis=0)
+            else:
+                w = np.asarray(spec.get("weights") or [1.0 / len(vs)] * len(vs))
+                w = w / w.sum()
+                v_agg = np.tensordot(w, stack, axes=(0, 0))
+            return mix[:n] - v_agg
+        # residual (default)
+        v = dsp.as2d(estimator_factory(models[0])(mix).get("vocals", np.zeros_like(mix)))
+        n = min(len(mix), len(v))
+        return mix[:n] - v[:n]
+
+    return estimate_acc
+
+
+def run_challenges(layout: TrackLayout, sr: int, models: list[str] | None = None,
+                   estimator_factory=None, persist_outputs: bool = True,
+                   recipe_specs: list[dict] | None = None) -> dict:
+    """Score candidates over the built challenges. Pass ``recipe_specs`` (the
+    bake-off path — each keyed by its recipe id) or ``models`` (legacy residual,
+    keyed by model name)."""
     import soundfile as sf
 
     chdir = layout.root / "challenges"
@@ -202,18 +261,33 @@ def run_challenges(layout: TrackLayout, sr: int, models: list[str],
     if not case_dirs:
         return {"ran": 0, "reason": "no built challenges (run `challenges build` first)"}
     controls = genuine_controls(layout, sr)
+
+    # unify the two entry points into (key, estimate_acc) candidates
+    candidates: list[tuple[str, object]] = []
+    if recipe_specs:
+        for spec in recipe_specs:
+            rid = spec.get("recipe_id") or recipe_spec_id(spec)
+            candidates.append((rid, compose_accompaniment(spec, estimator_factory)))
+    else:
+        for model in (models or []):
+            def _resid(mix, _m=model):
+                v = dsp.as2d(estimator_factory(_m)(mix).get("vocals", np.zeros_like(dsp.as2d(mix))))
+                mx = dsp.as2d(mix)
+                n = min(len(mx), len(v))
+                return mx[:n] - v[:n]
+            candidates.append((model, _resid))
+
     matrix: dict[str, dict] = {}
     with ManifestV2(layout.manifest_sqlite) as m2:
-        for model in models:
-            estimate = estimator_factory(model)
+        for key, estimate_acc in candidates:
+            model = key
             per_case = {}
             for cdir in case_dirs:
                 mix, _ = sf.read(str(cdir / "mixture.f32.wav"), dtype="float64", always_2d=True)
                 tgt, _ = sf.read(str(cdir / "target.f32.wav"), dtype="float64", always_2d=True)
-                stems = estimate(mix)
-                v_hat = dsp.as2d(stems.get("vocals", np.zeros_like(mix)))
-                n = min(len(mix), len(v_hat))
-                residual = mix[:n] - v_hat[:n]
+                residual = dsp.as2d(estimate_acc(mix))
+                n = min(len(mix), len(residual))
+                residual = residual[:n]
                 err = ch.exact_reference_error(residual, tgt, sr)
                 # oracle §9.1: persist the per-case output audio (append-only)
                 if persist_outputs:
@@ -237,20 +311,24 @@ def run_challenges(layout: TrackLayout, sr: int, models: list[str],
                                                 "exact_labels": labels})
             theft = None
             if controls:
-                theft_rows = ch.run_no_vocal_theft_assay(
-                    lambda a: dsp.as2d(estimator_factory(model)(dsp.as2d(a)).get(
-                        "vocals", np.zeros_like(dsp.as2d(a)))), controls, sr)
+                # the REMOVED material for ANY recipe is M − A (§10): score the
+                # actual construction, not just a model's vocal stem.
+                def _removed(a, _acc=estimate_acc):
+                    a2 = dsp.as2d(a)
+                    acc = dsp.as2d(_acc(a2))
+                    nn = min(len(a2), len(acc))
+                    return a2[:nn] - acc[:nn]
+                theft_rows = ch.run_no_vocal_theft_assay(_removed, controls, sr)
                 theft = float(np.mean([r["theft_broadband"] for r in theft_rows]))
-                # v3 review §10: also evaluate the ACTUAL residual construction on
-                # the control — Â_res(A) = A − V̂(A) compared directly with A. This
-                # catches phase/compensation/timing errors invisible in stem energy.
+                # also compare the actual accompaniment construction on the control
+                # directly with A (catches phase/compensation/timing errors).
                 res_errs = []
                 for ctl_id, a_ctl in controls:
                     a2 = dsp.as2d(a_ctl)
-                    v_hat = dsp.as2d(estimate(a2).get("vocals", np.zeros_like(a2)))
-                    nn = min(len(a2), len(v_hat))
+                    acc = dsp.as2d(estimate_acc(a2))
+                    nn = min(len(a2), len(acc))
                     res_errs.append({"control_id": ctl_id,
-                                     **ch.exact_reference_error(a2[:nn] - v_hat[:nn], a2[:nn], sr)})
+                                     **ch.exact_reference_error(acc[:nn], a2[:nn], sr)})
                 m2.add_challenge_result(challenge_id="theft_assay",
                                         candidate_recipe_id=model,
                                         result={"theft_rows": theft_rows,

@@ -96,6 +96,55 @@ def test_full_autonomous_flow(tmp_path):
     assert rep["challenge_summary"]["cases"] >= 2
 
 
+def test_recipe_spec_bakeoff(tmp_path):
+    """oracle §2: distinct recipes (residual vs native vs ensemble) are evaluated as
+    distinct artifacts, keyed by recipe id, each scored as it would be delivered."""
+    layout = _make_run(tmp_path)
+    built = auto.build_challenges(layout, SR, count=4)
+    assert built["built"] >= 2
+    fac = _make_factory(layout)
+
+    def factory(name):
+        # 'oracle' knows the exact injected vocal; 'native_perfect' returns a perfect
+        # instrumental stem; 'bad' claims everything as vocals.
+        if name == "native_perfect":
+            def est(mix):
+                m = np.asarray(mix, dtype=np.float64)
+                for cdir in (layout.root / "challenges").glob("sha256_*"):
+                    import soundfile as _sf
+                    mm, _ = _sf.read(str(cdir / "mixture.f32.wav"), dtype="float64", always_2d=True)
+                    if mm.shape == m.shape and np.allclose(mm, m, atol=1e-4):
+                        tt, _ = _sf.read(str(cdir / "target.f32.wav"), dtype="float64", always_2d=True)
+                        return {"instrumental": tt}
+                return {"instrumental": m}
+            return est
+        return fac(name)
+
+    specs = [
+        {"kind": "residual", "models": ["oracle"]},
+        {"kind": "native", "models": ["native_perfect"]},
+        {"kind": "ensemble_residual", "models": ["oracle", "bad"], "algo": "median"},
+    ]
+    res = auto.run_challenges(layout, SR, recipe_specs=specs, estimator_factory=factory)
+    assert res["ran"] == built["built"]
+    keys = set(res["matrix"])
+    assert len(keys) == 3                            # three distinct recipe ids
+    ids = [auto.recipe_spec_id(s) for s in specs]
+    assert set(ids) == keys                          # keyed by recipe id, deterministic
+    # residual-oracle and native-perfect both recover the target well
+    for rid in ids[:2]:
+        c = next(iter(res["matrix"][rid]["cases"].values()))
+        assert c["si_sdr_db"] > 25
+
+
+def test_recipe_spec_id_stable_and_distinct():
+    a = {"kind": "residual", "models": ["mdx23c"], "overlap": 8}
+    b = {"kind": "native", "models": ["mdx23c"], "overlap": 8}
+    c = {"kind": "residual", "models": ["mdx23c"], "overlap": 4}
+    assert auto.recipe_spec_id(a) == auto.recipe_spec_id(dict(a))
+    assert len({auto.recipe_spec_id(a), auto.recipe_spec_id(b), auto.recipe_spec_id(c)}) == 3
+
+
 def test_build_declines_without_genuine_controls(tmp_path):
     layout = _make_run(tmp_path)
     # poison the passages file: only contaminated controls remain
