@@ -36,3 +36,4 @@ web/jobs.json
 *.bak-*
 *.bak.*
 calibration/spotify_pairs/pairs_all.jsonl
+project/cantolopera/
