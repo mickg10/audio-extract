@@ -30,6 +30,7 @@ DEFAULT_GATE_LIMITS = {
     "technical": 0.0,           # boolean-ish: any technical failure blocks
     "orchestral_theft": 0.6,
     "vocal_leakage": 0.7,
+    "vocal_audibility": 0.5,    # §4: retained voice must be inaudible vs orchestra
     "event_hole": 0.7,
     "severe_artifact": 0.8,
 }
@@ -242,6 +243,7 @@ def _defect_ucb(cells: dict[str, list[tuple[float, float]]], defect: str, *,
 def select_v3(candidates: dict[str, dict], taus: dict[str, dict], *,
               epsilon_regret: float = 0.10, probe_budget_left: bool = False,
               distribution_flag: str = "in_calibration_domain",
+              scope_limited: frozenset[str] = frozenset(),
               n_boot: int = 200, seed: int = 0) -> dict:
     """§16 terminal logic. ``candidates``: id -> {"cells": {defect: [(s,u)...]},
     "secondary": float, "evidence": {family: cells-dict}, "gates": {...}}.
@@ -251,13 +253,21 @@ def select_v3(candidates: dict[str, dict], taus: dict[str, dict], *,
     feasible: list[str] = []
     for cid, c in candidates.items():
         ok_hard, failed_hard = hard_gates(c.get("gates", {}))
-        ucbs = {d: round(_defect_ucb(c["cells"], d, n_boot=n_boot, seed=seed), 4)
-                for d in CRITICAL_DEFECTS if d in c["cells"] or d in taus}
-        infeasible = [d for d, u in ucbs.items()
-                      if not taus.get(d, {}).get("certifiable", False)
-                      or u > taus[d]["tau"]]
+        # §6: iterate EVERY critical defect unconditionally. A missing observation
+        # or a non-certifiable threshold is infeasible — UNLESS the axis is
+        # explicitly scope_limited (then it's a declared limitation, not a pass,
+        # and it caps the achievable certification level).
+        ucbs, infeasible, scoped_out = {}, [], []
+        for d in CRITICAL_DEFECTS:
+            if d in scope_limited:
+                scoped_out.append(d)
+                continue
+            u = round(_defect_ucb(c["cells"], d, n_boot=n_boot, seed=seed), 4)
+            ucbs[d] = u
+            if not taus.get(d, {}).get("certifiable", False) or u > taus[d]["tau"]:
+                infeasible.append(d)
         report[cid] = {"hard_failed": failed_hard, "ucbs": ucbs,
-                       "infeasible_defects": infeasible,
+                       "infeasible_defects": infeasible, "scope_limited": scoped_out,
                        "secondary": round(float(c.get("secondary", 0.0)), 4)}
         if "secondary_lower" in c:
             report[cid]["secondary_lower"] = round(float(c["secondary_lower"]), 4)
@@ -269,6 +279,7 @@ def select_v3(candidates: dict[str, dict], taus: dict[str, dict], *,
     base = {"selector_version": SELECTOR_V3_VERSION,
             "certification": "autonomous_proxy_certified",
             "distribution": distribution_flag,
+            "scope_limited": sorted(scope_limited),
             "taus": taus, "candidates": report}
     if distribution_flag == "out_of_domain":
         return {**base, "status": "no_acceptable_candidate", "best_available": None,
@@ -326,10 +337,16 @@ def select_v3(candidates: dict[str, dict], taus: dict[str, dict], *,
                               "margin": separation, "required": epsilon_regret}
 
     if loeo_ok and regret_ok:
+        # §8: a scope-limited critical axis caps the achievable level — a full
+        # risk-certified production claim requires ALL critical defects certified.
+        level = ("risk_certified_production" if not scope_limited
+                 else "exact_benchmark_qualified")
         return {**base, "status": "final", "candidate_id": star,
                 "mode": "feasible_certified",
+                "certification_level": level,
                 "reason": "passes hard + calibrated gates; leave-one-evidence-out "
-                          "stable; separated from runner-up by >= margin"}
+                          "stable; separated from runner-up by >= margin"
+                          + (f"; scope-limited on {sorted(scope_limited)}" if scope_limited else "")}
     if probe_budget_left:
         return {**base, "status": "needs_probe", "candidate_id": star,
                 "reason": ("evidence-removal instability" if not loeo_ok

@@ -138,25 +138,34 @@ def event_holes(cand_env: np.ndarray, expected_env: np.ndarray, vocal_env: np.nd
             depths.append(depth)
             areas.append(float(deficit.sum() * hop_ms / 1000.0))
             durs.append(float(above.sum() * hop_ms))
-            rec = np.argmax(~above[::1]) if above.any() else 0
+            # §6b: recovery is measured AFTER the peak deficit, not from the event
+            # start — time from the worst frame back below the half-depth threshold.
+            peak_i = int(np.argmax(deficit))
+            tail = above[peak_i:]
+            rec = int(np.argmax(~tail)) if (tail.size and not tail.all()) else int(tail.size)
             recovs.append(float(rec * hop_ms))
 
     def _worst(vals: list[float], k: int = 3) -> float:
         return float(np.mean(sorted(vals, reverse=True)[:k])) if vals else 0.0
 
     masked_frac = masked_cells / total_cells if total_cells else 0.0
-    available = total_cells > 0
+    # §6b: availability requires cells that were actually EVALUATED — if every cell
+    # was masked or silent-gated, the score is UNKNOWN, never a perfect 0.0.
+    evaluated_cells = total_cells - masked_cells - silent_cells
+    available = evaluated_cells > 0
+    details = {"events": len(events), "cells": total_cells,
+               "evaluated_cells": evaluated_cells, "masked_cells": masked_cells,
+               "silent_cells": silent_cells}
     return [
         obs("event_hole_depth/v2", _worst(depths) if available else None,
-            available=available, uncertainty=masked_frac, unit="dB",
-            details={"events": len(events), "cells": total_cells}),
+            available=available, uncertainty=masked_frac, unit="dB", details=details),
         obs("event_hole_area/v2", _worst(areas) if available else None,
             available=available, unit="dB*s"),
         obs("event_hole_duration/v2", _worst(durs) if available else None,
             available=available, unit="ms"),
         obs("event_hole_recovery/v2", _worst(recovs) if available else None,
             available=available, unit="ms"),
-        obs("masked_hole_uncertainty/v2", masked_frac, available=available,
+        obs("masked_hole_uncertainty/v2", masked_frac, available=(total_cells > 0),
             details={"masked_cells": masked_cells, "total_cells": total_cells}),
     ]
 

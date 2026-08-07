@@ -124,8 +124,18 @@ def test_preview_never_certifies(tmp_path):
     layout = _run_with_challenge_results(tmp_path, {"sha256:good": 0.1, "sha256:bad": 0.2})
     d = auto.select_autonomous(layout)                 # no calibration -> preview
     assert d["rollout_level"] == "engineering_preview"
-    assert d.get("certified") is False
     assert d.get("certification") == "none"
+    # §8: explicit scope, not a bare boolean — nothing claimed
+    assert d["certification_scope"]["level"] == "engineering_preview"
+    assert d["certification_scope"]["risk_claim"] is None
+    assert d["certification_scope"]["transfer_supported"] is False
+
+
+def test_legacy_cannot_reach_certified_selector(tmp_path):
+    layout = _run_with_challenge_results(tmp_path, {"sha256:a": 0.05})
+    d = auto.select_autonomous(layout)                 # preview path
+    assert d["selector_version"] != auto.CERTIFIED_SELECTOR
+    assert d["certification_scope"]["level"] == "engineering_preview"
 
 
 def test_certified_path_uses_v3_and_records_inputs(tmp_path):
@@ -161,7 +171,8 @@ def test_render_refuses_stale_calibration(tmp_path):
 
 
 def test_legacy_selector_cannot_emit_certified_final(tmp_path):
-    # the preview path relabels certification=none even when it says final
+    # the preview path scopes to engineering_preview even when select() says final
     layout = _run_with_challenge_results(tmp_path, {"sha256:a": 0.05, "sha256:b": 0.9})
     d = auto.select_autonomous(layout)     # legacy select under the hood
-    assert d.get("certified") is not True
+    assert d["certification_scope"]["level"] == "engineering_preview"
+    assert d.get("certification") == "none"

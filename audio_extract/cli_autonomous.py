@@ -461,6 +461,15 @@ def severity_cells_from_store(layout: TrackLayout, *, u: float = 0.05,
             uu = u + (float(labels.get("masked_hole_uncertainty") or 0.0)
                       if defect == "event_hole" else 0.0)
             c["cells"].setdefault(defect, []).append((_sev(defect, raw), uu))
+        # §4 second vocal-leakage gate: |β| (calibrated cell above) measures how
+        # much voice is retained; SI-SIR measures whether it's AUDIBLE vs the
+        # orchestra. A quiet retained voice and a dominant one aren't equivalent.
+        sir = labels.get("vocal_si_sir_db")
+        if sir is not None:
+            # audibility severity: SI-SIR >= +6 dB (voice well below orchestra) -> 0;
+            # <= -6 dB (voice at/above orchestra) -> 1. A fixed physical bound.
+            aud = float(np.clip((6.0 - float(sir)) / 12.0, 0.0, 1.0))
+            c.setdefault("_aud", []).append(aud)
     for r in theft_rows:
         key = r["candidate_recipe_id"]
         theft_mean = float(json.loads(r["result_json"]).get("theft_mean", 0.0))
@@ -471,6 +480,10 @@ def severity_cells_from_store(layout: TrackLayout, *, u: float = 0.05,
     for c in cands.values():
         if "event_hole" in c["cells"]:
             c["gates"]["event_hole"] = max(s for s, _ in c["cells"]["event_hole"])
+        # §4 audibility hard gate = worst-case retained-voice audibility
+        aud = c.pop("_aud", None)
+        if aud:
+            c["gates"]["vocal_audibility"] = max(aud)
         # secondary = mean fullness severity (spectral fidelity tie-breaker)
         full = c["cells"].get("fullness")
         if full:
@@ -490,9 +503,16 @@ def _rollout_level(decision: dict, calibration: dict | None) -> str:
     return "exact_benchmark_qualified"
 
 
+# Critical axes we have no certified evidence for yet — scope-limited (declared,
+# never silently passed) so a single-track run tops out at exact_benchmark_qualified.
+DEFAULT_SCOPE_LIMITED = frozenset({"severe_artifact"})
+
+
 def select_autonomous(layout: TrackLayout, *, calibration_path: str | Path | None = None,
                       target_risk: str = "0.1", task: str | None = None,
-                      domain: str | None = None, **selector_kwargs) -> dict:
+                      domain: str | None = None,
+                      scope_limited: frozenset[str] = DEFAULT_SCOPE_LIMITED,
+                      **selector_kwargs) -> dict:
     """Certified path when ``calibration_path`` is given: frozen artifact →
     select_v3 → immutable decision. Without it, a dev PREVIEW that can never emit a
     certified final (oracle P0 §1)."""
@@ -506,7 +526,8 @@ def select_autonomous(layout: TrackLayout, *, calibration_path: str | Path | Non
                 "reason": "no challenge results stored (run `challenges run` first)"}
 
     if calibration is not None:
-        decision = sel.select_v3(cands, calibration["taus"], **selector_kwargs)
+        decision = sel.select_v3(cands, calibration["taus"],
+                                 scope_limited=scope_limited, **selector_kwargs)
         decision["certification_inputs"] = {
             "calibration_sha256": calibration["calibration_sha256"],
             "target_risk": target_risk, "task": task, "domain": domain,
@@ -515,13 +536,20 @@ def select_autonomous(layout: TrackLayout, *, calibration_path: str | Path | Non
         }
     else:
         decision = sel.select(cands, **selector_kwargs)
-        # a preview may NEVER certify — relabel any 'final' as an uncertified preview
-        if decision.get("status") == "final":
-            decision["status"] = "final"           # kept, but scoped below
-        decision["certification"] = "none"
+        decision["certification"] = "none"          # a preview may never certify
 
     decision["rollout_level"] = _rollout_level(decision, calibration)
-    decision["certified"] = calibration is not None and decision.get("status") == "final"
+    # §8: explicit certification SCOPE, not a bare boolean. A single-track exact run
+    # never claims transfer/stereo/hall/production — those need the work-level path.
+    lvl = decision["rollout_level"]
+    decision["certification_scope"] = {
+        "level": lvl,
+        "risk_claim": None,                          # no work-level risk claim here
+        "transfer_supported": False,
+        "stereo_supported": False,
+        "hall_supported": False,
+        "scope_limited_defects": sorted(scope_limited) if calibration is not None else [],
+    }
     decision_id = record_decision(layout, decision)
     decision["decision_id"] = decision_id
     if decision.get("status") == "final":
@@ -650,7 +678,13 @@ def finalize_from_decision(layout: TrackLayout, sr: int, decision_id: str, *,
     if report.get("selector_version") != CERTIFIED_SELECTOR:
         checks.append(f"decision from {report.get('selector_version')!r}, not the certified selector")
     ci = report.get("certification_inputs", {})
-    if calibration_path is not None:
+    # §8: the frozen calibration recheck is MANDATORY for a certified decision —
+    # the artifact must be resolvable and rehash to the recorded value; a missing
+    # or mismatched artifact refuses the render (never a silent skip).
+    if calibration_path is None:
+        checks.append("no calibration artifact supplied; a certified render must "
+                      "re-verify the frozen calibration hash (§8)")
+    else:
         want = load_calibration(calibration_path).get("calibration_sha256")
         if ci.get("calibration_sha256") != want:
             checks.append("calibration hash mismatch (decision is stale vs the supplied artifact)")
@@ -664,8 +698,9 @@ def finalize_from_decision(layout: TrackLayout, sr: int, decision_id: str, *,
     res = finalize_and_deliver(layout, sr, recipe_id, target_dbfs=target_dbfs,
                                bitrate=bitrate, code_commit=code_commit)
     res["decision_id"] = decision_id
-    res["certified"] = res.get("status") == "delivered"
-    res["rollout_level"] = report.get("rollout_level", "exact_benchmark_qualified")
+    # §8: carry the explicit certification scope, not a bare boolean
+    res["certification_scope"] = report.get("certification_scope",
+                                            {"level": report.get("rollout_level")})
     return res
 
 
