@@ -1,0 +1,570 @@
+{
+ "rows": [
+  {
+   "track": "1_HABANERA_LAST_Tobacco_2026_06_18",
+   "dur_s": 198.3,
+   "n_novocal_spans>=3s": 8,
+   "novocal_total_s": 123.4,
+   "longest_span_s": 33.4,
+   "vocal_stem": "roformer_vocals.wav",
+   "spans": [
+    [
+     1.64,
+     35.02,
+     33.38
+    ],
+    [
+     51.17,
+     78.46,
+     27.29
+    ],
+    [
+     99.64,
+     117.42,
+     17.78
+    ],
+    [
+     138.37,
+     158.29,
+     19.92
+    ],
+    [
+     162.1,
+     166.53,
+     4.43
+    ],
+    [
+     174.14,
+     184.6,
+     10.46
+    ],
+    [
+     186.64,
+     190.37,
+     3.73
+    ],
+    [
+     191.5,
+     197.87,
+     6.37
+    ]
+   ]
+  },
+  {
+   "track": "VERDI_1m44s_NO_VOICES",
+   "dur_s": 104.2,
+   "n_novocal_spans>=3s": 3,
+   "novocal_total_s": 102.9,
+   "longest_span_s": 73.4,
+   "vocal_stem": "roformer_vocals.wav",
+   "spans": [
+    [
+     0.0,
+     22.22,
+     22.22
+    ],
+    [
+     23.05,
+     96.46,
+     73.41
+    ],
+    [
+     96.9,
+     104.14,
+     7.24
+    ]
+   ]
+  },
+  {
+   "track": "VERDI_1m39s_NO_VOICES",
+   "dur_s": 100.0,
+   "n_novocal_spans>=3s": 3,
+   "novocal_total_s": 98.8,
+   "longest_span_s": 70.5,
+   "vocal_stem": "roformer_vocals.wav",
+   "spans": [
+    [
+     0.0,
+     21.33,
+     21.33
+    ],
+    [
+     22.12,
+     92.6,
+     70.48
+    ],
+    [
+     93.03,
+     99.97,
+     6.94
+    ]
+   ]
+  },
+  {
+   "track": "VERDI_1m33s_original_tempo_NO_VOICES",
+   "dur_s": 93.4,
+   "n_novocal_spans>=3s": 2,
+   "novocal_total_s": 93.2,
+   "longest_span_s": 70.6,
+   "vocal_stem": "roformer_vocals.wav",
+   "spans": [
+    [
+     0.0,
+     22.65,
+     22.65
+    ],
+    [
+     22.8,
+     93.39,
+     70.59
+    ]
+   ]
+  },
+  {
+   "track": "MARSEILLAISE_APPL_Police_7_23_26",
+   "dur_s": 73.4,
+   "n_novocal_spans>=3s": 3,
+   "novocal_total_s": 71.7,
+   "longest_span_s": 56.9,
+   "vocal_stem": "roformer_vocals.wav",
+   "spans": [
+    [
+     0.22,
+     57.1,
+     56.88
+    ],
+    [
+     57.13,
+     62.63,
+     5.5
+    ],
+    [
+     63.86,
+     73.13,
+     9.27
+    ]
+   ]
+  },
+  {
+   "track": "17_MARSEILLAISE_APPLAUSE_Tobacco_05_17_26",
+   "dur_s": 67.2,
+   "n_novocal_spans>=3s": 2,
+   "novocal_total_s": 63.6,
+   "longest_span_s": 56.9,
+   "vocal_stem": "roformer_vocals.wav",
+   "spans": [
+    [
+     0.34,
+     57.19,
+     56.85
+    ],
+    [
+     57.25,
+     63.96,
+     6.71
+    ]
+   ]
+  },
+  {
+   "track": "5_FLY_SWAN_TRAVIATA_2026_05_02",
+   "dur_s": 69.9,
+   "n_novocal_spans>=3s": 5,
+   "novocal_total_s": 51.1,
+   "longest_span_s": 16.0,
+   "vocal_stem": "roformer_vocals.wav",
+   "spans": [
+    [
+     0.17,
+     5.45,
+     5.28
+    ],
+    [
+     8.0,
+     23.97,
+     15.97
+    ],
+    [
+     32.0,
+     39.98,
+     7.98
+    ],
+    [
+     40.77,
+     49.77,
+     9.0
+    ],
+    [
+     49.81,
+     62.69,
+     12.88
+    ]
+   ]
+  },
+  {
+   "track": "6_LA_WALLY_CHILDREN_Tobacco_2026_07_06_1",
+   "dur_s": 107.4,
+   "n_novocal_spans>=3s": 4,
+   "novocal_total_s": 50.6,
+   "longest_span_s": 17.5,
+   "vocal_stem": "roformer_vocals.wav",
+   "spans": [
+    [
+     0.51,
+     12.84,
+     12.33
+    ],
+    [
+     30.81,
+     41.66,
+     10.85
+    ],
+    [
+     78.45,
+     95.97,
+     17.52
+    ],
+    [
+     97.25,
+     107.13,
+     9.88
+    ]
+   ]
+  },
+  {
+   "track": "16_DOLL_TRACK_NoVoice_Gb_Tobacco_05_18_2026",
+   "dur_s": 56.5,
+   "n_novocal_spans>=3s": 5,
+   "novocal_total_s": 48.0,
+   "longest_span_s": 26.7,
+   "vocal_stem": "roformer_vocals.wav",
+   "spans": [
+    [
+     0.47,
+     10.53,
+     10.06
+    ],
+    [
+     10.88,
+     37.62,
+     26.74
+    ],
+    [
+     37.99,
+     41.65,
+     3.66
+    ],
+    [
+     46.07,
+     49.72,
+     3.65
+    ],
+    [
+     52.09,
+     56.0,
+     3.91
+    ]
+   ]
+  },
+  {
+   "track": "12_13_SCARYDOG_STABAT_MATER_Tobacco_2026_07_06",
+   "dur_s": 95.9,
+   "n_novocal_spans>=3s": 4,
+   "novocal_total_s": 44.9,
+   "longest_span_s": 24.9,
+   "vocal_stem": "roformer_vocals.wav",
+   "spans": [
+    [
+     0.2,
+     9.65,
+     9.45
+    ],
+    [
+     12.7,
+     16.03,
+     3.33
+    ],
+    [
+     23.98,
+     48.93,
+     24.95
+    ],
+    [
+     88.66,
+     95.8,
+     7.14
+    ]
+   ]
+  },
+  {
+   "track": "22_VALKYRIES_NEW_7242026",
+   "dur_s": 94.5,
+   "n_novocal_spans>=3s": 4,
+   "novocal_total_s": 41.0,
+   "longest_span_s": 22.7,
+   "vocal_stem": "roformer_vocals.wav",
+   "spans": [
+    [
+     1.26,
+     23.97,
+     22.71
+    ],
+    [
+     54.94,
+     64.0,
+     9.06
+    ],
+    [
+     71.62,
+     75.15,
+     3.53
+    ],
+    [
+     87.44,
+     93.1,
+     5.66
+    ]
+   ]
+  },
+  {
+   "track": "19_CABARET_DRUMROLL_NEW_Tobacco_2026_07_09",
+   "dur_s": 62.7,
+   "n_novocal_spans>=3s": 2,
+   "novocal_total_s": 35.8,
+   "longest_span_s": 32.2,
+   "vocal_stem": "roformer_vocals.wav",
+   "spans": [
+    [
+     0.17,
+     32.36,
+     32.19
+    ],
+    [
+     58.83,
+     62.46,
+     3.63
+    ]
+   ]
+  },
+  {
+   "track": "15_IRISH_DANCE_Tobacco_2026_07_06",
+   "dur_s": 32.1,
+   "n_novocal_spans>=3s": 1,
+   "novocal_total_s": 30.5,
+   "longest_span_s": 30.5,
+   "vocal_stem": "roformer_vocals.wav",
+   "spans": [
+    [
+     1.4,
+     31.9,
+     30.5
+    ]
+   ]
+  },
+  {
+   "track": "2_MOSQUITO_Tobacco_2026_02_07_1",
+   "dur_s": 28.9,
+   "n_novocal_spans>=3s": 1,
+   "novocal_total_s": 28.3,
+   "longest_span_s": 28.3,
+   "vocal_stem": "roformer_vocals.wav",
+   "spans": [
+    [
+     0.23,
+     28.51,
+     28.28
+    ]
+   ]
+  },
+  {
+   "track": "3_BEDBUG_TCHAIK_LONG_7242026",
+   "dur_s": 25.7,
+   "n_novocal_spans>=3s": 1,
+   "novocal_total_s": 25.2,
+   "longest_span_s": 25.2,
+   "vocal_stem": "roformer_vocals.wav",
+   "spans": [
+    [
+     0.43,
+     25.64,
+     25.21
+    ]
+   ]
+  },
+  {
+   "track": "CABARET_Willkommen_Tobacco_05_18_2026",
+   "dur_s": 23.6,
+   "n_novocal_spans>=3s": 1,
+   "novocal_total_s": 23.0,
+   "longest_span_s": 23.0,
+   "vocal_stem": "roformer_vocals.wav",
+   "spans": [
+    [
+     0.31,
+     23.33,
+     23.02
+    ]
+   ]
+  },
+  {
+   "track": "7_VERDI_SLOW_Voices_Tobacco_05_14_26_1",
+   "dur_s": 104.2,
+   "n_novocal_spans>=3s": 2,
+   "novocal_total_s": 15.9,
+   "longest_span_s": 9.5,
+   "vocal_stem": "roformer_vocals.wav",
+   "spans": [
+    [
+     0.22,
+     9.73,
+     9.51
+    ],
+    [
+     97.27,
+     103.7,
+     6.43
+    ]
+   ]
+  },
+  {
+   "track": "DOLL_DRAFT_Tobacco_05_14_2026",
+   "dur_s": 61.3,
+   "n_novocal_spans>=3s": 2,
+   "novocal_total_s": 14.8,
+   "longest_span_s": 9.8,
+   "vocal_stem": "roformer_vocals.wav",
+   "spans": [
+    [
+     0.0,
+     9.76,
+     9.76
+    ],
+    [
+     52.1,
+     57.1,
+     5.0
+    ]
+   ]
+  },
+  {
+   "track": "VERDI_FAST_Voices_Tobacco_2026_05_07",
+   "dur_s": 94.4,
+   "n_novocal_spans>=3s": 2,
+   "novocal_total_s": 14.4,
+   "longest_span_s": 8.6,
+   "vocal_stem": "roformer_vocals.wav",
+   "spans": [
+    [
+     1.22,
+     9.8,
+     8.58
+    ],
+    [
+     88.44,
+     94.23,
+     5.79
+    ]
+   ]
+  },
+  {
+   "track": "VERDI_FAST_Voices_Tobacco_2026_05_07_1",
+   "dur_s": 94.4,
+   "n_novocal_spans>=3s": 2,
+   "novocal_total_s": 14.4,
+   "longest_span_s": 8.6,
+   "vocal_stem": "roformer_vocals.wav",
+   "spans": [
+    [
+     1.22,
+     9.8,
+     8.58
+    ],
+    [
+     88.44,
+     94.23,
+     5.79
+    ]
+   ]
+  },
+  {
+   "track": "BEDBUG_TCHAIK_OLD_Tobacco_2026_06_22",
+   "dur_s": 12.3,
+   "n_novocal_spans>=3s": 1,
+   "novocal_total_s": 10.9,
+   "longest_span_s": 10.9,
+   "vocal_stem": "roformer_vocals.wav",
+   "spans": [
+    [
+     0.94,
+     11.82,
+     10.88
+    ]
+   ]
+  },
+  {
+   "track": "20_REQUIEM_FOR_HUMANITY_Tobacco_2026_07_06",
+   "dur_s": 102.0,
+   "n_novocal_spans>=3s": 1,
+   "novocal_total_s": 8.0,
+   "longest_span_s": 8.0,
+   "vocal_stem": "roformer_vocals.wav",
+   "spans": [
+    [
+     56.0,
+     63.97,
+     7.97
+    ]
+   ]
+  },
+  {
+   "track": "21_BARBER_AGNUS_DEI_Tobacco_2026_06_22",
+   "dur_s": 94.6,
+   "n_novocal_spans>=3s": 1,
+   "novocal_total_s": 6.8,
+   "longest_span_s": 6.8,
+   "vocal_stem": "roformer_vocals.wav",
+   "spans": [
+    [
+     87.59,
+     94.37,
+     6.78
+    ]
+   ]
+  },
+  {
+   "track": "11_TURKISH_DANCE_GUTEN_MORGEN_Tobacco_2026_06_18",
+   "dur_s": 49.2,
+   "n_novocal_spans>=3s": 0,
+   "novocal_total_s": 0,
+   "longest_span_s": 0.0,
+   "vocal_stem": "roformer_vocals.wav",
+   "spans": []
+  },
+  {
+   "track": "18_DRINK_TRICK_LONGER_Tobacco_2026_07_06",
+   "dur_s": 12.3,
+   "n_novocal_spans>=3s": 0,
+   "novocal_total_s": 0,
+   "longest_span_s": 0.0,
+   "vocal_stem": "roformer_vocals.wav",
+   "spans": []
+  },
+  {
+   "track": "DRINK_TRICK_SHORT_Tobacco_2026_06_17_1",
+   "dur_s": 11.5,
+   "n_novocal_spans>=3s": 0,
+   "novocal_total_s": 0,
+   "longest_span_s": 0.0,
+   "vocal_stem": "roformer_vocals.wav",
+   "spans": []
+  },
+  {
+   "track": "TURKSH_DNC-22s",
+   "dur_s": 21.9,
+   "n_novocal_spans>=3s": 0,
+   "novocal_total_s": 0,
+   "longest_span_s": 0.0,
+   "vocal_stem": "roformer_vocals.wav",
+   "spans": []
+  }
+ ]
+}
