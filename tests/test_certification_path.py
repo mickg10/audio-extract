@@ -72,6 +72,54 @@ def _run_with_challenge_results(tmp_path, theft_by_recipe):
     return layout
 
 
+def _seed_multi(tmp_path, recipes, n_cases):
+    """A run with `recipes` scored over `n_cases` distinct challenges each."""
+    from audio_extract.manifest_v2 import ManifestV2
+
+    layout = TrackLayout(tmp_path, "trk").ensure()
+    mix = fx.synth_orchestra(SR, 2.0)
+    (layout.source_dir / "source.json").write_text(json.dumps({
+        "track_id": "trk", "sample_rate_hz": SR, "channel_layout": ["FL", "FR"],
+        "frames": len(mix), "input_pcm_sha256": "sha256:in"}))
+    with ManifestV2(layout.manifest_sqlite) as m2:
+        for i in range(n_cases):
+            m2.add_challenge_case(challenge_id=f"sha256:case{i}", challenge_type="track_remix",
+                                  mixture_node_id="m", target_node_id="t", recipe={}, klass={})
+            for rid in recipes:
+                m2.add_challenge_result(challenge_id=f"sha256:case{i}", candidate_recipe_id=rid,
+                    result={"exact_reference": {"si_sdr_db": 12.0, "band_envelope_err_db": 3.0,
+                            "stereo_width_err": 0.01},
+                            "exact_labels": {"event_hole_depth_db": 4.0,
+                            "vocal_interference_ratio": 0.1}})
+        for rid in recipes:
+            m2.add_challenge_result(challenge_id="theft_assay", candidate_recipe_id=rid,
+                                    result={"theft_mean": 0.1})
+    return layout
+
+
+def test_cells_aggregate_by_recipe_not_challenge(tmp_path):
+    # P0 §1: ONE recipe × FOUR challenges -> exactly ONE candidate with FOUR cells
+    layout = _seed_multi(tmp_path, ["sha256:recipeA"], n_cases=4)
+    cands = auto.severity_cells_from_store(layout)
+    assert set(cands) == {"sha256:recipeA"}                     # not four challenge-keyed pseudo-candidates
+    assert len(cands["sha256:recipeA"]["cells"]["event_hole"]) == 4
+
+
+def test_two_recipes_same_challenge_two_candidates(tmp_path):
+    layout = _seed_multi(tmp_path, ["sha256:recipeA", "sha256:recipeB"], n_cases=1)
+    cands = auto.severity_cells_from_store(layout)
+    assert set(cands) == {"sha256:recipeA", "sha256:recipeB"}   # two candidates, not one-per-challenge
+
+
+def test_certification_inputs_are_recipe_ids_not_challenge_ids(tmp_path):
+    calib = _frozen_calibration(tmp_path)
+    layout = _seed_multi(tmp_path, ["sha256:recipeA", "sha256:recipeB"], n_cases=3)
+    d = auto.select_autonomous(layout, calibration_path=calib)
+    ids = set(d["certification_inputs"]["candidate_recipe_ids"])
+    assert ids == {"sha256:recipeA", "sha256:recipeB"}
+    assert not any(k.startswith("sha256:case") for k in ids)    # never a challenge id
+
+
 def test_preview_never_certifies(tmp_path):
     layout = _run_with_challenge_results(tmp_path, {"sha256:good": 0.1, "sha256:bad": 0.2})
     d = auto.select_autonomous(layout)                 # no calibration -> preview

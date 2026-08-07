@@ -1,0 +1,4189 @@
+{
+ "sr": 44100,
+ "grid": [
+  {
+   "name": "residual:MDX23C",
+   "spec": {
+    "kind": "residual",
+    "models": [
+     "MDX23C"
+    ],
+    "overlap": 8
+   },
+   "recipe_id": "sha256:1fbb0f0a487ae2e3c7405d405665c030d65e58c3295ffb1bf6e47b5dca47754f"
+  },
+  {
+   "name": "residual:MelBand",
+   "spec": {
+    "kind": "residual",
+    "models": [
+     "MelBand"
+    ],
+    "overlap": 8
+   },
+   "recipe_id": "sha256:e21228241f2dd677fa18a1027bd4f03d4818384b13eee080f3491fb248540c5d"
+  },
+  {
+   "name": "residual:BS",
+   "spec": {
+    "kind": "residual",
+    "models": [
+     "BS"
+    ],
+    "overlap": 8
+   },
+   "recipe_id": "sha256:ad65af4f239ab60f911bc258f6f861c58a03f3bda8b987d684061453739e738f"
+  },
+  {
+   "name": "ens_median:MDX23C/MelBand/BS",
+   "spec": {
+    "kind": "ensemble_residual",
+    "models": [
+     "MDX23C",
+     "MelBand",
+     "BS"
+    ],
+    "algo": "median",
+    "overlap": 8
+   },
+   "recipe_id": "sha256:e847597ef33f2e2603c415b5a0546c4179f552842bd513f96e7f6fb17686ce0c"
+  }
+ ],
+ "works": {
+  "donizetti": {
+   "conditions": {
+    "dry": {
+     "cid": "sha256:35d60754a280080fe1ded530101b757d",
+     "frames": 4851000,
+     "meta": {
+      "source": "Bologna anechoic Italian opera - bologna_donizetti",
+      "window_start_s": 32.0,
+      "license": "CC BY 4.0 (Zenodo 3628247)",
+      "citation": "Anechoic recordings of Italian opera (Univ. Bologna/Parma), Zenodo 3628247",
+      "pair_integrity": "linear_exact",
+      "evaluation_task": "soloist_vs_rest",
+      "role": "development",
+      "soloist_dirs": [
+       "CANTO_SOLO_Donizetti"
+      ],
+      "chorus_dirs": [],
+      "orchestra_dirs": [
+       "BAS_Donizetti\uf028",
+       "CLA_Donizetti",
+       "FL1_Donizetti",
+       "HR_Donizetti",
+       "KB_Donizetti\uf028",
+       "OB_Donizetti",
+       "OTT_Donizetti",
+       "TRB_Donizetti",
+       "TRP_Donizetti",
+       "VC_Donizetti",
+       "VL1_Donizetti",
+       "VL2_Donizetti",
+       "VLA_Donizetti"
+      ],
+      "n_orch_desk_takes": 41,
+      "n_soloist_files": 1,
+      "anechoic": true,
+      "downmix_alignment": "delay=42samp(1.0ms) corr=0.366",
+      "construction": "mono-downmix; sum take-001 of every desk; orchestra=all non-soloist families (+chorus retained); mix=orch+voice; shared -3dBFS gain; dual-mono 44.1k f32",
+      "case": "bologna_donizetti",
+      "sr": 44100,
+      "duration_s": 110.0,
+      "gain_applied_db": 0.785,
+      "linear_exactness_db": -91.6,
+      "voice_energy_frac_of_mix": 0.11,
+      "peak_dbfs_target": -3.0,
+      "variant": "dry",
+      "hall_rt60_s": null,
+      "hall_seed": null,
+      "files": [
+       "mix_with_voice.wav",
+       "orchestra_only.wav",
+       "voice_ref.wav"
+      ]
+     }
+    }
+   },
+   "wall_s": 189.6,
+   "matrix": {
+    "sha256:1fbb0f0a487ae2e3c7405d405665c030d65e58c3295ffb1bf6e47b5dca47754f": {
+     "name": "residual:MDX23C",
+     "cases": {
+      "sha256:35d60754a280080fe1ded530101b757d": {
+       "si_sdr_db": 25.661,
+       "stft_distance": 0.53175,
+       "band_envelope_err_db": 2.16,
+       "stereo_width_err": 0.0,
+       "alignment": {
+        "delay": 0,
+        "confidence": 0.0001,
+        "residual_db": -25.67
+       },
+       "event_hole_depth_db": 15.134262078905456,
+       "event_hole_area": 4.403340840614123,
+       "masked_hole_uncertainty": 0.17637540453074432,
+       "accompaniment_scaling": 0.99763,
+       "vocal_interference_ratio": 0.02172,
+       "orthogonal_artifact_ratio": 0.05143,
+       "vocal_si_sir_db": 42.32,
+       "n_events": 103
+      }
+     },
+     "theft_mean": 0.01326,
+     "residual_construction": [
+      {
+       "alignment": {
+        "confidence": 0.0001,
+        "delay": 0,
+        "residual_db": -37.55
+       },
+       "band_envelope_err_db": 0.326,
+       "control_id": "ctl_donizetti_dry",
+       "si_sdr_db": 37.669,
+       "stereo_width_err": 0.0,
+       "stft_distance": 0.06656
+      }
+     ],
+     "min_rc_si": 37.669,
+     "mean_rc_band": 0.326,
+     "theft_rows": [
+      {
+       "band_excess_db": [
+        28.232,
+        14.427,
+        19.152,
+        25.717,
+        35.208,
+        38.642
+       ],
+       "control_id": "ctl_donizetti_dry",
+       "theft_broadband": 0.01326,
+       "theft_mid": 0.01323,
+       "theft_side": 33810525.61455
+      }
+     ],
+     "max_theft_broadband": 0.01326
+    },
+    "sha256:e21228241f2dd677fa18a1027bd4f03d4818384b13eee080f3491fb248540c5d": {
+     "name": "residual:MelBand",
+     "cases": {
+      "sha256:35d60754a280080fe1ded530101b757d": {
+       "si_sdr_db": 23.695,
+       "stft_distance": 0.3406,
+       "band_envelope_err_db": 1.435,
+       "stereo_width_err": 1e-05,
+       "alignment": {
+        "delay": 0,
+        "confidence": 0.0001,
+        "residual_db": -23.7
+       },
+       "event_hole_depth_db": 15.239270977719537,
+       "event_hole_area": 5.1913900563451705,
+       "masked_hole_uncertainty": 0.1779935275080906,
+       "accompaniment_scaling": 0.99378,
+       "vocal_interference_ratio": 0.01964,
+       "orthogonal_artifact_ratio": 0.06458,
+       "vocal_si_sir_db": 43.16,
+       "n_events": 103
+      }
+     },
+     "theft_mean": 0.122,
+     "residual_construction": [
+      {
+       "alignment": {
+        "confidence": 0.0001,
+        "delay": 0,
+        "residual_db": -18.27
+       },
+       "band_envelope_err_db": 0.255,
+       "control_id": "ctl_donizetti_dry",
+       "si_sdr_db": 18.222,
+       "stereo_width_err": 0.0,
+       "stft_distance": 0.02703
+      }
+     ],
+     "min_rc_si": 18.222,
+     "mean_rc_band": 0.255,
+     "theft_rows": [
+      {
+       "band_excess_db": [
+        3.489,
+        7.195,
+        7.524,
+        5.899,
+        8.745,
+        8.652
+       ],
+       "control_id": "ctl_donizetti_dry",
+       "theft_broadband": 0.122,
+       "theft_mid": 0.12198,
+       "theft_side": 78119655.31809
+      }
+     ],
+     "max_theft_broadband": 0.122
+    },
+    "sha256:ad65af4f239ab60f911bc258f6f861c58a03f3bda8b987d684061453739e738f": {
+     "name": "residual:BS",
+     "cases": {
+      "sha256:35d60754a280080fe1ded530101b757d": {
+       "si_sdr_db": 28.246,
+       "stft_distance": 0.50325,
+       "band_envelope_err_db": 2.255,
+       "stereo_width_err": 0.0,
+       "alignment": {
+        "delay": 0,
+        "confidence": 0.0001,
+        "residual_db": -28.25
+       },
+       "event_hole_depth_db": 27.195184902483017,
+       "event_hole_area": 7.585596117420301,
+       "masked_hole_uncertainty": 0.17313915857605178,
+       "accompaniment_scaling": 0.99886,
+       "vocal_interference_ratio": 0.00786,
+       "orthogonal_artifact_ratio": 0.03856,
+       "vocal_si_sir_db": 51.16,
+       "n_events": 103
+      }
+     },
+     "theft_mean": 0.01751,
+     "residual_construction": [
+      {
+       "alignment": {
+        "confidence": 0.0001,
+        "delay": 0,
+        "residual_db": -35.13
+       },
+       "band_envelope_err_db": 0.129,
+       "control_id": "ctl_donizetti_dry",
+       "si_sdr_db": 35.135,
+       "stereo_width_err": 0.0,
+       "stft_distance": 0.11897
+      }
+     ],
+     "min_rc_si": 35.135,
+     "mean_rc_band": 0.129,
+     "theft_rows": [
+      {
+       "band_excess_db": [
+        3.822,
+        2.748,
+        2.899,
+        2.853,
+        1.718,
+        13.927
+       ],
+       "control_id": "ctl_donizetti_dry",
+       "theft_broadband": 0.01751,
+       "theft_mid": 0.01751,
+       "theft_side": 11730422.61985
+      }
+     ],
+     "max_theft_broadband": 0.01751
+    },
+    "sha256:e847597ef33f2e2603c415b5a0546c4179f552842bd513f96e7f6fb17686ce0c": {
+     "name": "ens_median:MDX23C/MelBand/BS",
+     "cases": {
+      "sha256:35d60754a280080fe1ded530101b757d": {
+       "si_sdr_db": 27.773,
+       "stft_distance": 0.41422,
+       "band_envelope_err_db": 1.419,
+       "stereo_width_err": 0.0,
+       "alignment": {
+        "delay": 0,
+        "confidence": 0.0001,
+        "residual_db": -27.77
+       },
+       "event_hole_depth_db": 16.025233873585815,
+       "event_hole_area": 3.82259611077915,
+       "masked_hole_uncertainty": 0.1779935275080906,
+       "accompaniment_scaling": 0.99775,
+       "vocal_interference_ratio": 0.01553,
+       "orthogonal_artifact_ratio": 0.04041,
+       "vocal_si_sir_db": 45.23,
+       "n_events": 103
+      }
+     },
+     "theft_mean": 0.0042,
+     "residual_construction": [
+      {
+       "alignment": {
+        "confidence": 0.0001,
+        "delay": 0,
+        "residual_db": -47.54
+       },
+       "band_envelope_err_db": 0.075,
+       "control_id": "ctl_donizetti_dry",
+       "si_sdr_db": 47.661,
+       "stereo_width_err": 0.0,
+       "stft_distance": 0.06145
+      }
+     ],
+     "min_rc_si": 47.661,
+     "mean_rc_band": 0.075,
+     "theft_rows": [
+      {
+       "band_excess_db": [
+        11.06,
+        6.832,
+        9.522,
+        13.096,
+        22.239,
+        29.262
+       ],
+       "control_id": "ctl_donizetti_dry",
+       "theft_broadband": 0.0042,
+       "theft_mid": 0.00417,
+       "theft_side": 17448862.14051
+      }
+     ],
+     "max_theft_broadband": 0.0042
+    }
+   }
+  },
+  "puccini": {
+   "conditions": {
+    "dry": {
+     "cid": "sha256:9cdddf190c8423b2392e3b7c7845cf35",
+     "frames": 4674600,
+     "meta": {
+      "source": "Bologna anechoic Italian opera - bologna_puccini",
+      "license": "CC BY 4.0 (Zenodo 3628247)",
+      "citation": "Anechoic recordings of Italian opera (Univ. Bologna/Parma), Zenodo 3628247",
+      "pair_integrity": "linear_exact",
+      "evaluation_task": "soloist_vs_rest",
+      "role": "calibration",
+      "soloist_dirs": [
+       "SOPRANO_COLORITURA"
+      ],
+      "chorus_dirs": [],
+      "orchestra_dirs": [
+       "BAS",
+       "CLA",
+       "FL",
+       "HARP",
+       "HO",
+       "KB",
+       "OB",
+       "TRB",
+       "TRP",
+       "VC",
+       "VL1",
+       "VL2",
+       "VLA"
+      ],
+      "n_orch_desk_takes": 66,
+      "n_soloist_files": 1,
+      "anechoic": true,
+      "downmix_alignment": "delay=0samp(0.0ms) corr=0.158",
+      "construction": "mono-downmix; sum take-001 of every desk; orchestra=all non-soloist families (+chorus retained); mix=orch+voice; shared -3dBFS gain; dual-mono 44.1k f32",
+      "case": "bologna_puccini",
+      "sr": 44100,
+      "duration_s": 106.0,
+      "gain_applied_db": 3.416,
+      "linear_exactness_db": -94.0,
+      "voice_energy_frac_of_mix": 0.0406,
+      "peak_dbfs_target": -3.0,
+      "variant": "dry",
+      "hall_rt60_s": null,
+      "hall_seed": null,
+      "files": [
+       "mix_with_voice.wav",
+       "orchestra_only.wav",
+       "voice_ref.wav"
+      ]
+     }
+    }
+   },
+   "wall_s": 155.6,
+   "matrix": {
+    "sha256:1fbb0f0a487ae2e3c7405d405665c030d65e58c3295ffb1bf6e47b5dca47754f": {
+     "name": "residual:MDX23C",
+     "cases": {
+      "sha256:9cdddf190c8423b2392e3b7c7845cf35": {
+       "si_sdr_db": 24.612,
+       "stft_distance": 0.16857,
+       "band_envelope_err_db": 0.535,
+       "stereo_width_err": 0.0,
+       "alignment": {
+        "delay": 0,
+        "confidence": 0.0,
+        "residual_db": -24.62
+       },
+       "event_hole_depth_db": 8.727304965541451,
+       "event_hole_area": 5.080841174393567,
+       "masked_hole_uncertainty": 0.06926406926406926,
+       "accompaniment_scaling": 0.99368,
+       "vocal_interference_ratio": 0.07024,
+       "orthogonal_artifact_ratio": 0.05662,
+       "vocal_si_sir_db": 36.74,
+       "n_events": 77
+      }
+     },
+     "theft_mean": 0.01678,
+     "residual_construction": [
+      {
+       "alignment": {
+        "confidence": 0.0,
+        "delay": 0,
+        "residual_db": -35.51
+       },
+       "band_envelope_err_db": 0.24,
+       "control_id": "ctl_puccini_dry",
+       "si_sdr_db": 35.544,
+       "stereo_width_err": 0.0,
+       "stft_distance": 0.05889
+      }
+     ],
+     "min_rc_si": 35.544,
+     "mean_rc_band": 0.24,
+     "theft_rows": [
+      {
+       "band_excess_db": [
+        22.42,
+        9.986,
+        16.013,
+        21.939,
+        30.593,
+        34.107
+       ],
+       "control_id": "ctl_puccini_dry",
+       "theft_broadband": 0.01678,
+       "theft_mid": 0.01677,
+       "theft_side": 42240791.03469
+      }
+     ],
+     "max_theft_broadband": 0.01678
+    },
+    "sha256:e21228241f2dd677fa18a1027bd4f03d4818384b13eee080f3491fb248540c5d": {
+     "name": "residual:MelBand",
+     "cases": {
+      "sha256:9cdddf190c8423b2392e3b7c7845cf35": {
+       "si_sdr_db": 17.475,
+       "stft_distance": 0.10867,
+       "band_envelope_err_db": 0.291,
+       "stereo_width_err": 1e-05,
+       "alignment": {
+        "delay": 0,
+        "confidence": 0.0,
+        "residual_db": -17.52
+       },
+       "event_hole_depth_db": 12.432181497410369,
+       "event_hole_area": 4.453812769342265,
+       "masked_hole_uncertainty": 0.06926406926406926,
+       "accompaniment_scaling": 0.99329,
+       "vocal_interference_ratio": 0.44931,
+       "orthogonal_artifact_ratio": 0.09539,
+       "vocal_si_sir_db": 20.62,
+       "n_events": 77
+      }
+     },
+     "theft_mean": 0.03723,
+     "residual_construction": [
+      {
+       "alignment": {
+        "confidence": 0.0,
+        "delay": 0,
+        "residual_db": -28.58
+       },
+       "band_envelope_err_db": 0.122,
+       "control_id": "ctl_puccini_dry",
+       "si_sdr_db": 28.594,
+       "stereo_width_err": 0.0,
+       "stft_distance": 0.02452
+      }
+     ],
+     "min_rc_si": 28.594,
+     "mean_rc_band": 0.122,
+     "theft_rows": [
+      {
+       "band_excess_db": [
+        0.045,
+        4.331,
+        4.487,
+        4.118,
+        5.03,
+        5.813
+       ],
+       "control_id": "ctl_puccini_dry",
+       "theft_broadband": 0.03723,
+       "theft_mid": 0.0372,
+       "theft_side": 104971206.36679
+      }
+     ],
+     "max_theft_broadband": 0.03723
+    },
+    "sha256:ad65af4f239ab60f911bc258f6f861c58a03f3bda8b987d684061453739e738f": {
+     "name": "residual:BS",
+     "cases": {
+      "sha256:9cdddf190c8423b2392e3b7c7845cf35": {
+       "si_sdr_db": 25.834,
+       "stft_distance": 0.13421,
+       "band_envelope_err_db": 0.242,
+       "stereo_width_err": 0.0,
+       "alignment": {
+        "delay": 0,
+        "confidence": 0.0,
+        "residual_db": -25.84
+       },
+       "event_hole_depth_db": 10.530588714587127,
+       "event_hole_area": 4.090081582952035,
+       "masked_hole_uncertainty": 0.07142857142857142,
+       "accompaniment_scaling": 0.99777,
+       "vocal_interference_ratio": 0.03986,
+       "orthogonal_artifact_ratio": 0.05031,
+       "vocal_si_sir_db": 41.7,
+       "n_events": 77
+      }
+     },
+     "theft_mean": 0.02292,
+     "residual_construction": [
+      {
+       "alignment": {
+        "confidence": 0.0,
+        "delay": 0,
+        "residual_db": -32.8
+       },
+       "band_envelope_err_db": 0.113,
+       "control_id": "ctl_puccini_dry",
+       "si_sdr_db": 32.797,
+       "stereo_width_err": 0.0,
+       "stft_distance": 0.12963
+      }
+     ],
+     "min_rc_si": 32.797,
+     "mean_rc_band": 0.113,
+     "theft_rows": [
+      {
+       "band_excess_db": [
+        3.537,
+        1.62,
+        2.993,
+        4.798,
+        4.582,
+        13.684
+       ],
+       "control_id": "ctl_puccini_dry",
+       "theft_broadband": 0.02292,
+       "theft_mid": 0.02291,
+       "theft_side": 29319093.57365
+      }
+     ],
+     "max_theft_broadband": 0.02292
+    },
+    "sha256:e847597ef33f2e2603c415b5a0546c4179f552842bd513f96e7f6fb17686ce0c": {
+     "name": "ens_median:MDX23C/MelBand/BS",
+     "cases": {
+      "sha256:9cdddf190c8423b2392e3b7c7845cf35": {
+       "si_sdr_db": 25.975,
+       "stft_distance": 0.19831,
+       "band_envelope_err_db": 0.252,
+       "stereo_width_err": 0.0,
+       "alignment": {
+        "delay": 0,
+        "confidence": 0.0,
+        "residual_db": -25.98
+       },
+       "event_hole_depth_db": 9.094960757229133,
+       "event_hole_area": 3.5605000263950077,
+       "masked_hole_uncertainty": 0.07142857142857142,
+       "accompaniment_scaling": 0.99626,
+       "vocal_interference_ratio": 0.08252,
+       "orthogonal_artifact_ratio": 0.04711,
+       "vocal_si_sir_db": 35.36,
+       "n_events": 77
+      }
+     },
+     "theft_mean": 0.00882,
+     "residual_construction": [
+      {
+       "alignment": {
+        "confidence": 0.0,
+        "delay": 0,
+        "residual_db": -41.09
+       },
+       "band_envelope_err_db": 0.082,
+       "control_id": "ctl_puccini_dry",
+       "si_sdr_db": 41.11,
+       "stereo_width_err": 0.0,
+       "stft_distance": 0.06787
+      }
+     ],
+     "min_rc_si": 41.11,
+     "mean_rc_band": 0.082,
+     "theft_rows": [
+      {
+       "band_excess_db": [
+        7.599,
+        3.79,
+        5.536,
+        9.173,
+        17.179,
+        26.565
+       ],
+       "control_id": "ctl_puccini_dry",
+       "theft_broadband": 0.00882,
+       "theft_mid": 0.00881,
+       "theft_side": 38692312.68479
+      }
+     ],
+     "max_theft_broadband": 0.00882
+    }
+   }
+  },
+  "aalto_mozart": {
+   "conditions": {
+    "dry": {
+     "cid": "sha256:bae01e0a3d5be6ef3c1ea3ce3e7c3dcd",
+     "frames": 3969000,
+     "meta": {
+      "source": "Aalto anechoic aalto_mozart (Mozart, Don Giovanni - Donna Elvira aria)",
+      "license": "Free for academic research (Aalto Univ. Acoustics Lab)",
+      "citation": "Patynen, Pulkki, Lokki (2008), Anechoic recording system for symphony orchestra, Acta Acustica united with Acustica 94(6):856-865",
+      "pair_integrity": "linear_exact",
+      "evaluation_task": "soloist_vs_rest",
+      "role": "development",
+      "anechoic": true,
+      "window_start_s": 9.0,
+      "n_instruments": 13,
+      "n_soloist": 1,
+      "construction": "mono-downmix; orchestra=sum(all instrument stems); voice=soprano; mix=orch+voice; 90s singing window; shared -3dBFS gain; dual-mono 44.1k f32",
+      "case": "aalto_mozart_dry",
+      "sr": 44100,
+      "duration_s": 90.0,
+      "gain_applied_db": 20.987,
+      "linear_exactness_db": -78.4,
+      "voice_energy_frac_of_mix": 0.5959,
+      "peak_dbfs_target": -3.0,
+      "variant": "dry",
+      "hall_rt60_s": null,
+      "hall_seed": null,
+      "files": [
+       "mix_with_voice.wav",
+       "orchestra_only.wav",
+       "voice_ref.wav"
+      ]
+     }
+    },
+    "hall": {
+     "cid": "sha256:e1ebec98b654627c93445cc148e9c482",
+     "frames": 3969000,
+     "meta": {
+      "source": "Aalto anechoic aalto_mozart (Mozart, Don Giovanni - Donna Elvira aria)",
+      "license": "Free for academic research (Aalto Univ. Acoustics Lab)",
+      "citation": "Patynen, Pulkki, Lokki (2008), Anechoic recording system for symphony orchestra, Acta Acustica united with Acustica 94(6):856-865",
+      "pair_integrity": "linear_exact",
+      "evaluation_task": "soloist_vs_rest",
+      "role": "development",
+      "anechoic": true,
+      "window_start_s": 9.0,
+      "n_instruments": 13,
+      "n_soloist": 1,
+      "construction": "mono-downmix; orchestra=sum(all instrument stems); voice=soprano; mix=orch+voice; 90s singing window; shared -3dBFS gain; dual-mono 44.1k f32 | HALL RT60=1.5s applied identically both sides",
+      "case": "aalto_mozart_hall",
+      "sr": 44100,
+      "duration_s": 90.0,
+      "gain_applied_db": 4.722,
+      "linear_exactness_db": -92.1,
+      "voice_energy_frac_of_mix": 0.5654,
+      "peak_dbfs_target": -3.0,
+      "variant": "hall",
+      "hall_rt60_s": 1.5,
+      "hall_seed": 1234,
+      "files": [
+       "mix_with_voice.wav",
+       "orchestra_only.wav",
+       "voice_ref.wav"
+      ]
+     }
+    }
+   },
+   "wall_s": 264.6,
+   "matrix": {
+    "sha256:1fbb0f0a487ae2e3c7405d405665c030d65e58c3295ffb1bf6e47b5dca47754f": {
+     "name": "residual:MDX23C",
+     "cases": {
+      "sha256:bae01e0a3d5be6ef3c1ea3ce3e7c3dcd": {
+       "si_sdr_db": 21.458,
+       "stft_distance": 0.43585,
+       "band_envelope_err_db": 0.697,
+       "stereo_width_err": 0.0,
+       "alignment": {
+        "delay": 0,
+        "confidence": 0.0001,
+        "residual_db": -21.48
+       },
+       "event_hole_depth_db": 8.723181123835323,
+       "event_hole_area": 2.1869749838031827,
+       "masked_hole_uncertainty": 0.4588477366255144,
+       "accompaniment_scaling": 0.98938,
+       "vocal_interference_ratio": 0.00036,
+       "orthogonal_artifact_ratio": 0.08365,
+       "vocal_si_sir_db": 67.18,
+       "n_events": 81
+      },
+      "sha256:e1ebec98b654627c93445cc148e9c482": {
+       "si_sdr_db": 12.028,
+       "stft_distance": 0.53851,
+       "band_envelope_err_db": 1.834,
+       "stereo_width_err": 0.0,
+       "alignment": {
+        "delay": 0,
+        "confidence": 0.0001,
+        "residual_db": -12.26
+       },
+       "event_hole_depth_db": 9.380954514673975,
+       "event_hole_area": 5.089656426837401,
+       "masked_hole_uncertainty": 0.5111111111111111,
+       "accompaniment_scaling": 0.92244,
+       "vocal_interference_ratio": 0.04314,
+       "orthogonal_artifact_ratio": 0.22566,
+       "vocal_si_sir_db": 25.5,
+       "n_events": 15
+      }
+     },
+     "theft_mean": 0.06317,
+     "residual_construction": [
+      {
+       "alignment": {
+        "confidence": 0.0001,
+        "delay": 0,
+        "residual_db": -20.16
+       },
+       "band_envelope_err_db": 0.112,
+       "control_id": "ctl_aalto_mozart_dry",
+       "si_sdr_db": 20.326,
+       "stereo_width_err": 0.0,
+       "stft_distance": 0.09067
+      },
+      {
+       "alignment": {
+        "confidence": 0.0001,
+        "delay": 0,
+        "residual_db": -31.01
+       },
+       "band_envelope_err_db": 0.086,
+       "control_id": "ctl_aalto_mozart_hall",
+       "si_sdr_db": 31.443,
+       "stereo_width_err": 0.0,
+       "stft_distance": 0.09911
+      }
+     ],
+     "min_rc_si": 20.326,
+     "mean_rc_band": 0.099,
+     "theft_rows": [
+      {
+       "band_excess_db": [
+        14.151,
+        11.108,
+        15.36,
+        22.5,
+        28.018,
+        25.285
+       ],
+       "control_id": "ctl_aalto_mozart_dry",
+       "theft_broadband": 0.0982,
+       "theft_mid": 0.0982,
+       "theft_side": 53479646.69293
+      },
+      {
+       "band_excess_db": [
+        12.086,
+        9.75,
+        16.06,
+        24.229,
+        29.506,
+        24.316
+       ],
+       "control_id": "ctl_aalto_mozart_hall",
+       "theft_broadband": 0.02814,
+       "theft_mid": 0.02813,
+       "theft_side": 31709622.64069
+      }
+     ],
+     "max_theft_broadband": 0.0982
+    },
+    "sha256:e21228241f2dd677fa18a1027bd4f03d4818384b13eee080f3491fb248540c5d": {
+     "name": "residual:MelBand",
+     "cases": {
+      "sha256:bae01e0a3d5be6ef3c1ea3ce3e7c3dcd": {
+       "si_sdr_db": 22.99,
+       "stft_distance": 0.33197,
+       "band_envelope_err_db": 0.398,
+       "stereo_width_err": 4e-05,
+       "alignment": {
+        "delay": 0,
+        "confidence": 0.0001,
+        "residual_db": -22.97
+       },
+       "event_hole_depth_db": 4.635566907254064,
+       "event_hole_area": 0.5177358261323388,
+       "masked_hole_uncertainty": 0.46502057613168724,
+       "accompaniment_scaling": 0.99202,
+       "vocal_interference_ratio": 0.00249,
+       "orthogonal_artifact_ratio": 0.07025,
+       "vocal_si_sir_db": 50.35,
+       "n_events": 81
+      },
+      "sha256:e1ebec98b654627c93445cc148e9c482": {
+       "si_sdr_db": 11.916,
+       "stft_distance": 0.49699,
+       "band_envelope_err_db": 1.592,
+       "stereo_width_err": 4e-05,
+       "alignment": {
+        "delay": 0,
+        "confidence": 0.0001,
+        "residual_db": -12.18
+       },
+       "event_hole_depth_db": 4.920771504893254,
+       "event_hole_area": 3.1062075240194447,
+       "masked_hole_uncertainty": 0.5,
+       "accompaniment_scaling": 0.93882,
+       "vocal_interference_ratio": 0.02755,
+       "orthogonal_artifact_ratio": 0.23602,
+       "vocal_si_sir_db": 29.55,
+       "n_events": 15
+      }
+     },
+     "theft_mean": 0.062384999999999996,
+     "residual_construction": [
+      {
+       "alignment": {
+        "confidence": 0.0001,
+        "delay": 0,
+        "residual_db": -18.14
+       },
+       "band_envelope_err_db": 0.107,
+       "control_id": "ctl_aalto_mozart_dry",
+       "si_sdr_db": 18.09,
+       "stereo_width_err": 1e-05,
+       "stft_distance": 0.02937
+      },
+      {
+       "alignment": {
+        "confidence": 0.0001,
+        "delay": 0,
+        "residual_db": -60.78
+       },
+       "band_envelope_err_db": 0.001,
+       "control_id": "ctl_aalto_mozart_hall",
+       "si_sdr_db": 60.993,
+       "stereo_width_err": 0.0,
+       "stft_distance": 0.02347
+      }
+     ],
+     "min_rc_si": 18.09,
+     "mean_rc_band": 0.054,
+     "theft_rows": [
+      {
+       "band_excess_db": [
+        1.331,
+        5.098,
+        4.989,
+        2.826,
+        2.96,
+        1.001
+       ],
+       "control_id": "ctl_aalto_mozart_dry",
+       "theft_broadband": 0.12386,
+       "theft_mid": 0.12384,
+       "theft_side": 150643321.42152
+      },
+      {
+       "band_excess_db": [
+        0.0,
+        0.339,
+        0.012,
+        0.298,
+        0.476,
+        0.074
+       ],
+       "control_id": "ctl_aalto_mozart_hall",
+       "theft_broadband": 0.00091,
+       "theft_mid": 0.00089,
+       "theft_side": 9017914.65455
+      }
+     ],
+     "max_theft_broadband": 0.12386
+    },
+    "sha256:ad65af4f239ab60f911bc258f6f861c58a03f3bda8b987d684061453739e738f": {
+     "name": "residual:BS",
+     "cases": {
+      "sha256:bae01e0a3d5be6ef3c1ea3ce3e7c3dcd": {
+       "si_sdr_db": 20.073,
+       "stft_distance": 0.5753,
+       "band_envelope_err_db": 1.377,
+       "stereo_width_err": 1e-05,
+       "alignment": {
+        "delay": 0,
+        "confidence": 0.0001,
+        "residual_db": -20.11
+       },
+       "event_hole_depth_db": 18.693123805731393,
+       "event_hole_area": 3.352572127861535,
+       "masked_hole_uncertainty": 0.4218106995884774,
+       "accompaniment_scaling": 0.98957,
+       "vocal_interference_ratio": 0.00068,
+       "orthogonal_artifact_ratio": 0.09812,
+       "vocal_si_sir_db": 61.56,
+       "n_events": 81
+      },
+      "sha256:e1ebec98b654627c93445cc148e9c482": {
+       "si_sdr_db": 8.04,
+       "stft_distance": 1.00566,
+       "band_envelope_err_db": 3.015,
+       "stereo_width_err": 2e-05,
+       "alignment": {
+        "delay": 0,
+        "confidence": 0.0001,
+        "residual_db": -8.41
+       },
+       "event_hole_depth_db": 7.211272590145178,
+       "event_hole_area": 11.915442340077988,
+       "masked_hole_uncertainty": 0.4888888888888889,
+       "accompaniment_scaling": 0.95047,
+       "vocal_interference_ratio": 0.10457,
+       "orthogonal_artifact_ratio": 0.35723,
+       "vocal_si_sir_db": 18.07,
+       "n_events": 15
+      }
+     },
+     "theft_mean": 0.013175,
+     "residual_construction": [
+      {
+       "alignment": {
+        "confidence": 0.0001,
+        "delay": 0,
+        "residual_db": -35.12
+       },
+       "band_envelope_err_db": 0.393,
+       "control_id": "ctl_aalto_mozart_dry",
+       "si_sdr_db": 35.117,
+       "stereo_width_err": 0.0,
+       "stft_distance": 0.07871
+      },
+      {
+       "alignment": {
+        "confidence": 0.0001,
+        "delay": 0,
+        "residual_db": -41.1
+       },
+       "band_envelope_err_db": 0.121,
+       "control_id": "ctl_aalto_mozart_hall",
+       "si_sdr_db": 41.105,
+       "stereo_width_err": 0.0,
+       "stft_distance": 0.02541
+      }
+     ],
+     "min_rc_si": 35.117,
+     "mean_rc_band": 0.257,
+     "theft_rows": [
+      {
+       "band_excess_db": [
+        3.715,
+        0.253,
+        0.114,
+        0.13,
+        1.794,
+        10.687
+       ],
+       "control_id": "ctl_aalto_mozart_dry",
+       "theft_broadband": 0.01754,
+       "theft_mid": 0.01754,
+       "theft_side": 13701842.4886
+      },
+      {
+       "band_excess_db": [
+        2.24,
+        0.322,
+        0.347,
+        0.011,
+        0.499,
+        5.332
+       ],
+       "control_id": "ctl_aalto_mozart_hall",
+       "theft_broadband": 0.00881,
+       "theft_mid": 0.00881,
+       "theft_side": 6201103.03768
+      }
+     ],
+     "max_theft_broadband": 0.01754
+    },
+    "sha256:e847597ef33f2e2603c415b5a0546c4179f552842bd513f96e7f6fb17686ce0c": {
+     "name": "ens_median:MDX23C/MelBand/BS",
+     "cases": {
+      "sha256:bae01e0a3d5be6ef3c1ea3ce3e7c3dcd": {
+       "si_sdr_db": 23.674,
+       "stft_distance": 0.6084,
+       "band_envelope_err_db": 0.517,
+       "stereo_width_err": 1e-05,
+       "alignment": {
+        "delay": 0,
+        "confidence": 0.0001,
+        "residual_db": -23.67
+       },
+       "event_hole_depth_db": 8.153413679112106,
+       "event_hole_area": 1.5042063063923354,
+       "masked_hole_uncertainty": 0.43621399176954734,
+       "accompaniment_scaling": 0.99252,
+       "vocal_interference_ratio": 0.00071,
+       "orthogonal_artifact_ratio": 0.06501,
+       "vocal_si_sir_db": 61.21,
+       "n_events": 81
+      },
+      "sha256:e1ebec98b654627c93445cc148e9c482": {
+       "si_sdr_db": 12.482,
+       "stft_distance": 0.74332,
+       "band_envelope_err_db": 1.42,
+       "stereo_width_err": 2e-05,
+       "alignment": {
+        "delay": 0,
+        "confidence": 0.0001,
+        "residual_db": -12.72
+       },
+       "event_hole_depth_db": 5.8192000004048845,
+       "event_hole_area": 5.150868343092217,
+       "masked_hole_uncertainty": 0.5,
+       "accompaniment_scaling": 0.94037,
+       "vocal_interference_ratio": 0.03496,
+       "orthogonal_artifact_ratio": 0.21986,
+       "vocal_si_sir_db": 27.5,
+       "n_events": 15
+      }
+     },
+     "theft_mean": 0.005325,
+     "residual_construction": [
+      {
+       "alignment": {
+        "confidence": 0.0001,
+        "delay": 0,
+        "residual_db": -40.79
+       },
+       "band_envelope_err_db": 0.053,
+       "control_id": "ctl_aalto_mozart_dry",
+       "si_sdr_db": 40.91,
+       "stereo_width_err": 0.0,
+       "stft_distance": 0.16291
+      },
+      {
+       "alignment": {
+        "confidence": 0.0001,
+        "delay": 0,
+        "residual_db": -56.36
+       },
+       "band_envelope_err_db": 0.009,
+       "control_id": "ctl_aalto_mozart_hall",
+       "si_sdr_db": 56.514,
+       "stereo_width_err": 0.0,
+       "stft_distance": 0.10612
+      }
+     ],
+     "min_rc_si": 40.91,
+     "mean_rc_band": 0.031,
+     "theft_rows": [
+      {
+       "band_excess_db": [
+        4.542,
+        2.911,
+        4.021,
+        8.008,
+        14.467,
+        11.172
+       ],
+       "control_id": "ctl_aalto_mozart_dry",
+       "theft_broadband": 0.00913,
+       "theft_mid": 0.00913,
+       "theft_side": 23948866.67247
+      },
+      {
+       "band_excess_db": [
+        1.12,
+        0.585,
+        0.936,
+        2.588,
+        7.627,
+        4.088
+       ],
+       "control_id": "ctl_aalto_mozart_hall",
+       "theft_broadband": 0.00152,
+       "theft_mid": 0.00151,
+       "theft_side": 8690698.94544
+      }
+     ],
+     "max_theft_broadband": 0.00913
+    }
+   }
+  },
+  "spheres_mozart": {
+   "conditions": {
+    "dry": {
+     "cid": "sha256:05a08c12ba4bdafc1ff2def150eada54",
+     "frames": 3969000,
+     "meta": {
+      "source": "The Spheres Dataset (Mozart) orchestra + borrowed Aalto soprano",
+      "license": "The Spheres Dataset (measured RIRs + multitrack); Aalto soprano (Aalto Univ. Acoustics Lab, academic research)",
+      "citation": "The Spheres Dataset 2025 (measured RIRs + orchestral multitrack); Aalto anechoic orchestra (Patynen/Pulkki/Lokki 2008)",
+      "pair_integrity": "linear_exact",
+      "evaluation_task": "soloist_vs_rest",
+      "anechoic_source": true,
+      "n_orch_stems": 14,
+      "orch_stems": [
+       "Bass",
+       "Bassoon_1",
+       "Bassoon_2",
+       "Cello",
+       "Clarinet_1",
+       "Clarinet_2",
+       "Flute",
+       "Horn_1",
+       "Horn_2",
+       "Oboe_1",
+       "Oboe_2",
+       "Viola",
+       "Violin_1",
+       "Violin_2"
+      ],
+      "soprano_files": [
+       "mozart_sopr_6.mp3"
+      ],
+      "window_start_s": 500.0,
+      "rir_source_seat": "source_Vln_1",
+      "rir_shape_receivers_taps": [
+       23,
+       32768
+      ],
+      "voc_frac_target": 0.12,
+      "construction": "sum all Spheres instrument stems (mono) over a fixed 90s window; borrowed anechoic soprano scaled to ~12% mix energy; SAME measured RIR applied identically to voice and orchestra per condition; shared -3dBFS gain; 44.1k f32 stereo",
+      "rir_applied": "none (anechoic dual-mono)",
+      "case": "spheres_mozart_dry",
+      "work": "spheres_mozart",
+      "condition": "dry",
+      "sr": 44100,
+      "duration_s": 90.0,
+      "gain_applied_db": -0.445,
+      "linear_exactness_db": -94.7,
+      "voice_energy_frac_of_mix": 0.1199,
+      "mix_stereo_side_mid_ratio": 0.0,
+      "peak_dbfs_target": -3.0,
+      "files": [
+       "mix_with_voice.wav",
+       "orchestra_only.wav",
+       "voice_ref.wav"
+      ]
+     }
+    },
+    "hall": {
+     "cid": "sha256:b9503f050e7aacdec08fb6e0cbfe0d7c",
+     "frames": 3969000,
+     "meta": {
+      "source": "The Spheres Dataset (Mozart) orchestra + borrowed Aalto soprano",
+      "license": "The Spheres Dataset (measured RIRs + multitrack); Aalto soprano (Aalto Univ. Acoustics Lab, academic research)",
+      "citation": "The Spheres Dataset 2025 (measured RIRs + orchestral multitrack); Aalto anechoic orchestra (Patynen/Pulkki/Lokki 2008)",
+      "pair_integrity": "linear_exact",
+      "evaluation_task": "soloist_vs_rest",
+      "anechoic_source": true,
+      "n_orch_stems": 14,
+      "orch_stems": [
+       "Bass",
+       "Bassoon_1",
+       "Bassoon_2",
+       "Cello",
+       "Clarinet_1",
+       "Clarinet_2",
+       "Flute",
+       "Horn_1",
+       "Horn_2",
+       "Oboe_1",
+       "Oboe_2",
+       "Viola",
+       "Violin_1",
+       "Violin_2"
+      ],
+      "soprano_files": [
+       "mozart_sopr_6.mp3"
+      ],
+      "window_start_s": 500.0,
+      "rir_source_seat": "source_Vln_1",
+      "rir_shape_receivers_taps": [
+       23,
+       32768
+      ],
+      "voc_frac_target": 0.12,
+      "construction": "sum all Spheres instrument stems (mono) over a fixed 90s window; borrowed anechoic soprano scaled to ~12% mix energy; SAME measured RIR applied identically to voice and orchestra per condition; shared -3dBFS gain; 44.1k f32 stereo",
+      "rir_applied": "source_Vln_1 receiver 0 (mono/dual-mono)",
+      "case": "spheres_mozart_hall",
+      "work": "spheres_mozart",
+      "condition": "hall",
+      "sr": 44100,
+      "duration_s": 90.0,
+      "gain_applied_db": 10.152,
+      "linear_exactness_db": -82.7,
+      "voice_energy_frac_of_mix": 0.0477,
+      "mix_stereo_side_mid_ratio": 0.0,
+      "peak_dbfs_target": -3.0,
+      "files": [
+       "mix_with_voice.wav",
+       "orchestra_only.wav",
+       "voice_ref.wav"
+      ]
+     }
+    },
+    "stereo": {
+     "cid": "sha256:af265c08412e9ceedb5a543374e87723",
+     "frames": 3969000,
+     "meta": {
+      "source": "The Spheres Dataset (Mozart) orchestra + borrowed Aalto soprano",
+      "license": "The Spheres Dataset (measured RIRs + multitrack); Aalto soprano (Aalto Univ. Acoustics Lab, academic research)",
+      "citation": "The Spheres Dataset 2025 (measured RIRs + orchestral multitrack); Aalto anechoic orchestra (Patynen/Pulkki/Lokki 2008)",
+      "pair_integrity": "linear_exact",
+      "evaluation_task": "soloist_vs_rest",
+      "anechoic_source": true,
+      "n_orch_stems": 14,
+      "orch_stems": [
+       "Bass",
+       "Bassoon_1",
+       "Bassoon_2",
+       "Cello",
+       "Clarinet_1",
+       "Clarinet_2",
+       "Flute",
+       "Horn_1",
+       "Horn_2",
+       "Oboe_1",
+       "Oboe_2",
+       "Viola",
+       "Violin_1",
+       "Violin_2"
+      ],
+      "soprano_files": [
+       "mozart_sopr_6.mp3"
+      ],
+      "window_start_s": 500.0,
+      "rir_source_seat": "source_Vln_1",
+      "rir_shape_receivers_taps": [
+       23,
+       32768
+      ],
+      "voc_frac_target": 0.12,
+      "construction": "sum all Spheres instrument stems (mono) over a fixed 90s window; borrowed anechoic soprano scaled to ~12% mix energy; SAME measured RIR applied identically to voice and orchestra per condition; shared -3dBFS gain; 44.1k f32 stereo",
+      "rir_applied": "source_Vln_1 receivers (0, 12) (stereo pair)",
+      "case": "spheres_mozart_stereo",
+      "work": "spheres_mozart",
+      "condition": "stereo",
+      "sr": 44100,
+      "duration_s": 90.0,
+      "gain_applied_db": 10.152,
+      "linear_exactness_db": -82.7,
+      "voice_energy_frac_of_mix": 0.048,
+      "mix_stereo_side_mid_ratio": 0.772837,
+      "peak_dbfs_target": -3.0,
+      "files": [
+       "mix_with_voice.wav",
+       "orchestra_only.wav",
+       "voice_ref.wav"
+      ]
+     }
+    }
+   },
+   "wall_s": 459.8,
+   "matrix": {
+    "sha256:1fbb0f0a487ae2e3c7405d405665c030d65e58c3295ffb1bf6e47b5dca47754f": {
+     "name": "residual:MDX23C",
+     "cases": {
+      "sha256:05a08c12ba4bdafc1ff2def150eada54": {
+       "si_sdr_db": 29.181,
+       "stft_distance": 0.34264,
+       "band_envelope_err_db": 0.492,
+       "stereo_width_err": 0.0,
+       "alignment": {
+        "delay": 0,
+        "confidence": 0.0001,
+        "residual_db": -29.18
+       },
+       "event_hole_depth_db": 4.832971609690454,
+       "event_hole_area": 1.818242721442182,
+       "masked_hole_uncertainty": 0.2551440329218107,
+       "accompaniment_scaling": 0.99934,
+       "vocal_interference_ratio": 0.00787,
+       "orthogonal_artifact_ratio": 0.03461,
+       "vocal_si_sir_db": 50.73,
+       "n_events": 81
+      },
+      "sha256:af265c08412e9ceedb5a543374e87723": {
+       "si_sdr_db": 26.584,
+       "stft_distance": 0.40281,
+       "band_envelope_err_db": 0.633,
+       "stereo_width_err": 0.00417,
+       "alignment": {
+        "delay": 0,
+        "confidence": 0.0004,
+        "residual_db": -25.99
+       },
+       "event_hole_depth_db": 6.966825775684339,
+       "event_hole_area": 4.5682168064247675,
+       "masked_hole_uncertainty": 0.17647058823529413,
+       "accompaniment_scaling": 0.99736,
+       "vocal_interference_ratio": 0.04471,
+       "orthogonal_artifact_ratio": 0.04578,
+       "vocal_si_sir_db": 40.5,
+       "n_events": 34
+      },
+      "sha256:b9503f050e7aacdec08fb6e0cbfe0d7c": {
+       "si_sdr_db": 23.589,
+       "stft_distance": 0.43469,
+       "band_envelope_err_db": 1.245,
+       "stereo_width_err": 0.0,
+       "alignment": {
+        "delay": 0,
+        "confidence": 0.0001,
+        "residual_db": -23.6
+       },
+       "event_hole_depth_db": 8.935448707084573,
+       "event_hole_area": 4.585355398800076,
+       "masked_hole_uncertainty": 0.17117117117117117,
+       "accompaniment_scaling": 0.9932,
+       "vocal_interference_ratio": 0.04619,
+       "orthogonal_artifact_ratio": 0.06489,
+       "vocal_si_sir_db": 39.65,
+       "n_events": 37
+      }
+     },
+     "theft_mean": 0.034010000000000006,
+     "residual_construction": [
+      {
+       "alignment": {
+        "confidence": 0.0001,
+        "delay": 0,
+        "residual_db": -35.82
+       },
+       "band_envelope_err_db": 0.129,
+       "control_id": "ctl_spheres_mozart_dry",
+       "si_sdr_db": 35.983,
+       "stereo_width_err": 0.0,
+       "stft_distance": 0.04203
+      },
+      {
+       "alignment": {
+        "confidence": 0.0001,
+        "delay": 0,
+        "residual_db": -23.21
+       },
+       "band_envelope_err_db": 0.424,
+       "control_id": "ctl_spheres_mozart_hall",
+       "si_sdr_db": 23.212,
+       "stereo_width_err": 0.0,
+       "stft_distance": 0.08856
+      },
+      {
+       "alignment": {
+        "confidence": 0.0004,
+        "delay": 0,
+        "residual_db": -35.5
+       },
+       "band_envelope_err_db": 0.196,
+       "control_id": "ctl_spheres_mozart_stereo",
+       "si_sdr_db": 36.21,
+       "stereo_width_err": 0.00611,
+       "stft_distance": 0.08886
+      }
+     ],
+     "min_rc_si": 23.212,
+     "mean_rc_band": 0.24966666666666662,
+     "theft_rows": [
+      {
+       "band_excess_db": [
+        14.632,
+        8.067,
+        15.024,
+        24.239,
+        29.932,
+        30.784
+       ],
+       "control_id": "ctl_spheres_mozart_dry",
+       "theft_broadband": 0.01618,
+       "theft_mid": 0.01616,
+       "theft_side": 40320314.04646
+      },
+      {
+       "band_excess_db": [
+        14.9,
+        10.69,
+        17.526,
+        28.628,
+        32.997,
+        35.573
+       ],
+       "control_id": "ctl_spheres_mozart_hall",
+       "theft_broadband": 0.06907,
+       "theft_mid": 0.06906,
+       "theft_side": 38607371.57128
+      },
+      {
+       "band_excess_db": [
+        13.893,
+        12.672,
+        20.373,
+        29.956,
+        36.004,
+        37.017
+       ],
+       "control_id": "ctl_spheres_mozart_stereo",
+       "theft_broadband": 0.01678,
+       "theft_mid": 0.01558,
+       "theft_side": 0.01824
+      }
+     ],
+     "max_theft_broadband": 0.06907
+    },
+    "sha256:e21228241f2dd677fa18a1027bd4f03d4818384b13eee080f3491fb248540c5d": {
+     "name": "residual:MelBand",
+     "cases": {
+      "sha256:05a08c12ba4bdafc1ff2def150eada54": {
+       "si_sdr_db": 29.018,
+       "stft_distance": 0.29261,
+       "band_envelope_err_db": 0.264,
+       "stereo_width_err": 1e-05,
+       "alignment": {
+        "delay": 0,
+        "confidence": 0.0001,
+        "residual_db": -29.0
+       },
+       "event_hole_depth_db": 5.1937372709672305,
+       "event_hole_area": 3.1828902361229403,
+       "masked_hole_uncertainty": 0.2551440329218107,
+       "accompaniment_scaling": 0.99857,
+       "vocal_interference_ratio": 0.01064,
+       "orthogonal_artifact_ratio": 0.03514,
+       "vocal_si_sir_db": 48.1,
+       "n_events": 81
+      },
+      "sha256:af265c08412e9ceedb5a543374e87723": {
+       "si_sdr_db": 26.514,
+       "stft_distance": 0.4,
+       "band_envelope_err_db": 0.52,
+       "stereo_width_err": 0.00111,
+       "alignment": {
+        "delay": 0,
+        "confidence": 0.0004,
+        "residual_db": -25.85
+       },
+       "event_hole_depth_db": 5.290966286602057,
+       "event_hole_area": 1.2749323419596683,
+       "masked_hole_uncertainty": 0.19607843137254902,
+       "accompaniment_scaling": 0.99722,
+       "vocal_interference_ratio": 0.038,
+       "orthogonal_artifact_ratio": 0.04642,
+       "vocal_si_sir_db": 41.91,
+       "n_events": 34
+      },
+      "sha256:b9503f050e7aacdec08fb6e0cbfe0d7c": {
+       "si_sdr_db": 26.304,
+       "stft_distance": 0.38406,
+       "band_envelope_err_db": 0.522,
+       "stereo_width_err": 0.0,
+       "alignment": {
+        "delay": 0,
+        "confidence": 0.0001,
+        "residual_db": -26.31
+       },
+       "event_hole_depth_db": 5.558203169594208,
+       "event_hole_area": 1.1661161691594815,
+       "masked_hole_uncertainty": 0.17117117117117117,
+       "accompaniment_scaling": 0.99712,
+       "vocal_interference_ratio": 0.0409,
+       "orthogonal_artifact_ratio": 0.04738,
+       "vocal_si_sir_db": 40.74,
+       "n_events": 37
+      }
+     },
+     "theft_mean": 0.0007833333333333334,
+     "residual_construction": [
+      {
+       "alignment": {
+        "confidence": 0.0001,
+        "delay": 0,
+        "residual_db": -58.51
+       },
+       "band_envelope_err_db": 0.004,
+       "control_id": "ctl_spheres_mozart_dry",
+       "si_sdr_db": 61.638,
+       "stereo_width_err": 0.0,
+       "stft_distance": 0.00656
+      },
+      {
+       "alignment": {
+        "confidence": 0.0001,
+        "delay": 0,
+        "residual_db": -65.24
+       },
+       "band_envelope_err_db": 0.001,
+       "control_id": "ctl_spheres_mozart_hall",
+       "si_sdr_db": 68.457,
+       "stereo_width_err": 0.0,
+       "stft_distance": 0.02014
+      },
+      {
+       "alignment": {
+        "confidence": 0.0004,
+        "delay": 0,
+        "residual_db": -64.31
+       },
+       "band_envelope_err_db": 0.0,
+       "control_id": "ctl_spheres_mozart_stereo",
+       "si_sdr_db": 64.687,
+       "stereo_width_err": 0.0,
+       "stft_distance": 0.02282
+      }
+     ],
+     "min_rc_si": 61.638,
+     "mean_rc_band": 0.0016666666666666668,
+     "theft_rows": [
+      {
+       "band_excess_db": [
+        0.0,
+        0.0,
+        0.286,
+        0.798,
+        0.773,
+        0.781
+       ],
+       "control_id": "ctl_spheres_mozart_dry",
+       "theft_broadband": 0.00119,
+       "theft_mid": 0.00083,
+       "theft_side": 41267939.47854
+      },
+      {
+       "band_excess_db": [
+        0.0,
+        0.025,
+        0.095,
+        0.555,
+        0.647,
+        0.313
+       ],
+       "control_id": "ctl_spheres_mozart_hall",
+       "theft_broadband": 0.00055,
+       "theft_mid": 0.00038,
+       "theft_side": 17024731.02421
+      },
+      {
+       "band_excess_db": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.006,
+        0.032
+       ],
+       "control_id": "ctl_spheres_mozart_stereo",
+       "theft_broadband": 0.00061,
+       "theft_mid": 0.00058,
+       "theft_side": 0.00064
+      }
+     ],
+     "max_theft_broadband": 0.00119
+    },
+    "sha256:ad65af4f239ab60f911bc258f6f861c58a03f3bda8b987d684061453739e738f": {
+     "name": "residual:BS",
+     "cases": {
+      "sha256:05a08c12ba4bdafc1ff2def150eada54": {
+       "si_sdr_db": 30.336,
+       "stft_distance": 0.26899,
+       "band_envelope_err_db": 0.226,
+       "stereo_width_err": 0.0,
+       "alignment": {
+        "delay": 0,
+        "confidence": 0.0001,
+        "residual_db": -30.33
+       },
+       "event_hole_depth_db": 4.907597185248153,
+       "event_hole_area": 1.0752765771937098,
+       "masked_hole_uncertainty": 0.2551440329218107,
+       "accompaniment_scaling": 0.99901,
+       "vocal_interference_ratio": 0.00237,
+       "orthogonal_artifact_ratio": 0.03038,
+       "vocal_si_sir_db": 61.16,
+       "n_events": 81
+      },
+      "sha256:af265c08412e9ceedb5a543374e87723": {
+       "si_sdr_db": 27.243,
+       "stft_distance": 0.36931,
+       "band_envelope_err_db": 0.422,
+       "stereo_width_err": 0.00078,
+       "alignment": {
+        "delay": 0,
+        "confidence": 0.0004,
+        "residual_db": -26.69
+       },
+       "event_hole_depth_db": 5.6311038012443335,
+       "event_hole_area": 0.9784980535178093,
+       "masked_hole_uncertainty": 0.18627450980392157,
+       "accompaniment_scaling": 0.99826,
+       "vocal_interference_ratio": 0.03446,
+       "orthogonal_artifact_ratio": 0.04275,
+       "vocal_si_sir_db": 42.77,
+       "n_events": 34
+      },
+      "sha256:b9503f050e7aacdec08fb6e0cbfe0d7c": {
+       "si_sdr_db": 26.88,
+       "stft_distance": 0.36245,
+       "band_envelope_err_db": 0.482,
+       "stereo_width_err": 0.0,
+       "alignment": {
+        "delay": 0,
+        "confidence": 0.0001,
+        "residual_db": -26.89
+       },
+       "event_hole_depth_db": 4.676627101267411,
+       "event_hole_area": 0.9919311108832626,
+       "masked_hole_uncertainty": 0.17117117117117117,
+       "accompaniment_scaling": 0.99832,
+       "vocal_interference_ratio": 0.03689,
+       "orthogonal_artifact_ratio": 0.04445,
+       "vocal_si_sir_db": 41.65,
+       "n_events": 37
+      }
+     },
+     "theft_mean": 0.0041199999999999995,
+     "residual_construction": [
+      {
+       "alignment": {
+        "confidence": 0.0001,
+        "delay": 0,
+        "residual_db": -42.21
+       },
+       "band_envelope_err_db": 0.011,
+       "control_id": "ctl_spheres_mozart_dry",
+       "si_sdr_db": 42.214,
+       "stereo_width_err": 0.0,
+       "stft_distance": 0.05119
+      },
+      {
+       "alignment": {
+        "confidence": 0.0001,
+        "delay": 0,
+        "residual_db": -47.77
+       },
+       "band_envelope_err_db": 0.004,
+       "control_id": "ctl_spheres_mozart_hall",
+       "si_sdr_db": 47.768,
+       "stereo_width_err": 0.0,
+       "stft_distance": 0.07961
+      },
+      {
+       "alignment": {
+        "confidence": 0.0004,
+        "delay": 0,
+        "residual_db": -65.7
+       },
+       "band_envelope_err_db": 0.0,
+       "control_id": "ctl_spheres_mozart_stereo",
+       "si_sdr_db": 65.845,
+       "stereo_width_err": 0.0,
+       "stft_distance": 0.02071
+      }
+     ],
+     "min_rc_si": 42.214,
+     "mean_rc_band": 0.005,
+     "theft_rows": [
+      {
+       "band_excess_db": [
+        2.562,
+        0.189,
+        0.278,
+        0.351,
+        0.497,
+        5.267
+       ],
+       "control_id": "ctl_spheres_mozart_dry",
+       "theft_broadband": 0.00775,
+       "theft_mid": 0.00775,
+       "theft_side": 8969433.77694
+      },
+      {
+       "band_excess_db": [
+        1.417,
+        0.076,
+        0.007,
+        0.011,
+        0.084,
+        5.817
+       ],
+       "control_id": "ctl_spheres_mozart_hall",
+       "theft_broadband": 0.00409,
+       "theft_mid": 0.00409,
+       "theft_side": 3140873.4634
+      },
+      {
+       "band_excess_db": [
+        0.004,
+        0.074,
+        1.44,
+        0.002,
+        0.007,
+        0.077
+       ],
+       "control_id": "ctl_spheres_mozart_stereo",
+       "theft_broadband": 0.00052,
+       "theft_mid": 0.00051,
+       "theft_side": 0.00053
+      }
+     ],
+     "max_theft_broadband": 0.00775
+    },
+    "sha256:e847597ef33f2e2603c415b5a0546c4179f552842bd513f96e7f6fb17686ce0c": {
+     "name": "ens_median:MDX23C/MelBand/BS",
+     "cases": {
+      "sha256:05a08c12ba4bdafc1ff2def150eada54": {
+       "si_sdr_db": 30.415,
+       "stft_distance": 0.32713,
+       "band_envelope_err_db": 0.249,
+       "stereo_width_err": 0.0,
+       "alignment": {
+        "delay": 0,
+        "confidence": 0.0001,
+        "residual_db": -30.4
+       },
+       "event_hole_depth_db": 3.664994448216424,
+       "event_hole_area": 1.5776796952479586,
+       "masked_hole_uncertainty": 0.2551440329218107,
+       "accompaniment_scaling": 0.99899,
+       "vocal_interference_ratio": 0.00672,
+       "orthogonal_artifact_ratio": 0.03002,
+       "vocal_si_sir_db": 52.09,
+       "n_events": 81
+      },
+      "sha256:af265c08412e9ceedb5a543374e87723": {
+       "si_sdr_db": 27.493,
+       "stft_distance": 0.57243,
+       "band_envelope_err_db": 0.419,
+       "stereo_width_err": 0.00174,
+       "alignment": {
+        "delay": 0,
+        "confidence": 0.0003,
+        "residual_db": -26.82
+       },
+       "event_hole_depth_db": 5.792687504005403,
+       "event_hole_area": 1.1723788725047835,
+       "masked_hole_uncertainty": 0.19117647058823528,
+       "accompaniment_scaling": 0.99777,
+       "vocal_interference_ratio": 0.03659,
+       "orthogonal_artifact_ratio": 0.0414,
+       "vocal_si_sir_db": 42.24,
+       "n_events": 34
+      },
+      "sha256:b9503f050e7aacdec08fb6e0cbfe0d7c": {
+       "si_sdr_db": 26.949,
+       "stft_distance": 0.55965,
+       "band_envelope_err_db": 0.525,
+       "stereo_width_err": 0.0,
+       "alignment": {
+        "delay": 0,
+        "confidence": 0.0001,
+        "residual_db": -26.95
+       },
+       "event_hole_depth_db": 5.658765128227813,
+       "event_hole_area": 1.1996121555452768,
+       "masked_hole_uncertainty": 0.16666666666666666,
+       "accompaniment_scaling": 0.99747,
+       "vocal_interference_ratio": 0.03966,
+       "orthogonal_artifact_ratio": 0.04393,
+       "vocal_si_sir_db": 41.01,
+       "n_events": 37
+      }
+     },
+     "theft_mean": 0.0006833333333333332,
+     "residual_construction": [
+      {
+       "alignment": {
+        "confidence": 0.0001,
+        "delay": 0,
+        "residual_db": -60.95
+       },
+       "band_envelope_err_db": 0.013,
+       "control_id": "ctl_spheres_mozart_dry",
+       "si_sdr_db": 62.297,
+       "stereo_width_err": 0.0,
+       "stft_distance": 0.02526
+      },
+      {
+       "alignment": {
+        "confidence": 0.0001,
+        "delay": 0,
+        "residual_db": -63.54
+       },
+       "band_envelope_err_db": 0.011,
+       "control_id": "ctl_spheres_mozart_hall",
+       "si_sdr_db": 64.106,
+       "stereo_width_err": 0.0,
+       "stft_distance": 0.07961
+      },
+      {
+       "alignment": {
+        "confidence": 0.0004,
+        "delay": 0,
+        "residual_db": -66.15
+       },
+       "band_envelope_err_db": 0.005,
+       "control_id": "ctl_spheres_mozart_stereo",
+       "si_sdr_db": 66.043,
+       "stereo_width_err": 5e-05,
+       "stft_distance": 0.09497
+      }
+     ],
+     "min_rc_si": 62.297,
+     "mean_rc_band": 0.009666666666666667,
+     "theft_rows": [
+      {
+       "band_excess_db": [
+        2.322,
+        0.357,
+        1.784,
+        5.686,
+        12.322,
+        16.493
+       ],
+       "control_id": "ctl_spheres_mozart_dry",
+       "theft_broadband": 0.0009,
+       "theft_mid": 0.00077,
+       "theft_side": 22257174.43422
+      },
+      {
+       "band_excess_db": [
+        1.501,
+        0.554,
+        1.392,
+        5.127,
+        10.968,
+        15.385
+       ],
+       "control_id": "ctl_spheres_mozart_hall",
+       "theft_broadband": 0.00066,
+       "theft_mid": 0.00062,
+       "theft_side": 9872486.99798
+      },
+      {
+       "band_excess_db": [
+        0.616,
+        0.244,
+        2.05,
+        6.024,
+        13.129,
+        16.061
+       ],
+       "control_id": "ctl_spheres_mozart_stereo",
+       "theft_broadband": 0.00049,
+       "theft_mid": 0.0005,
+       "theft_side": 0.00048
+      }
+     ],
+     "max_theft_broadband": 0.0009
+    }
+   }
+  },
+  "spheres_tchaikovsky": {
+   "conditions": {
+    "dry": {
+     "cid": "sha256:1d439161e16018af7d848a3ea7c08fc1",
+     "frames": 3969000,
+     "meta": {
+      "source": "The Spheres Dataset (Tchaikovsky) orchestra + borrowed Aalto soprano",
+      "license": "The Spheres Dataset (measured RIRs + multitrack); Aalto soprano (Aalto Univ. Acoustics Lab, academic research)",
+      "citation": "The Spheres Dataset 2025 (measured RIRs + orchestral multitrack); Aalto anechoic orchestra (Patynen/Pulkki/Lokki 2008)",
+      "pair_integrity": "linear_exact",
+      "evaluation_task": "soloist_vs_rest",
+      "anechoic_source": true,
+      "n_orch_stems": 33,
+      "orch_stems": [
+       "Bass",
+       "Bassoon_1",
+       "Bassoon_2",
+       "Cello_1",
+       "Cello_2",
+       "Clarinet_1",
+       "Clarinet_2",
+       "Flute_1",
+       "Flute_2",
+       "Harp",
+       "Horn_1",
+       "Horn_2",
+       "Horn_3",
+       "Horn_4",
+       "Oboe_1",
+       "Oboe_2",
+       "Piccolo",
+       "Timpani",
+       "Trombone_1",
+       "Trombone_2",
+       "Trombone_3",
+       "Trumpet_1",
+       "Trumpet_2",
+       "Tuba",
+       "Viola_1",
+       "Viola_2",
+       "Violin_1_1",
+       "Violin_1_2",
+       "Violin_2_1",
+       "Violin_2_2",
+       "coranglais",
+       "untunedpercussion_1",
+       "untunedpercussion_2"
+      ],
+      "soprano_files": [
+       "mozart_sopr_6.mp3"
+      ],
+      "window_start_s": 400.0,
+      "rir_source_seat": "source_Vln_1",
+      "rir_shape_receivers_taps": [
+       23,
+       32768
+      ],
+      "voc_frac_target": 0.12,
+      "construction": "sum all Spheres instrument stems (mono) over a fixed 90s window; borrowed anechoic soprano scaled to ~12% mix energy; SAME measured RIR applied identically to voice and orchestra per condition; shared -3dBFS gain; 44.1k f32 stereo",
+      "rir_applied": "none (anechoic dual-mono)",
+      "case": "spheres_tchaikovsky_dry",
+      "work": "spheres_tchaikovsky",
+      "condition": "dry",
+      "sr": 44100,
+      "duration_s": 90.0,
+      "gain_applied_db": -10.205,
+      "linear_exactness_db": -106.3,
+      "voice_energy_frac_of_mix": 0.12,
+      "mix_stereo_side_mid_ratio": 0.0,
+      "peak_dbfs_target": -3.0,
+      "files": [
+       "mix_with_voice.wav",
+       "orchestra_only.wav",
+       "voice_ref.wav"
+      ]
+     }
+    },
+    "hall": {
+     "cid": "sha256:82913298f6a373a6d6426959e50710ca",
+     "frames": 3969000,
+     "meta": {
+      "source": "The Spheres Dataset (Tchaikovsky) orchestra + borrowed Aalto soprano",
+      "license": "The Spheres Dataset (measured RIRs + multitrack); Aalto soprano (Aalto Univ. Acoustics Lab, academic research)",
+      "citation": "The Spheres Dataset 2025 (measured RIRs + orchestral multitrack); Aalto anechoic orchestra (Patynen/Pulkki/Lokki 2008)",
+      "pair_integrity": "linear_exact",
+      "evaluation_task": "soloist_vs_rest",
+      "anechoic_source": true,
+      "n_orch_stems": 33,
+      "orch_stems": [
+       "Bass",
+       "Bassoon_1",
+       "Bassoon_2",
+       "Cello_1",
+       "Cello_2",
+       "Clarinet_1",
+       "Clarinet_2",
+       "Flute_1",
+       "Flute_2",
+       "Harp",
+       "Horn_1",
+       "Horn_2",
+       "Horn_3",
+       "Horn_4",
+       "Oboe_1",
+       "Oboe_2",
+       "Piccolo",
+       "Timpani",
+       "Trombone_1",
+       "Trombone_2",
+       "Trombone_3",
+       "Trumpet_1",
+       "Trumpet_2",
+       "Tuba",
+       "Viola_1",
+       "Viola_2",
+       "Violin_1_1",
+       "Violin_1_2",
+       "Violin_2_1",
+       "Violin_2_2",
+       "coranglais",
+       "untunedpercussion_1",
+       "untunedpercussion_2"
+      ],
+      "soprano_files": [
+       "mozart_sopr_6.mp3"
+      ],
+      "window_start_s": 400.0,
+      "rir_source_seat": "source_Vln_1",
+      "rir_shape_receivers_taps": [
+       23,
+       32768
+      ],
+      "voc_frac_target": 0.12,
+      "construction": "sum all Spheres instrument stems (mono) over a fixed 90s window; borrowed anechoic soprano scaled to ~12% mix energy; SAME measured RIR applied identically to voice and orchestra per condition; shared -3dBFS gain; 44.1k f32 stereo",
+      "rir_applied": "source_Vln_1 receiver 0 (mono/dual-mono)",
+      "case": "spheres_tchaikovsky_hall",
+      "work": "spheres_tchaikovsky",
+      "condition": "hall",
+      "sr": 44100,
+      "duration_s": 90.0,
+      "gain_applied_db": 3.708,
+      "linear_exactness_db": -93.3,
+      "voice_energy_frac_of_mix": 0.0612,
+      "mix_stereo_side_mid_ratio": 0.0,
+      "peak_dbfs_target": -3.0,
+      "files": [
+       "mix_with_voice.wav",
+       "orchestra_only.wav",
+       "voice_ref.wav"
+      ]
+     }
+    },
+    "stereo": {
+     "cid": "sha256:7b211658695de421afe6222ef17aff21",
+     "frames": 3969000,
+     "meta": {
+      "source": "The Spheres Dataset (Tchaikovsky) orchestra + borrowed Aalto soprano",
+      "license": "The Spheres Dataset (measured RIRs + multitrack); Aalto soprano (Aalto Univ. Acoustics Lab, academic research)",
+      "citation": "The Spheres Dataset 2025 (measured RIRs + orchestral multitrack); Aalto anechoic orchestra (Patynen/Pulkki/Lokki 2008)",
+      "pair_integrity": "linear_exact",
+      "evaluation_task": "soloist_vs_rest",
+      "anechoic_source": true,
+      "n_orch_stems": 33,
+      "orch_stems": [
+       "Bass",
+       "Bassoon_1",
+       "Bassoon_2",
+       "Cello_1",
+       "Cello_2",
+       "Clarinet_1",
+       "Clarinet_2",
+       "Flute_1",
+       "Flute_2",
+       "Harp",
+       "Horn_1",
+       "Horn_2",
+       "Horn_3",
+       "Horn_4",
+       "Oboe_1",
+       "Oboe_2",
+       "Piccolo",
+       "Timpani",
+       "Trombone_1",
+       "Trombone_2",
+       "Trombone_3",
+       "Trumpet_1",
+       "Trumpet_2",
+       "Tuba",
+       "Viola_1",
+       "Viola_2",
+       "Violin_1_1",
+       "Violin_1_2",
+       "Violin_2_1",
+       "Violin_2_2",
+       "coranglais",
+       "untunedpercussion_1",
+       "untunedpercussion_2"
+      ],
+      "soprano_files": [
+       "mozart_sopr_6.mp3"
+      ],
+      "window_start_s": 400.0,
+      "rir_source_seat": "source_Vln_1",
+      "rir_shape_receivers_taps": [
+       23,
+       32768
+      ],
+      "voc_frac_target": 0.12,
+      "construction": "sum all Spheres instrument stems (mono) over a fixed 90s window; borrowed anechoic soprano scaled to ~12% mix energy; SAME measured RIR applied identically to voice and orchestra per condition; shared -3dBFS gain; 44.1k f32 stereo",
+      "rir_applied": "source_Vln_1 receivers (0, 12) (stereo pair)",
+      "case": "spheres_tchaikovsky_stereo",
+      "work": "spheres_tchaikovsky",
+      "condition": "stereo",
+      "sr": 44100,
+      "duration_s": 90.0,
+      "gain_applied_db": 3.708,
+      "linear_exactness_db": -93.3,
+      "voice_energy_frac_of_mix": 0.0595,
+      "mix_stereo_side_mid_ratio": 0.901329,
+      "peak_dbfs_target": -3.0,
+      "files": [
+       "mix_with_voice.wav",
+       "orchestra_only.wav",
+       "voice_ref.wav"
+      ]
+     }
+    }
+   },
+   "wall_s": 447.1,
+   "matrix": {
+    "sha256:1fbb0f0a487ae2e3c7405d405665c030d65e58c3295ffb1bf6e47b5dca47754f": {
+     "name": "residual:MDX23C",
+     "cases": {
+      "sha256:1d439161e16018af7d848a3ea7c08fc1": {
+       "si_sdr_db": 22.313,
+       "stft_distance": 0.27696,
+       "band_envelope_err_db": 0.323,
+       "stereo_width_err": 0.0,
+       "alignment": {
+        "delay": 0,
+        "confidence": 0.0001,
+        "residual_db": -22.34
+       },
+       "event_hole_depth_db": 3.7864147197263196,
+       "event_hole_area": 2.154484104641586,
+       "masked_hole_uncertainty": 0.20987654320987653,
+       "accompaniment_scaling": 0.99423,
+       "vocal_interference_ratio": 0.05441,
+       "orthogonal_artifact_ratio": 0.07348,
+       "vocal_si_sir_db": 33.89,
+       "n_events": 81
+      },
+      "sha256:7b211658695de421afe6222ef17aff21": {
+       "si_sdr_db": 19.097,
+       "stft_distance": 0.32884,
+       "band_envelope_err_db": 0.547,
+       "stereo_width_err": 0.00581,
+       "alignment": {
+        "delay": 0,
+        "confidence": 0.0002,
+        "residual_db": -18.91
+       },
+       "event_hole_depth_db": 5.710814669503617,
+       "event_hole_area": 3.3245405286434977,
+       "masked_hole_uncertainty": 0.2107843137254902,
+       "accompaniment_scaling": 0.9802,
+       "vocal_interference_ratio": 0.20891,
+       "orthogonal_artifact_ratio": 0.096,
+       "vocal_si_sir_db": 25.66,
+       "n_events": 34
+      },
+      "sha256:82913298f6a373a6d6426959e50710ca": {
+       "si_sdr_db": 18.581,
+       "stft_distance": 0.3233,
+       "band_envelope_err_db": 0.657,
+       "stereo_width_err": 0.0,
+       "alignment": {
+        "delay": 0,
+        "confidence": 0.0001,
+        "residual_db": -18.64
+       },
+       "event_hole_depth_db": 5.884595271420307,
+       "event_hole_area": 4.3299517370240315,
+       "masked_hole_uncertainty": 0.1891891891891892,
+       "accompaniment_scaling": 0.98656,
+       "vocal_interference_ratio": 0.21082,
+       "orthogonal_artifact_ratio": 0.10296,
+       "vocal_si_sir_db": 25.27,
+       "n_events": 37
+      }
+     },
+     "theft_mean": 0.05033666666666667,
+     "residual_construction": [
+      {
+       "alignment": {
+        "confidence": 0.0001,
+        "delay": 0,
+        "residual_db": -43.81
+       },
+       "band_envelope_err_db": 0.09,
+       "control_id": "ctl_spheres_tchaikovsky_dry",
+       "si_sdr_db": 44.24,
+       "stereo_width_err": 0.0,
+       "stft_distance": 0.03177
+      },
+      {
+       "alignment": {
+        "confidence": 0.0001,
+        "delay": 0,
+        "residual_db": -41.95
+       },
+       "band_envelope_err_db": 0.105,
+       "control_id": "ctl_spheres_tchaikovsky_hall",
+       "si_sdr_db": 42.293,
+       "stereo_width_err": 0.0,
+       "stft_distance": 0.06289
+      },
+      {
+       "alignment": {
+        "confidence": 0.0002,
+        "delay": 0,
+        "residual_db": -17.29
+       },
+       "band_envelope_err_db": 0.468,
+       "control_id": "ctl_spheres_tchaikovsky_stereo",
+       "si_sdr_db": 17.566,
+       "stereo_width_err": 0.00351,
+       "stft_distance": 0.10049
+      }
+     ],
+     "min_rc_si": 17.566,
+     "mean_rc_band": 0.221,
+     "theft_rows": [
+      {
+       "band_excess_db": [
+        13.836,
+        11.438,
+        11.612,
+        20.225,
+        28.551,
+        28.465
+       ],
+       "control_id": "ctl_spheres_tchaikovsky_dry",
+       "theft_broadband": 0.00645,
+       "theft_mid": 0.0064,
+       "theft_side": 44190190.78041
+      },
+      {
+       "band_excess_db": [
+        13.821,
+        11.404,
+        13.086,
+        22.937,
+        28.987,
+        31.271
+       ],
+       "control_id": "ctl_spheres_tchaikovsky_hall",
+       "theft_broadband": 0.00799,
+       "theft_mid": 0.00795,
+       "theft_side": 50205797.42267
+      },
+      {
+       "band_excess_db": [
+        25.438,
+        27.126,
+        28.828,
+        30.717,
+        34.794,
+        35.032
+       ],
+       "control_id": "ctl_spheres_tchaikovsky_stereo",
+       "theft_broadband": 0.13657,
+       "theft_mid": 0.13652,
+       "theft_side": 0.13663
+      }
+     ],
+     "max_theft_broadband": 0.13657
+    },
+    "sha256:e21228241f2dd677fa18a1027bd4f03d4818384b13eee080f3491fb248540c5d": {
+     "name": "residual:MelBand",
+     "cases": {
+      "sha256:1d439161e16018af7d848a3ea7c08fc1": {
+       "si_sdr_db": 22.119,
+       "stft_distance": 0.2575,
+       "band_envelope_err_db": 0.261,
+       "stereo_width_err": 1e-05,
+       "alignment": {
+        "delay": 0,
+        "confidence": 0.0001,
+        "residual_db": -22.14
+       },
+       "event_hole_depth_db": 2.951581611739833,
+       "event_hole_area": 0.555577691491817,
+       "masked_hole_uncertainty": 0.20781893004115226,
+       "accompaniment_scaling": 0.99463,
+       "vocal_interference_ratio": 0.04776,
+       "orthogonal_artifact_ratio": 0.07591,
+       "vocal_si_sir_db": 35.03,
+       "n_events": 81
+      },
+      "sha256:7b211658695de421afe6222ef17aff21": {
+       "si_sdr_db": 18.818,
+       "stft_distance": 0.31348,
+       "band_envelope_err_db": 0.427,
+       "stereo_width_err": 0.0024,
+       "alignment": {
+        "delay": 0,
+        "confidence": 0.0002,
+        "residual_db": -18.64
+       },
+       "event_hole_depth_db": 6.020368257229016,
+       "event_hole_area": 2.000829492488675,
+       "masked_hole_uncertainty": 0.2107843137254902,
+       "accompaniment_scaling": 0.99032,
+       "vocal_interference_ratio": 0.16214,
+       "orthogonal_artifact_ratio": 0.10631,
+       "vocal_si_sir_db": 27.95,
+       "n_events": 34
+      },
+      "sha256:82913298f6a373a6d6426959e50710ca": {
+       "si_sdr_db": 18.549,
+       "stft_distance": 0.30287,
+       "band_envelope_err_db": 0.433,
+       "stereo_width_err": 1e-05,
+       "alignment": {
+        "delay": 0,
+        "confidence": 0.0001,
+        "residual_db": -18.61
+       },
+       "event_hole_depth_db": 10.616663948509855,
+       "event_hole_area": 4.488594798179137,
+       "masked_hole_uncertainty": 0.1891891891891892,
+       "accompaniment_scaling": 0.98727,
+       "vocal_interference_ratio": 0.16411,
+       "orthogonal_artifact_ratio": 0.1089,
+       "vocal_si_sir_db": 27.45,
+       "n_events": 37
+      }
+     },
+     "theft_mean": 0.04938333333333333,
+     "residual_construction": [
+      {
+       "alignment": {
+        "confidence": 0.0001,
+        "delay": 0,
+        "residual_db": -22.6
+       },
+       "band_envelope_err_db": 0.317,
+       "control_id": "ctl_spheres_tchaikovsky_dry",
+       "si_sdr_db": 22.582,
+       "stereo_width_err": 1e-05,
+       "stft_distance": 0.0247
+      },
+      {
+       "alignment": {
+        "confidence": 0.0001,
+        "delay": 0,
+        "residual_db": -23.96
+       },
+       "band_envelope_err_db": 0.272,
+       "control_id": "ctl_spheres_tchaikovsky_hall",
+       "si_sdr_db": 23.95,
+       "stereo_width_err": 0.0,
+       "stft_distance": 0.03387
+      },
+      {
+       "alignment": {
+        "confidence": 0.0002,
+        "delay": 0,
+        "residual_db": -39.48
+       },
+       "band_envelope_err_db": 0.001,
+       "control_id": "ctl_spheres_tchaikovsky_stereo",
+       "si_sdr_db": 40.814,
+       "stereo_width_err": 0.00018,
+       "stft_distance": 0.01439
+      }
+     ],
+     "min_rc_si": 22.582,
+     "mean_rc_band": 0.19666666666666666,
+     "theft_rows": [
+      {
+       "band_excess_db": [
+        2.071,
+        11.442,
+        6.788,
+        5.546,
+        6.743,
+        7.148
+       ],
+       "control_id": "ctl_spheres_tchaikovsky_dry",
+       "theft_broadband": 0.07416,
+       "theft_mid": 0.07412,
+       "theft_side": 151409696.88106
+      },
+      {
+       "band_excess_db": [
+        1.727,
+        10.533,
+        6.703,
+        5.322,
+        5.422,
+        5.167
+       ],
+       "control_id": "ctl_spheres_tchaikovsky_hall",
+       "theft_broadband": 0.06337,
+       "theft_mid": 0.06335,
+       "theft_side": 92621347.98292
+      },
+      {
+       "band_excess_db": [
+        0.176,
+        1.22,
+        0.033,
+        0.0,
+        0.008,
+        0.085
+       ],
+       "control_id": "ctl_spheres_tchaikovsky_stereo",
+       "theft_broadband": 0.01062,
+       "theft_mid": 0.00911,
+       "theft_side": 0.01209
+      }
+     ],
+     "max_theft_broadband": 0.07416
+    },
+    "sha256:ad65af4f239ab60f911bc258f6f861c58a03f3bda8b987d684061453739e738f": {
+     "name": "residual:BS",
+     "cases": {
+      "sha256:1d439161e16018af7d848a3ea7c08fc1": {
+       "si_sdr_db": 22.806,
+       "stft_distance": 0.22887,
+       "band_envelope_err_db": 0.234,
+       "stereo_width_err": 0.0,
+       "alignment": {
+        "delay": 0,
+        "confidence": 0.0001,
+        "residual_db": -22.82
+       },
+       "event_hole_depth_db": 7.157581550559549,
+       "event_hole_area": 0.8463843632463423,
+       "masked_hole_uncertainty": 0.20781893004115226,
+       "accompaniment_scaling": 0.99618,
+       "vocal_interference_ratio": 0.02746,
+       "orthogonal_artifact_ratio": 0.0714,
+       "vocal_si_sir_db": 39.85,
+       "n_events": 81
+      },
+      "sha256:7b211658695de421afe6222ef17aff21": {
+       "si_sdr_db": 19.05,
+       "stft_distance": 0.29558,
+       "band_envelope_err_db": 0.354,
+       "stereo_width_err": 0.0022,
+       "alignment": {
+        "delay": 0,
+        "confidence": 0.0002,
+        "residual_db": -18.83
+       },
+       "event_hole_depth_db": 10.527217795145393,
+       "event_hole_area": 3.3323449187432472,
+       "masked_hole_uncertainty": 0.2107843137254902,
+       "accompaniment_scaling": 0.99078,
+       "vocal_interference_ratio": 0.14992,
+       "orthogonal_artifact_ratio": 0.10426,
+       "vocal_si_sir_db": 28.63,
+       "n_events": 34
+      },
+      "sha256:82913298f6a373a6d6426959e50710ca": {
+       "si_sdr_db": 19.53,
+       "stft_distance": 0.28884,
+       "band_envelope_err_db": 0.351,
+       "stereo_width_err": 0.0,
+       "alignment": {
+        "delay": 0,
+        "confidence": 0.0001,
+        "residual_db": -19.57
+       },
+       "event_hole_depth_db": 9.76621706267514,
+       "event_hole_area": 3.110138815366327,
+       "masked_hole_uncertainty": 0.1891891891891892,
+       "accompaniment_scaling": 0.99357,
+       "vocal_interference_ratio": 0.1621,
+       "orthogonal_artifact_ratio": 0.09637,
+       "vocal_si_sir_db": 27.61,
+       "n_events": 37
+      }
+     },
+     "theft_mean": 0.0020566666666666663,
+     "residual_construction": [
+      {
+       "alignment": {
+        "confidence": 0.0001,
+        "delay": 0,
+        "residual_db": -49.24
+       },
+       "band_envelope_err_db": 0.02,
+       "control_id": "ctl_spheres_tchaikovsky_dry",
+       "si_sdr_db": 49.246,
+       "stereo_width_err": 0.0,
+       "stft_distance": 0.01012
+      },
+      {
+       "alignment": {
+        "confidence": 0.0001,
+        "delay": 0,
+        "residual_db": -51.41
+       },
+       "band_envelope_err_db": 0.001,
+       "control_id": "ctl_spheres_tchaikovsky_hall",
+       "si_sdr_db": 51.415,
+       "stereo_width_err": 0.0,
+       "stft_distance": 0.00283
+      },
+      {
+       "alignment": {
+        "confidence": 0.0002,
+        "delay": 0,
+        "residual_db": -89.1
+       },
+       "band_envelope_err_db": 0.0,
+       "control_id": "ctl_spheres_tchaikovsky_stereo",
+       "si_sdr_db": 88.906,
+       "stereo_width_err": 0.0,
+       "stft_distance": 0.00513
+      }
+     ],
+     "min_rc_si": 49.246,
+     "mean_rc_band": 0.007,
+     "theft_rows": [
+      {
+       "band_excess_db": [
+        3.814,
+        0.228,
+        0.211,
+        0.49,
+        0.827,
+        3.131
+       ],
+       "control_id": "ctl_spheres_tchaikovsky_dry",
+       "theft_broadband": 0.00345,
+       "theft_mid": 0.00345,
+       "theft_side": 6049897.53688
+      },
+      {
+       "band_excess_db": [
+        2.319,
+        0.279,
+        0.031,
+        0.101,
+        0.195,
+        0.42
+       ],
+       "control_id": "ctl_spheres_tchaikovsky_hall",
+       "theft_broadband": 0.00269,
+       "theft_mid": 0.00269,
+       "theft_side": 4362307.36836
+      },
+      {
+       "band_excess_db": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.004
+       ],
+       "control_id": "ctl_spheres_tchaikovsky_stereo",
+       "theft_broadband": 3e-05,
+       "theft_mid": 4e-05,
+       "theft_side": 2e-05
+      }
+     ],
+     "max_theft_broadband": 0.00345
+    },
+    "sha256:e847597ef33f2e2603c415b5a0546c4179f552842bd513f96e7f6fb17686ce0c": {
+     "name": "ens_median:MDX23C/MelBand/BS",
+     "cases": {
+      "sha256:1d439161e16018af7d848a3ea7c08fc1": {
+       "si_sdr_db": 22.878,
+       "stft_distance": 0.28695,
+       "band_envelope_err_db": 0.227,
+       "stereo_width_err": 1e-05,
+       "alignment": {
+        "delay": 0,
+        "confidence": 0.0001,
+        "residual_db": -22.9
+       },
+       "event_hole_depth_db": 2.5399445241196728,
+       "event_hole_area": 0.6736823642319375,
+       "masked_hole_uncertainty": 0.20781893004115226,
+       "accompaniment_scaling": 0.99517,
+       "vocal_interference_ratio": 0.04318,
+       "orthogonal_artifact_ratio": 0.06965,
+       "vocal_si_sir_db": 35.9,
+       "n_events": 81
+      },
+      "sha256:7b211658695de421afe6222ef17aff21": {
+       "si_sdr_db": 19.432,
+       "stft_distance": 0.44789,
+       "band_envelope_err_db": 0.361,
+       "stereo_width_err": 0.00286,
+       "alignment": {
+        "delay": 0,
+        "confidence": 0.0002,
+        "residual_db": -19.24
+       },
+       "event_hole_depth_db": 6.240417856448598,
+       "event_hole_area": 1.5217269699929812,
+       "masked_hole_uncertainty": 0.2107843137254902,
+       "accompaniment_scaling": 0.99053,
+       "vocal_interference_ratio": 0.1743,
+       "orthogonal_artifact_ratio": 0.09676,
+       "vocal_si_sir_db": 27.32,
+       "n_events": 34
+      },
+      "sha256:82913298f6a373a6d6426959e50710ca": {
+       "si_sdr_db": 19.34,
+       "stft_distance": 0.43106,
+       "band_envelope_err_db": 0.395,
+       "stereo_width_err": 0.0,
+       "alignment": {
+        "delay": 0,
+        "confidence": 0.0,
+        "residual_db": -19.39
+       },
+       "event_hole_depth_db": 8.15306576223178,
+       "event_hole_area": 2.8543700887356263,
+       "masked_hole_uncertainty": 0.1891891891891892,
+       "accompaniment_scaling": 0.98957,
+       "vocal_interference_ratio": 0.1742,
+       "orthogonal_artifact_ratio": 0.09707,
+       "vocal_si_sir_db": 26.95,
+       "n_events": 37
+      }
+     },
+     "theft_mean": 0.004113333333333333,
+     "residual_construction": [
+      {
+       "alignment": {
+        "confidence": 0.0001,
+        "delay": 0,
+        "residual_db": -48.81
+       },
+       "band_envelope_err_db": 0.039,
+       "control_id": "ctl_spheres_tchaikovsky_dry",
+       "si_sdr_db": 48.92,
+       "stereo_width_err": 0.0,
+       "stft_distance": 0.0324
+      },
+      {
+       "alignment": {
+        "confidence": 0.0001,
+        "delay": 0,
+        "residual_db": -52.81
+       },
+       "band_envelope_err_db": 0.025,
+       "control_id": "ctl_spheres_tchaikovsky_hall",
+       "si_sdr_db": 52.961,
+       "stereo_width_err": 0.0,
+       "stft_distance": 0.09755
+      },
+      {
+       "alignment": {
+        "confidence": 0.0002,
+        "delay": 0,
+        "residual_db": -43.85
+       },
+       "band_envelope_err_db": 0.006,
+       "control_id": "ctl_spheres_tchaikovsky_stereo",
+       "si_sdr_db": 44.403,
+       "stereo_width_err": 8e-05,
+       "stft_distance": 0.04698
+      }
+     ],
+     "min_rc_si": 44.403,
+     "mean_rc_band": 0.023333333333333334,
+     "theft_rows": [
+      {
+       "band_excess_db": [
+        4.675,
+        4.659,
+        4.21,
+        6.697,
+        11.595,
+        13.831
+       ],
+       "control_id": "ctl_spheres_tchaikovsky_dry",
+       "theft_broadband": 0.00363,
+       "theft_mid": 0.00362,
+       "theft_side": 17426456.61188
+      },
+      {
+       "band_excess_db": [
+        4.178,
+        3.486,
+        4.138,
+        8.695,
+        13.079,
+        16.095
+       ],
+       "control_id": "ctl_spheres_tchaikovsky_hall",
+       "theft_broadband": 0.00229,
+       "theft_mid": 0.00227,
+       "theft_side": 16629257.31248
+      },
+      {
+       "band_excess_db": [
+        0.873,
+        1.131,
+        0.93,
+        1.939,
+        4.023,
+        5.408
+       ],
+       "control_id": "ctl_spheres_tchaikovsky_stereo",
+       "theft_broadband": 0.00642,
+       "theft_mid": 0.00604,
+       "theft_side": 0.00682
+      }
+     ],
+     "max_theft_broadband": 0.00642
+    }
+   }
+  },
+  "verdi": {
+   "conditions": {
+    "dry": {
+     "cid": "sha256:768dba6aad8a2a00a5f522a41c5c9757",
+     "frames": 4062448,
+     "meta": {
+      "source": "Bologna anechoic Italian opera - bologna_verdi",
+      "license": "CC BY 4.0 (Zenodo 3628247)",
+      "citation": "Anechoic recordings of Italian opera (Univ. Bologna/Parma), Zenodo 3628247",
+      "pair_integrity": "linear_exact",
+      "evaluation_task": "soloist_vs_rest",
+      "role": "holdout_frozen",
+      "soloist_dirs": [
+       "Verdi_Soprano_Lirico\uf028"
+      ],
+      "chorus_dirs": [],
+      "orchestra_dirs": [
+       "Verdi_BAS",
+       "Verdi_CLA",
+       "Verdi_FL",
+       "Verdi_HO",
+       "Verdi_KB_DB",
+       "Verdi_OBOE",
+       "Verdi_TRB",
+       "Verdi_TRP",
+       "Verdi_VCELLI",
+       "Verdi_VL1",
+       "Verdi_VL2",
+       "Verdi_VLA"
+      ],
+      "n_orch_desk_takes": 51,
+      "n_soloist_files": 1,
+      "anechoic": true,
+      "downmix_alignment": "delay=33samp(0.7ms) corr=0.209",
+      "construction": "mono-downmix; sum take-001 of every desk; orchestra=all non-soloist families (+chorus retained); mix=orch+voice; shared -3dBFS gain; dual-mono 44.1k f32",
+      "case": "bologna_verdi",
+      "sr": 44100,
+      "duration_s": 92.119,
+      "gain_applied_db": -2.029,
+      "linear_exactness_db": -97.9,
+      "voice_energy_frac_of_mix": 0.0901,
+      "peak_dbfs_target": -3.0,
+      "variant": "dry",
+      "hall_rt60_s": null,
+      "hall_seed": null,
+      "files": [
+       "mix_with_voice.wav",
+       "orchestra_only.wav",
+       "voice_ref.wav"
+      ]
+     }
+    }
+   },
+   "wall_s": 230.0,
+   "matrix": {
+    "sha256:1fbb0f0a487ae2e3c7405d405665c030d65e58c3295ffb1bf6e47b5dca47754f": {
+     "name": "residual:MDX23C",
+     "cases": {
+      "sha256:768dba6aad8a2a00a5f522a41c5c9757": {
+       "si_sdr_db": 18.723,
+       "stft_distance": 0.30179,
+       "band_envelope_err_db": 1.161,
+       "stereo_width_err": 0.0,
+       "alignment": {
+        "delay": 0,
+        "confidence": 0.0001,
+        "residual_db": -18.76
+       },
+       "event_hole_depth_db": 11.987815616144822,
+       "event_hole_area": 3.2750433905692744,
+       "masked_hole_uncertainty": 0.16666666666666666,
+       "accompaniment_scaling": 0.97854,
+       "vocal_interference_ratio": 0.10761,
+       "orthogonal_artifact_ratio": 0.10818,
+       "vocal_si_sir_db": 29.21,
+       "n_events": 89
+      }
+     },
+     "theft_mean": 0.03518,
+     "residual_construction": [
+      {
+       "alignment": {
+        "confidence": 0.0001,
+        "delay": 0,
+        "residual_db": -29.07
+       },
+       "band_envelope_err_db": 0.354,
+       "control_id": "ctl_verdi_dry",
+       "si_sdr_db": 29.169,
+       "stereo_width_err": 0.0,
+       "stft_distance": 0.08296
+      }
+     ],
+     "min_rc_si": 29.169,
+     "mean_rc_band": 0.354,
+     "theft_rows": [
+      {
+       "band_excess_db": [
+        25.162,
+        14.802,
+        19.919,
+        25.392,
+        33.752,
+        38.717
+       ],
+       "control_id": "ctl_verdi_dry",
+       "theft_broadband": 0.03518,
+       "theft_mid": 0.03517,
+       "theft_side": 39660969.91572
+      }
+     ],
+     "max_theft_broadband": 0.03518
+    },
+    "sha256:e21228241f2dd677fa18a1027bd4f03d4818384b13eee080f3491fb248540c5d": {
+     "name": "residual:MelBand",
+     "cases": {
+      "sha256:768dba6aad8a2a00a5f522a41c5c9757": {
+       "si_sdr_db": 17.094,
+       "stft_distance": 0.13955,
+       "band_envelope_err_db": 0.355,
+       "stereo_width_err": 1e-05,
+       "alignment": {
+        "delay": 0,
+        "confidence": 0.0001,
+        "residual_db": -17.14
+       },
+       "event_hole_depth_db": 8.173798382327506,
+       "event_hole_area": 1.3506965767349508,
+       "masked_hole_uncertainty": 0.149812734082397,
+       "accompaniment_scaling": 0.99328,
+       "vocal_interference_ratio": 0.21478,
+       "orthogonal_artifact_ratio": 0.12122,
+       "vocal_si_sir_db": 23.33,
+       "n_events": 89
+      }
+     },
+     "theft_mean": 0.0526,
+     "residual_construction": [
+      {
+       "alignment": {
+        "confidence": 0.0001,
+        "delay": 0,
+        "residual_db": -25.58
+       },
+       "band_envelope_err_db": 0.034,
+       "control_id": "ctl_verdi_dry",
+       "si_sdr_db": 25.575,
+       "stereo_width_err": 0.0,
+       "stft_distance": 0.00975
+      }
+     ],
+     "min_rc_si": 25.575,
+     "mean_rc_band": 0.034,
+     "theft_rows": [
+      {
+       "band_excess_db": [
+        0.419,
+        3.498,
+        3.577,
+        1.708,
+        1.986,
+        2.364
+       ],
+       "control_id": "ctl_verdi_dry",
+       "theft_broadband": 0.0526,
+       "theft_mid": 0.05259,
+       "theft_side": 69353317.07915
+      }
+     ],
+     "max_theft_broadband": 0.0526
+    },
+    "sha256:ad65af4f239ab60f911bc258f6f861c58a03f3bda8b987d684061453739e738f": {
+     "name": "residual:BS",
+     "cases": {
+      "sha256:768dba6aad8a2a00a5f522a41c5c9757": {
+       "si_sdr_db": 17.366,
+       "stft_distance": 0.21189,
+       "band_envelope_err_db": 0.652,
+       "stereo_width_err": 0.0,
+       "alignment": {
+        "delay": 0,
+        "confidence": 0.0001,
+        "residual_db": -17.39
+       },
+       "event_hole_depth_db": 20.892748495436994,
+       "event_hole_area": 7.591759078094818,
+       "masked_hole_uncertainty": 0.15355805243445692,
+       "accompaniment_scaling": 0.99595,
+       "vocal_interference_ratio": 0.18218,
+       "orthogonal_artifact_ratio": 0.1221,
+       "vocal_si_sir_db": 24.79,
+       "n_events": 89
+      }
+     },
+     "theft_mean": 0.01829,
+     "residual_construction": [
+      {
+       "alignment": {
+        "confidence": 0.0001,
+        "delay": 0,
+        "residual_db": -34.76
+       },
+       "band_envelope_err_db": 0.339,
+       "control_id": "ctl_verdi_dry",
+       "si_sdr_db": 34.755,
+       "stereo_width_err": 0.0,
+       "stft_distance": 0.10527
+      }
+     ],
+     "min_rc_si": 34.755,
+     "mean_rc_band": 0.339,
+     "theft_rows": [
+      {
+       "band_excess_db": [
+        16.69,
+        2.136,
+        2.527,
+        3.256,
+        4.029,
+        11.779
+       ],
+       "control_id": "ctl_verdi_dry",
+       "theft_broadband": 0.01829,
+       "theft_mid": 0.01829,
+       "theft_side": 7183868.93738
+      }
+     ],
+     "max_theft_broadband": 0.01829
+    },
+    "sha256:e847597ef33f2e2603c415b5a0546c4179f552842bd513f96e7f6fb17686ce0c": {
+     "name": "ens_median:MDX23C/MelBand/BS",
+     "cases": {
+      "sha256:768dba6aad8a2a00a5f522a41c5c9757": {
+       "si_sdr_db": 21.783,
+       "stft_distance": 0.27798,
+       "band_envelope_err_db": 0.442,
+       "stereo_width_err": 1e-05,
+       "alignment": {
+        "delay": 0,
+        "confidence": 0.0001,
+        "residual_db": -21.8
+       },
+       "event_hole_depth_db": 6.321081854565956,
+       "event_hole_area": 2.0642061430282874,
+       "masked_hole_uncertainty": 0.15543071161048688,
+       "accompaniment_scaling": 0.99086,
+       "vocal_interference_ratio": 0.09511,
+       "orthogonal_artifact_ratio": 0.07494,
+       "vocal_si_sir_db": 30.39,
+       "n_events": 89
+      }
+     },
+     "theft_mean": 0.02057,
+     "residual_construction": [
+      {
+       "alignment": {
+        "confidence": 0.0001,
+        "delay": 0,
+        "residual_db": -33.73
+       },
+       "band_envelope_err_db": 0.117,
+       "control_id": "ctl_verdi_dry",
+       "si_sdr_db": 33.793,
+       "stereo_width_err": 0.0,
+       "stft_distance": 0.07793
+      }
+     ],
+     "min_rc_si": 33.793,
+     "mean_rc_band": 0.117,
+     "theft_rows": [
+      {
+       "band_excess_db": [
+        13.917,
+        7.144,
+        9.688,
+        13.393,
+        22.249,
+        29.794
+       ],
+       "control_id": "ctl_verdi_dry",
+       "theft_broadband": 0.02057,
+       "theft_mid": 0.02056,
+       "theft_side": 34315667.82211
+      }
+     ],
+     "max_theft_broadband": 0.02057
+    }
+   }
+  }
+ },
+ "timings": [
+  {
+   "model": "MDX23C",
+   "work": "donizetti",
+   "cond": "dry",
+   "sep_time_s": 16.4,
+   "n": 4851000,
+   "ch": 2,
+   "stem_ch": {
+    "instrumental": [
+     4851000,
+     2
+    ],
+    "vocals": [
+     4851000,
+     2
+    ]
+   }
+  },
+  {
+   "model": "MDX23C",
+   "work": "donizetti",
+   "cond": "dry",
+   "sep_time_s": 14.18,
+   "n": 4851000,
+   "ch": 2,
+   "stem_ch": {
+    "vocals": [
+     4851000,
+     2
+    ],
+    "instrumental": [
+     4851000,
+     2
+    ]
+   }
+  },
+  {
+   "model": "MelBand",
+   "work": "donizetti",
+   "cond": "dry",
+   "sep_time_s": 6.26,
+   "n": 4851000,
+   "ch": 2,
+   "stem_ch": {
+    "vocals": [
+     4851000,
+     2
+    ],
+    "other": [
+     4851000,
+     2
+    ]
+   }
+  },
+  {
+   "model": "MelBand",
+   "work": "donizetti",
+   "cond": "dry",
+   "sep_time_s": 6.26,
+   "n": 4851000,
+   "ch": 2,
+   "stem_ch": {
+    "other": [
+     4851000,
+     2
+    ],
+    "vocals": [
+     4851000,
+     2
+    ]
+   }
+  },
+  {
+   "model": "BS",
+   "work": "donizetti",
+   "cond": "dry",
+   "sep_time_s": 9.36,
+   "n": 4851000,
+   "ch": 2,
+   "stem_ch": {
+    "vocals": [
+     4851000,
+     2
+    ],
+    "instrumental": [
+     4851000,
+     2
+    ]
+   }
+  },
+  {
+   "model": "BS",
+   "work": "donizetti",
+   "cond": "dry",
+   "sep_time_s": 9.45,
+   "n": 4851000,
+   "ch": 2,
+   "stem_ch": {
+    "vocals": [
+     4851000,
+     2
+    ],
+    "instrumental": [
+     4851000,
+     2
+    ]
+   }
+  },
+  {
+   "model": "MDX23C",
+   "work": "puccini",
+   "cond": "dry",
+   "sep_time_s": 13.84,
+   "n": 4674600,
+   "ch": 2,
+   "stem_ch": {
+    "vocals": [
+     4674600,
+     2
+    ],
+    "instrumental": [
+     4674600,
+     2
+    ]
+   }
+  },
+  {
+   "model": "MDX23C",
+   "work": "puccini",
+   "cond": "dry",
+   "sep_time_s": 13.8,
+   "n": 4674600,
+   "ch": 2,
+   "stem_ch": {
+    "vocals": [
+     4674600,
+     2
+    ],
+    "instrumental": [
+     4674600,
+     2
+    ]
+   }
+  },
+  {
+   "model": "MelBand",
+   "work": "puccini",
+   "cond": "dry",
+   "sep_time_s": 6.26,
+   "n": 4674600,
+   "ch": 2,
+   "stem_ch": {
+    "vocals": [
+     4674600,
+     2
+    ],
+    "other": [
+     4674600,
+     2
+    ]
+   }
+  },
+  {
+   "model": "MelBand",
+   "work": "puccini",
+   "cond": "dry",
+   "sep_time_s": 6.22,
+   "n": 4674600,
+   "ch": 2,
+   "stem_ch": {
+    "vocals": [
+     4674600,
+     2
+    ],
+    "other": [
+     4674600,
+     2
+    ]
+   }
+  },
+  {
+   "model": "BS",
+   "work": "puccini",
+   "cond": "dry",
+   "sep_time_s": 9.37,
+   "n": 4674600,
+   "ch": 2,
+   "stem_ch": {
+    "vocals": [
+     4674600,
+     2
+    ],
+    "instrumental": [
+     4674600,
+     2
+    ]
+   }
+  },
+  {
+   "model": "BS",
+   "work": "puccini",
+   "cond": "dry",
+   "sep_time_s": 9.44,
+   "n": 4674600,
+   "ch": 2,
+   "stem_ch": {
+    "vocals": [
+     4674600,
+     2
+    ],
+    "instrumental": [
+     4674600,
+     2
+    ]
+   }
+  },
+  {
+   "model": "MDX23C",
+   "work": "aalto_mozart",
+   "cond": "hall",
+   "sep_time_s": 11.95,
+   "n": 3969000,
+   "ch": 2,
+   "stem_ch": {
+    "instrumental": [
+     3969000,
+     2
+    ],
+    "vocals": [
+     3969000,
+     2
+    ]
+   }
+  },
+  {
+   "model": "MDX23C",
+   "work": "aalto_mozart",
+   "cond": "hall",
+   "sep_time_s": 11.77,
+   "n": 3969000,
+   "ch": 2,
+   "stem_ch": {
+    "instrumental": [
+     3969000,
+     2
+    ],
+    "vocals": [
+     3969000,
+     2
+    ]
+   }
+  },
+  {
+   "model": "MDX23C",
+   "work": "aalto_mozart",
+   "cond": "hall",
+   "sep_time_s": 11.75,
+   "n": 3969000,
+   "ch": 2,
+   "stem_ch": {
+    "instrumental": [
+     3969000,
+     2
+    ],
+    "vocals": [
+     3969000,
+     2
+    ]
+   }
+  },
+  {
+   "model": "MDX23C",
+   "work": "aalto_mozart",
+   "cond": "hall",
+   "sep_time_s": 11.94,
+   "n": 3969000,
+   "ch": 2,
+   "stem_ch": {
+    "vocals": [
+     3969000,
+     2
+    ],
+    "instrumental": [
+     3969000,
+     2
+    ]
+   }
+  },
+  {
+   "model": "MelBand",
+   "work": "aalto_mozart",
+   "cond": "hall",
+   "sep_time_s": 5.39,
+   "n": 3969000,
+   "ch": 2,
+   "stem_ch": {
+    "vocals": [
+     3969000,
+     2
+    ],
+    "other": [
+     3969000,
+     2
+    ]
+   }
+  },
+  {
+   "model": "MelBand",
+   "work": "aalto_mozart",
+   "cond": "hall",
+   "sep_time_s": 5.48,
+   "n": 3969000,
+   "ch": 2,
+   "stem_ch": {
+    "other": [
+     3969000,
+     2
+    ],
+    "vocals": [
+     3969000,
+     2
+    ]
+   }
+  },
+  {
+   "model": "MelBand",
+   "work": "aalto_mozart",
+   "cond": "hall",
+   "sep_time_s": 5.32,
+   "n": 3969000,
+   "ch": 2,
+   "stem_ch": {
+    "other": [
+     3969000,
+     2
+    ],
+    "vocals": [
+     3969000,
+     2
+    ]
+   }
+  },
+  {
+   "model": "MelBand",
+   "work": "aalto_mozart",
+   "cond": "hall",
+   "sep_time_s": 5.33,
+   "n": 3969000,
+   "ch": 2,
+   "stem_ch": {
+    "other": [
+     3969000,
+     2
+    ],
+    "vocals": [
+     3969000,
+     2
+    ]
+   }
+  },
+  {
+   "model": "BS",
+   "work": "aalto_mozart",
+   "cond": "hall",
+   "sep_time_s": 7.99,
+   "n": 3969000,
+   "ch": 2,
+   "stem_ch": {
+    "instrumental": [
+     3969000,
+     2
+    ],
+    "vocals": [
+     3969000,
+     2
+    ]
+   }
+  },
+  {
+   "model": "BS",
+   "work": "aalto_mozart",
+   "cond": "hall",
+   "sep_time_s": 8.05,
+   "n": 3969000,
+   "ch": 2,
+   "stem_ch": {
+    "instrumental": [
+     3969000,
+     2
+    ],
+    "vocals": [
+     3969000,
+     2
+    ]
+   }
+  },
+  {
+   "model": "BS",
+   "work": "aalto_mozart",
+   "cond": "hall",
+   "sep_time_s": 8.09,
+   "n": 3969000,
+   "ch": 2,
+   "stem_ch": {
+    "vocals": [
+     3969000,
+     2
+    ],
+    "instrumental": [
+     3969000,
+     2
+    ]
+   }
+  },
+  {
+   "model": "BS",
+   "work": "aalto_mozart",
+   "cond": "hall",
+   "sep_time_s": 8.01,
+   "n": 3969000,
+   "ch": 2,
+   "stem_ch": {
+    "instrumental": [
+     3969000,
+     2
+    ],
+    "vocals": [
+     3969000,
+     2
+    ]
+   }
+  },
+  {
+   "model": "MDX23C",
+   "work": "spheres_mozart",
+   "cond": "stereo",
+   "sep_time_s": 11.82,
+   "n": 3969000,
+   "ch": 2,
+   "stem_ch": {
+    "instrumental": [
+     3969000,
+     2
+    ],
+    "vocals": [
+     3969000,
+     2
+    ]
+   }
+  },
+  {
+   "model": "MDX23C",
+   "work": "spheres_mozart",
+   "cond": "stereo",
+   "sep_time_s": 11.85,
+   "n": 3969000,
+   "ch": 2,
+   "stem_ch": {
+    "instrumental": [
+     3969000,
+     2
+    ],
+    "vocals": [
+     3969000,
+     2
+    ]
+   }
+  },
+  {
+   "model": "MDX23C",
+   "work": "spheres_mozart",
+   "cond": "stereo",
+   "sep_time_s": 11.96,
+   "n": 3969000,
+   "ch": 2,
+   "stem_ch": {
+    "instrumental": [
+     3969000,
+     2
+    ],
+    "vocals": [
+     3969000,
+     2
+    ]
+   }
+  },
+  {
+   "model": "MDX23C",
+   "work": "spheres_mozart",
+   "cond": "stereo",
+   "sep_time_s": 11.77,
+   "n": 3969000,
+   "ch": 2,
+   "stem_ch": {
+    "instrumental": [
+     3969000,
+     2
+    ],
+    "vocals": [
+     3969000,
+     2
+    ]
+   }
+  },
+  {
+   "model": "MDX23C",
+   "work": "spheres_mozart",
+   "cond": "stereo",
+   "sep_time_s": 11.89,
+   "n": 3969000,
+   "ch": 2,
+   "stem_ch": {
+    "vocals": [
+     3969000,
+     2
+    ],
+    "instrumental": [
+     3969000,
+     2
+    ]
+   }
+  },
+  {
+   "model": "MDX23C",
+   "work": "spheres_mozart",
+   "cond": "stereo",
+   "sep_time_s": 11.98,
+   "n": 3969000,
+   "ch": 2,
+   "stem_ch": {
+    "instrumental": [
+     3969000,
+     2
+    ],
+    "vocals": [
+     3969000,
+     2
+    ]
+   }
+  },
+  {
+   "model": "MelBand",
+   "work": "spheres_mozart",
+   "cond": "stereo",
+   "sep_time_s": 5.41,
+   "n": 3969000,
+   "ch": 2,
+   "stem_ch": {
+    "vocals": [
+     3969000,
+     2
+    ],
+    "other": [
+     3969000,
+     2
+    ]
+   }
+  },
+  {
+   "model": "MelBand",
+   "work": "spheres_mozart",
+   "cond": "stereo",
+   "sep_time_s": 5.38,
+   "n": 3969000,
+   "ch": 2,
+   "stem_ch": {
+    "other": [
+     3969000,
+     2
+    ],
+    "vocals": [
+     3969000,
+     2
+    ]
+   }
+  },
+  {
+   "model": "MelBand",
+   "work": "spheres_mozart",
+   "cond": "stereo",
+   "sep_time_s": 5.36,
+   "n": 3969000,
+   "ch": 2,
+   "stem_ch": {
+    "other": [
+     3969000,
+     2
+    ],
+    "vocals": [
+     3969000,
+     2
+    ]
+   }
+  },
+  {
+   "model": "MelBand",
+   "work": "spheres_mozart",
+   "cond": "stereo",
+   "sep_time_s": 5.42,
+   "n": 3969000,
+   "ch": 2,
+   "stem_ch": {
+    "other": [
+     3969000,
+     2
+    ],
+    "vocals": [
+     3969000,
+     2
+    ]
+   }
+  },
+  {
+   "model": "MelBand",
+   "work": "spheres_mozart",
+   "cond": "stereo",
+   "sep_time_s": 5.35,
+   "n": 3969000,
+   "ch": 2,
+   "stem_ch": {
+    "vocals": [
+     3969000,
+     2
+    ],
+    "other": [
+     3969000,
+     2
+    ]
+   }
+  },
+  {
+   "model": "MelBand",
+   "work": "spheres_mozart",
+   "cond": "stereo",
+   "sep_time_s": 5.39,
+   "n": 3969000,
+   "ch": 2,
+   "stem_ch": {
+    "vocals": [
+     3969000,
+     2
+    ],
+    "other": [
+     3969000,
+     2
+    ]
+   }
+  },
+  {
+   "model": "BS",
+   "work": "spheres_mozart",
+   "cond": "stereo",
+   "sep_time_s": 8.16,
+   "n": 3969000,
+   "ch": 2,
+   "stem_ch": {
+    "vocals": [
+     3969000,
+     2
+    ],
+    "instrumental": [
+     3969000,
+     2
+    ]
+   }
+  },
+  {
+   "model": "BS",
+   "work": "spheres_mozart",
+   "cond": "stereo",
+   "sep_time_s": 8.16,
+   "n": 3969000,
+   "ch": 2,
+   "stem_ch": {
+    "vocals": [
+     3969000,
+     2
+    ],
+    "instrumental": [
+     3969000,
+     2
+    ]
+   }
+  },
+  {
+   "model": "BS",
+   "work": "spheres_mozart",
+   "cond": "stereo",
+   "sep_time_s": 8.12,
+   "n": 3969000,
+   "ch": 2,
+   "stem_ch": {
+    "instrumental": [
+     3969000,
+     2
+    ],
+    "vocals": [
+     3969000,
+     2
+    ]
+   }
+  },
+  {
+   "model": "BS",
+   "work": "spheres_mozart",
+   "cond": "stereo",
+   "sep_time_s": 8.26,
+   "n": 3969000,
+   "ch": 2,
+   "stem_ch": {
+    "vocals": [
+     3969000,
+     2
+    ],
+    "instrumental": [
+     3969000,
+     2
+    ]
+   }
+  },
+  {
+   "model": "BS",
+   "work": "spheres_mozart",
+   "cond": "stereo",
+   "sep_time_s": 8.19,
+   "n": 3969000,
+   "ch": 2,
+   "stem_ch": {
+    "instrumental": [
+     3969000,
+     2
+    ],
+    "vocals": [
+     3969000,
+     2
+    ]
+   }
+  },
+  {
+   "model": "BS",
+   "work": "spheres_mozart",
+   "cond": "stereo",
+   "sep_time_s": 8.21,
+   "n": 3969000,
+   "ch": 2,
+   "stem_ch": {
+    "instrumental": [
+     3969000,
+     2
+    ],
+    "vocals": [
+     3969000,
+     2
+    ]
+   }
+  },
+  {
+   "model": "MDX23C",
+   "work": "spheres_tchaikovsky",
+   "cond": "stereo",
+   "sep_time_s": 11.74,
+   "n": 3969000,
+   "ch": 2,
+   "stem_ch": {
+    "instrumental": [
+     3969000,
+     2
+    ],
+    "vocals": [
+     3969000,
+     2
+    ]
+   }
+  },
+  {
+   "model": "MDX23C",
+   "work": "spheres_tchaikovsky",
+   "cond": "stereo",
+   "sep_time_s": 11.87,
+   "n": 3969000,
+   "ch": 2,
+   "stem_ch": {
+    "vocals": [
+     3969000,
+     2
+    ],
+    "instrumental": [
+     3969000,
+     2
+    ]
+   }
+  },
+  {
+   "model": "MDX23C",
+   "work": "spheres_tchaikovsky",
+   "cond": "stereo",
+   "sep_time_s": 11.9,
+   "n": 3969000,
+   "ch": 2,
+   "stem_ch": {
+    "instrumental": [
+     3969000,
+     2
+    ],
+    "vocals": [
+     3969000,
+     2
+    ]
+   }
+  },
+  {
+   "model": "MDX23C",
+   "work": "spheres_tchaikovsky",
+   "cond": "stereo",
+   "sep_time_s": 11.85,
+   "n": 3969000,
+   "ch": 2,
+   "stem_ch": {
+    "instrumental": [
+     3969000,
+     2
+    ],
+    "vocals": [
+     3969000,
+     2
+    ]
+   }
+  },
+  {
+   "model": "MDX23C",
+   "work": "spheres_tchaikovsky",
+   "cond": "stereo",
+   "sep_time_s": 11.84,
+   "n": 3969000,
+   "ch": 2,
+   "stem_ch": {
+    "instrumental": [
+     3969000,
+     2
+    ],
+    "vocals": [
+     3969000,
+     2
+    ]
+   }
+  },
+  {
+   "model": "MDX23C",
+   "work": "spheres_tchaikovsky",
+   "cond": "stereo",
+   "sep_time_s": 12.07,
+   "n": 3969000,
+   "ch": 2,
+   "stem_ch": {
+    "vocals": [
+     3969000,
+     2
+    ],
+    "instrumental": [
+     3969000,
+     2
+    ]
+   }
+  },
+  {
+   "model": "MelBand",
+   "work": "spheres_tchaikovsky",
+   "cond": "stereo",
+   "sep_time_s": 5.36,
+   "n": 3969000,
+   "ch": 2,
+   "stem_ch": {
+    "vocals": [
+     3969000,
+     2
+    ],
+    "other": [
+     3969000,
+     2
+    ]
+   }
+  },
+  {
+   "model": "MelBand",
+   "work": "spheres_tchaikovsky",
+   "cond": "stereo",
+   "sep_time_s": 5.35,
+   "n": 3969000,
+   "ch": 2,
+   "stem_ch": {
+    "other": [
+     3969000,
+     2
+    ],
+    "vocals": [
+     3969000,
+     2
+    ]
+   }
+  },
+  {
+   "model": "MelBand",
+   "work": "spheres_tchaikovsky",
+   "cond": "stereo",
+   "sep_time_s": 5.38,
+   "n": 3969000,
+   "ch": 2,
+   "stem_ch": {
+    "other": [
+     3969000,
+     2
+    ],
+    "vocals": [
+     3969000,
+     2
+    ]
+   }
+  },
+  {
+   "model": "MelBand",
+   "work": "spheres_tchaikovsky",
+   "cond": "stereo",
+   "sep_time_s": 5.43,
+   "n": 3969000,
+   "ch": 2,
+   "stem_ch": {
+    "vocals": [
+     3969000,
+     2
+    ],
+    "other": [
+     3969000,
+     2
+    ]
+   }
+  },
+  {
+   "model": "MelBand",
+   "work": "spheres_tchaikovsky",
+   "cond": "stereo",
+   "sep_time_s": 5.48,
+   "n": 3969000,
+   "ch": 2,
+   "stem_ch": {
+    "other": [
+     3969000,
+     2
+    ],
+    "vocals": [
+     3969000,
+     2
+    ]
+   }
+  },
+  {
+   "model": "MelBand",
+   "work": "spheres_tchaikovsky",
+   "cond": "stereo",
+   "sep_time_s": 5.34,
+   "n": 3969000,
+   "ch": 2,
+   "stem_ch": {
+    "vocals": [
+     3969000,
+     2
+    ],
+    "other": [
+     3969000,
+     2
+    ]
+   }
+  },
+  {
+   "model": "BS",
+   "work": "spheres_tchaikovsky",
+   "cond": "stereo",
+   "sep_time_s": 8.08,
+   "n": 3969000,
+   "ch": 2,
+   "stem_ch": {
+    "vocals": [
+     3969000,
+     2
+    ],
+    "instrumental": [
+     3969000,
+     2
+    ]
+   }
+  },
+  {
+   "model": "BS",
+   "work": "spheres_tchaikovsky",
+   "cond": "stereo",
+   "sep_time_s": 8.09,
+   "n": 3969000,
+   "ch": 2,
+   "stem_ch": {
+    "instrumental": [
+     3969000,
+     2
+    ],
+    "vocals": [
+     3969000,
+     2
+    ]
+   }
+  },
+  {
+   "model": "BS",
+   "work": "spheres_tchaikovsky",
+   "cond": "stereo",
+   "sep_time_s": 8.09,
+   "n": 3969000,
+   "ch": 2,
+   "stem_ch": {
+    "instrumental": [
+     3969000,
+     2
+    ],
+    "vocals": [
+     3969000,
+     2
+    ]
+   }
+  },
+  {
+   "model": "BS",
+   "work": "spheres_tchaikovsky",
+   "cond": "stereo",
+   "sep_time_s": 8.18,
+   "n": 3969000,
+   "ch": 2,
+   "stem_ch": {
+    "vocals": [
+     3969000,
+     2
+    ],
+    "instrumental": [
+     3969000,
+     2
+    ]
+   }
+  },
+  {
+   "model": "BS",
+   "work": "spheres_tchaikovsky",
+   "cond": "stereo",
+   "sep_time_s": 8.21,
+   "n": 3969000,
+   "ch": 2,
+   "stem_ch": {
+    "vocals": [
+     3969000,
+     2
+    ],
+    "instrumental": [
+     3969000,
+     2
+    ]
+   }
+  },
+  {
+   "model": "BS",
+   "work": "spheres_tchaikovsky",
+   "cond": "stereo",
+   "sep_time_s": 8.19,
+   "n": 3969000,
+   "ch": 2,
+   "stem_ch": {
+    "vocals": [
+     3969000,
+     2
+    ],
+    "instrumental": [
+     3969000,
+     2
+    ]
+   }
+  },
+  {
+   "model": "MDX23C",
+   "work": "verdi",
+   "cond": "dry",
+   "sep_time_s": 12.05,
+   "n": 4062448,
+   "ch": 2,
+   "stem_ch": {
+    "instrumental": [
+     4062448,
+     2
+    ],
+    "vocals": [
+     4062448,
+     2
+    ]
+   }
+  },
+  {
+   "model": "MDX23C",
+   "work": "verdi",
+   "cond": "dry",
+   "sep_time_s": 12.03,
+   "n": 4062448,
+   "ch": 2,
+   "stem_ch": {
+    "instrumental": [
+     4062448,
+     2
+    ],
+    "vocals": [
+     4062448,
+     2
+    ]
+   }
+  },
+  {
+   "model": "MelBand",
+   "work": "verdi",
+   "cond": "dry",
+   "sep_time_s": 5.25,
+   "n": 4062448,
+   "ch": 2,
+   "stem_ch": {
+    "vocals": [
+     4062448,
+     2
+    ],
+    "other": [
+     4062448,
+     2
+    ]
+   }
+  },
+  {
+   "model": "MelBand",
+   "work": "verdi",
+   "cond": "dry",
+   "sep_time_s": 5.33,
+   "n": 4062448,
+   "ch": 2,
+   "stem_ch": {
+    "other": [
+     4062448,
+     2
+    ],
+    "vocals": [
+     4062448,
+     2
+    ]
+   }
+  },
+  {
+   "model": "BS",
+   "work": "verdi",
+   "cond": "dry",
+   "sep_time_s": 8.04,
+   "n": 4062448,
+   "ch": 2,
+   "stem_ch": {
+    "vocals": [
+     4062448,
+     2
+    ],
+    "instrumental": [
+     4062448,
+     2
+    ]
+   }
+  },
+  {
+   "model": "BS",
+   "work": "verdi",
+   "cond": "dry",
+   "sep_time_s": 8.07,
+   "n": 4062448,
+   "ch": 2,
+   "stem_ch": {
+    "instrumental": [
+     4062448,
+     2
+    ],
+    "vocals": [
+     4062448,
+     2
+    ]
+   }
+  }
+ ],
+ "total_wall_s": 1749.8
+}

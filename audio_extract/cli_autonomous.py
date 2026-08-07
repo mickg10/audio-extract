@@ -19,6 +19,12 @@ from . import challenges as ch, dsp
 from .manifest_v2 import ManifestV2
 from .storage import TrackLayout
 
+
+class UnsupportedConstructionError(RuntimeError):
+    """A recipe kind cannot be materialized (e.g. a 'native' construction on a
+    checkpoint with no native instrumental stem). Raised instead of silently
+    running a different construction under the requested identity (oracle §2)."""
+
 # Seed severity mapping (recalibrated by SeverityMap once ladders accumulate):
 # exact-target SI-SDR >= 30 dB is "no damage"; theft/bleed ratios map directly.
 def severity_from_si_sdr(si_sdr_db: float) -> float:
@@ -205,10 +211,21 @@ def _exact_case_labels(residual: np.ndarray, target: np.ndarray,
 
 def recipe_spec_id(spec: dict) -> str:
     """Stable recipe id for a bake-off spec (oracle §2 — evaluate recipes, not model
-    names). Each construction is a distinct artifact with its own identity."""
-    canon = {"kind": spec["kind"], "models": sorted(spec.get("models", [])),
-             "algo": spec.get("algo", ""), "overlap": spec.get("overlap", 0),
-             "weights": [int(round(w * 1000)) for w in spec.get("weights", [])]}
+    names). Each construction is a distinct artifact with its own identity.
+
+    §2 identity fix: canonicalize (member, weight) PAIRS together so a weight can
+    never be misassociated with the wrong member, and so [MDX,Mel]+[.8,.2] and
+    [Mel,MDX]+[.8,.2] get distinct ids (they are semantically different weighted
+    means). The median is weight-symmetric, so its members canonicalize alone."""
+    models = list(spec.get("models", []))
+    weights = list(spec.get("weights", []))
+    if weights and len(weights) == len(models):
+        pairs = sorted((m, int(round(w * 1000))) for m, w in zip(models, weights))
+        members = [{"model": m, "weight_milli": w} for m, w in pairs]
+    else:
+        members = [{"model": m} for m in sorted(models)]
+    canon = {"kind": spec["kind"], "members": members,
+             "algo": spec.get("algo", ""), "overlap": spec.get("overlap", 0)}
     return "sha256:" + hashlib.sha256(
         b"audio-extract-recipe-spec-v1\x00" + json.dumps(canon, sort_keys=True).encode()
     ).hexdigest()
@@ -229,13 +246,14 @@ def compose_accompaniment(spec: dict, estimator_factory):
         mix = dsp.as2d(mix)
         if kind == "native":
             stems = estimator_factory(models[0])(mix)
-            if "instrumental" in stems:
-                inst = dsp.as2d(stems["instrumental"])
-                n = min(len(mix), len(inst))
-                return inst[:n]
-            v = dsp.as2d(stems.get("vocals", np.zeros_like(mix)))
-            n = min(len(mix), len(v))
-            return mix[:n] - v[:n]
+            if "instrumental" not in stems:
+                # §2: never silently run residual under a 'native' identity
+                raise UnsupportedConstructionError(
+                    f"model {models[0]!r} has no native instrumental stem "
+                    f"(emits {sorted(stems)}); a native recipe cannot be materialized")
+            inst = dsp.as2d(stems["instrumental"])
+            n = min(len(mix), len(inst))
+            return inst[:n]
         if kind == "ensemble_residual":
             vs = []
             for m in models:
@@ -427,16 +445,17 @@ def severity_cells_from_store(layout: TrackLayout, *, u: float = 0.05,
         theft_rows = list(m2._conn.execute(
             "SELECT * FROM challenge_result WHERE challenge_id='theft_assay'"))
     cands: dict[str, dict] = {}
-    for recipe_id, model, result in rows:
+    for challenge_id, candidate_recipe_id, result in rows:
         er = result.get("exact_reference")
         if not er:
             continue
         labels = result.get("exact_labels") or {}
-        # oracle P0 §2: key by the CANDIDATE RECIPE, not the model class. The
-        # challenge_result carries the recipe id; model is a fallback for legacy rows.
-        key = recipe_id if str(recipe_id).startswith("sha256:") else model
-        c = cands.setdefault(key, {"cells": {}, "gates": {}, "recipe_id": recipe_id,
-                                   "model": model})
+        # oracle P0 §1: aggregate by the CANDIDATE RECIPE across all challenges —
+        # NOT the challenge id. (Both ids are sha256:… so the old
+        # "starts-with-sha256" guard silently picked the challenge id, giving one
+        # pseudo-candidate per challenge.)
+        key = candidate_recipe_id
+        c = cands.setdefault(key, {"cells": {}, "gates": {}, "recipe_id": candidate_recipe_id})
         raws = _raw_proxies(er, labels)
         for defect, raw in raws.items():
             uu = u + (float(labels.get("masked_hole_uncertainty") or 0.0)

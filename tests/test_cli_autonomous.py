@@ -145,6 +145,30 @@ def test_recipe_spec_id_stable_and_distinct():
     assert len({auto.recipe_spec_id(a), auto.recipe_spec_id(b), auto.recipe_spec_id(c)}) == 3
 
 
+def test_weighted_mean_id_binds_weight_to_member(tmp_path=None):
+    # oracle §2 identity bug: [MDX,Mel]+[.8,.2] and [Mel,MDX]+[.8,.2] are DIFFERENT
+    # weighted means and must get different ids (member order carries the weight).
+    s1 = {"kind": "ensemble_residual", "algo": "mean", "models": ["MDX", "Mel"], "weights": [0.8, 0.2]}
+    s2 = {"kind": "ensemble_residual", "algo": "mean", "models": ["Mel", "MDX"], "weights": [0.8, 0.2]}
+    assert auto.recipe_spec_id(s1) != auto.recipe_spec_id(s2)
+    # but the same semantic mapping (MDX=.8, Mel=.2) written either way collides
+    s3 = {"kind": "ensemble_residual", "algo": "mean", "models": ["Mel", "MDX"], "weights": [0.2, 0.8]}
+    assert auto.recipe_spec_id(s1) == auto.recipe_spec_id(s3)
+    # median is weight-symmetric -> member order irrelevant
+    m1 = {"kind": "ensemble_residual", "algo": "median", "models": ["A", "B", "C"]}
+    m2 = {"kind": "ensemble_residual", "algo": "median", "models": ["C", "A", "B"]}
+    assert auto.recipe_spec_id(m1) == auto.recipe_spec_id(m2)
+
+
+def test_native_without_instrumental_raises():
+    # §2: a 'native' recipe on a vocals-only model must RAISE, not silently residual
+    est = auto.compose_accompaniment({"kind": "native", "models": ["vocals_only"]},
+                                     lambda n: (lambda mix: {"vocals": np.asarray(mix)}))
+    import pytest
+    with pytest.raises(auto.UnsupportedConstructionError):
+        est(fx.synth_orchestra(SR, 1.0))
+
+
 def test_build_declines_without_genuine_controls(tmp_path):
     layout = _make_run(tmp_path)
     # poison the passages file: only contaminated controls remain
