@@ -438,6 +438,23 @@ The GitHub-issue oracle just posted a candid self+other assessment. Its verdict:
 > blockers per pass, fix them, then review again; do not silently waive additional correctness
 > failures merely because the quota is full.
 
+
+### QI — NEED MORE DATA ASAP (blocking the trained model) · 2026-08-08 · status: waiting
+We're building the training pipeline now (features v2 + your judge_labels are committed; HGB baseline
++ dataset assembler next). The binding constraint you named — independent in-domain soloist+orchestra
+WORKS — is now the blocker. We have ~7 real (Bologna 3 / Aalto / Spheres 2) + ~5 effective Cantolopera
+(lossy) + 100+ synthesizable (shared donors). **Two asks, urgent:**
+1. Fastest path to MORE independent works: rank the highest-yield sources we can acquire in the next
+   day (open datasets we haven't pulled; which lossless purchases give the most independent
+   works/singers/venues per dollar; whether FreiDi's 3 numbers count as 3 works). Name specifics.
+2. Can we train a USEFUL first baseline NOW on current data + heavy domain-randomized synthetic
+   augmentation (VocalSet×orchestra-donor×measured-RIR, ratio/register/RT60/mastering randomized),
+   reserving all real works for LOWO/leave-corpus-out test — or is n so low that even a pilot baseline
+   is premature? If trainable now, what's the minimal honest claim label for the resulting model?
+A data-acquisition agent is running in parallel; your ranking will steer it.
+> **ANSWER:**
+> _(gpt56)_
+
 ---
 
 ## ARCHIVE
