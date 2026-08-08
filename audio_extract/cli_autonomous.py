@@ -231,6 +231,22 @@ def recipe_spec_id(spec: dict) -> str:
     ).hexdigest()
 
 
+_EPS = 1e-12
+
+
+def _weiszfeld_median(stack: np.ndarray, iters: int = 12) -> np.ndarray:
+    """Per-sample multichannel geometric median across K member estimates via
+    Weiszfeld iteration. ``stack`` is (K, n, C); returns (n, C). Robust to a single
+    outlier member (unlike the mean); stereo-coherent (channels solved jointly)."""
+    v = stack.mean(axis=0)                                    # (n, C) init
+    for _ in range(iters):
+        diff = stack - v[None]                                # (K, n, C)
+        d = np.sqrt(np.sum(diff * diff, axis=2)) + _EPS       # (K, n) L2 over channels
+        w = 1.0 / d                                           # (K, n)
+        v = np.einsum("kn,knc->nc", w, stack) / (w.sum(axis=0)[:, None])
+    return v
+
+
 def compose_accompaniment(spec: dict, estimator_factory):
     """Return ``estimate_acc(mix) -> accompaniment`` for a recipe spec.
 
@@ -254,19 +270,24 @@ def compose_accompaniment(spec: dict, estimator_factory):
             inst = dsp.as2d(stems["instrumental"])
             n = min(len(mix), len(inst))
             return inst[:n]
-        if kind == "ensemble_residual":
+        if kind in ("ensemble_residual", "geometric_median", "convex_fusion"):
             vs = []
             for m in models:
                 v = dsp.as2d(estimator_factory(m)(mix).get("vocals", np.zeros_like(mix)))
                 vs.append(v)
             n = min(len(mix), *(len(v) for v in vs))
-            stack = np.stack([v[:n] for v in vs], axis=0)
-            if spec.get("algo", "median") == "median":
-                v_agg = np.median(stack, axis=0)
-            else:
-                w = np.asarray(spec.get("weights") or [1.0 / len(vs)] * len(vs))
-                w = w / w.sum()
+            stack = np.stack([v[:n] for v in vs], axis=0)          # (K, n, C)
+            if kind == "geometric_median":
+                # gpt56: robust stereo-coherent center (Weiszfeld) — votes out a
+                # member's outlier per sample instead of averaging it in like the mean.
+                v_agg = _weiszfeld_median(stack)
+            elif kind == "convex_fusion" or spec.get("algo") == "mean":
+                # one global non-negative simplex weight vector (canonicalized upstream)
+                w = np.asarray(spec.get("weights") or [1.0 / len(vs)] * len(vs), dtype=np.float64)
+                w = np.clip(w, 0, None); w = w / (w.sum() + _EPS)     # project to simplex
                 v_agg = np.tensordot(w, stack, axes=(0, 0))
+            else:                                                    # component-wise median
+                v_agg = np.median(stack, axis=0)
             return mix[:n] - v_agg
         # residual (default)
         v = dsp.as2d(estimator_factory(models[0])(mix).get("vocals", np.zeros_like(mix)))
