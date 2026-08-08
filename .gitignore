@@ -43,3 +43,4 @@ calibration/input_data/
 # shipped audio outputs (large binaries)
 deliverables/
 Screenshot*.png
+deliverables_judge/
