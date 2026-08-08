@@ -46,50 +46,259 @@ separation parameters.**
 
 ## Questions — please evaluate and answer inline
 
-### QA — Big-picture evaluation · status: waiting
+### QA — Big-picture evaluation · status: answered
 Independently assess the whole approach. Is "train a source-aware judge → tune parameters" the
 right architecture for making good opera instrumentals, or is there a simpler/stronger path we're
 missing? Where are we over-engineering vs under-engineering? What would you do differently?
 > **ANSWER:**
-> _(gpt56: write here, set status: answered)_
+> **Verdict:** the architecture is directionally right, but the learned judge should be a
+> *transfer estimator and abstention mechanism*, not the primary optimizer everywhere. Where an
+> exact target exists, exact-reference defects are strictly stronger supervision than a learned
+> proxy. I would use two layers:
+>
+> 1. **Objective layer:** tune a deliberately small recipe/parameter panel on linear-exact and
+>    audited same-take pairs with the existing asymmetric gates (leakage, theft/hole, then
+>    preservation). For exact tiles, fit local complex ridge coordinates
+>    `Y = alpha*A + beta*V + R`, record the condition number `kappa`, and abstain from source
+>    attribution when the tile is ill-conditioned. Gate both retained-voice coefficient `|beta|`
+>    and its energy relative to `|alpha*A|`; they answer different audibility questions. This is
+>    already motivated by `calibration/bakeoff_report.md`: broadband SI-SDR alone would have
+>    selected BS despite its event gouging, while the defect bank found the median recipe.
+> 2. **Transfer layer:** on an owned track without a target, the source-aware judge estimates the
+>    same defect vector and uncertainty for each finalist. It may select only when in-domain,
+>    calibrated, and separated; otherwise use the global median baseline or emit human AB. The
+>    judge must never certify its own search distribution without a frozen work/corpus holdout.
+>
+> The deterministic DAG, recipe identity, exact challenge engine, and hard-gated selector are not
+> over-engineering; they prevent silent recipe drift and proxy gaming. The over-engineering risk is
+> training a large judge and elaborate certification machinery before the independent real-work
+> count supports it. `calibration/step5_report.md` correctly shows that small-n Learn-Then-Test
+> abstention is expected. For the original 25-track delivery, the fixed median recipe plus
+> disagreement/AMBER flags is a sound engineering product while data accumulate.
+>
+> The under-engineered parts are (a) source-aware inference features, (b) group-safe dataset splits,
+> (c) professionally mastered lossless same-take opera, and (d) counterfactual tests proving the
+> judge responds to defects rather than recipe, codec, singer, or loudness identity. A self-remix
+> is training-grade only when its presumed clean controls survive agreement checks from diverse
+> estimators; otherwise it is screening evidence, not exact truth. I would next:
+> freeze the global median + MDX baseline; repair and benchmark the feature contract; build a
+> group-atomic training table; train a cheap hand-feature baseline and a frozen-encoder student;
+> then compare both on held-out *works, corpora, and separator families*. Only after that would I
+> enable per-track autonomous selection.
 
-### QB — Model set to tune · status: waiting
+### QB — Model set to tune · status: answered
 Should the tunable separator space stay {MDX23C, MelBand, BS-Roformer} or broaden (HTDemucs v4,
 newer BS-Roformer/Mel-Band-Roformer variants, MDX-Net vocals, Kim/UVR, Demucs fine-tunes)? Should
 **per-track model selection** be part of what the judge optimizes, or one globally-tuned ensemble?
 What set maximizes coverage/independence without exploding the search?
 > **ANSWER:**
-> _(gpt56)_
+> Broaden, but by **architecture/failure-mode diversity**, not by collecting many correlated UVR
+> checkpoints. Keep the current two production anchors:
+>
+> - `median(MDX23C, MelBand, BS)` — global champion;
+> - `residual:MDX23C` — cheap, robust fallback (and deduplicate `native:MDX23C`, which the bake-off
+>   shows is operationally the same estimate).
+>
+> Add a challenger lane of at most three initially: (1) HTDemucs v4/`htdemucs_ft` as the genuinely
+> different waveform/hybrid family; (2) one newer instrumental-primary BS- or MelBand-Roformer
+> chosen by a preliminary screen, not several near-duplicates; (3) one strong MDX-Net/UVR vocal
+> checkpoint as another error basis. Kim/VR and de-echo/de-reverb models belong in targeted cleanup
+> probes unless they independently clear the same leakage/theft gates; do not put every cleanup
+> model into the main combinatorial search. Pin weight/config/adapter hashes per `AGENTS.md`.
+>
+> Search in stages: score singles first; retain models with complementary *per-defect residuals*;
+> screen roughly 12–20 preregistered recipes spanning residual/native constructions, the current
+> component-wise median, a stereo-coherent geometric-median challenger, and a robust convex
+> three-model fusion; then advance only 3–5 finalists to full-track evaluation. Tune only a few
+> parameters (overlap/segment and perhaps one robust aggregation parameter). Do not enumerate all
+> subsets and arbitrary mean weights—the current report already demonstrates that smooth mean
+> interpolation can merely blend in MelBand's catastrophic leak. Add L/R-to-M/S equivariance,
+> contributor-switch-rate, and same-direction member co-failure diagnostics before declaring a
+> component-wise median universally safe.
+>
+> Per-track selection should eventually be allowed, but only among roughly 3–5 frozen finalists.
+> Train/calibrate the selector on grouped development works, freeze recipes + judge + thresholds,
+> then evaluate on unseen works and at least one unseen corpus/model family. Require an uncertainty
+> and separation margin, with global median as fallback. The judge must not both generate a large
+> recipe search and certify the winner on the same works; that is optimizer exploitation. Until the
+> real holdout is large enough, use per-track scores as advisory and keep one global production
+> recipe.
 
-### QC — Judge architecture & features · status: waiting
+### QC — Judge architecture & features · status: answered
 Validate/critique the source-aware multi-head design (inputs M,Y,D,task). For the reference-free
 feature contract (`audio_extract/judge_features.py`), what's the right input tensor + head set, and
 is a frozen-encoder+small-heads student the right call vs gradient-boosted trees on hand features vs
 fine-tuning an audio SSL encoder? How to avoid shortcut learning?
 > **ANSWER:**
-> _(gpt56)_
+> `M,Y,D=M-Y,task` is the correct minimal causal view. Make all three aligned signals required; do
+> not let absent `mixture` silently become zeros as `reference_free_features()` currently does at
+> `audio_extract/judge_features.py:80-86`. The model needs to see *what was present*, *what remains*,
+> and *what was removed*. A useful tensor is synchronized stereo log-mel/complex-STFT views of
+> `[M,Y,D]`, with mid/side views, shared amplitude normalization, a task embedding
+> (`all_voices_vs_nonvocal` vs `soloist_vs_rest`), and explicit cross-features such as
+> `log|Y|-log|M|`, `log|D|-log|M|`, M/Y and M/D coherence, onset-envelope differences, and
+> ensemble disagreement when available.
+>
+> Use heads that correspond to separately supervised decisions, not one MOS:
+>
+> - retained-vocal audibility/leakage;
+> - orchestral theft/event-hole severity (conditioned on vocal activity inferred from M and D);
+> - orthogonal artifacts/musical noise/phase discontinuity;
+> - preservation: fullness/brightness/transients/hall/stereo;
+> - per-head aleatoric uncertainty plus an OOD/epistemic score.
+>
+> Predict continuous exact labels from local complex ridge fits: accompaniment transfer `alpha`
+> (hole depth and phase-sensitive `|alpha-1|`), retained-voice coefficient `|beta|`, retained-voice
+> energy relative to accompaniment, orthogonal artifact ratio `||R||/||A||`, and identifiability
+> `kappa`, plus event-hole depth/area and preservation errors. Ill-conditioned tiles need masks and
+> uncertainty targets rather than forced labels. Add ordinal bad/not-bad, same-mixture pairwise
+> ranking, and quantile losses. Ranking candidates from the *same mixture* matches the eventual
+> choice problem and cancels source content.
+>
+> Start with two baselines. A histogram-gradient-boosted model on corrected hand features is the
+> essential cheap sanity check. The primary student should be a **frozen music encoder + small
+> temporal fusion/heads** (for example frozen MuQ or MERT embeddings for M/Y/D through a shared
+> encoder, difference/product fusion, then shallow temporal attention/BLSTM/Conformer heads). With
+> current n, do not full-fine-tune an SSL encoder; adapters/LoRA become reasonable only after
+> substantially more independent real groups.
+>
+> The present ten scalars are diagnostic seeds, not yet a sufficient contract. Specific problems:
+>
+> - pYIN/harmonic salience on Y confounds soprano leakage with pitched strings/winds;
+> - `low_end_retention` and `hf_reduction_db` (`judge_features.py:138-143`) divide each signal's
+>   *fraction of total energy*, not absolute band energy, so broadband changes can invert their
+>   meaning;
+> - `hf_side_energy_ratio` (`:114-120`) has the same fraction-vs-absolute issue and lacks a
+>   mixture-relative stereo comparison;
+> - global means hide the worst 100–500 ms holes that the product cares about;
+> - exception-to-zero in voice features makes a missing dependency look like clean audio.
+>
+> Make feature failures explicit, add frame distributions/CVaR rather than means, and test shared
+> gain invariance, channel swap, polarity, delay, silence, and format boundaries.
+>
+> Avoid shortcuts with group splits simultaneously by work, singer/donor, session, orchestra/venue,
+> mastering chain, corpus, RIR, task, and separator family; every derivative of a source stays in
+> one split. Balance gain, EQ, codec,
+> and RIR across good/bad labels; strip recipe/file identities; hold out one separator family; add
+> counterfactuals where M is fixed and Y defect changes and where content changes at fixed severity.
+> Treat ensemble disagreement as optional evidence, not a primary feature, because otherwise the
+> student can identify the recipe rather than hear the defect.
 
-### QD — Data sufficiency & transfer · status: waiting
+### QD — Data sufficiency & transfer · status: answered
 Given ~7 real in-domain works + 100+ synthesizable (VocalSet×orchestra×RIR, all shared donors) +
 ~14 lossy Cantolopera same-take opera pairs, how far are we from a trustworthy judge? How to close
 the self-remix→real-hall/mastered transfer gap (domain-randomized H? measured RIRs? adversarial)?
 Minimum independent works to trust parameter selection?
 > **ANSWER:**
-> _(gpt56)_
+> Seven real works are enough to build and falsify the pipeline, not enough for a trustworthy
+> autonomous judge. The 100+ crossed VocalSet×orchestra×RIR renders are many *conditions*, not 100
+> independent works: effective n is bounded by unique singers, orchestral captures, and venues.
+> Likewise the 14 Cantolopera pairs are 14 useful works but one correlated production corpus.
+>
+> The repository's ≈29-work statistical bar has a concrete origin: with zero observed failures, a
+> one-sided 95% Clopper-Pearson upper bound falls below 10% only at about 29 independent groups
+> (`selector.py`'s Learn-Then-Test logic). Any failures, subgroup claims, model search, or
+> distribution shift require more. My operating thresholds would be:
+>
+> - 15–20 independent in-domain works: useful ranking pilot with mandatory fallback/AB;
+> - ≥30 independent **calibration** groups: first plausible 10%-risk gate if failures are near zero;
+> - roughly 40–50 total, including 10–15 frozen external works across multiple productions: minimum
+>   for guarded per-track selection;
+> - 60+ calibration groups for a comparable 5%-risk claim.
+>
+> Do not spend all real works on training. Pretrain the heads on large exact synthetic ladders,
+> reserve whole real corpora for calibration/test, and never split crops/arias from one production
+> across folds.
+>
+> To close transfer: use measured source-specific stereo RIRs with the same linear operator applied
+> consistently to A and V so exactness survives; randomize singer/orchestra ratio,
+> pitch/register overlap, RT60/DRR, stereo geometry,
+> microphone/EQ, and moderate linear mastering. Add hard negatives—solo violin/oboe, chorus,
+> vibrato, dense soprano, reverb tails, applause/noise—and hold out the transform families used for
+> testing. Codec/limiter/mastering invariance should normally be nuisance augmentation applied
+> coherently to M/Y/D, not treated as new exact counterfactual truth after a nonlinear mix process.
+> Use real same-take pairs to learn that last nonlinear/mastering gap, with label uncertainty.
+>
+> Self-remix control regions should be promoted to training-grade only when diverse vocal/activity
+> estimators agree that the retained source is clean; uncertain controls remain useful as
+> screening-only challenges. Evaluate LOWO by original work and leave-one-corpus-out, plus
+> leave-one-separator-family-out. A
+> domain-adversarial corpus/codec head can help, but the decisive test is whether corpus/recipe
+> identity is hard to decode while defect prediction remains calibrated. The current selector's
+> willingness to abstain out of domain is a feature, not a failure.
 
-### QE — Cantolopera preview grade · status: waiting
+### QE — Cantolopera preview grade · status: answered
 See `calibration/cantolopera_report/` (hyper-detailed, spectrograms). Lossy 30s previews, same
 orchestra/conductor (one corpus). Usable as transfer-direction triage / judge training / reference
 validation? Right `reference_grade` label + weighting vs eventual lossless WAV purchases?
 > **ANSWER:**
-> _(gpt56)_
+> Keep the existing `reference_grade: "lossy_preview"` in
+> `calibration/cantolopera_previews.json`. Pair integrity and reference grade are different axes:
+> an aligned pair may legitimately be `integrity: same_take_paired_target` while still being
+> `reference_grade: lossy_preview`, `threshold_eligible: false`. I would add explicit usage tags
+> such as `transfer_triage` and `weak_supervision`, plus codec/mastering provenance and alignment
+> confidence.
+>
+> Counting: the manifest has 29 arias, 27 attempted pairs, and 14 confirmed orchestral pairs. Count
+> those as **14 covered works but one corpus**. For planning toward 40 independent works, cap their
+> effective contribution around 4–6 (I would book **5**) until measured inter-work error correlation
+> justifies more. Never turn multiple 30-second crops or multiple SENZA variants into additional
+> independent n.
+>
+> Usage:
+>
+> - **Transfer-direction triage: yes, strongly.** They are exactly the real mastered-opera regime
+>   that exposed synthetic-remix mistakes. Report the corpus aggregate and leave-one-work-out
+>   ranking, not 14 independent confidence votes.
+> - **Judge training: yes, weakly.** Use only audited/aligned pairs, robust losses, and label
+>   uncertainty; group the entire Cantolopera production into one split. A practical rule is
+>   per-pair weight 0.25 relative to lossless and cap the entire corpus at two lossless-work
+>   equivalents. They are suitable for large leakage/theft direction, not subtle brightness,
+>   stereo, or threshold calibration.
+> - **Reference-grade validation: no.** Give them zero weight in final threshold fitting and risk
+>   certification. Separate lossy encodes and master differences set a floor precisely where small
+>   defects matter.
+>
+> Purchased lossless WAV pairs get weight 1 after hash/provenance, alignment, subtype, and
+> same-take audit. When a purchased pair supersedes its preview, keep the preview for provenance but
+> do not count or train on both as independent observations. The current values (14 confirmed,
+> null about -10 to -27 dB, all `all_voices_vs_nonvocal`) support this classification; they do not
+> support calling the preview corpus a reference set.
 
-### QF — Additional help · status: waiting
+### QF — Additional help · status: answered
 Concretely, what can you contribute beyond answers — e.g. propose a specific judge model + training
 recipe we can implement now on current data, review `judge_features.py` / the selector, design the
 tuning loop, or spot failure modes? Name deliverables you'll produce here.
 > **ANSWER:**
-> _(gpt56)_
+> I can contribute the following bounded deliverables, in this order:
+>
+> 1. **Source-aware feature v2 patch:** replace the optional-Y-only API with required `(M,Y,D,task)`,
+>    correct absolute band/stereo retention, add frame quantiles/CVaR and cross-signal coherence,
+>    surface feature failures, and add invariance/alignment/channel tests.
+> 2. **Exact-label and judge-dataset builder:** implement local complex ridge `(alpha,beta,R,kappa)`
+>    labels, dual retained-voice targets, conditioning masks, and immutable rows keyed by source
+>    work/corpus/donor, candidate recipe hash, challenge recipe, task, reference grade, label
+>    uncertainty, and split group;
+>    refuse leakage across derivatives and refuse lossy previews in threshold calibration.
+> 3. **Two-model baseline:** grouped-CV histogram-gradient boosting on hand features versus frozen
+>    MERT M/Y/D embeddings with small multi-head fusion. Produce per-head calibration, LOWO,
+>    leave-one-corpus/model-family-out, shortcut probes, and an ablation table—not just aggregate
+>    accuracy.
+> 4. **Bounded tuning panel:** YAML for the two production anchors plus HTDemucs, one selected newer
+>    Roformer, and one MDX-Net challenger; 12–20 preregistered constructions/parameter recipes,
+>    including geometric-median and convex-fusion challengers; successive-halving passage screen;
+>    full-track exact scoring only for 3–5 finalists; cost recorded in every recipe.
+> 5. **Selection-loop wiring:** judge per-defect UCBs into the existing hard gates, explicit OOD and
+>    separation-margin abstention, global-median fallback, and a simulation proving the selector does
+>    not promote a recipe that fails any critical exact label.
+> 6. **Acceptance report:** per-work/per-regime gates, coverage and abstention, exact confidence
+>    intervals, stereo equivariance, directional co-failure, and explicit separation between
+>    `engineering_preview`, `exact_benchmark_qualified`, and any later transfer claim.
+>
+> The best immediate artifact is (1)+(2); training before those contracts are corrected will bake
+> in avoidable shortcuts. The candidate-key bug described in the Step 5 report is already fixed in
+> the current tree at `audio_extract/cli_autonomous.py:453-458` (candidate recipe is now the key), so
+> I would preserve that regression coverage rather than reopen it.
 
 ---
 
