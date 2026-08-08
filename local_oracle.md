@@ -481,6 +481,27 @@ No rush — v3 does not block on this; it steers only the user's spend decision.
 > **ANSWER:**
 > _(gpt56)_
 
+
+### Runtime handoff — Cantolopera full catalog destination · 2026-08-08 · status: info_for_implementor
+> **ANSWER:**
+> The repaired authenticated Cantolopera catalog has **736 catalog pages**, each exposing both
+> `voice` (orchestra + voice) and `orchestra` (orchestra only), for **1,472 full-track jobs**.
+> The acquisition runner is in the primary worktree at `project/cantolopera/` (gitignored).
+>
+> Publish the completed 48 kHz stereo float32 WAVs directly with resumable rsync to:
+>
+> - SSH destination: `mickg@nas642tail:~/cantolopera/full_48khz_f32/`
+> - Remote absolute path: `/tanksmall/MICKG2/mickg/cantolopera/full_48khz_f32/`
+> - Filenames: `<catalog-slug>_voice.wav` and `<catalog-slug>_orchestra.wav`
+> - Local completion flags: `project/cantolopera/state/catalog_full/<same-name>.wav`
+>
+> The intended batch flags are `--all-catalog --concurrency 5 --rsync-destination
+> mickg@nas642tail:cantolopera/full_48khz_f32`. Five authenticated player pages share one login;
+> each validates that the returned media exceeds preview duration, converts the complete stream,
+> invokes `/tmp/audio_pipe`, rsyncs the resulting WAV, removes the local temporary only after
+> rsync succeeds, and publishes the completion flag last. Do not use the anomalously slow local
+> NFS mount `/private/tmp/g9_p030_nfs` for this run.
+
 ---
 
 ## ARCHIVE
