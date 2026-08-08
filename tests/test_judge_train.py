@@ -55,3 +55,23 @@ def test_assemble_and_train_lowo():
     # a fitted model exists for at least the hole head
     assert "event_hole_db_p90" in out["models"]
     assert rep["heads"]["event_hole_db_p90"]["lowo_mae"] is not None
+    # coherent-output metadata is reported (oracle P0): nonnegative flag + calibrated interval
+    assert rep["heads"]["event_hole_db_p90"]["nonnegative"] is True
+    assert rep["heads"]["retained_voice_db_p90"]["nonnegative"] is False
+    assert rep["heads"]["event_hole_db_p90"]["calibrated_p90_abs_error"] is not None
+
+
+def test_project_coherent_enforces_physical_constraints():
+    # six independent regressors can emit negative holes / hole_max < hole_p90; the projection
+    # must repair that before the value is ever used (oracle P0 coherence fix).
+    raw = {
+        "event_hole_db_p90":     np.array([-3.0, 5.0]),
+        "event_hole_db_max":     np.array([-1.0, 2.0]),   # row 2: 2 < p90 5 -> must be lifted
+        "alpha_error_p90":       np.array([-0.2, 0.4]),
+        "retained_voice_db_p90": np.array([-8.0, 3.0]),   # dB ratio: free, must stay unchanged
+    }
+    proj = jt.project_coherent(raw)
+    assert np.all(proj["event_hole_db_p90"] >= 0.0)
+    assert np.all(proj["alpha_error_p90"] >= 0.0)
+    assert np.all(proj["event_hole_db_max"] >= proj["event_hole_db_p90"])
+    assert np.allclose(proj["retained_voice_db_p90"], raw["retained_voice_db_p90"])

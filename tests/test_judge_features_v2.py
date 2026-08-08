@@ -43,17 +43,23 @@ def test_absolute_band_not_fraction_regression():
     assert abs(fq["low_band_abs_reduction_db"] - fq["broadband_reduction_db"]) < 3.0
 
 
-def test_event_deficit_uses_quantiles_not_mean():
-    # one catastrophic 200ms hole must show in max/cvar90 even if p50 is ~0
-    orch, vocal, mix = _mix(4.0)
-    n = len(orch)
-    holed = orch.copy()
-    s = n // 2
-    holed[s:s + int(0.2 * SR)] *= 0.05            # deep brief gouge
-    f, _ = jf2.source_aware_features(mix, holed, SR, removed=mix - holed)
-    d = f["event_band_deficit_db"]
-    assert d["max"] > 6.0                          # the worst frame is caught
-    assert d["max"] >= d["p90"] >= d["p50"]        # distribution ordered
+def test_accomp_continuity_deficit_catches_gouge_not_removal():
+    # oracle P0: the feature must flag an accompaniment DIP co-located with voice activity in
+    # Y itself — but must NOT flag correct voice removal. The old (M − Y) form reported the
+    # removed-voice energy as a "hole"; this rewrite proves the fix on both sides.
+    orch = fx.synth_orchestra(SR, 4.0)
+    vocal, _ = fx.synth_vocal(SR, 4.0, phrases=[(1.0, 3.0)])    # voice active 1–3 s
+    n = min(len(orch), len(vocal)); orch, vocal = orch[:n], vocal[:n]
+    mix = orch + vocal
+    clean = orch.copy()                                         # perfect removal, no hole
+    gouged = orch.copy()
+    a, b = int(1.5 * SR), int(1.9 * SR)                         # gouge DURING the voice phrase
+    gouged[a:b] *= 0.05
+    dc = jf2.source_aware_features(mix, clean, SR, removed=mix - clean)[0]["accomp_continuity_deficit_db"]
+    dg = jf2.source_aware_features(mix, gouged, SR, removed=mix - gouged)[0]["accomp_continuity_deficit_db"]
+    assert dg["max"] > dc["max"] + 6.0            # the co-located gouge is caught
+    assert dc["max"] < 4.0                        # correct voice removal is NOT read as a hole
+    assert dg["max"] >= dg["p90"] >= dg["p50"]    # distribution ordered
 
 
 def test_clean_confounder_vs_residual_voice():
@@ -110,3 +116,24 @@ def test_removed_defaults_to_m_minus_y():
     f_auto, _ = jf2.source_aware_features(mix, orch, SR)                    # D defaults to M-Y
     f_expl, _ = jf2.source_aware_features(mix, orch, SR, removed=mix - orch)
     assert jf2.feature_vector(f_auto).shape == jf2.feature_vector(f_expl).shape
+
+
+def test_task_and_availability_enter_the_vector():
+    # oracle P0 #1: task encoding + availability bits must be IN feature_vector, not merely
+    # recorded — else the model can't tell "remove all voices" from "retain chorus", nor a
+    # genuine 0.0 from an unavailable input.
+    orch, _, mix = _mix()
+    names = jf2.feature_names()
+    idx = {n: i for i, n in enumerate(names)}
+    # different task -> different vector (one-hot slots differ)
+    fa, ava = jf2.source_aware_features(mix, orch, SR, task="all_vocals")
+    fs, avs = jf2.source_aware_features(mix, orch, SR, task="soloist_vs_rest")
+    assert not np.array_equal(jf2.feature_vector(fa, ava), jf2.feature_vector(fs, avs))
+    # unknown task -> all task one-hot bits zero (a valid, distinct encoding)
+    fu, avu = jf2.source_aware_features(mix, orch, SR, task="not_a_real_task")
+    vu = jf2.feature_vector(fu, avu)
+    assert sum(vu[i] for n, i in idx.items() if n.startswith("task__")) == 0.0
+    # mono input -> stereo availability bit is 0.0, distinguishable from a genuine feature 0
+    mono, mono_y = mix.mean(axis=1, keepdims=True), orch.mean(axis=1, keepdims=True)
+    fm, avm = jf2.source_aware_features(mono, mono_y, SR)
+    assert jf2.feature_vector(fm, avm)[idx["avail__ms_width_change_db"]] == 0.0

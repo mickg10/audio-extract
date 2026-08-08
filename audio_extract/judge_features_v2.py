@@ -42,9 +42,23 @@ SCALAR_FEATURES = (
     "ensemble_disagreement",           # RMS spread across member vocals (UNCERTAINTY, not quality)
 )
 DIST_FEATURES = (
-    "event_band_deficit_db",           # Y accompaniment drop during D-active frames vs flanks
+    "accomp_continuity_deficit_db",    # Y accompaniment DIP during D-active frames vs Y's own
+                                       # inactive-frame baseline (a true gouge is a discontinuity
+                                       # in Y — NOT the expected M>Y gap from removing the voice)
     "hf_musical_noise_excess_db",      # Y HF isolated-peak energy above M's HF (per frame)
     "spectral_flux_excess",            # flux(Y) − flux(M), rectified, per frame
+)
+
+# Frozen task vocabulary — one-hot encoded INTO the model input so the judge can tell
+# "remove all voices" from "remove one soloist, retain chorus" (oracle P0 #1). Unknown → all-zero.
+TASK_VOCAB = ("soloist_vs_rest", "all_vocals", "soloist_retain_chorus", "duet_one_role")
+
+# Features whose `available` flag can be False. An availability bit is appended to the
+# model input so a genuine 0.0 is distinguishable from an unavailable stereo/pYIN/ensemble input.
+MASKABLE_FEATURES = (
+    "ms_width_change_db", "interchannel_coherence_change",
+    "voiced_prob_on_Y", "residual_voice_alignment", "ensemble_disagreement",
+    "accomp_continuity_deficit_db", "hf_musical_noise_excess_db", "spectral_flux_excess",
 )
 
 
@@ -155,14 +169,24 @@ def source_aware_features(mixture: np.ndarray, candidate: np.ndarray, sr: int, *
         avail["ensemble_disagreement"] = False
 
     # --- distribution features (frame quantiles/CVaR, NOT means) ----------------
-    # event band deficit: per-frame Y accompaniment drop where D is active
+    # accompaniment-continuity deficit: does Y's accompaniment band DIP during D-active
+    # frames RELATIVE TO Y's own level when the removed source is INACTIVE? A genuine hole is
+    # a discontinuity in Y itself; the old (M − Y) form flagged correct voice removal as a hole
+    # (for a perfect candidate M is louder than the accompaniment *because* the voice was removed).
     dfr = _framewise_band_sum_db(D, sr, 250, 6000)
     yfr = _framewise_band_sum_db(Y, sr, 250, 6000)
-    mfr = _framewise_band_sum_db(M, sr, 250, 6000)
-    T = min(len(dfr), len(yfr), len(mfr))
-    d_hot = dfr[:T] > (np.percentile(dfr[:T], 60) if T else 0)
-    deficit = np.clip(mfr[:T] - yfr[:T], 0, None)[d_hot] if T else np.array([])
-    feats["event_band_deficit_db"] = _dist(deficit); avail["event_band_deficit_db"] = T > 0
+    T = min(len(dfr), len(yfr))
+    if T:
+        d_hot = dfr[:T] > np.percentile(dfr[:T], 60)
+        if d_hot.any() and (~d_hot).any():
+            baseline = float(np.median(yfr[:T][~d_hot]))        # Y accompaniment when singer inactive
+            deficit = np.clip(baseline - yfr[:T][d_hot], 0, None)  # only DIPS below that baseline
+        else:
+            deficit = np.array([])
+    else:
+        deficit = np.array([])
+    feats["accomp_continuity_deficit_db"] = _dist(deficit)
+    avail["accomp_continuity_deficit_db"] = deficit.size > 0
 
     # HF musical-noise excess (Y HF above M HF, per frame)
     yhf = _framewise_band_sum_db(Y, sr, 6000, hi_hi); mhf = _framewise_band_sum_db(M, sr, 6000, hi_hi)
@@ -183,12 +207,20 @@ def source_aware_features(mixture: np.ndarray, candidate: np.ndarray, sr: int, *
     return feats, avail
 
 
-def feature_vector(feats: dict) -> np.ndarray:
-    """Flatten to the ordered numeric contract (scalars + dist{p50,p90,max,cvar90})."""
+def feature_vector(feats: dict, avail: dict | None = None) -> np.ndarray:
+    """Flatten to the ordered numeric contract: scalars + dist{p50,p90,max,cvar90}
+    + frozen task one-hot + availability bits. ``avail`` (the second return of
+    ``source_aware_features``) SHOULD be passed so a missing optional input is flagged
+    rather than looking like a genuine 0.0; when omitted, all maskable inputs are
+    assumed available (back-compat)."""
     out = [float(feats.get(k, 0.0)) for k in SCALAR_FEATURES]
     for k in DIST_FEATURES:
         d = feats.get(k, {})
         out += [float(d.get(q, 0.0)) for q in ("p50", "p90", "max", "cvar90")]
+    task = feats.get("_task", "soloist_vs_rest")
+    out += [1.0 if task == t else 0.0 for t in TASK_VOCAB]          # frozen task one-hot
+    av = avail or {}
+    out += [1.0 if av.get(k, True) else 0.0 for k in MASKABLE_FEATURES]  # availability bits
     return np.asarray(out, dtype=np.float64)
 
 
@@ -196,4 +228,6 @@ def feature_names() -> list[str]:
     names = list(SCALAR_FEATURES)
     for k in DIST_FEATURES:
         names += [f"{k}__{q}" for q in ("p50", "p90", "max", "cvar90")]
+    names += [f"task__{t}" for t in TASK_VOCAB]
+    names += [f"avail__{k}" for k in MASKABLE_FEATURES]
     return names

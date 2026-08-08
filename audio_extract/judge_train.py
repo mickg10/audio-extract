@@ -31,6 +31,34 @@ TARGETS = {
 }
 
 
+# Heads that are physically nonnegative (a hole depth, an artifact ratio, an |α−1|, a
+# retained-voice coefficient). ``retained_voice_db_p90`` is a dB ratio and may be negative.
+NONNEG_HEADS = frozenset({
+    "event_hole_db_p90", "event_hole_db_max",
+    "retained_voice_coef_p90", "artifact_ratio_p90", "alpha_error_p90",
+})
+
+
+def project_coherent(pred: dict) -> dict:
+    """Project a {head: value} prediction (scalars or arrays) onto the physically feasible
+    set, so six independently-fit regressors emit a coherent measurement (oracle P0):
+    nonnegative heads clipped at 0; ``event_hole_db_max`` never below ``event_hole_db_p90``."""
+    out = dict(pred)
+    for h in NONNEG_HEADS:
+        if h in out:
+            out[h] = np.clip(out[h], 0.0, None)
+    if "event_hole_db_max" in out and "event_hole_db_p90" in out:
+        out["event_hole_db_max"] = np.maximum(out["event_hole_db_max"], out["event_hole_db_p90"])
+    return out
+
+
+def predict_coherent(models: dict, X: np.ndarray) -> dict:
+    """Inference path: predict every fitted head and project onto the feasible set.
+    The selection harness MUST use this, never raw per-head ``.predict`` (which can emit
+    negative holes / ``hole_max < hole_p90``)."""
+    return project_coherent({h: m.predict(X) for h, m in models.items()})
+
+
 def _q(vals: list[float], pct: float) -> float:
     a = np.asarray([x for x in vals if x is not None and np.isfinite(x)], dtype=np.float64)
     return float(np.percentile(a, pct)) if a.size else 0.0
@@ -61,48 +89,67 @@ def build_example(mixture, accompaniment, vocal, candidate, sr, *, task="soloist
     M, A, V, Y = (dsp.as2d(x) for x in (mixture, accompaniment, vocal, candidate))
     n = min(len(M), len(A), len(V), len(Y))
     M, A, V, Y = M[:n], A[:n], V[:n], Y[:n]
-    feats, _ = jf2.source_aware_features(M, Y, sr, removed=M - Y, task=task)
-    x = jf2.feature_vector(feats)
+    feats, avail = jf2.source_aware_features(M, Y, sr, removed=M - Y, task=task)
+    x = jf2.feature_vector(feats, avail)   # task one-hot + availability bits now IN the vector
     tile = max(256, int(tile_seconds * sr))
     labels = jl.local_source_coordinate_labels(Y, A, V, tile_frames=tile, hop_frames=tile // 2)
     return x, label_targets(labels)
 
 
 def train_baseline(X: np.ndarray, targets: dict[str, np.ndarray], groups: np.ndarray) -> dict:
-    """Per-head HistGradientBoosting with LeaveOneGroupOut over works. Returns fitted
-    models + per-head LOWO mean-absolute-error (the honest generalization number)."""
+    """Per-head HistGradientBoosting with LeaveOneGroupOut over works. Predictions are
+    **projected coherently** each fold (nonnegative heads, ``hole_max ≥ hole_p90``) BEFORE
+    scoring, so the reported LOWO error is the error of the deployable output. Returns fitted
+    models + per-head LOWO MAE + a calibrated p90 absolute-error interval (the honest
+    generalization numbers)."""
     from sklearn.ensemble import HistGradientBoostingRegressor
     from sklearn.model_selection import LeaveOneGroupOut
 
-    logo = LeaveOneGroupOut()
-    n_groups = len(np.unique(groups))
-    report: dict = {"n_examples": len(X), "n_groups": n_groups, "heads": {}}
-    models: dict = {}
-    for head, y in targets.items():
-        y = np.asarray(y, dtype=np.float64)
-        # LOWO error
-        errs, baseline_errs = [], []
-        if n_groups >= 2:
-            for tr, te in logo.split(X, y, groups):
-                if len(np.unique(y[tr])) < 2:
-                    continue
-                m = HistGradientBoostingRegressor(max_depth=3, max_iter=150,
-                                                  learning_rate=0.08, l2_regularization=1.0)
-                m.fit(X[tr], y[tr])
-                pred = m.predict(X[te])
-                errs.append(float(np.mean(np.abs(pred - y[te]))))
-                baseline_errs.append(float(np.mean(np.abs(np.median(y[tr]) - y[te]))))
-        full = HistGradientBoostingRegressor(max_depth=3, max_iter=150,
+    def _mk():
+        return HistGradientBoostingRegressor(max_depth=3, max_iter=150,
                                              learning_rate=0.08, l2_regularization=1.0)
-        if len(np.unique(y)) >= 2:
-            full.fit(X, y)
-            models[head] = full
-        lowo = float(np.mean(errs)) if errs else None
-        base = float(np.mean(baseline_errs)) if baseline_errs else None
-        report["heads"][head] = {
+
+    heads = list(targets)
+    Y = {h: np.asarray(targets[h], dtype=np.float64) for h in heads}
+    groups = np.asarray(groups)
+    n_groups = len(np.unique(groups))
+    logo = LeaveOneGroupOut()
+
+    # Accumulate PROJECTED per-row absolute errors across LOWO folds (all heads jointly,
+    # so the hole_max ≥ hole_p90 projection sees both heads' predictions on the same rows).
+    abs_err: dict[str, list] = {h: [] for h in heads}
+    base_err: dict[str, list] = {h: [] for h in heads}
+    if n_groups >= 2:
+        for tr, te in logo.split(X, groups=groups):
+            raw: dict = {}
+            for h in heads:
+                if len(np.unique(Y[h][tr])) < 2:
+                    continue
+                m = _mk(); m.fit(X[tr], Y[h][tr]); raw[h] = m.predict(X[te])
+            proj = project_coherent(raw)
+            for h in heads:
+                if h in proj:
+                    abs_err[h].append(np.abs(proj[h] - Y[h][te]))
+                    base_err[h].append(np.abs(np.median(Y[h][tr]) - Y[h][te]))
+
+    report: dict = {"n_examples": int(len(X)), "n_groups": int(n_groups), "heads": {}}
+    for h in heads:
+        ae = np.concatenate(abs_err[h]) if abs_err[h] else None
+        be = np.concatenate(base_err[h]) if base_err[h] else None
+        lowo = float(np.mean(ae)) if ae is not None else None
+        base = float(np.mean(be)) if be is not None else None
+        report["heads"][h] = {
             "lowo_mae": lowo, "median_baseline_mae": base,
             "beats_baseline": (lowo is not None and base is not None and lowo < base),
-            "target_mean": float(np.mean(y)), "target_std": float(np.std(y))}
+            "calibrated_p90_abs_error": (float(np.percentile(ae, 90)) if ae is not None else None),
+            "target_mean": float(np.mean(Y[h])), "target_std": float(np.std(Y[h])),
+            "nonnegative": h in NONNEG_HEADS}
+
+    # Full-data models per head (inference MUST go through predict_coherent).
+    models: dict = {}
+    for h in heads:
+        if len(np.unique(Y[h])) >= 2:
+            m = _mk(); m.fit(X, Y[h]); models[h] = m
     return {"report": report, "models": models}
 
 
