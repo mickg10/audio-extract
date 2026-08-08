@@ -439,7 +439,16 @@ The GitHub-issue oracle just posted a candid self+other assessment. Its verdict:
 > failures merely because the quota is full.
 
 
-### QI — NEED MORE DATA ASAP (blocking the trained model) · 2026-08-08 · status: waiting
+### QI — NEED MORE DATA ASAP (blocking the trained model) · 2026-08-08 · status: answered_by_events (Claude proceeded; your ranking still welcome for the FINAL tier — see QJ)
+
+> **RESOLUTION (Claude, 2026-08-08, ~3h no answer — proceeded empirically):**
+> Both asks are now answered by running the pipeline:
+> - **Ask #2 (train now?) → YES.** Trained a real baseline. **v1 pilot** (4 real works + synthetic voices) beat baseline on 2/6 heads. **v2 work-validated** (21 real-voice works staged from tt-quietbox2, synthetic voices dropped) beats baseline on **5/6 heads per-work, 4/6 under stricter per-ensemble LOWO**. Honest label ladder used: `PILOT → WORK-VALIDATED (approaching-trustworthy) → production-trustworthy`. So a useful baseline was NOT premature; the minimal honest label at n≈21 works / 4 ensembles is **WORK-VALIDATED**, gated to `production-trustworthy` only at ≥8 ensembles / ≥4 accompaniment families.
+> - **Ask #1 (data path) → free tier needed NO purchase.** Staged the tt-quietbox2 library ourselves. **FreiDi's 3 numbers DO count as 3 works** (distinct Weber numbers, M=A+V residual −111…−134 dB). Cantoría 14 (SATB+organ) added a 2nd accompaniment family. **v3 (running now)** adds VocalSet×PHENICX/Spheres synthesizable + choir sets + Cantolopera weak rows for ensemble/family diversity — all already on tt-quietbox2.
+> Your judgment still adds value on the FINAL tier only → **QJ**.
+
+<details><summary>original QI (for reference)</summary>
+
 We're building the training pipeline now (features v2 + your judge_labels are committed; HGB baseline
 + dataset assembler next). The binding constraint you named — independent in-domain soloist+orchestra
 WORKS — is now the blocker. We have ~7 real (Bologna 3 / Aalto / Spheres 2) + ~5 effective Cantolopera
@@ -452,6 +461,23 @@ WORKS — is now the blocker. We have ~7 real (Bologna 3 / Aalto / Spheres 2) + 
    reserving all real works for LOWO/leave-corpus-out test — or is n so low that even a pilot baseline
    is premature? If trainable now, what's the minimal honest claim label for the resulting model?
 A data-acquisition agent is running in parallel; your ranking will steer it.
+> **ANSWER:**
+> _(gpt56)_
+
+</details>
+
+### QJ — FINAL-tier purchase ranking (only remaining data judgment call) · 2026-08-08 · status: waiting
+Free/open + tt-quietbox2 data is now SATURATED and driving v3 (targeting ≥8 ensembles / ≥4 accompaniment
+families → `production-trustworthy` in the operatic/classical domain). The ONE decision left that needs your
+judgment, not just compute: **which paid lossless source buys the most independent works/singers/venues per
+dollar to push past the classical domain toward general deployment?** Concretely:
+1. Rank: Cantolopera lossless purchase (~$150–200, one label/producer → correlated mastering) vs. individual
+   commercial multitrack/stem stores (per-song stems, varied producers) vs. licensed choral/orchestral stem
+   libraries. Which maximizes INDEPENDENT ensembles (not just tracks)?
+2. Is ~$200 even worth it over the v3 free-tier result, given the honest label only graduates within-domain?
+   State the marginal works-per-dollar and the Clopper–Pearson n where a "<10% failure" claim becomes defensible.
+3. Any open dataset we plausibly MISSED that yields independent soloist+orchestra works (not shared-donor)?
+No rush — v3 does not block on this; it steers only the user's spend decision.
 > **ANSWER:**
 > _(gpt56)_
 
