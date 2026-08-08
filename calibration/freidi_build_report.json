@@ -1,0 +1,125 @@
+{
+  "06": {
+    "work_id": "freidi_freischuetz_no06",
+    "orchestra_stems": [
+      "vn1",
+      "vn2",
+      "va",
+      "vc",
+      "db",
+      "fl",
+      "cl",
+      "bn",
+      "horns"
+    ],
+    "n_voices": 2,
+    "voice_parts": [
+      "s1",
+      "s3"
+    ],
+    "sr": 48000,
+    "dur_s": 276.5,
+    "n_frames": 13272339,
+    "hierarchy_resid": {
+      "strings_resid_db": -7.84,
+      "singers_vs_sum_resid_db": -9.29
+    },
+    "voice_to_orch_level_db": 0.04,
+    "voice_orch_pearson_r": -0.009,
+    "ab_probe": {
+      "ab_vs_voice_pearson_r": 0.112,
+      "ab_vs_orch_pearson_r": 0.09,
+      "ab_to_orch_level_db": -0.79
+    },
+    "peak_mix": 0.9272,
+    "store_scale": 1.0,
+    "built": {
+      "mix": "/home/ttuser/datasets/freidi/built/06/mix.flac",
+      "accomp": "/home/ttuser/datasets/freidi/built/06/accomp.flac",
+      "voice": "/home/ttuser/datasets/freidi/built/06/voice.flac"
+    }
+  },
+  "08": {
+    "work_id": "freidi_freischuetz_no08",
+    "orchestra_stems": [
+      "vn1",
+      "vn2",
+      "va",
+      "vc",
+      "db",
+      "fl",
+      "ob",
+      "cl",
+      "bn",
+      "horns"
+    ],
+    "n_voices": 1,
+    "voice_parts": [
+      "s3"
+    ],
+    "sr": 48000,
+    "dur_s": 510.3,
+    "n_frames": 24494080,
+    "hierarchy_resid": {
+      "strings_resid_db": -8.33,
+      "woodwind_resid_db": -1.55,
+      "singers_vs_sum_resid_db": -10.33
+    },
+    "voice_to_orch_level_db": 0.58,
+    "voice_orch_pearson_r": -0.003,
+    "ab_probe": {
+      "ab_vs_voice_pearson_r": 0.189,
+      "ab_vs_orch_pearson_r": 0.054,
+      "ab_to_orch_level_db": 0.56
+    },
+    "peak_mix": 1.4565,
+    "store_scale": 0.6859,
+    "built": {
+      "mix": "/home/ttuser/datasets/freidi/built/08/mix.flac",
+      "accomp": "/home/ttuser/datasets/freidi/built/08/accomp.flac",
+      "voice": "/home/ttuser/datasets/freidi/built/08/voice.flac"
+    }
+  },
+  "09": {
+    "work_id": "freidi_freischuetz_no09",
+    "orchestra_stems": [
+      "vn1",
+      "vn2",
+      "va",
+      "vc",
+      "db",
+      "fl",
+      "cl",
+      "bn",
+      "horns"
+    ],
+    "n_voices": 3,
+    "voice_parts": [
+      "s1",
+      "s2",
+      "s3"
+    ],
+    "sr": 48000,
+    "dur_s": 427.7,
+    "n_frames": 20529152,
+    "hierarchy_resid": {
+      "strings_resid_db": -8.08,
+      "woodwind_resid_db": -1.86,
+      "singers_vs_sum_resid_db": -11.87
+    },
+    "voice_to_orch_level_db": 4.75,
+    "voice_orch_pearson_r": 0.012,
+    "ab_probe": {
+      "ab_vs_voice_pearson_r": 0.099,
+      "ab_vs_orch_pearson_r": 0.043,
+      "ab_to_orch_level_db": 1.4
+    },
+    "peak_mix": 0.9776,
+    "store_scale": 1.0,
+    "built": {
+      "mix": "/home/ttuser/datasets/freidi/built/09/mix.flac",
+      "accomp": "/home/ttuser/datasets/freidi/built/09/accomp.flac",
+      "voice": "/home/ttuser/datasets/freidi/built/09/voice.flac"
+    }
+  }
+}
