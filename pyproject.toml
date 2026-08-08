@@ -29,3 +29,6 @@ packages = ["audio_extract"]
 
 [tool.uv]
 # keep resolution reproducible; uv writes uv.lock
+
+[tool.pytest.ini_options]
+norecursedirs = ["project", "calibration", ".venv"]
