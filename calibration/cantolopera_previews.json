@@ -1,0 +1,551 @@
+{
+  "schema": "cantolopera-previews/v1",
+  "reference_grade": "lossy_preview",
+  "note": "30s streaming previews, full-range aligned; transfer-DIRECTION grade per oracle (not reference-grade thresholds \u2014 upgrade with WAV purchases).",
+  "sample_rate": 44100,
+  "n_arias": 29,
+  "n_pairs": 27,
+  "n_same_take_confirmed": 14,
+  "records": [
+    {
+      "work": "aida-ritorna-vincitor-giuseppe-verdi",
+      "task": "all_voices_vs_nonvocal",
+      "removed": "orchestra",
+      "coverage": {
+        "voice": "soprano",
+        "orchestration": "dense",
+        "coloratura": false
+      },
+      "reference_grade": "lossy_preview",
+      "aligned_lag_samples": 2635,
+      "xcorr_peak": 0.913,
+      "null_residual_db": -12.43,
+      "integrity_audit": "same_take_paired_target",
+      "same_take_confirmed": true,
+      "files": {
+        "full": "aida-ritorna-vincitor-giuseppe-verdi_voice_preview.wav",
+        "orchestra": "aida-ritorna-vincitor-giuseppe-verdi_orchestra_preview.wav"
+      }
+    },
+    {
+      "work": "aida-se-quel-guerrier-io-fossi-celeste-aida-giuseppe-verdi",
+      "task": "all_voices_vs_nonvocal",
+      "removed": "orchestra",
+      "coverage": {
+        "voice": "tenor",
+        "orchestration": "dense",
+        "coloratura": false
+      },
+      "reference_grade": "lossy_preview",
+      "aligned_lag_samples": 475,
+      "xcorr_peak": 0.594,
+      "null_residual_db": -0.06,
+      "integrity_audit": "matched_program",
+      "same_take_confirmed": false,
+      "files": {
+        "full": "aida-se-quel-guerrier-io-fossi-celeste-aida-giuseppe-verdi_voice_preview.wav",
+        "orchestra": "aida-se-quel-guerrier-io-fossi-celeste-aida-giuseppe-verdi_orchestra_preview.wav"
+      }
+    },
+    {
+      "work": "carmen-lamour-est-un-oiseau-rebelle-georges-bizet",
+      "task": "all_voices_vs_nonvocal",
+      "removed": "orchestra",
+      "coverage": {
+        "voice": "mezzo",
+        "orchestration": "dense",
+        "coloratura": false
+      },
+      "reference_grade": "lossy_preview",
+      "aligned_lag_samples": 875,
+      "xcorr_peak": 0.216,
+      "null_residual_db": 0.8,
+      "integrity_audit": "matched_program",
+      "same_take_confirmed": false,
+      "files": {
+        "full": "carmen-lamour-est-un-oiseau-rebelle-georges-bizet_voice_preview.wav",
+        "orchestra": "carmen-lamour-est-un-oiseau-rebelle-georges-bizet_orchestra_preview.wav"
+      }
+    },
+    {
+      "work": "don-giovanni-crudele-ah-no-mio-bene-non-mi-dir-bellidol-mio-wolfgang-amadeus-mozart",
+      "task": "all_voices_vs_nonvocal",
+      "removed": "orchestra",
+      "coverage": {
+        "voice": "soprano",
+        "orchestration": "transparent",
+        "coloratura": false
+      },
+      "reference_grade": "lossy_preview",
+      "aligned_lag_samples": -2155,
+      "xcorr_peak": 0.583,
+      "null_residual_db": -2.08,
+      "integrity_audit": "matched_program",
+      "same_take_confirmed": false,
+      "files": {
+        "full": "don-giovanni-crudele-ah-no-mio-bene-non-mi-dir-bellidol-mio-wolfgang-amadeus-mozart_voice_preview.wav",
+        "orchestra": "don-giovanni-crudele-ah-no-mio-bene-non-mi-dir-bellidol-mio-wolfgang-amadeus-mozart_orchestra_preview.wav"
+      }
+    },
+    {
+      "work": "don-giovanni-mi-tradi-quellalma-ingrata-wolfgang-amadeus-mozart",
+      "task": "all_voices_vs_nonvocal",
+      "removed": "orchestra",
+      "coverage": {
+        "voice": "soprano",
+        "orchestration": "transparent",
+        "coloratura": false
+      },
+      "reference_grade": "lossy_preview",
+      "aligned_lag_samples": 2135,
+      "xcorr_peak": 0.343,
+      "null_residual_db": -9.29,
+      "integrity_audit": "matched_program",
+      "same_take_confirmed": false,
+      "files": {
+        "full": "don-giovanni-mi-tradi-quellalma-ingrata-wolfgang-amadeus-mozart_voice_preview.wav",
+        "orchestra": "don-giovanni-mi-tradi-quellalma-ingrata-wolfgang-amadeus-mozart_orchestra_preview.wav"
+      }
+    },
+    {
+      "work": "gianni-schicchi-o-mio-babbino-caro-giacomo-puccini",
+      "task": "all_voices_vs_nonvocal",
+      "removed": "orchestra",
+      "coverage": {
+        "voice": "soprano",
+        "orchestration": "dense",
+        "coloratura": false
+      },
+      "reference_grade": "lossy_preview",
+      "aligned_lag_samples": -375,
+      "xcorr_peak": 0.443,
+      "null_residual_db": -10.64,
+      "integrity_audit": "matched_program",
+      "same_take_confirmed": false,
+      "files": {
+        "full": "gianni-schicchi-o-mio-babbino-caro-giacomo-puccini_voice_preview.wav",
+        "orchestra": "gianni-schicchi-o-mio-babbino-caro-giacomo-puccini_orchestra_preview.wav"
+      }
+    },
+    {
+      "work": "il-barbiere-di-siviglia-la-calunnia-gioachino-rossini",
+      "task": "all_voices_vs_nonvocal",
+      "removed": "orchestra",
+      "coverage": {
+        "voice": "bass",
+        "orchestration": "transparent",
+        "coloratura": false
+      },
+      "reference_grade": "lossy_preview",
+      "aligned_lag_samples": 6195,
+      "xcorr_peak": 0.55,
+      "null_residual_db": 5.57,
+      "integrity_audit": "matched_program",
+      "same_take_confirmed": false,
+      "files": {
+        "full": "il-barbiere-di-siviglia-la-calunnia-gioachino-rossini_voice_preview.wav",
+        "orchestra": "il-barbiere-di-siviglia-la-calunnia-gioachino-rossini_orchestra_preview.wav"
+      }
+    },
+    {
+      "work": "il-barbiere-di-siviglia-largo-al-factotum-gioachino-rossini",
+      "task": "all_voices_vs_nonvocal",
+      "removed": "orchestra",
+      "coverage": {
+        "voice": "baritone",
+        "orchestration": "transparent",
+        "coloratura": false
+      },
+      "reference_grade": "lossy_preview",
+      "aligned_lag_samples": -840,
+      "xcorr_peak": 0.921,
+      "null_residual_db": -18.75,
+      "integrity_audit": "same_take_paired_target",
+      "same_take_confirmed": true,
+      "files": {
+        "full": "il-barbiere-di-siviglia-largo-al-factotum-gioachino-rossini_voice_preview.wav",
+        "orchestra": "il-barbiere-di-siviglia-largo-al-factotum-gioachino-rossini_orchestra_preview.wav"
+      }
+    },
+    {
+      "work": "il-barbiere-di-siviglia-una-voce-poco-fa-gioachino-rossini",
+      "task": "all_voices_vs_nonvocal",
+      "removed": "orchestra",
+      "coverage": {
+        "voice": "mezzo",
+        "orchestration": "transparent",
+        "coloratura": true
+      },
+      "reference_grade": "lossy_preview",
+      "aligned_lag_samples": 760,
+      "xcorr_peak": 0.943,
+      "null_residual_db": -9.99,
+      "integrity_audit": "matched_program",
+      "same_take_confirmed": true,
+      "files": {
+        "full": "il-barbiere-di-siviglia-una-voce-poco-fa-gioachino-rossini_voice_preview.wav",
+        "orchestra": "il-barbiere-di-siviglia-una-voce-poco-fa-gioachino-rossini_orchestra_preview.wav"
+      }
+    },
+    {
+      "work": "il-flauto-magico-die-zauberflote-der-holle-rache-kocht-in-meinem-herzen-wolfgang-amadeus-mozart",
+      "task": "all_voices_vs_nonvocal",
+      "removed": "orchestra",
+      "coverage": {
+        "voice": "soprano",
+        "orchestration": "transparent",
+        "coloratura": true
+      },
+      "reference_grade": "lossy_preview",
+      "aligned_lag_samples": 345,
+      "xcorr_peak": 0.674,
+      "null_residual_db": -12.85,
+      "integrity_audit": "same_take_paired_target",
+      "same_take_confirmed": true,
+      "files": {
+        "full": "il-flauto-magico-die-zauberflote-der-holle-rache-kocht-in-meinem-herzen-wolfgang-amadeus-mozart_voice_preview.wav",
+        "orchestra": "il-flauto-magico-die-zauberflote-der-holle-rache-kocht-in-meinem-herzen-wolfgang-amadeus-mozart_orchestra_preview.wav"
+      }
+    },
+    {
+      "work": "il-trovatore-tutto-e-deserto-il-balen-del-suo-sorriso-giuseppe-verdi",
+      "task": "all_voices_vs_nonvocal",
+      "removed": "orchestra",
+      "coverage": {
+        "voice": "baritone",
+        "orchestration": "dense",
+        "coloratura": false
+      },
+      "reference_grade": "lossy_preview",
+      "aligned_lag_samples": 2325,
+      "xcorr_peak": 0.323,
+      "null_residual_db": -12.47,
+      "integrity_audit": "same_take_paired_target",
+      "same_take_confirmed": true,
+      "files": {
+        "full": "il-trovatore-tutto-e-deserto-il-balen-del-suo-sorriso-giuseppe-verdi_voice_preview.wav",
+        "orchestra": "il-trovatore-tutto-e-deserto-il-balen-del-suo-sorriso-giuseppe-verdi_orchestra_preview.wav"
+      }
+    },
+    {
+      "work": "la-boheme-che-gelida-manina-giacomo-puccini",
+      "task": "all_voices_vs_nonvocal",
+      "removed": "orchestra",
+      "coverage": {
+        "voice": "tenor",
+        "orchestration": "dense",
+        "coloratura": false
+      },
+      "reference_grade": "lossy_preview",
+      "aligned_lag_samples": -1375,
+      "xcorr_peak": 0.343,
+      "null_residual_db": -8.62,
+      "integrity_audit": "matched_program",
+      "same_take_confirmed": false,
+      "files": {
+        "full": "la-boheme-che-gelida-manina-giacomo-puccini_voice_preview.wav",
+        "orchestra": "la-boheme-che-gelida-manina-giacomo-puccini_orchestra_preview.wav"
+      }
+    },
+    {
+      "work": "la-boheme-si-mi-chiamano-mimi-giacomo-puccini",
+      "task": "all_voices_vs_nonvocal",
+      "removed": "orchestra",
+      "coverage": {
+        "voice": "soprano",
+        "orchestration": "dense",
+        "coloratura": false
+      },
+      "reference_grade": "lossy_preview",
+      "aligned_lag_samples": -980,
+      "xcorr_peak": 0.326,
+      "null_residual_db": -10.63,
+      "integrity_audit": "matched_program",
+      "same_take_confirmed": false,
+      "files": {
+        "full": "la-boheme-si-mi-chiamano-mimi-giacomo-puccini_voice_preview.wav",
+        "orchestra": "la-boheme-si-mi-chiamano-mimi-giacomo-puccini_orchestra_preview.wav"
+      }
+    },
+    {
+      "work": "la-boheme-vecchia-zimarra-giacomo-puccini",
+      "task": "all_voices_vs_nonvocal",
+      "removed": "orchestra",
+      "coverage": {
+        "voice": "bass",
+        "orchestration": "dense",
+        "coloratura": false
+      },
+      "reference_grade": "lossy_preview",
+      "aligned_lag_samples": -4825,
+      "xcorr_peak": 0.846,
+      "null_residual_db": -6.25,
+      "integrity_audit": "matched_program",
+      "same_take_confirmed": false,
+      "files": {
+        "full": "la-boheme-vecchia-zimarra-giacomo-puccini_voice_preview.wav",
+        "orchestra": "la-boheme-vecchia-zimarra-giacomo-puccini_orchestra_preview.wav"
+      }
+    },
+    {
+      "work": "le-nozze-di-figaro-giunse-alfin-il-momento-deh-vieni-non-tardar-wolfgang-amadeus-mozart",
+      "task": "all_voices_vs_nonvocal",
+      "removed": "orchestra",
+      "coverage": {
+        "voice": "soprano",
+        "orchestration": "transparent",
+        "coloratura": false
+      },
+      "reference_grade": "lossy_preview",
+      "aligned_lag_samples": 1865,
+      "xcorr_peak": 0.919,
+      "null_residual_db": -11.02,
+      "integrity_audit": "matched_program",
+      "same_take_confirmed": true,
+      "files": {
+        "full": "le-nozze-di-figaro-giunse-alfin-il-momento-deh-vieni-non-tardar-wolfgang-amadeus-mozart_voice_preview.wav",
+        "orchestra": "le-nozze-di-figaro-giunse-alfin-il-momento-deh-vieni-non-tardar-wolfgang-amadeus-mozart_orchestra_preview.wav"
+      }
+    },
+    {
+      "work": "lucia-di-lammermoor-il-dolce-suono-ardon-glincensi-spargi-damaro-pianto-gaetano-donizetti",
+      "task": "all_voices_vs_nonvocal",
+      "removed": "orchestra",
+      "coverage": {
+        "voice": "soprano",
+        "orchestration": "dense",
+        "coloratura": true
+      },
+      "reference_grade": "lossy_preview",
+      "aligned_lag_samples": 565,
+      "xcorr_peak": 0.999,
+      "null_residual_db": -27.0,
+      "integrity_audit": "same_take_paired_target",
+      "same_take_confirmed": true,
+      "files": {
+        "full": "lucia-di-lammermoor-il-dolce-suono-ardon-glincensi-spargi-damaro-pianto-gaetano-donizetti_voice_preview.wav",
+        "orchestra": "lucia-di-lammermoor-il-dolce-suono-ardon-glincensi-spargi-damaro-pianto-gaetano-donizetti_orchestra_preview.wav"
+      }
+    },
+    {
+      "work": "madama-butterfly-un-bel-di-vedremo-giacomo-puccini",
+      "task": "all_voices_vs_nonvocal",
+      "removed": "orchestra",
+      "coverage": {
+        "voice": "soprano",
+        "orchestration": "dense",
+        "coloratura": false
+      },
+      "reference_grade": "lossy_preview",
+      "aligned_lag_samples": -300,
+      "xcorr_peak": 0.271,
+      "null_residual_db": -3.25,
+      "integrity_audit": "matched_program",
+      "same_take_confirmed": false,
+      "files": {
+        "full": "madama-butterfly-un-bel-di-vedremo-giacomo-puccini_voice_preview.wav",
+        "orchestra": "madama-butterfly-un-bel-di-vedremo-giacomo-puccini_orchestra_preview.wav"
+      }
+    },
+    {
+      "work": "rigoletto-caro-nome-giuseppe-verdi",
+      "task": "all_voices_vs_nonvocal",
+      "removed": "orchestra",
+      "coverage": {
+        "voice": "soprano",
+        "orchestration": "dense",
+        "coloratura": true
+      },
+      "reference_grade": "lossy_preview",
+      "aligned_lag_samples": -1305,
+      "xcorr_peak": 0.627,
+      "null_residual_db": -12.06,
+      "integrity_audit": "same_take_paired_target",
+      "same_take_confirmed": true,
+      "files": {
+        "full": "rigoletto-caro-nome-giuseppe-verdi_voice_preview.wav",
+        "orchestra": "rigoletto-caro-nome-giuseppe-verdi_orchestra_preview.wav"
+      }
+    },
+    {
+      "work": "rigoletto-cortigiani-vil-razza-dannata-giuseppe-verdi",
+      "task": "all_voices_vs_nonvocal",
+      "removed": "orchestra",
+      "coverage": {
+        "voice": "baritone",
+        "orchestration": "dense",
+        "coloratura": false
+      },
+      "reference_grade": "lossy_preview",
+      "aligned_lag_samples": 2025,
+      "xcorr_peak": 0.647,
+      "null_residual_db": -15.45,
+      "integrity_audit": "same_take_paired_target",
+      "same_take_confirmed": true,
+      "files": {
+        "full": "rigoletto-cortigiani-vil-razza-dannata-giuseppe-verdi_voice_preview.wav",
+        "orchestra": "rigoletto-cortigiani-vil-razza-dannata-giuseppe-verdi_orchestra_preview.wav"
+      }
+    },
+    {
+      "work": "rigoletto-cortigiani-vil-razza-dannata-giuseppe-verdi",
+      "task": "soloist_vs_rest",
+      "removed": "senza_baritone",
+      "coverage": {
+        "voice": "baritone",
+        "orchestration": "dense",
+        "coloratura": false
+      },
+      "reference_grade": "lossy_preview",
+      "aligned_lag_samples": 127985,
+      "xcorr_peak": 0.024,
+      "null_residual_db": 2.73,
+      "integrity_audit": "matched_program",
+      "same_take_confirmed": false,
+      "files": {
+        "full": "rigoletto-cortigiani-vil-razza-dannata-giuseppe-verdi_voice_preview.wav",
+        "senza_baritone": "rigoletto-senza-rigoletto-cortigiani-vil-razza-dannata-giuseppe-verdi_voice_preview.wav"
+      }
+    },
+    {
+      "work": "rigoletto-la-donna-e-mobile-giuseppe-verdi",
+      "task": "all_voices_vs_nonvocal",
+      "removed": "orchestra",
+      "coverage": {
+        "voice": "tenor",
+        "orchestration": "dense",
+        "coloratura": false
+      },
+      "reference_grade": "lossy_preview",
+      "aligned_lag_samples": 3060,
+      "xcorr_peak": 0.912,
+      "null_residual_db": -13.06,
+      "integrity_audit": "same_take_paired_target",
+      "same_take_confirmed": true,
+      "files": {
+        "full": "rigoletto-la-donna-e-mobile-giuseppe-verdi_voice_preview.wav",
+        "orchestra": "rigoletto-la-donna-e-mobile-giuseppe-verdi_orchestra_preview.wav"
+      }
+    },
+    {
+      "work": "rigoletto-questa-o-quella-giuseppe-verdi",
+      "task": "all_voices_vs_nonvocal",
+      "removed": "orchestra",
+      "coverage": {
+        "voice": "tenor",
+        "orchestration": "dense",
+        "coloratura": false
+      },
+      "reference_grade": "lossy_preview",
+      "aligned_lag_samples": 3460,
+      "xcorr_peak": 0.436,
+      "null_residual_db": -7.08,
+      "integrity_audit": "matched_program",
+      "same_take_confirmed": false,
+      "files": {
+        "full": "rigoletto-questa-o-quella-giuseppe-verdi_voice_preview.wav",
+        "orchestra": "rigoletto-questa-o-quella-giuseppe-verdi_orchestra_preview.wav"
+      }
+    },
+    {
+      "work": "tosca-e-lucevan-le-stelle-giacomo-puccini",
+      "task": "all_voices_vs_nonvocal",
+      "removed": "orchestra",
+      "coverage": {
+        "voice": "tenor",
+        "orchestration": "dense",
+        "coloratura": false
+      },
+      "reference_grade": "lossy_preview",
+      "aligned_lag_samples": -2100,
+      "xcorr_peak": 0.943,
+      "null_residual_db": -11.71,
+      "integrity_audit": "matched_program",
+      "same_take_confirmed": true,
+      "files": {
+        "full": "tosca-e-lucevan-le-stelle-giacomo-puccini_voice_preview.wav",
+        "orchestra": "tosca-e-lucevan-le-stelle-giacomo-puccini_orchestra_preview.wav"
+      }
+    },
+    {
+      "work": "tosca-recondita-armonia-giacomo-puccini",
+      "task": "all_voices_vs_nonvocal",
+      "removed": "orchestra",
+      "coverage": {
+        "voice": "tenor",
+        "orchestration": "dense",
+        "coloratura": false
+      },
+      "reference_grade": "lossy_preview",
+      "aligned_lag_samples": -370,
+      "xcorr_peak": 0.973,
+      "null_residual_db": -12.23,
+      "integrity_audit": "same_take_paired_target",
+      "same_take_confirmed": true,
+      "files": {
+        "full": "tosca-recondita-armonia-giacomo-puccini_voice_preview.wav",
+        "orchestra": "tosca-recondita-armonia-giacomo-puccini_orchestra_preview.wav"
+      }
+    },
+    {
+      "work": "tosca-vissi-darte-giacomo-puccini",
+      "task": "all_voices_vs_nonvocal",
+      "removed": "orchestra",
+      "coverage": {
+        "voice": "soprano",
+        "orchestration": "dense",
+        "coloratura": false
+      },
+      "reference_grade": "lossy_preview",
+      "aligned_lag_samples": 40305,
+      "xcorr_peak": 0.425,
+      "null_residual_db": -11.31,
+      "integrity_audit": "matched_program",
+      "same_take_confirmed": false,
+      "files": {
+        "full": "tosca-vissi-darte-giacomo-puccini_voice_preview.wav",
+        "orchestra": "tosca-vissi-darte-giacomo-puccini_orchestra_preview.wav"
+      }
+    },
+    {
+      "work": "turandot-in-questa-reggia-giacomo-puccini",
+      "task": "all_voices_vs_nonvocal",
+      "removed": "orchestra",
+      "coverage": {
+        "voice": "soprano",
+        "orchestration": "dense",
+        "coloratura": false
+      },
+      "reference_grade": "lossy_preview",
+      "aligned_lag_samples": 785,
+      "xcorr_peak": 0.387,
+      "null_residual_db": -13.26,
+      "integrity_audit": "same_take_paired_target",
+      "same_take_confirmed": true,
+      "files": {
+        "full": "turandot-in-questa-reggia-giacomo-puccini_voice_preview.wav",
+        "orchestra": "turandot-in-questa-reggia-giacomo-puccini_orchestra_preview.wav"
+      }
+    },
+    {
+      "work": "turandot-nessun-dorma-giacomo-puccini",
+      "task": "all_voices_vs_nonvocal",
+      "removed": "orchestra",
+      "coverage": {
+        "voice": "tenor",
+        "orchestration": "dense",
+        "coloratura": false
+      },
+      "reference_grade": "lossy_preview",
+      "aligned_lag_samples": -25,
+      "xcorr_peak": 0.704,
+      "null_residual_db": -16.65,
+      "integrity_audit": "same_take_paired_target",
+      "same_take_confirmed": true,
+      "files": {
+        "full": "turandot-nessun-dorma-giacomo-puccini_voice_preview.wav",
+        "orchestra": "turandot-nessun-dorma-giacomo-puccini_orchestra_preview.wav"
+      }
+    }
+  ]
+}

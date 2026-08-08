@@ -39,3 +39,7 @@ calibration/spotify_pairs/pairs_all.jsonl
 project/cantolopera/
 calibration/cantolopera_report/
 calibration/input_data/
+
+# shipped audio outputs (large binaries)
+deliverables/
+Screenshot*.png
