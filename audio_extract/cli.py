@@ -806,6 +806,7 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--steps", type=int)
     sp.add_argument("--seed", type=int, default=0)
     sp.add_argument("--device")
+    sp.add_argument("--resume", help="immutable checkpoint-step-XXXXXX.pt to resume")
     sp.add_argument("--json", action="store_true")
     sp.set_defaults(func=cmd_train_classical)
 
