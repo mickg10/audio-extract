@@ -218,6 +218,28 @@ def test_missing_hall_work_or_contract_identity_is_incomplete():
     assert result["method_decisions"] == []
 
 
+def test_nonfinite_hall_reference_metric_is_incomplete_evidence():
+    report = complete_report(actionable_at="1.0")
+    hall_methods = report["resolutions"]["1.0"]["works"]["aalto_mozart_hall"][
+        "methods"
+    ]
+    hall_methods["O2_global_medoid"]["metrics"]["hall_tail_dev_db/v2"] = float(
+        "nan"
+    )
+
+    result = evaluate_report(report)
+
+    assert result["decision"] == "INCOMPLETE_EVIDENCE"
+    row = next(
+        item
+        for item in decisions_for(result, "O2_global_medoid")
+        if item["resolution_seconds"] == "1.0"
+    )
+    assert row["evidence_valid"] is False
+    assert any("aalto_mozart_hall" in failure for failure in row["failures"])
+    assert any("hall_tail_dev_db/v2" in failure for failure in row["failures"])
+
+
 def test_uncertified_o3_blocks_a_no_gap_conclusion():
     report = complete_report()
     report["resolutions"]["0.5"]["works"]["bologna_verdi"]["methods"][
