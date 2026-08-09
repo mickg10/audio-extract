@@ -1,3 +1,10 @@
+> **⚠️ SUPERSEDED (2026-08-08).** The objective below calibrated its caps on the judge's OWN
+> predictions over the same pool — a circular rule (oracle P0 #3). The frozen exact-label
+> **selection-regret test** (`judge_selection_regret_report.md`) supersedes this: under honest
+> evaluation the judge does **NOT** beat always-median at selection. The '11/25 beats champion'
+> claim here is not reliable. Use the median-champion deliverables (`deliverables/`), not
+> `deliverables_judge/`, until a promoted judge exists.
+
 # Judge-in-the-loop instrumental selection — v3 judge over the library
 
 The graduated **v3 judge** (`~/judge_models_v3/`, production-trustworthy for the classical/operatic domain) picks the best instrumental per library track, reference-free (no ground truth). Host research6, 5 locked separators, `configs/tuning_panel.yaml` panel.
