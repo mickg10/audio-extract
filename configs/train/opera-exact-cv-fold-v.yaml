@@ -25,6 +25,9 @@ data:
   task: featured_soloist_vs_rest
 optim:
   name: adam
+  betas: [0.9, 0.999]
+  eps: 1.0e-8
+  weight_decay: 0.0
   steps_first_run: 100
   batch: 1
   crop_s: 7.8
