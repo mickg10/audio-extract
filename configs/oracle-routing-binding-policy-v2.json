@@ -1,0 +1,14 @@
+{
+  "primary_resolution": "1.0",
+  "required_methods": [
+    "O2_global_medoid",
+    "O3_certified_convex"
+  ],
+  "schema": "audio-extract/oracle-routing-binding-policy/v2",
+  "selected_method": "O2_global_medoid",
+  "sensitivity_resolutions": [
+    "2.0",
+    "0.5"
+  ],
+  "task_id": "soloist_vs_rest"
+}
