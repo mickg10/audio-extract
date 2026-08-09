@@ -1,0 +1,184 @@
+{
+ "schema": "audio-extract/classical-v1-splits/v1",
+ "group_split": {
+  "bologna:bologna_verdi:bologna_verdi_soprano_lirico:bologna_orchestra": "test-v1",
+  "bologna:bologna_puccini:bologna_puccini_soprano:bologna_orchestra": "test-v1",
+  "bologna:bologna_donizetti:bologna_donizetti_soprano:bologna_orchestra": "test-v1",
+  "aalto:aalto_mozart:aalto_mozart_soprano:aalto_orchestra": "test-v1",
+  "freidi:freidi_freischuetz:freidi_no06_singers:freidi_orchestra": "train",
+  "freidi:freidi_freischuetz:freidi_no08_singers:freidi_orchestra": "train",
+  "freidi:freidi_freischuetz:freidi_no09_singers:freidi_orchestra": "train",
+  "cantoria:cantoria:cantoria_SATB_quartet:cantoria_organ": "train",
+  "choral_singing:choral_singing:choral_16_singers:a_cappella_SATB": "val",
+  "donor:vocalset": "train-donor",
+  "donor:phenicx_anechoic": "train-donor",
+  "donor:spheres": "train-donor",
+  "donor:rir_pori": "train-donor",
+  "cantolopera:cantolopera_aida:cantolopera_aida_mezzo:cantolopera_aida_orchestra": "train-weak",
+  "cantolopera:cantolopera_aida:cantolopera_aida_tenor:cantolopera_aida_orchestra": "train-weak",
+  "cantolopera:cantolopera_aida:cantolopera_aida_soprano:cantolopera_aida_orchestra": "train-weak",
+  "cantolopera:cantolopera_andrea_chenier:cantolopera_andrea_chenier_tenor:cantolopera_andrea_chenier_orchestra": "train-weak",
+  "cantolopera:cantolopera_la_boheme:cantolopera_la_boheme_bass:cantolopera_la_boheme_orchestra": "train-weak"
+ },
+ "groups": {
+  "bologna:bologna_verdi:bologna_verdi_soprano_lirico:bologna_orchestra": {
+   "split": "test-v1",
+   "corpus": "bologna",
+   "works": [
+    "bologna_verdi"
+   ],
+   "integrity": "linear_exact"
+  },
+  "bologna:bologna_puccini:bologna_puccini_soprano:bologna_orchestra": {
+   "split": "test-v1",
+   "corpus": "bologna",
+   "works": [
+    "bologna_puccini"
+   ],
+   "integrity": "linear_exact"
+  },
+  "bologna:bologna_donizetti:bologna_donizetti_soprano:bologna_orchestra": {
+   "split": "test-v1",
+   "corpus": "bologna",
+   "works": [
+    "bologna_donizetti"
+   ],
+   "integrity": "linear_exact"
+  },
+  "aalto:aalto_mozart:aalto_mozart_soprano:aalto_orchestra": {
+   "split": "test-v1",
+   "corpus": "aalto",
+   "works": [
+    "aalto_mozart_dry",
+    "aalto_mozart_hall"
+   ],
+   "integrity": "linear_exact"
+  },
+  "freidi:freidi_freischuetz:freidi_no06_singers:freidi_orchestra": {
+   "split": "train",
+   "corpus": "freidi",
+   "works": [
+    "freidi_no06"
+   ],
+   "integrity": "same_performance_bleed"
+  },
+  "freidi:freidi_freischuetz:freidi_no08_singers:freidi_orchestra": {
+   "split": "train",
+   "corpus": "freidi",
+   "works": [
+    "freidi_no08"
+   ],
+   "integrity": "same_performance_bleed"
+  },
+  "freidi:freidi_freischuetz:freidi_no09_singers:freidi_orchestra": {
+   "split": "train",
+   "corpus": "freidi",
+   "works": [
+    "freidi_no09"
+   ],
+   "integrity": "same_performance_bleed"
+  },
+  "cantoria:cantoria:cantoria_SATB_quartet:cantoria_organ": {
+   "split": "train",
+   "corpus": "cantoria",
+   "works": [
+    "cantoria_CEA",
+    "cantoria_EJB1",
+    "cantoria_EJB2",
+    "cantoria_HCB",
+    "cantoria_LBM1",
+    "cantoria_LBM2",
+    "cantoria_LJT1",
+    "cantoria_LJT2",
+    "cantoria_LNG",
+    "cantoria_RRC",
+    "cantoria_SSS",
+    "cantoria_THM",
+    "cantoria_VBP",
+    "cantoria_YSM"
+   ],
+   "integrity": "linear_exact"
+  },
+  "choral_singing:choral_singing:choral_16_singers:a_cappella_SATB": {
+   "split": "val",
+   "corpus": "choral_singing",
+   "works": [
+    "choral_singing_pool"
+   ],
+   "integrity": "same_take"
+  },
+  "donor:vocalset": {
+   "split": "train-donor",
+   "corpus": "vocalset",
+   "works": [
+    "vocalset_donor_pool"
+   ],
+   "integrity": "synthesizable_donor"
+  },
+  "donor:phenicx_anechoic": {
+   "split": "train-donor",
+   "corpus": "phenicx_anechoic",
+   "works": [
+    "phenicx_anechoic_donor_pool"
+   ],
+   "integrity": "linear_exact_donor"
+  },
+  "donor:spheres": {
+   "split": "train-donor",
+   "corpus": "spheres",
+   "works": [
+    "spheres_donor_pool"
+   ],
+   "integrity": "linear_exact_donor+rir"
+  },
+  "donor:rir_pori": {
+   "split": "train-donor",
+   "corpus": "rir_pori",
+   "works": [
+    "rir_pori_donor_pool"
+   ],
+   "integrity": "rir_donor"
+  },
+  "cantolopera:cantolopera_aida:cantolopera_aida_mezzo:cantolopera_aida_orchestra": {
+   "split": "train-weak",
+   "corpus": "cantolopera",
+   "works": [
+    "aida_fu_la_sorte_senza_soprano"
+   ],
+   "integrity": "same_take_paired_target"
+  },
+  "cantolopera:cantolopera_aida:cantolopera_aida_tenor:cantolopera_aida_orchestra": {
+   "split": "train-weak",
+   "corpus": "cantolopera",
+   "works": [
+    "aida_o_terra_senza_soprano"
+   ],
+   "integrity": "same_take_paired_target"
+  },
+  "cantolopera:cantolopera_aida:cantolopera_aida_soprano:cantolopera_aida_orchestra": {
+   "split": "train-weak",
+   "corpus": "cantolopera",
+   "works": [
+    "aida_o_terra_senza_tenore",
+    "aida_qui_radames_o_cieli_azzurri"
+   ],
+   "integrity": "same_take_paired_target"
+  },
+  "cantolopera:cantolopera_andrea_chenier:cantolopera_andrea_chenier_tenor:cantolopera_andrea_chenier_orchestra": {
+   "split": "train-weak",
+   "corpus": "cantolopera",
+   "works": [
+    "andrea_chenier_colpito_improvviso"
+   ],
+   "integrity": "same_take_paired_target"
+  },
+  "cantolopera:cantolopera_la_boheme:cantolopera_la_boheme_bass:cantolopera_la_boheme_orchestra": {
+   "split": "train-weak",
+   "corpus": "cantolopera",
+   "works": [
+    "la_boheme_vecchia_zimarra"
+   ],
+   "integrity": "same_take_paired_target"
+  }
+ }
+}

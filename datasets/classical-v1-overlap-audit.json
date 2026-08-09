@@ -1,0 +1,14 @@
+{
+ "n_rows": 33,
+ "n_groups": 18,
+ "splits": {
+  "val": 1,
+  "train-donor": 4,
+  "train": 4,
+  "test-v1": 4,
+  "train-weak": 5
+ },
+ "source_family_leaks": [],
+ "zero_leakage": true,
+ "test_v1_note": "Bologna V/P/D + Aalto Mozart are ALL tuning-contaminated (gpt56 H3) \u2014 legacy holdout, NOT a clean untouched test; a genuinely-new exact work is still required for final acceptance."
+}
