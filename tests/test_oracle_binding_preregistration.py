@@ -2,6 +2,7 @@ import json
 import os
 from decimal import Decimal
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -79,9 +80,7 @@ def test_nearby_or_invalid_resolutions_are_refused(value):
 
 
 def test_resolution_sequence_is_complete_and_not_rounded():
-    assert set(canonical_resolution_sequence((2.0, 1.0, 0.5))) == {
-        "2.0", "1.0", "0.5"
-    }
+    assert set(canonical_resolution_sequence((2.0, 1.0, 0.5))) == {"2.0", "1.0", "0.5"}
     with pytest.raises(PreregistrationError):
         canonical_resolution_sequence((2.04, 1.04, 0.54))
     with pytest.raises(PreregistrationError):
@@ -90,9 +89,7 @@ def test_resolution_sequence_is_complete_and_not_rounded():
 
 def test_source_groups_must_be_nonempty_and_physically_disjoint(tmp_path):
     voiced, no_vocal = _files(tmp_path)
-    result = source_manifest_groups(
-        {"voiced": [voiced], "no_vocal": [no_vocal]}
-    )
+    result = source_manifest_groups({"voiced": [voiced], "no_vocal": [no_vocal]})
     assert set(result) == {"voiced", "no_vocal"}
 
     with pytest.raises(PreregistrationError, match="non-empty"):
@@ -101,9 +98,7 @@ def test_source_groups_must_be_nonempty_and_physically_disjoint(tmp_path):
     alias = tmp_path / "no-vocal-hardlink.jsonl"
     os.link(voiced, alias)
     with pytest.raises(PreregistrationError, match="filesystem alias"):
-        source_manifest_groups(
-            {"voiced": [voiced], "no_vocal": [alias]}
-        )
+        source_manifest_groups({"voiced": [voiced], "no_vocal": [alias]})
 
 
 def test_symlinked_manifest_is_refused(tmp_path):
@@ -111,9 +106,7 @@ def test_symlinked_manifest_is_refused(tmp_path):
     link = tmp_path / "voiced-link.jsonl"
     link.symlink_to(voiced)
     with pytest.raises(PreregistrationError, match="symlink"):
-        source_manifest_groups(
-            {"voiced": [link], "no_vocal": [no_vocal]}
-        )
+        source_manifest_groups({"voiced": [link], "no_vocal": [no_vocal]})
 
 
 def test_stable_record_contains_physical_identity(tmp_path):
@@ -131,12 +124,8 @@ def test_compiled_policy_and_digest_are_not_caller_selected():
     assert policy["selected_method"] == SELECTED_METHOD
     assert policy["required_methods"] == list(REQUIRED_METHODS)
     assert policy["primary_resolution"] == PRIMARY_RESOLUTION
-    assert policy["sensitivity_resolutions"] == list(
-        SENSITIVITY_RESOLUTIONS
-    )
-    assert sha256_bytes(canonical_json(policy)) == (
-        CANONICAL_POLICY_SEMANTIC_SHA256
-    )
+    assert policy["sensitivity_resolutions"] == list(SENSITIVITY_RESOLUTIONS)
+    assert sha256_bytes(canonical_json(policy)) == (CANONICAL_POLICY_SEMANTIC_SHA256)
 
 
 def test_write_once_replays_identically_and_refuses_different_record(tmp_path):
@@ -210,9 +199,7 @@ def test_json_key_order_does_not_change_semantic_digest():
     left = {"a": 1, "b": {"x": 2, "y": 3}}
     right = {"b": {"y": 3, "x": 2}, "a": 1}
     assert canonical_json(left) == canonical_json(right)
-    assert sha256_bytes(canonical_json(left)) == sha256_bytes(
-        canonical_json(right)
-    )
+    assert sha256_bytes(canonical_json(left)) == sha256_bytes(canonical_json(right))
 
 
 def test_binding_cli_refuses_post_hoc_resolution_before_output(tmp_path):
@@ -220,10 +207,119 @@ def test_binding_cli_refuses_post_hoc_resolution_before_output(tmp_path):
     preregistration = write_once(tmp_path / "prereg.json", document)
     output = tmp_path / "must-not-exist"
     with pytest.raises(SystemExit, match="--resolution is forbidden"):
-        certified_tool.main([
-            "--preregistration", preregistration.path,
-            "--truth-root", str(tmp_path / "truth"),
-            "--output-root", str(output),
-            "--resolution", "1.0",
-        ])
+        certified_tool.main(
+            [
+                "--preregistration",
+                preregistration.path,
+                "--truth-root",
+                str(tmp_path / "truth"),
+                "--output-root",
+                str(output),
+                "--resolution",
+                "1.0",
+            ]
+        )
+    assert not output.exists()
+
+
+def test_binding_cli_prepare_and_claim_stop_before_output(
+    tmp_path, monkeypatch, capsys
+):
+    voiced, no_vocal = _files(tmp_path)
+    run_config = certified_tool.CertifiedRoutingRunConfig()
+    decision_config = certified_tool.RoutingGateConfig()
+    truth_manifest = {
+        "schema": "test/truth-v3",
+        "works": list(certified_tool.DEFAULT_WORKS),
+    }
+    voiced_audit = {"schema": "test/voiced-audit", "status": "pass"}
+    no_vocal_audit = {"schema": "test/no-vocal-audit", "status": "pass"}
+    voiced_lineage = {"schema": "test/voiced-lineage", "status": "pass"}
+    no_vocal_lineage = {"schema": "test/no-vocal-lineage", "status": "pass"}
+    combined = certified_tool._binding_basis_audit(
+        voiced_audit, no_vocal_audit, voiced_lineage, no_vocal_lineage
+    )
+    routing = certified_tool._routing_config_identity(
+        run_config, decision_config, certified_tool.DEFAULT_WORKS
+    )
+    preregistration = write_once(
+        tmp_path / "preregistration.json",
+        build_document(
+            experiment_id="prepare-only-test",
+            source_groups={"voiced": [voiced], "no_vocal": [no_vocal]},
+            source_commit=COMMIT,
+            truth_manifest_sha256=sha256_bytes(canonical_json(truth_manifest)),
+            basis_audit_sha256=sha256_bytes(canonical_json(combined)),
+            routing_config_sha256=sha256_bytes(canonical_json(routing)),
+        ),
+    )
+    calls = 0
+
+    def assemble(**_kwargs):
+        nonlocal calls
+        calls += 1
+        declaration = SimpleNamespace(work_id="aalto_mozart_dry")
+        return ([SimpleNamespace(declaration=declaration)], [])
+
+    monkeypatch.setattr(certified_tool, "assemble_basis", assemble)
+    monkeypatch.setattr(certified_tool, "_expected_sources", lambda *a, **k: {})
+    lineage_values = iter((voiced_lineage, no_vocal_lineage))
+    monkeypatch.setattr(
+        certified_tool,
+        "audit_basis_source_lineage",
+        lambda *a, **k: next(lineage_values),
+    )
+    audit_values = iter((voiced_audit, no_vocal_audit))
+    monkeypatch.setattr(
+        certified_tool, "basis_report", lambda *a, **k: next(audit_values)
+    )
+    monkeypatch.setattr(
+        certified_tool,
+        "build_truth_manifest",
+        lambda *a, **k: truth_manifest,
+    )
+    monkeypatch.setattr(certified_tool, "_git_commit", lambda *_: COMMIT)
+
+    output = tmp_path / "must-not-exist"
+    run_input = tmp_path / "run-input-v3.json"
+    common = [
+        "--preregistration",
+        preregistration.path,
+        "--truth-root",
+        str(tmp_path / "truth"),
+        "--output-root",
+        str(output),
+        "--audited-candidate-manifest",
+        str(voiced),
+        "--no-vocal-audited-candidate-manifest",
+        str(no_vocal),
+        "--run-input-v3",
+        str(run_input),
+    ]
+    assert certified_tool.main([*common, "--prepare-only"]) == 0
+    prepared = json.loads(capsys.readouterr().out)
+    assert prepared["status"] == "prepared__external_claim_required"
+    assert prepared["run_input_sha256"].startswith("sha256:")
+    assert calls == 2
+    assert run_input.is_file()
+    assert not output.exists()
+
+    claim = tmp_path / "run-claim-v3.json"
+    assert (
+        certified_tool.main(
+            [
+                "--run-input-v3",
+                str(run_input),
+                "--run-claim-v3",
+                str(claim),
+                "--claim-only",
+                "--external-anchor",
+                "https://github.com/mickg10/audio-extract/issues/1#issuecomment-5232987267",
+            ]
+        )
+        == 0
+    )
+    claimed = json.loads(capsys.readouterr().out)
+    assert claimed["claim_sha256"].startswith("sha256:")
+    assert claim.is_file()
     assert not output.exists()

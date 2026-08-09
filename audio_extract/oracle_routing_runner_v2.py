@@ -57,6 +57,18 @@ from .oracle_routing_metrics_v2 import (
     route_boundary_metrics,
     worst_identifiable_event,
 )
+from .oracle_routing_run_contract_v3 import (
+    REQUIRED_WORKS as V3_REQUIRED_WORKS,
+)
+from .oracle_routing_run_contract_v3 import (
+    RunContractError,
+    load_bound_json_artifact,
+    preflight_run,
+    require_canonical_resolutions,
+)
+from .oracle_routing_run_contract_v3 import (
+    verify_report_binding as verify_v3_report_binding,
+)
 from .oracle_routing_spectral_v2 import (
     RoutingSpectralConfig,
     build_quadratic_grid,
@@ -110,17 +122,12 @@ class CertifiedRoutingRunConfig:
 
     def validate(self) -> None:
         self.spectral.validate()
-        if not self.resolutions_seconds:
-            raise ValueError("at least one routing resolution is required")
-        if any(
-            not math.isfinite(float(value)) or float(value) <= 0
-            for value in self.resolutions_seconds
-        ):
-            raise ValueError("routing resolutions must be finite and positive")
-        if len({float(value) for value in self.resolutions_seconds}) != len(
-            self.resolutions_seconds
-        ):
-            raise ValueError("routing resolutions must be unique")
+        try:
+            require_canonical_resolutions(self.resolutions_seconds)
+        except RunContractError as exc:
+            raise ValueError(
+                f"certified routing resolutions violate run-contract v3: {exc}"
+            ) from exc
         for name in (
             "base_resolution_seconds",
             "o2_time_limit_seconds",
@@ -176,7 +183,6 @@ class ExactTruth:
 class LoadedCandidate:
     row: DeduplicatedCandidate
     audio: np.ndarray
-
 
 
 def _sha_file(path: Path) -> str:
@@ -244,11 +250,14 @@ def load_exact_truth(
         vocal=vocal,
         sample_rate_hz=sample_rate,
         frames=len(mixture),
-        pcm_identities={name: _pcm(audio, sample_rate) for name, audio in (
-            ("mixture", mixture),
-            ("accompaniment", accompaniment),
-            ("vocal", vocal),
-        )},
+        pcm_identities={
+            name: _pcm(audio, sample_rate)
+            for name, audio in (
+                ("mixture", mixture),
+                ("accompaniment", accompaniment),
+                ("vocal", vocal),
+            )
+        },
     )
 
 
@@ -334,10 +343,7 @@ def _canonical_recipe_value(value: Any) -> Any:
             )
         return repr(value)
     if isinstance(value, Mapping):
-        return {
-            str(key): _canonical_recipe_value(item)
-            for key, item in value.items()
-        }
+        return {str(key): _canonical_recipe_value(item) for key, item in value.items()}
     if isinstance(value, (list, tuple)):
         return [_canonical_recipe_value(item) for item in value]
     return value
@@ -347,13 +353,18 @@ def _verify_clean_source_tree(expected_commit: str) -> None:
     root = Path(__file__).resolve().parents[1]
     try:
         commit = subprocess.run(
-            ["git", "rev-parse", "HEAD"], cwd=root, check=True,
-            text=True, capture_output=True,
+            ["git", "rev-parse", "HEAD"],
+            cwd=root,
+            check=True,
+            text=True,
+            capture_output=True,
         ).stdout.strip()
         status = subprocess.run(
             ["git", "status", "--porcelain", "--untracked-files=no"],
-            cwd=root, check=True,
-            text=True, capture_output=True,
+            cwd=root,
+            check=True,
+            text=True,
+            capture_output=True,
         ).stdout
     except (OSError, subprocess.CalledProcessError) as exc:
         raise CertifiedRoutingRunError(
@@ -368,16 +379,28 @@ def _verify_clean_source_tree(expected_commit: str) -> None:
 
 def _plan_hash(plan: np.ndarray, header: Mapping[str, Any]) -> str:
     array = np.ascontiguousarray(plan)
-    payload = canon.canonicalize(_canonical_recipe_value({
-        **dict(header),
-        "shape": list(array.shape),
-        "dtype": array.dtype.str,
-    })) + array.tobytes()
+    payload = (
+        canon.canonicalize(
+            _canonical_recipe_value(
+                {
+                    **dict(header),
+                    "shape": list(array.shape),
+                    "dtype": array.dtype.str,
+                }
+            )
+        )
+        + array.tobytes()
+    )
     return identity.blob_sha256(payload)
 
 
-def _verify_generated(directory: Path, recipe: Mapping[str, Any], audio: np.ndarray,
-                      sample_rate_hz: int, plan: np.ndarray) -> dict[str, Any]:
+def _verify_generated(
+    directory: Path,
+    recipe: Mapping[str, Any],
+    audio: np.ndarray,
+    sample_rate_hz: int,
+    plan: np.ndarray,
+) -> dict[str, Any]:
     if json.loads((directory / "recipe.json").read_text()) != recipe:
         raise CertifiedRoutingRunError(f"generated recipe mismatch: {directory}")
     reopened, _ = _strict_audio(directory / "output.f32.wav", frames=len(audio))
@@ -391,7 +414,9 @@ def _verify_generated(directory: Path, recipe: Mapping[str, Any], audio: np.ndar
     if (directory / "output.pcm.sha256").read_text().strip() != artifact:
         raise CertifiedRoutingRunError(f"generated PCM sidecar mismatch: {directory}")
     if (directory / "container.sha256").read_text().strip() != container:
-        raise CertifiedRoutingRunError(f"generated container sidecar mismatch: {directory}")
+        raise CertifiedRoutingRunError(
+            f"generated container sidecar mismatch: {directory}"
+        )
     return {
         "path": str(directory / "output.f32.wav"),
         "artifact_pcm_sha256": artifact,
@@ -423,23 +448,27 @@ def write_generated_artifact(
     if audio.ndim != 2 or audio.shape[1] != 2 or not np.all(np.isfinite(audio)):
         raise CertifiedRoutingRunError(f"invalid generated audio for {method}")
     plan = np.ascontiguousarray(plan)
-    plan_sha = _plan_hash(plan, {
-        "work_id": work_id,
-        "resolution_seconds": float(resolution_seconds),
-        "method": method,
-    })
-    recipe = _canonical_recipe_value({
-        "schema": RECIPE_SCHEMA,
-        "work_id": work_id,
-        "resolution_seconds": float(resolution_seconds),
-        "method": method,
-        "routing_plan_sha256": plan_sha,
-        **dict(recipe_facts),
-    })
+    plan_sha = _plan_hash(
+        plan,
+        {
+            "work_id": work_id,
+            "resolution_seconds": float(resolution_seconds),
+            "method": method,
+        },
+    )
+    recipe = _canonical_recipe_value(
+        {
+            "schema": RECIPE_SCHEMA,
+            "work_id": work_id,
+            "resolution_seconds": float(resolution_seconds),
+            "method": method,
+            "routing_plan_sha256": plan_sha,
+            **dict(recipe_facts),
+        }
+    )
     recipe_id = identity.blob_sha256(canon.canonicalize(recipe))
     final = (
-        output_root / work_id / f"{float(resolution_seconds):.1f}s"
-        / method / recipe_id
+        output_root / work_id / f"{float(resolution_seconds):.1f}s" / method / recipe_id
     )
     if final.is_dir():
         return _verify_generated(final, recipe, audio, sample_rate_hz, plan)
@@ -447,12 +476,12 @@ def write_generated_artifact(
     temporary = Path(tempfile.mkdtemp(prefix=".route-", dir=final.parent))
     try:
         sf.write(
-            temporary / "output.f32.wav", audio,
-            sample_rate_hz, subtype="FLOAT",
+            temporary / "output.f32.wav",
+            audio,
+            sample_rate_hz,
+            subtype="FLOAT",
         )
-        reopened, _ = _strict_audio(
-            temporary / "output.f32.wav", frames=len(audio)
-        )
+        reopened, _ = _strict_audio(temporary / "output.f32.wav", frames=len(audio))
         if not np.array_equal(reopened, audio):
             raise CertifiedRoutingRunError(
                 f"FLOAT reopen mismatch before publish: {method}"
@@ -494,8 +523,9 @@ def _evidence(
     }, labels
 
 
-def _o2_recompute(labels: np.ndarray, grid, temporal: float,
-                  frequency: float) -> tuple[float, float, int, int]:
+def _o2_recompute(
+    labels: np.ndarray, grid, temporal: float, frequency: float
+) -> tuple[float, float, int, int]:
     unary = unary_costs(grid)
     chosen = np.take_along_axis(unary, labels[..., None], axis=-1)[..., 0]
     cells = labels.size
@@ -503,20 +533,24 @@ def _o2_recompute(labels: np.ndarray, grid, temporal: float,
     temporal_switches = int(np.count_nonzero(labels[1:] != labels[:-1]))
     frequency_switches = int(np.count_nonzero(labels[:, 1:] != labels[:, :-1]))
     total = (
-        data + temporal * temporal_switches / cells
+        data
+        + temporal * temporal_switches / cells
         + frequency * frequency_switches / cells
     )
     return total, data, temporal_switches, frequency_switches
 
 
 def _basis_facts(candidates: Sequence[LoadedCandidate]) -> list[dict[str, Any]]:
-    return [{
-        "canonical_name": item.row.canonical_name,
-        "aliases": list(item.row.aliases),
-        "canonical_recipe_id": item.row.canonical_recipe_id,
-        "artifact_pcm_sha256": item.row.artifact_pcm_sha256,
-        "container_sha256": item.row.container_sha256,
-    } for item in candidates]
+    return [
+        {
+            "canonical_name": item.row.canonical_name,
+            "aliases": list(item.row.aliases),
+            "canonical_recipe_id": item.row.canonical_recipe_id,
+            "artifact_pcm_sha256": item.row.artifact_pcm_sha256,
+            "container_sha256": item.row.container_sha256,
+        }
+        for item in candidates
+    ]
 
 
 def run_work_resolution(
@@ -563,21 +597,25 @@ def run_work_resolution(
         o2_labels=o2.labels,
     )
     plans = {
-        "O1": one_hot(
-            np.full(grid.Q.shape[:2], o1_index, dtype=np.int64), len(loaded)
-        ),
+        "O1": one_hot(np.full(grid.Q.shape[:2], o1_index, dtype=np.int64), len(loaded)),
         "O2": one_hot(o2.labels, len(loaded)),
         "O3": o3.weights,
     }
     outputs = {
         "O1": values[o1_index].copy(),
         "O2": render_spectral_route(
-            candidate_spectra, plans["O2"], cell_report,
-            frames=truth.frames, config=spectral_config,
+            candidate_spectra,
+            plans["O2"],
+            cell_report,
+            frames=truth.frames,
+            config=spectral_config,
         ),
         "O3": render_spectral_route(
-            candidate_spectra, plans["O3"], cell_report,
-            frames=truth.frames, config=spectral_config,
+            candidate_spectra,
+            plans["O3"],
+            cell_report,
+            frames=truth.frames,
+            config=spectral_config,
         ),
     }
     median_row = row_for_alias(rows, "median_mdx_mel_bs")
@@ -597,16 +635,10 @@ def run_work_resolution(
         "cell_modes": cell_report["mode_counts"],
     }
     methods: dict[str, Any] = {}
-    methods["median_raw"], _ = _evidence(
-        median.audio, truth, _raw_artifact(median)
-    )
-    methods["residual_mdx23c"], _ = _evidence(
-        mdx.audio, truth, _raw_artifact(mdx)
-    )
+    methods["median_raw"], _ = _evidence(median.audio, truth, _raw_artifact(median))
+    methods["residual_mdx23c"], _ = _evidence(mdx.audio, truth, _raw_artifact(mdx))
     o1_loaded = loaded[o1_index]
-    methods["O1_raw"], _ = _evidence(
-        outputs["O1"], truth, _raw_artifact(o1_loaded)
-    )
+    methods["O1_raw"], _ = _evidence(outputs["O1"], truth, _raw_artifact(o1_loaded))
 
     for name, control, source_index in (
         ("median_stft_identity", median_identity, loaded.index(median)),
@@ -634,7 +666,9 @@ def run_work_resolution(
         }
 
     o2_total, o2_data, o2_temporal, o2_frequency = _o2_recompute(
-        o2.labels, grid, penalties["temporal_switch"],
+        o2.labels,
+        grid,
+        penalties["temporal_switch"],
         penalties["frequency_switch"],
     )
     if abs(o2_total - o2.objective) > 1e-9:
@@ -654,7 +688,8 @@ def run_work_resolution(
 
     route_specs = {
         "O2_global_medoid": (
-            outputs["O2"], o2.labels.astype("int32"),
+            outputs["O2"],
+            o2.labels.astype("int32"),
             {
                 "kind": "global_potts_milp",
                 "success": True,
@@ -669,16 +704,15 @@ def run_work_resolution(
             },
         ),
         "O3_certified_convex": (
-            outputs["O3"], o3.weights.astype("float64"),
+            outputs["O3"],
+            o3.weights.astype("float64"),
             {
                 "kind": "convex_projected_gradient",
                 "converged": True,
                 "monotone_objective": True,
                 "starts_agree": True,
                 "projected_gradient_norm": o3.projected_gradient_norm,
-                "max_simplex_error": float(
-                    np.max(np.abs(o3.weights.sum(-1) - 1.0))
-                ),
+                "max_simplex_error": float(np.max(np.abs(o3.weights.sum(-1) - 1.0))),
                 "objective": o3.objective,
                 "data_objective": o3_data,
                 "temporal_smoothness": o3_temporal,
@@ -758,7 +792,8 @@ def _match_control_rows(
     result = []
     for candidate in voiced:
         matches = [
-            control for control in controls
+            control
+            for control in controls
             if set(control.row.aliases) & set(candidate.row.aliases)
         ]
         if len(matches) != 1:
@@ -788,12 +823,8 @@ def apply_no_vocal_controls(
         frames=truth.frames,
     )
     spectral_config = voiced_runtime["spectral_config"]
-    control_spectra = stft_stack(
-        [item.audio for item in controls], spectral_config
-    )
-    median = next(
-        item for item in controls if "median_mdx_mel_bs" in item.row.aliases
-    )
+    control_spectra = stft_stack([item.audio for item in controls], spectral_config)
+    median = next(item for item in controls if "median_mdx_mel_bs" in item.row.aliases)
     result: dict[str, Any] = {
         "median_raw": {
             "false_positive_energy_ratio": no_vocal_false_positive_energy_ratio(
@@ -848,20 +879,69 @@ def run_experiment(
     output_root: Path,
     code_commit: str,
     preregistration: PreregisteredRun,
+    run_input_path: Path | None = None,
+    run_claim_path: Path | None = None,
     works: Sequence[str] = DEFAULT_WORKS,
     config: CertifiedRoutingRunConfig | None = None,
     decision_config: RoutingGateConfig | None = None,
 ) -> tuple[dict[str, Any], dict[str, Any]]:
+    if run_input_path is None or run_claim_path is None:
+        raise CertifiedRoutingRunError(
+            "binding run requires a v3 run input and external pre-run claim"
+        )
+    # This must remain the first filesystem-dependent runner operation. It
+    # verifies every input dependency and refuses an already-created output root.
+    try:
+        preflight = preflight_run(run_input_path, run_claim_path)
+    except RunContractError as exc:
+        raise CertifiedRoutingRunError(f"v3 run preflight failed: {exc}") from exc
+    expected_output = Path(preflight.run_input.document["output_root"])
+    if output_root.resolve(strict=False) != expected_output:
+        raise CertifiedRoutingRunError(
+            "runner output_root differs from the v3 precommitted output root"
+        )
+    if code_commit.lower() != preflight.run_input.document["source_commit"]:
+        raise CertifiedRoutingRunError(
+            "execution code commit differs from v3 run input"
+        )
+    if tuple(works) != V3_REQUIRED_WORKS:
+        raise CertifiedRoutingRunError(
+            "runner works differ from the v3 frozen work set/order"
+        )
     if not isinstance(preregistration, PreregisteredRun):
         raise CertifiedRoutingRunError(
             "binding run requires a preexisting verified preregistration witness"
         )
-    # This is deliberately the first filesystem-dependent operation in the
-    # runner. No output or optimizer may occur before the witness is reloaded.
     initial = load_preregistration(Path(preregistration.path))
     if initial != preregistration:
         raise CertifiedRoutingRunError(
             "preregistration changed between caller verification and runner entry"
+        )
+    legacy_record = preflight.run_input.document["legacy_preregistration"]
+    if (
+        legacy_record["path"] != initial.path
+        or legacy_record["sha256"] != initial.container_sha256
+    ):
+        raise CertifiedRoutingRunError(
+            "v3 run input binds a different legacy preregistration witness"
+        )
+    v3_source_groups = {
+        group: [
+            {"path": row["path"], "sha256": row["sha256"]}
+            for row in preflight.run_input.document["source_manifests"][group]
+        ]
+        for group in ("voiced", "no_vocal")
+    }
+    legacy_source_groups = {
+        group: [
+            {"path": row["path"], "sha256": row["sha256"]}
+            for row in initial.document["source_manifests"][group]
+        ]
+        for group in ("voiced", "no_vocal")
+    }
+    if v3_source_groups != legacy_source_groups:
+        raise CertifiedRoutingRunError(
+            "legacy witness source groups differ from v3 run input"
         )
     if code_commit.lower() != initial.document["source_commit"]:
         raise CertifiedRoutingRunError(
@@ -870,14 +950,45 @@ def run_experiment(
     _verify_clean_source_tree(code_commit)
     verify_source_manifests(initial)
     cfg = config or CertifiedRoutingRunConfig()
-    resolution_keys = canonical_resolution_sequence(
+    legacy_resolution_keys = canonical_resolution_sequence(
         initial.document["resolutions_seconds"]
     )
+    resolution_keys = tuple(
+        item["seconds_decimal"] for item in preflight.run_input.document["resolutions"]
+    )
+    v3_resolutions = require_canonical_resolutions(resolution_keys)
+    if {float(value) for value in legacy_resolution_keys} != set(v3_resolutions):
+        raise CertifiedRoutingRunError(
+            "legacy witness resolution set differs from v3 run input"
+        )
     cfg = replace(
         cfg,
-        resolutions_seconds=tuple(float(value) for value in resolution_keys),
+        resolutions_seconds=v3_resolutions,
     )
     cfg.validate()
+    effective_decision_config = decision_config or RoutingGateConfig()
+    effective_decision_config.validate()
+    expected_routing_config = {
+        "schema": "audio-extract/oracle-routing-config-binding/v1",
+        "works": list(works),
+        "run_config": {
+            **asdict(cfg),
+            "spectral": asdict(cfg.spectral),
+        },
+        "decision_config": asdict(effective_decision_config),
+    }
+    try:
+        bound_routing_config = load_bound_json_artifact(
+            preflight.run_input, "routing_config"
+        )
+    except RunContractError as exc:
+        raise CertifiedRoutingRunError(
+            f"cannot reopen v3 routing config: {exc}"
+        ) from exc
+    if bound_routing_config != expected_routing_config:
+        raise CertifiedRoutingRunError(
+            "runner config differs from the v3 bound routing config"
+        )
     report: dict[str, Any] = {
         "schema": REPORT_SCHEMA,
         "run_schema": RUN_SCHEMA,
@@ -889,15 +1000,18 @@ def run_experiment(
         },
         "works": list(works),
         "resolutions": {},
+        "run_input_binding": dict(preflight.binding),
         **binding_fields(initial),
     }
     bind_report(report, initial)
     recipe_preregistration = {
         "preregistration": binding_fields(initial),
+        "run_input_binding": dict(preflight.binding),
     }
     truths = {
         work: load_exact_truth(
-            truth_root, work,
+            truth_root,
+            work,
             identity_tolerance=cfg.truth_identity_tolerance,
         )
         for work in works
@@ -932,10 +1046,8 @@ def run_experiment(
 
     decision = evaluate_report(
         report,
-        config=decision_config,
-        required_resolutions=tuple(
-            resolution_keys
-        ),
+        config=effective_decision_config,
+        required_resolutions=tuple(resolution_keys),
     )
     payload = json.dumps(report, indent=2, sort_keys=True) + "\n"
     decision_payload = json.dumps(decision, indent=2, sort_keys=True) + "\n"
@@ -959,4 +1071,10 @@ def run_experiment(
         )
     verify_source_manifests(final)
     bind_report(report, final)
+    try:
+        verify_v3_report_binding(report, run_input_path, run_claim_path)
+    except RunContractError as exc:
+        raise CertifiedRoutingRunError(
+            f"v3 report binding changed during execution: {exc}"
+        ) from exc
     return report, decision

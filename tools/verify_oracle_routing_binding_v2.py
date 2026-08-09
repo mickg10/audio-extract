@@ -50,6 +50,12 @@ from audio_extract.oracle_routing_run_contract_v2 import (
     RunContractError,
     verify_truth_manifest,
 )
+from audio_extract.oracle_routing_run_contract_v3 import (
+    RunContractError as RunContractV3Error,
+)
+from audio_extract.oracle_routing_run_contract_v3 import (
+    verify_report_binding as verify_v3_report_binding,
+)
 from audio_extract.oracle_routing_source_lineage_v2 import (
     LINEAGE_SCHEMA,
     _recipe_identity,
@@ -70,8 +76,11 @@ class BindingVerificationError(RuntimeError):
 
 def _signature(stat: os.stat_result) -> tuple[int, int, int, int, int]:
     return (
-        stat.st_dev, stat.st_ino, stat.st_size,
-        stat.st_mtime_ns, stat.st_ctime_ns,
+        stat.st_dev,
+        stat.st_ino,
+        stat.st_size,
+        stat.st_mtime_ns,
+        stat.st_ctime_ns,
     )
 
 
@@ -97,22 +106,17 @@ def _stable_bytes(path: Path) -> tuple[bytes, str]:
         raise
     except OSError as exc:
         raise BindingVerificationError(f"cannot read {path}: {exc}") from exc
-    if (
-        _signature(before) != _signature(after)
-        or _signature(before) != _signature(current)
+    if _signature(before) != _signature(after) or _signature(before) != _signature(
+        current
     ):
-        raise BindingVerificationError(
-            f"input changed or path was replaced: {path}"
-        )
+        raise BindingVerificationError(f"input changed or path was replaced: {path}")
     return payload, "sha256:" + hashlib.sha256(payload).hexdigest()
 
 
 def _json(path: Path, label: str) -> tuple[Mapping[str, Any], str]:
     payload, digest = _stable_bytes(path)
     try:
-        value = json.loads(
-            payload.decode("utf-8"), object_pairs_hook=_unique_object
-        )
+        value = json.loads(payload.decode("utf-8"), object_pairs_hook=_unique_object)
     except (UnicodeDecodeError, json.JSONDecodeError) as exc:
         raise BindingVerificationError(
             f"invalid JSON in {label}: {path}: {exc}"
@@ -129,15 +133,11 @@ def _sha_file(path: Path) -> str:
 def _sha_identity(value: Any, label: str) -> str:
     result = str(value or "").lower()
     if not result.startswith("sha256:") or len(result) != 71:
-        raise BindingVerificationError(
-            f"{label} must be sha256:<64 hex>"
-        )
+        raise BindingVerificationError(f"{label} must be sha256:<64 hex>")
     try:
         int(result[7:], 16)
     except ValueError as exc:
-        raise BindingVerificationError(
-            f"{label} must be sha256:<64 hex>"
-        ) from exc
+        raise BindingVerificationError(f"{label} must be sha256:<64 hex>") from exc
     return result
 
 
@@ -168,9 +168,7 @@ def _source_records(
 ) -> tuple[tuple[str, Path, str], ...]:
     groups = inputs.get("source_manifest_groups")
     if not isinstance(groups, Mapping):
-        raise BindingVerificationError(
-            "run inputs lack source_manifest_groups"
-        )
+        raise BindingVerificationError("run inputs lack source_manifest_groups")
     if set(groups) != set(SOURCE_MANIFEST_GROUPS):
         raise BindingVerificationError(
             "source_manifest_groups must contain exactly voiced and no_vocal"
@@ -180,15 +178,22 @@ def _source_records(
     seen_paths: set[Path] = set()
     for group in SOURCE_MANIFEST_GROUPS:
         records = groups.get(group)
-        if not isinstance(records, Sequence) or isinstance(
-            records, (str, bytes, bytearray)
-        ) or not records:
+        if (
+            not isinstance(records, Sequence)
+            or isinstance(records, (str, bytes, bytearray))
+            or not records
+        ):
             raise BindingVerificationError(
                 f"source manifest group {group!r} must be a non-empty array"
             )
         for index, record in enumerate(records):
             if not isinstance(record, Mapping) or set(record) != {
-                "path", "sha256", "size", "device", "inode", "mtime_ns"
+                "path",
+                "sha256",
+                "size",
+                "device",
+                "inode",
+                "mtime_ns",
             }:
                 raise BindingVerificationError(
                     f"{group} source manifest record {index} must contain "
@@ -232,9 +237,14 @@ def _source_records(
 
 
 def _verify_generated_recipe_bindings(
-    report: Mapping[str, Any], preregistration: PreregisteredRun
+    report: Mapping[str, Any],
+    preregistration: PreregisteredRun,
+    run_input_binding: Mapping[str, Any],
 ) -> None:
     expected = binding_fields(preregistration)
+    output_root = Path(str(run_input_binding.get("output_root") or ""))
+    if not output_root.is_absolute():
+        raise BindingVerificationError("v3 binding output_root is invalid")
     resolutions = report.get("resolutions")
     if not isinstance(resolutions, Mapping):
         raise BindingVerificationError("report lacks resolutions")
@@ -253,19 +263,36 @@ def _verify_generated_recipe_bindings(
                 for evidence in methods.values():
                     artifact = (
                         evidence.get("artifact")
-                        if isinstance(evidence, Mapping) else None
+                        if isinstance(evidence, Mapping)
+                        else None
                     )
                     if not isinstance(artifact, Mapping) or not artifact.get(
                         "recipe_id"
                     ):
                         continue
                     artifact_path = Path(str(artifact.get("path") or ""))
+                    try:
+                        resolved_artifact = artifact_path.resolve(strict=True)
+                    except OSError as exc:
+                        raise BindingVerificationError(
+                            f"cannot resolve generated artifact: {artifact_path}"
+                        ) from exc
+                    if not resolved_artifact.is_relative_to(output_root):
+                        raise BindingVerificationError(
+                            "generated artifact is outside v3 output_root: "
+                            f"{resolved_artifact}"
+                        )
                     recipe_path = artifact_path.parent / "recipe.json"
                     recipe, _ = _json(recipe_path, "generated artifact recipe")
                     if recipe.get("preregistration") != expected:
                         raise BindingVerificationError(
                             "generated artifact recipe lacks the exact "
                             f"preregistration binding: {recipe_path}"
+                        )
+                    if recipe.get("run_input_binding") != run_input_binding:
+                        raise BindingVerificationError(
+                            "generated artifact recipe lacks the exact v3 "
+                            f"run-input binding: {recipe_path}"
                         )
                     checked += 1
     if checked == 0:
@@ -291,21 +318,18 @@ def _verify_preregistered_artifacts(
     for name, witness_field in expected_fields.items():
         record = records[name]
         if not isinstance(record, Mapping) or set(record) != {
-            "path", "semantic_sha256"
+            "path",
+            "semantic_sha256",
         }:
             raise BindingVerificationError(
                 f"invalid preregistered artifact record: {name}"
             )
         value, _ = _json(Path(str(record["path"])), name)
         actual = sha256_bytes(canonical_json(value))
-        declared = _sha_identity(
-            record["semantic_sha256"], f"{name} semantic SHA"
-        )
+        declared = _sha_identity(record["semantic_sha256"], f"{name} semantic SHA")
         expected = preregistration.document[witness_field]
         if actual != declared or declared != expected:
-            raise BindingVerificationError(
-                f"{name} differs from preregistration"
-            )
+            raise BindingVerificationError(f"{name} differs from preregistration")
         values[name] = value
     return values
 
@@ -336,8 +360,10 @@ def _verify_report_truth(
             }
             grids = {
                 (
-                    role["frames"], role["sample_rate_hz"],
-                    tuple(role["channels"]), role["subtype"],
+                    role["frames"],
+                    role["sample_rate_hz"],
+                    tuple(role["channels"]),
+                    role["subtype"],
                 )
                 for role in roles.values()
             }
@@ -379,9 +405,7 @@ def _verify_frozen_execution_inputs(
         "voiced_source_lineage": "source-lineage-audit-v2.json",
         "no_vocal_source_lineage": "no-vocal-source-lineage-audit-v2.json",
     }
-    if basis.get("schema") != (
-        "audio-extract/oracle-routing-basis-audit-binding/v1"
-    ):
+    if basis.get("schema") != ("audio-extract/oracle-routing-basis-audit-binding/v1"):
         raise BindingVerificationError("wrong frozen basis-audit schema")
     for field, filename in components.items():
         current, _ = _json(run_inputs_path.parent / filename, field)
@@ -417,17 +441,13 @@ def _verify_lineage_audit(
 ) -> None:
     value, digest = _json(path, f"{role} source-lineage audit")
     if digest != expected_sha256:
-        raise BindingVerificationError(
-            f"source-lineage audit changed: {path}"
-        )
+        raise BindingVerificationError(f"source-lineage audit changed: {path}")
     if value.get("schema") != LINEAGE_SCHEMA or value.get("status") != "pass":
         raise BindingVerificationError(
             f"invalid source-lineage audit status/schema: {path}"
         )
     if value.get("source_role") != role:
-        raise BindingVerificationError(
-            f"source-lineage audit role mismatch: {path}"
-        )
+        raise BindingVerificationError(f"source-lineage audit role mismatch: {path}")
     works = value.get("works")
     if not isinstance(works, list) or works != sorted(expected_works):
         raise BindingVerificationError(
@@ -477,9 +497,7 @@ def _verify_lineage_audit(
         or not isinstance(count, int)
         or count != len(candidates)
     ):
-        raise BindingVerificationError(
-            "source-lineage candidate list/count is invalid"
-        )
+        raise BindingVerificationError("source-lineage candidate list/count is invalid")
     seen: set[tuple[str, str, str]] = set()
     candidate_works: set[str] = set()
     for index, record in enumerate(candidates):
@@ -503,9 +521,7 @@ def _verify_lineage_audit(
         candidate_works.add(work)
         expected = current_sources[work]
         if record.get("source_role") != role:
-            raise BindingVerificationError(
-                f"candidate source role mismatch: {key}"
-            )
+            raise BindingVerificationError(f"candidate source role mismatch: {key}")
         recipe_path = Path(str(record.get("recipe_path") or ""))
         try:
             recipe, recipe_digest = _stable_json(recipe_path)
@@ -516,25 +532,17 @@ def _verify_lineage_audit(
                 f"cannot reverify candidate recipe {key}: {exc}"
             ) from exc
         if computed_recipe_id != recipe_id:
-            raise BindingVerificationError(
-                f"candidate recipe identity changed: {key}"
-            )
+            raise BindingVerificationError(f"candidate recipe identity changed: {key}")
         if recipe_digest != _sha_identity(
             record.get("recipe_container_sha256"),
             f"lineage candidate {index} recipe container",
         ):
-            raise BindingVerificationError(
-                f"candidate recipe bytes changed: {key}"
-            )
+            raise BindingVerificationError(f"candidate recipe bytes changed: {key}")
         if str(recipe.get("schema")) != record.get("recipe_schema"):
-            raise BindingVerificationError(
-                f"candidate recipe schema changed: {key}"
-            )
+            raise BindingVerificationError(f"candidate recipe schema changed: {key}")
         recipe_work = recipe.get("work_id")
         if recipe_work is not None and str(recipe_work) != work:
-            raise BindingVerificationError(
-                f"candidate recipe work changed: {key}"
-            )
+            raise BindingVerificationError(f"candidate recipe work changed: {key}")
         source_pcm, frames, sample_rate, channels, sample_format = source
         if (
             source_pcm != expected["artifact_pcm_sha256"]
@@ -587,21 +595,20 @@ def _verify_run_inputs(
         raise BindingVerificationError(
             "run inputs do not contain the compiled binding policy"
         )
-    if _sha_identity(
-        inputs.get("binding_policy_sha256"),
-        "run-input binding policy SHA",
-    ) != CANONICAL_POLICY_SHA256:
+    if (
+        _sha_identity(
+            inputs.get("binding_policy_sha256"),
+            "run-input binding policy SHA",
+        )
+        != CANONICAL_POLICY_SHA256
+    ):
         raise BindingVerificationError(
             "run-input binding policy SHA differs from preregistration"
         )
     if report.get("code_commit") != inputs.get("code_commit"):
-        raise BindingVerificationError(
-            "report/run-input code commit mismatch"
-        )
+        raise BindingVerificationError("report/run-input code commit mismatch")
     if report.get("works") != inputs.get("works"):
-        raise BindingVerificationError(
-            "report/run-input work set or order mismatch"
-        )
+        raise BindingVerificationError("report/run-input work set or order mismatch")
     works = inputs.get("works")
     if not isinstance(works, list) or not works:
         raise BindingVerificationError("run inputs have no works")
@@ -610,9 +617,7 @@ def _verify_run_inputs(
     if len(set(works)) != len(works):
         raise BindingVerificationError("run inputs contain duplicate work IDs")
     if report.get("config") != inputs.get("run_config"):
-        raise BindingVerificationError(
-            "report/run-input run configuration mismatch"
-        )
+        raise BindingVerificationError("report/run-input run configuration mismatch")
 
     resolutions = report.get("resolutions")
     if not isinstance(resolutions, Mapping):
@@ -624,13 +629,8 @@ def _verify_run_inputs(
         )
     expected_works = tuple(works)
     for resolution, row in resolutions.items():
-        if (
-            not isinstance(row, Mapping)
-            or not isinstance(row.get("works"), Mapping)
-        ):
-            raise BindingVerificationError(
-                f"resolution {resolution} lacks works"
-            )
+        if not isinstance(row, Mapping) or not isinstance(row.get("works"), Mapping):
+            raise BindingVerificationError(f"resolution {resolution} lacks works")
         if set(row["works"]) != set(expected_works):
             raise BindingVerificationError(
                 f"resolution {resolution} work set differs from run inputs"
@@ -638,9 +638,7 @@ def _verify_run_inputs(
 
     decision_config = inputs.get("decision_config")
     if not isinstance(decision_config, Mapping):
-        raise BindingVerificationError(
-            "run inputs lack frozen decision_config"
-        )
+        raise BindingVerificationError("run inputs lack frozen decision_config")
     try:
         thresholds = RoutingGateConfig(**dict(decision_config))
         thresholds.validate()
@@ -651,9 +649,7 @@ def _verify_run_inputs(
 
     for group, path, expected in _source_records(inputs):
         if _sha_file(path) != expected:
-            raise BindingVerificationError(
-                f"{group} source manifest changed: {path}"
-            )
+            raise BindingVerificationError(f"{group} source manifest changed: {path}")
 
     for filename, key in (
         ("basis-audit-v2.json", "basis_audit_sha256"),
@@ -688,39 +684,103 @@ def _verify_run_inputs(
 def run(
     *,
     preregistration_path: Path,
+    run_input_v3_path: Path,
+    run_claim_v3_path: Path,
     report_path: Path,
     run_inputs_path: Path,
     policy_path: Path,
     output_path: Path | None,
 ) -> dict[str, Any]:
+    report, report_sha = _json(report_path, "routing report")
+    try:
+        validated_v3 = verify_v3_report_binding(
+            report, run_input_v3_path, run_claim_v3_path
+        )
+    except RunContractV3Error as exc:
+        raise BindingVerificationError(f"invalid v3 run-input binding: {exc}") from exc
+    run_input_binding = report["run_input_binding"]
     try:
         preregistration = load_preregistration(preregistration_path)
         verify_source_manifests(preregistration)
     except PreregistrationError as exc:
+        raise BindingVerificationError(f"invalid preregistration: {exc}") from exc
+    legacy_record = validated_v3.document["legacy_preregistration"]
+    if legacy_record["path"] != str(preregistration_path.resolve(strict=True)):
         raise BindingVerificationError(
-            f"invalid preregistration: {exc}"
-        ) from exc
-    report, report_sha = _json(report_path, "routing report")
+            "v3 run input binds a different legacy preregistration path"
+        )
+    if legacy_record["sha256"] != _sha_file(preregistration_path):
+        raise BindingVerificationError(
+            "v3 run input binds a different legacy preregistration digest"
+        )
     try:
         bind_report(report, preregistration)
     except PreregistrationError as exc:
         raise BindingVerificationError(str(exc)) from exc
     inputs, inputs_sha = _json(run_inputs_path, "run inputs")
+    if inputs.get("run_input_binding") != run_input_binding:
+        raise BindingVerificationError("run-inputs-v2/v3 precommit binding mismatch")
     expected_binding = binding_fields(preregistration)
-    if inputs.get("preregistration") != expected_binding:
+    v3_source_groups = {
+        group: [
+            {"path": row["path"], "sha256": row["sha256"]}
+            for row in validated_v3.document["source_manifests"][group]
+        ]
+        for group in ("voiced", "no_vocal")
+    }
+    legacy_source_groups = {
+        group: [
+            {"path": row["path"], "sha256": row["sha256"]}
+            for row in preregistration.document["source_manifests"][group]
+        ]
+        for group in ("voiced", "no_vocal")
+    }
+    if v3_source_groups != legacy_source_groups:
         raise BindingVerificationError(
-            "run-input/preregistration binding mismatch"
+            "v3 source groups differ from legacy preregistration"
         )
-    if inputs.get("source_manifest_groups") != preregistration.document[
-        "source_manifests"
-    ]:
+    if validated_v3.document["source_commit"] != inputs.get("code_commit"):
+        raise BindingVerificationError("v3/input code commit mismatch")
+    if validated_v3.document["required_works"] != inputs.get("works"):
+        raise BindingVerificationError("v3/input work set/order mismatch")
+    candidate_records = [
+        {"path": row["path"], "sha256": row["sha256"]}
+        for row in validated_v3.document["candidate_manifests"]
+    ]
+    expected_candidates = [
+        dict(row)
+        for group in ("voiced", "no_vocal")
+        for row in legacy_source_groups[group]
+    ]
+    if candidate_records != expected_candidates:
+        raise BindingVerificationError("v3 candidate manifest set/order mismatch")
+    for name, witness_field in (
+        ("truth_manifest", "truth_manifest_sha256"),
+        ("basis_audit", "basis_audit_sha256"),
+        ("routing_config", "routing_config_sha256"),
+    ):
+        record = validated_v3.document[name]
+        value, container_sha = _json(Path(record["path"]), f"v3 {name}")
+        if container_sha != record["sha256"]:
+            raise BindingVerificationError(f"v3 {name} container digest mismatch")
+        if (
+            sha256_bytes(canonical_json(value))
+            != preregistration.document[witness_field]
+        ):
+            raise BindingVerificationError(
+                f"v3 {name} differs from legacy preregistration"
+            )
+    if inputs.get("preregistration") != expected_binding:
+        raise BindingVerificationError("run-input/preregistration binding mismatch")
+    if (
+        inputs.get("source_manifest_groups")
+        != preregistration.document["source_manifests"]
+    ):
         raise BindingVerificationError(
             "run-input source_manifest_groups differ from preregistration; "
             "voiced and no_vocal must remain non-empty arrays"
         )
-    preregistered_artifacts = _verify_preregistered_artifacts(
-        inputs, preregistration
-    )
+    preregistered_artifacts = _verify_preregistered_artifacts(inputs, preregistration)
     try:
         verify_truth_manifest(
             preregistered_artifacts["truth_manifest"],
@@ -730,19 +790,13 @@ def run(
         raise BindingVerificationError(
             f"frozen truth manifest failed replay: {exc}"
         ) from exc
-    _verify_frozen_execution_inputs(
-        inputs, run_inputs_path, preregistered_artifacts
-    )
+    _verify_frozen_execution_inputs(inputs, run_inputs_path, preregistered_artifacts)
     policy_value, policy_file_sha = _json(policy_path, "binding policy")
     policy, policy_semantic_sha = _verify_policy(policy_value)
-    thresholds = _verify_run_inputs(
-        report, inputs, policy, run_inputs_path
-    )
+    thresholds = _verify_run_inputs(report, inputs, policy, run_inputs_path)
     _verify_report_truth(report, preregistered_artifacts["truth_manifest"])
-    _verify_generated_recipe_bindings(report, preregistration)
-    decision = evaluate_report_strict(
-        report, policy=policy, metric_config=thresholds
-    )
+    _verify_generated_recipe_bindings(report, preregistration, run_input_binding)
+    decision = evaluate_report_strict(report, policy=policy, metric_config=thresholds)
     result = {
         "schema": VERIFICATION_SCHEMA,
         "status": (
@@ -759,6 +813,10 @@ def run(
         "binding_policy_semantic_sha256": policy_semantic_sha,
         "compiled_binding_policy_sha256": CANONICAL_POLICY_SHA256,
         "preregistration": expected_binding,
+        "run_input_binding": run_input_binding,
+        "run_input_v3": validated_v3.path,
+        "run_input_v3_sha256": validated_v3.sha256,
+        "run_claim_v3": str(run_claim_v3_path.resolve(strict=True)),
         "code_commit": inputs["code_commit"],
         "decision": decision,
     }
@@ -779,18 +837,16 @@ def run(
             f"preregistration changed during verification: {exc}"
         ) from exc
     if final_preregistration != preregistration:
-        raise BindingVerificationError(
-            "preregistration changed during verification"
-        )
+        raise BindingVerificationError("preregistration changed during verification")
     return result
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(
-        "verify-oracle-routing-binding-v2"
-    )
+    parser = argparse.ArgumentParser("verify-oracle-routing-binding-v2")
     parser.add_argument("--report", required=True, type=Path)
     parser.add_argument("--preregistration", required=True, type=Path)
+    parser.add_argument("--run-input-v3", required=True, type=Path)
+    parser.add_argument("--run-claim-v3", required=True, type=Path)
     parser.add_argument("--run-inputs", required=True, type=Path)
     parser.add_argument(
         "--policy",
@@ -809,19 +865,24 @@ def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     result = run(
         preregistration_path=args.preregistration,
+        run_input_v3_path=args.run_input_v3,
+        run_claim_v3_path=args.run_claim_v3,
         report_path=args.report,
         run_inputs_path=args.run_inputs,
         policy_path=args.policy,
         output_path=args.output,
     )
-    print(json.dumps({
-        "status": result["status"],
-        "decision": result["decision"]["decision"],
-        "report_sha256": result["routing_report_sha256"],
-        "policy_semantic_sha256": result[
-            "binding_policy_semantic_sha256"
-        ],
-    }, sort_keys=True))
+    print(
+        json.dumps(
+            {
+                "status": result["status"],
+                "decision": result["decision"]["decision"],
+                "report_sha256": result["routing_report_sha256"],
+                "policy_semantic_sha256": result["binding_policy_semantic_sha256"],
+            },
+            sort_keys=True,
+        )
+    )
     return 0 if result["status"] == "verified" else 2
 
 
