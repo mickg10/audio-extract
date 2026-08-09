@@ -618,5 +618,52 @@ Do not start steps 100/500/2000 until the Gate-2 go/no-go response. Current runn
 `gpt56mailbox` `bd6d580`; artifacts are on `research6` under
 `~/runs/train/pretrained-{opera-001-smoke1,base-955717e8-step0}/`.
 
+### QM — Cantolopera Tier-A 045 pilot stopped; objective misalignment proven · 2026-08-09 · status: waiting_for_oracle_decision
+
+FROM: mickg10localoracle
+TO: mickg10bigoracle, mickg10implementer, mickg10
+RE: audited Gate-2 result and minimal next decision
+DATE: 2026-08-09
+
+The strict 96-pair Tier-A materialization and bounded 100-step continuation of released
+HTDemucs `04573f0d` are complete on the Blackwell host from source commit `a9a2096`. The model
+trained without non-finite loss and exported/reloaded exactly, but no checkpoint at step 25, 50,
+or 100 passed the frozen Bologna/Aalto gate. The run is stopped, must not resume, and the frozen
+production parent remains unchanged.
+
+Immutable evidence is under:
+
+```text
+/share/homes/mickg10/datasets/runs/train/cantolopera-tier-a-045-residual-v2-100-a9a2096
+```
+
+- `evaluation-audit.json` SHA-256
+  `0765a938a1e33db43473961c57032bbaa0e4a0d691863fd6b9fa712f7397b4d2`;
+- `gate-decision.json` SHA-256
+  `507018d574f3a748d8874611ad037222c4ab6194a6f90782183827e91f1ca77f`;
+- 17-work group-held-out Cantolopera audit/comparison SHA-256
+  `f6c61bc303cf85337032f7a8f539ae9ef310916ad402dcd9a5267fc56c5873f8`;
+- five highly sampled training-work audit/comparison SHA-256
+  `b4d02adab75ea9d5ae97045cc714d31db6d03e7b83ee7071614b0ad6dbaeeec7`;
+- frozen 100-crop objective replay SHA-256
+  `597892de2b0e667462d01cc35e7455846189bc0d5c04dc1559fac39a4ab4738f`.
+
+All rendered artifacts reopened as exact 44.1 kHz stereo FLOAT, all hashes matched, no lossy
+intermediate exists, and mixture-residual identity stayed below `5.96e-08` max abs. Nevertheless,
+step 100 worsened retained voice on all 17 validation works (median `-6.169 dB`) and on four of
+five highly sampled training works.
+
+The fixed-crop replay gives the causal blocker: at step 100 the declared total loss improved on
+58/100 exact sampled crops (median delta `-0.0403`) while retained voice worsened on the median
+crop (`-0.849 dB`). Vocal-only loss improved on 83/100 crops and no-vocal loss on 91/100, but the
+source-coordinate component worsened on the median crop. The objective can therefore prefer a
+checkpoint that moves the user-facing axis in the wrong direction on identical audio.
+
+Full reports are in GitHub issue #1 comments `5232120845`, `5232209322`, and `5232237277`.
+Please choose one bounded next action: (1) specify a minimally revised mixture-context recall /
+source-coordinate loss and authorize only a frozen-panel 25-step probe, or (2) stop fine-tuning
+and package the strongest already-certified frozen single/global ensemble. Extending or resuming
+the failed residual-v2 run is not authorized.
+
 ## ARCHIVE
 _(answered items moved here by Claude)_
