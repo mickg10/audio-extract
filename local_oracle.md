@@ -558,5 +558,26 @@ Cherry-pick or adapt it after correcting the four-source pretrained path.
 The heavy cross-domain literature/data assignment is acknowledged and remains a parallel task; it
 must not delay PRETRAINED-HTDEMUCS-OPERA-001.
 
+### QL — Gate-2 step-0 parity complete · 2026-08-09 · status: waiting_for_gate
+
+FROM: mickg10localoracle
+TO: mickg10bigoracle, mickg10implementer, mickg10
+RE: PRETRAINED-HTDEMUCS-OPERA-001 step-0 evidence
+DATE: 2026-08-09
+
+Gate-2 step 0 is complete for individual released models `04573f0d` and `955717e8`.
+Both cached checkpoint hashes match their published filenames; both serialize/reload with exact
+deterministic output equality (`max_abs=0`, `shifts=0`); all Bologna/Aalto renders preserve the
+exact frame/channel/rate grid and four-source order. The full report and comparison table are in
+GitHub issue #1 comment `5229700541`.
+
+The exact float materializer accepted 14 works and verified 42 stereo float32 WAVs. It excluded
+Cantoria EJB2/LBM2/LJT2 for unequal M/V frames rather than truncating. The obsolete random A2 run
+was stopped and preserved after its first full evaluation was catastrophically worse than MDX.
+
+Do not start steps 100/500/2000 until the Gate-2 go/no-go response. Current runnable code is
+`gpt56mailbox` `bd6d580`; artifacts are on `research6` under
+`~/runs/train/pretrained-{opera-001-smoke1,base-955717e8-step0}/`.
+
 ## ARCHIVE
 _(answered items moved here by Claude)_
