@@ -53,6 +53,8 @@ class OracleEnvelopeConfig:
     ridge_relative: float = 1e-8
     max_condition: float = 1e6
     min_source_energy: float = 1e-10
+    energy_floor_db_below_peak: float = 60.0
+    max_stft_roundtrip_abs: float = 2e-5
     temporal_switch_penalty: float = 0.08
     frequency_switch_penalty: float = 0.04
     temporal_weight_smoothness: float = 0.08
@@ -81,6 +83,8 @@ class OracleEnvelopeConfig:
                 raise ValueError(f"{name} must be non-negative")
         if self.ridge_relative < 0 or self.max_condition <= 1 or self.min_source_energy < 0:
             raise ValueError("invalid source-coordinate thresholds")
+        if self.energy_floor_db_below_peak <= 0 or self.max_stft_roundtrip_abs <= 0:
+            raise ValueError("energy floor and roundtrip threshold must be positive")
 
 
 @dataclass(frozen=True)
@@ -188,7 +192,7 @@ def load_work_arrays(rows: list[BasisRow], truth_root: Path, work_id: str
             if pcm != row.artifact_pcm_sha256:
                 raise OracleEnvelopeError(f"{work_id}/{row.candidate_id}: PCM hash mismatch")
         candidates.append(candidate)
-    return mixture, accompaniment, vocal, np.stack(candidates).astype(np.float64), sr, selected
+    return mixture, accompaniment, vocal, np.stack(candidates).astype(np.float32), sr, selected
 
 
 def _stft_stereo(audio: np.ndarray, cfg: OracleEnvelopeConfig) -> np.ndarray:
@@ -260,6 +264,20 @@ def source_coordinate_quadratics(
     condition = np.full((len(time_slices), len(band_slices)), np.nan)
     modes: list[list[str]] = [["" for _ in band_slices] for _ in time_slices]
 
+    accompaniment_energies = np.asarray([
+        float(np.real(np.vdot(
+            accompaniment_spec[:, bs, ts].reshape(-1),
+            accompaniment_spec[:, bs, ts].reshape(-1),
+        )))
+        for ts in time_slices for bs in band_slices
+    ], dtype=np.float64)
+    peak_accompaniment_energy = float(accompaniment_energies.max(initial=0.0))
+    relative_floor = (
+        peak_accompaniment_energy
+        * 10.0 ** (-cfg.energy_floor_db_below_peak / 10.0)
+    )
+    absolute_energy_floor = max(float(cfg.min_source_energy), relative_floor)
+
     for ti, ts in enumerate(time_slices):
         for bi, bs in enumerate(band_slices):
             a = np.moveaxis(accompaniment_spec[:, bs, ts], 0, -1)
@@ -269,7 +287,7 @@ def source_coordinate_quadratics(
                 fit_source_coordinates(
                     y, a, v, ridge_relative=cfg.ridge_relative,
                     max_condition=cfg.max_condition,
-                    min_source_energy=cfg.min_source_energy,
+                    min_source_energy=absolute_energy_floor,
                 )
                 for y in ys
             ]
@@ -307,7 +325,7 @@ def source_coordinate_quadratics(
             else:
                 errors = np.stack([(y - a).reshape(-1).astype(np.complex128) for y in ys])
                 af = a.reshape(-1).astype(np.complex128)
-                scale = max(float(np.real(np.vdot(af, af))), cfg.min_source_energy)
+                scale = max(float(np.real(np.vdot(af, af))), absolute_energy_floor)
                 local_G = (
                     cfg.fallback_direct_weight
                     * np.real(errors.conj() @ errors.T) / scale
@@ -329,6 +347,9 @@ def source_coordinate_quadratics(
         "direct_fallback_cells": int(available.size - available.sum()),
         "condition_numbers": condition.tolist(),
         "cell_modes": modes,
+        "peak_accompaniment_cell_energy": peak_accompaniment_energy,
+        "absolute_energy_floor": absolute_energy_floor,
+        "energy_floor_db_below_peak": cfg.energy_floor_db_below_peak,
     }
     return G, c, unary, info
 
@@ -512,7 +533,7 @@ def smooth_convex_weights(G: np.ndarray, c: np.ndarray,
 def reconstruct_medoid(candidate_specs: np.ndarray, labels: np.ndarray,
                        info: dict) -> np.ndarray:
     K, C, F, N = candidate_specs.shape
-    output = np.empty((C, F, N), dtype=np.complex128)
+    output = np.empty((C, F, N), dtype=candidate_specs.dtype)
     for ti, (t0, t1) in enumerate(info["time_slices"]):
         for bi, (f0, f1) in enumerate(info["band_bin_slices"]):
             label = int(labels[ti, bi])
@@ -525,7 +546,7 @@ def reconstruct_medoid(candidate_specs: np.ndarray, labels: np.ndarray,
 def reconstruct_convex(candidate_specs: np.ndarray, weights: np.ndarray,
                        info: dict) -> np.ndarray:
     K, C, F, N = candidate_specs.shape
-    output = np.empty((C, F, N), dtype=np.complex128)
+    output = np.empty((C, F, N), dtype=candidate_specs.dtype)
     for ti, (t0, t1) in enumerate(info["time_slices"]):
         for bi, (f0, f1) in enumerate(info["band_bin_slices"]):
             local = weights[ti, bi]
@@ -596,6 +617,20 @@ def run_work(rows: list[BasisRow], truth_root: Path, work_id: str,
     )
     cfg.validate(sr)
     candidate_specs = np.stack([_stft_stereo(y, cfg) for y in candidates])
+    roundtrip = []
+    for index, spec in enumerate(candidate_specs):
+        reconstructed = _istft_stereo(spec, len(mixture), cfg)
+        difference = reconstructed.astype(np.float64) - candidates[index].astype(np.float64)
+        facts = {
+            "candidate_id": selected[index].candidate_id,
+            "max_abs": float(np.max(np.abs(difference))),
+            "rms": float(np.sqrt(np.mean(np.square(difference)))),
+        }
+        if facts["max_abs"] > cfg.max_stft_roundtrip_abs:
+            raise OracleEnvelopeError(
+                f"STFT roundtrip exceeds threshold for {selected[index].candidate_id}: {facts}"
+            )
+        roundtrip.append(facts)
     accompaniment_spec = _stft_stereo(accompaniment, cfg)
     vocal_spec = _stft_stereo(vocal, cfg)
     G, c, unary, info = source_coordinate_quadratics(
@@ -678,6 +713,7 @@ def run_work(rows: list[BasisRow], truth_root: Path, work_id: str,
             for row in selected
         ],
         "cell_info": info,
+        "stft_roundtrip": roundtrip,
         "methods": outputs,
     }
     report_path = work_dir / "oracle-envelope-report.json"
