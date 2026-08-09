@@ -149,6 +149,7 @@ def test_nonzero_pair_delay_requires_alignment_review(tmp_path):
     assert result["status"] == "audited"
     assert result["suggested_grade"] == "needs_alignment_review"
     assert abs(result["alignment"]["median_delay_samples"]) >= 6
+    assert result["null_evidence"]["null_db_p10"] < -35
 
 
 def test_inventory_summary_and_immutable_output(tmp_path):

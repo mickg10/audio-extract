@@ -296,7 +296,18 @@ def audit_pair(
                 "confidence": aligned.confidence,
             }
         )
-        null_rows.extend(_null_blocks(mixture, orchestra, block_frames))
+        aligned_mixture = alignment.apply_alignment(
+            mixture, aligned, target_len=len(orchestra)
+        )
+        margin = min(max_shift_samples + 2, max(0, len(orchestra) // 4))
+        if margin and len(orchestra) > 2 * margin + block_frames:
+            aligned_mixture = aligned_mixture[margin:-margin]
+            orchestra_for_null = orchestra[margin:-margin]
+        else:
+            orchestra_for_null = orchestra
+        null_rows.extend(
+            _null_blocks(aligned_mixture, orchestra_for_null, block_frames)
+        )
 
     delays = [row["delay_samples"] for row in alignment_rows]
     fractions = [row["fractional_samples"] for row in alignment_rows]
@@ -317,6 +328,12 @@ def audit_pair(
         "median_delay_samples": median_delay,
         "median_fractional_samples": float(np.median(fractions)),
         "minimum_confidence": min(row["confidence"] for row in alignment_rows),
+        "confidence_p10": _percentile(
+            (row["confidence"] for row in alignment_rows), 10
+        ),
+        "confidence_median": _percentile(
+            (row["confidence"] for row in alignment_rows), 50
+        ),
         "zero_lag_positive_polarity_no_swap_votes": zero_lag_votes,
         "zero_lag_positive_polarity_no_swap_vote_fraction": (
             zero_lag_votes / len(alignment_rows)
