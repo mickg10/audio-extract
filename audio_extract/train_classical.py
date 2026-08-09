@@ -27,6 +27,7 @@ import yaml
 
 from . import identity
 from .classical_loss import ClassicalLossConfig, classical_separation_loss
+from .classical_loss_v2 import ClassicalResidualLossConfig, classical_residual_loss_v2
 from .challenges import EVALUATION_TASKS, SOLOIST_VS_REST_ROLES
 from .demucs_affine import (
     DemucsAffine,
@@ -409,18 +410,31 @@ def _set_learning_rates(model, optimizer, cfg: dict, step: int) -> None:
         group["lr"] = lr
 
 
-def _loss_config(cfg: dict) -> ClassicalLossConfig:
+V1_LOSS = "audio_extract.classical_loss:classical_separation_loss"
+V2_RESIDUAL_LOSS = "audio_extract.classical_loss_v2:classical_residual_loss_v2"
+
+
+def _loss_config(
+    cfg: dict,
+) -> tuple[str, ClassicalLossConfig | ClassicalResidualLossConfig]:
     weights = cfg["loss"]
-    return ClassicalLossConfig(
-        waveform_l1=float(weights["waveform_l1"]),
-        complex_stft=float(weights["complex_stft"]),
-        mixture_consistency=float(weights["mixture_consistency"]),
-        no_vocal_false_positive=float(weights["no_vocal_false_positive"]),
-        vocal_only_false_negative=float(weights["vocal_only_false_negative"]),
-        source_coordinate=float(weights["source_coordinate_alpha_beta_R"]),
-        stereo_coherence=float(weights["stereo_coherence"]),
-        event_weighted=float(weights["exact_event_weighting"]),
-    )
+    implementation = weights.get("implementation")
+    if implementation == V1_LOSS:
+        return implementation, ClassicalLossConfig(
+            waveform_l1=float(weights["waveform_l1"]),
+            complex_stft=float(weights["complex_stft"]),
+            mixture_consistency=float(weights["mixture_consistency"]),
+            no_vocal_false_positive=float(weights["no_vocal_false_positive"]),
+            vocal_only_false_negative=float(weights["vocal_only_false_negative"]),
+            source_coordinate=float(weights["source_coordinate_alpha_beta_R"]),
+            stereo_coherence=float(weights["stereo_coherence"]),
+            event_weighted=float(weights["exact_event_weighting"]),
+        )
+    if implementation == V2_RESIDUAL_LOSS:
+        values = {key: value for key, value in weights.items() if key != "implementation"}
+        values["stft_ffts"] = tuple(int(value) for value in values["stft_ffts"])
+        return implementation, ClassicalResidualLossConfig(**values)
+    raise ValueError(f"trainer refuses unrecognized loss implementation: {implementation!r}")
 
 
 def _require_production_normalization(cfg: dict) -> None:
@@ -680,7 +694,7 @@ def run_training(args: argparse.Namespace) -> dict:
     )
     optimizer = _build_optimizer(model, cfg)
     initial_optimizer = optimizer_provenance(optimizer)
-    loss_cfg = _loss_config(cfg)
+    loss_implementation, loss_cfg = _loss_config(cfg)
     vocal_index = int(cfg["vocal_source_index"])
     construction = cfg.get("accompaniment_construction", "mixture_residual")
     accompaniment_index = cfg.get("accompaniment_source_index")
@@ -753,15 +767,26 @@ def run_training(args: argparse.Namespace) -> dict:
             model, mixture, accompaniment, vocals, vocal_index,
             construction, accompaniment_index, full_track_affines
         )
-        loss, components = classical_separation_loss(
-            estimates["A_hat"], estimates["V_hat"], mixture, accompaniment, vocals,
-            no_vocal_accompaniment_estimate=estimates["A_only_A_hat"],
-            no_vocal_vocal_estimate=estimates["A_only_V_hat"],
-            vocal_only_accompaniment_estimate=estimates["V_only_A_hat"],
-            vocal_only_vocal_estimate=estimates["V_only_V_hat"],
-            event_weights=event_weights,
-            config=loss_cfg,
-        )
+        if loss_implementation == V2_RESIDUAL_LOSS:
+            loss, components = classical_residual_loss_v2(
+                estimates["A_hat"], estimates["V_hat"], mixture,
+                accompaniment, vocals,
+                no_vocal_vocal_estimate=estimates["A_only_V_hat"],
+                vocal_only_vocal_estimate=estimates["V_only_V_hat"],
+                event_weights=event_weights,
+                config=loss_cfg,
+            )
+        else:
+            loss, components = classical_separation_loss(
+                estimates["A_hat"], estimates["V_hat"], mixture,
+                accompaniment, vocals,
+                no_vocal_accompaniment_estimate=estimates["A_only_A_hat"],
+                no_vocal_vocal_estimate=estimates["A_only_V_hat"],
+                vocal_only_accompaniment_estimate=estimates["V_only_A_hat"],
+                vocal_only_vocal_estimate=estimates["V_only_V_hat"],
+                event_weights=event_weights,
+                config=loss_cfg,
+            )
         optimizer.zero_grad(set_to_none=True)
         loss.backward()
         gradient = torch.nn.utils.clip_grad_norm_(
@@ -811,6 +836,7 @@ def run_training(args: argparse.Namespace) -> dict:
         "train_works": [item[0] for item in dataset.items],
         "eval_works": eval_works,
         "accompaniment_construction": construction,
+        "loss_implementation": loss_implementation,
         "materialization_recipes": {item[0]: item[3] for item in dataset.items},
         "demucs_full_track_affines": {item[0]: item[4] for item in dataset.items},
         "manifest_sha256": _sha_file(manifest),

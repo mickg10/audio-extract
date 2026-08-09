@@ -1,5 +1,5 @@
 schema: audio-extract/train/classical-student-v1
-experiment: CANTOLOPERA-TIER-A-HTDEMUCS-045-100
+experiment: CANTOLOPERA-TIER-A-HTDEMUCS-045-RESIDUAL-V2-100
 base_arch: HTDemucs
 base_checkpoint:
   signature: 04573f0d
@@ -41,15 +41,23 @@ optim:
       decay: cosine
   evaluation_steps: [0, 25, 50, 100]
 loss:
-  complex_stft: 0.5
-  waveform_l1: 1.0
-  mixture_consistency: 0.0
-  no_vocal_false_positive: 0.25
-  vocal_only_false_negative: 0.25
-  source_coordinate_alpha_beta_R: 0.1
-  stereo_coherence: 0.05
-  exact_event_weighting: 0.25
-  implementation: audio_extract.classical_loss:classical_separation_loss
+  implementation: audio_extract.classical_loss_v2:classical_residual_loss_v2
+  residual_waveform: 1.0
+  residual_complex_stft: 0.5
+  no_vocal_false_positive: 1.0
+  vocal_only_false_negative: 0.5
+  source_coordinate: 0.1
+  stereo_accompaniment: 0.05
+  event_weighted_residual: 0.25
+  stft_ffts: [512, 1024, 2048]
+  waveform_reference_floor: 0.001
+  stft_reference_floor: 0.001
+  source_coord_ridge: 0.000001
+  source_coord_max_condition: 1000000.0
+  target_consistency_tolerance: 0.00001
+  residual_consistency_tolerance: 0.000001
+  identity_roundoff_ulps: 8.0
+  eps: 0.00000001
 export:
   to: demucs.states .th -> demucs.apply_model -> audio_separator.demucs_separator
   zero_step_parity_shifts: 0

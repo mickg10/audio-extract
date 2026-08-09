@@ -2,14 +2,19 @@ from audio_extract.cli import build_parser
 from audio_extract.demucs_affine import DemucsAffine
 from audio_extract.train_classical import (
     ClassicalDataset,
+    V1_LOSS,
+    V2_RESIDUAL_LOSS,
     _build_optimizer,
     _exact_fold_works,
     _manifest_train_works,
+    _loss_config,
     _require_production_normalization,
     _require_task_contract,
     _separate_controls,
     _state_dict_sha256,
 )
+from audio_extract.classical_loss import ClassicalLossConfig
+from audio_extract.classical_loss_v2 import ClassicalResidualLossConfig
 from audio_extract.optimizer_contract import optimizer_provenance
 
 
@@ -79,6 +84,52 @@ def test_dataset_verifies_recipe_and_decoded_pcm_identity(tmp_path):
         assert "materialized PCM hash mismatch for cantoria_X/M" in str(exc)
     else:  # pragma: no cover
         raise AssertionError("corrupted materialized PCM was accepted")
+
+
+def test_trainer_dispatches_only_versioned_loss_contracts():
+    v1_name, v1 = _loss_config({"loss": {
+        "implementation": V1_LOSS,
+        "waveform_l1": 1.0,
+        "complex_stft": 0.5,
+        "mixture_consistency": 0.0,
+        "no_vocal_false_positive": 0.25,
+        "vocal_only_false_negative": 0.25,
+        "source_coordinate_alpha_beta_R": 0.1,
+        "stereo_coherence": 0.05,
+        "exact_event_weighting": 0.25,
+    }})
+    assert v1_name == V1_LOSS
+    assert isinstance(v1, ClassicalLossConfig)
+
+    v2_name, v2 = _loss_config({"loss": {
+        "implementation": V2_RESIDUAL_LOSS,
+        "residual_waveform": 1.0,
+        "residual_complex_stft": 0.5,
+        "no_vocal_false_positive": 1.0,
+        "vocal_only_false_negative": 0.5,
+        "source_coordinate": 0.1,
+        "stereo_accompaniment": 0.05,
+        "event_weighted_residual": 0.25,
+        "stft_ffts": [512, 1024],
+        "waveform_reference_floor": 0.001,
+        "stft_reference_floor": 0.001,
+        "source_coord_ridge": 0.000001,
+        "source_coord_max_condition": 1000000.0,
+        "target_consistency_tolerance": 0.00001,
+        "residual_consistency_tolerance": 0.000001,
+        "identity_roundoff_ulps": 8.0,
+        "eps": 0.00000001,
+    }})
+    assert v2_name == V2_RESIDUAL_LOSS
+    assert isinstance(v2, ClassicalResidualLossConfig)
+    assert v2.stft_ffts == (512, 1024)
+
+    try:
+        _loss_config({"loss": {"implementation": "unknown"}})
+    except ValueError as exc:
+        assert "unrecognized loss implementation" in str(exc)
+    else:  # pragma: no cover
+        raise AssertionError("unknown training loss was accepted")
 
 
 def test_manifest_train_works_uses_group_manifest_without_resplitting(tmp_path):
