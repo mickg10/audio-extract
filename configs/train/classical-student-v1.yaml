@@ -1,0 +1,42 @@
+schema: audio-extract/train/classical-student-v1
+base_arch: HTDemucs
+base_arch_fact: trainable torch nn.Module (verified fwd+bwd, no dora); exports via
+  audio_separator.demucs_separator
+sources:
+- accompaniment
+- vocals
+audio_channels: 2
+samplerate: 44100
+model:
+  channels: 48
+  depth: 4
+  segment_s: 7.8
+data:
+  manifest: datasets/classical-v1.jsonl
+  splits: datasets/classical-v1-splits.json
+  train_splits:
+  - train
+  val_splits:
+  - val
+  holdout: test-v1 (CONTAMINATED - not for acceptance)
+optim:
+  name: adam
+  lr: 0.0003
+  steps: 200000
+  batch: 4
+  crop_s: 7.8
+loss:
+  multi_res_stft_mag: 1.0
+  waveform_l1: 1.0
+  mixture_consistency: 0.1
+  TODO_bigoracle:
+  - complex_stft_phase
+  - no_vocal_false_positive
+  - vocal_false_negative
+  - source_coord_alpha_beta_R
+  - stereo_coherence
+  - event_tail_weighting
+export:
+  to: audio_separator demucs_separator (production inference adapter)
+note: 'Do NOT optimize the SHADOW judge (gpt56 H4). SMOKE (100 steps/2 works/eval
+  3rd) PASSED: see calibration/train_classical_smoke_report.json'

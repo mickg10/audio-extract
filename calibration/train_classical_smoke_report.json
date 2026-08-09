@@ -1,0 +1,64 @@
+{
+ "arch": "HTDemucs",
+ "trainable": "verified (forward+backward, plain torch; dora NOT required)",
+ "export_adapter": "audio_separator.architectures.demucs_separator (round-trip to production inference)",
+ "resolved_config": {
+  "sources": [
+   "accompaniment",
+   "vocals"
+  ],
+  "audio_channels": 2,
+  "samplerate": 44100,
+  "channels": 32,
+  "depth": 4,
+  "segment": 5
+ },
+ "n_params": 11982300,
+ "device": "cuda",
+ "steps": 100,
+ "source_commit": "09ed3ea",
+ "dataset": {
+  "train_works": [
+   "bologna_verdi",
+   "bologna_puccini"
+  ],
+  "eval_work": "bologna_donizetti",
+  "train_M_sha": {
+   "bologna_verdi": "sha256:ca7a8ad5566864a79c5f3e199ba5c9970c07a80d14a0e834524c7f0f60ab51ee",
+   "bologna_puccini": "sha256:3beba47271b7fc009c7264d5aebf533420b71294db0c3749e4808e0b83b96195"
+  },
+  "eval_M_sha": "sha256:b45637dd1b7af528532d18a96f8677ea4b08247a6172fece8b5a0f01b845856e"
+ },
+ "split_manifest": "datasets/classical-v1-splits.json",
+ "loss_family": [
+  "multi_res_stft_mag",
+  "waveform_L1",
+  "mixture_consistency",
+  "(TODO per bigoracle: complex-STFT phase, no-vocal-FP, vocal-FN, source-coord alpha/beta/R, stereo-coherence, event-tail)"
+ ],
+ "first_loss": 0.1052,
+ "last_loss": 0.1938,
+ "all_finite": true,
+ "train_time_s": 11.5,
+ "checkpoint": {
+  "path": "research6:/home/mickg/runs/train/classical-smoke-1/checkpoint.pt",
+  "sha256": "sha256:2cc9dde6b21795380d46942f75f753adbc9314526f1fbf52c23b961af57c446f",
+  "resumable": true
+ },
+ "parity": {
+  "frames_M": 4851000,
+  "frames_A_hat": 4851000,
+  "frames_A_ref": 4851000,
+  "channels": 2,
+  "sr": 44100,
+  "frame_parity": true
+ },
+ "validation": {
+  "work": "bologna_donizetti",
+  "accompaniment_si_sdr_db": -11.73,
+  "A_hat_pcm_sha256": "sha256:8b019649d80daa420e3482342617f210e4b0465b191d4b3a34b3b8c7808de7bd",
+  "finite": true
+ },
+ "repro_cmd": "OMP_NUM_THREADS=8 ./run.sh python /tmp/train_classical_smoke.py",
+ "verdict": "SMOKE PASS"
+}
