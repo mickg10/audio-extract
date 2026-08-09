@@ -425,6 +425,13 @@ def _output(
     output = outputs.get(method)
     if not isinstance(output, Mapping):
         raise BindingGateError(f"{work_id} lacks output {method}")
+    if output.get("status") == "rejected":
+        reason = output.get("certificate_error")
+        if method not in routed_methods or not isinstance(reason, str) or not reason:
+            raise BindingGateError(
+                f"{work_id}/{method} has invalid rejection evidence"
+            )
+        return output
     _artifact(
         output,
         label=f"{work_id}/{method}",
@@ -433,6 +440,10 @@ def _output(
     if not isinstance(output.get("metrics"), Mapping):
         raise BindingGateError(f"{work_id}/{method} lacks metrics")
     return output
+
+
+def _is_rejected(output: Mapping[str, Any]) -> bool:
+    return output.get("status") == "rejected"
 
 
 def _validate_work_grids(
@@ -449,6 +460,8 @@ def _validate_work_grids(
             output = _output(
                 resolution, work_id, method, routed_methods
             )
+            if _is_rejected(output):
+                continue
             grids[method] = _artifact(
                 output,
                 label=f"{work_id}/{method}",
@@ -475,6 +488,10 @@ def _metric(
     routed_methods: Sequence[str],
 ) -> float:
     output = _output(resolution, work_id, method, routed_methods)
+    if _is_rejected(output):
+        raise BindingGateError(
+            f"{work_id}/{method} was rejected and has no metrics"
+        )
     return _finite(
         output["metrics"].get(name),
         f"{work_id}/{method}.{name}",
@@ -669,6 +686,13 @@ def _no_vocal_entry(
     entry = no_vocal.get(method)
     if not isinstance(entry, Mapping):
         raise BindingGateError(f"no-vocal facts lack {method}")
+    if entry.get("status") == "rejected":
+        reason = entry.get("certificate_error")
+        if method not in routed_methods or not isinstance(reason, str) or not reason:
+            raise BindingGateError(
+                f"no_vocal/{work_id}/{method} has invalid rejection evidence"
+            )
+        return entry
     _artifact(
         {"artifact": entry.get("artifact")},
         label=f"no_vocal/{method}",
@@ -708,9 +732,24 @@ def _validate_no_vocal_panels(
         grids = {}
         plans = {}
         for method in methods:
+            full_output = _output(
+                resolution, work_id, method, config.routed_methods
+            )
             entry = _no_vocal_entry(
                 resolution, work_id, method, config.routed_methods
             )
+            if _is_rejected(full_output):
+                if not _is_rejected(entry) or entry.get(
+                    "certificate_error"
+                ) != full_output.get("certificate_error"):
+                    raise BindingGateError(
+                        f"{work_id}/{method} rejection differs in no-vocal scope"
+                    )
+                continue
+            if _is_rejected(entry):
+                raise BindingGateError(
+                    f"{work_id}/{method} is complete but no-vocal is rejected"
+                )
             grid = _artifact(
                 {"artifact": entry.get("artifact")},
                 label=f"no_vocal/{work_id}/{method}",
@@ -824,6 +863,27 @@ def _evaluate_method(
     method: str,
     config: BindingGateConfig,
 ) -> dict[str, Any]:
+    rejected = []
+    for work_id in _works(resolution):
+        output = _output(
+            resolution, work_id, method, config.routed_methods
+        )
+        if _is_rejected(output):
+            rejected.append(
+                f"{work_id}/{method} rejected: "
+                f"{output['certificate_error']}"
+            )
+    if rejected:
+        return {
+            "method": method,
+            "actionable": False,
+            "critical_improvements": 0,
+            "critical_axes": [],
+            "stability_axes": [],
+            "absolute_gates": [],
+            "no_vocal": None,
+            "failures": rejected,
+        }
     failures: list[str] = []
     critical = []
     improvement_passes = 0

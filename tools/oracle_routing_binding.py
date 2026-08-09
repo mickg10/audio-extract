@@ -2,9 +2,10 @@
 """Run the binding certified opera-routing experiment.
 
 This tool is intentionally separate from ``oracle_routing_envelope.py``.  It
-uses the certified convex/exact-fallback core, expands and decoded-PCM
-deduplicates the frozen basis, publishes transform-identity controls, and runs
-one frozen 2.0/1.0/0.5-second sensitivity across every work.  Truth is used
+uses the weighted certified convex/exact-fallback core, paired decoded-PCM
+deduplicates the frozen full/no-vocal basis, publishes per-work transform-
+identity controls, and runs one frozen 1.0-second primary with 0.5/2.0-second
+sensitivity across every work.  Truth is used
 only by this diagnostic; every rendered route remains an immutable FLOAT DAG
 node and is never a production selector by itself.
 """
@@ -22,11 +23,18 @@ from typing import Any
 
 import librosa
 import numpy as np
+import soundfile as sf
 
-from audio_extract import identity
+from audio_extract import canon, identity
 from audio_extract.classical_baselines import FULL_WORKS
 from audio_extract.classical_release import exact_metrics
 from audio_extract.metrics_v2 import stereo_v2
+from audio_extract.oracle_route_artifact_metrics import (
+    frequency_boundary_error_metrics,
+    hall_tail_preservation_metrics,
+    time_boundary_seam_metrics,
+    transform_identity_metrics,
+)
 from audio_extract.oracle_routing import (
     RoutingConfig,
     _frequency_ranges,
@@ -37,7 +45,12 @@ from audio_extract.oracle_routing import (
     stft_stack,
     validate_basis,
 )
-from audio_extract.oracle_routing_certified import (
+from audio_extract.oracle_routing_binding_gate import (
+    REPORT_SCHEMA,
+    default_opera_binding_config,
+    evaluate_binding_report,
+)
+from audio_extract.oracle_routing_certified_v2 import (
     CertifiedRoutingError,
     CertifiedRoutingConfig,
     best_whole_track,
@@ -61,7 +74,7 @@ from tools.oracle_routing_envelope import (
 )
 
 
-SCHEMA = "audio-extract/oracle-routing-binding/v2"
+SCHEMA = REPORT_SCHEMA
 DEFAULT_WORKS = (
     "bologna_verdi",
     "bologna_donizetti",
@@ -78,8 +91,9 @@ BASE_ORDER = (
     "geomedian_mdx_mel_bs",
     "convex_fusion_uniform",
 )
-RESOLUTIONS = (2.0, 1.0, 0.5)
-PRIMARY_RESOLUTION = "2"
+RESOLUTIONS = (0.5, 1.0, 2.0)
+PRIMARY_RESOLUTION = "1"
+BASELINE_METHODS = BASE_ORDER + ("best_whole_track_single",)
 
 
 def _local_path(value: str) -> Path:
@@ -114,6 +128,8 @@ def _manifest_rows(path: Path) -> dict[tuple[str, str], dict[str, Any]]:
 def _manifest_member(row: dict[str, Any], layout: TrackLayout,
                      frames: int) -> dict[str, Any]:
     path = _local_path(row["path"])
+    if not path.is_file():
+        path = layout.candidate_dir(row["recipe_id"]) / "output.f32.wav"
     value = _read_exact(path, frames)
     if _sha_file(path) != row["container_sha256"] or _pcm(value) != row[
         "artifact_pcm_sha256"
@@ -162,6 +178,51 @@ def _deduplicate_members(
     if not required <= set(alias_indices):
         raise ValueError(f"binding basis lacks required aliases: {sorted(required-set(alias_indices))}")
     return unique, aliases, alias_indices
+
+
+def _deduplicate_paired_members(
+    full_members: list[dict[str, Any]],
+    no_vocal_members: list[dict[str, Any]],
+) -> tuple[
+    list[dict[str, Any]],
+    list[dict[str, Any]],
+    dict[str, str],
+    dict[str, int],
+]:
+    """Deduplicate only roles identical in both full and control panels."""
+
+    if [row["name"] for row in full_members] != [
+        row["name"] for row in no_vocal_members
+    ]:
+        raise ValueError("full/no-vocal basis role order differs")
+    unique_full = []
+    unique_control = []
+    aliases: dict[str, str] = {}
+    pair_to_name: dict[tuple[str, str], str] = {}
+    for full, control in zip(full_members, no_vocal_members):
+        name = str(full["name"])
+        key = (
+            str(full["artifact_pcm_sha256"]),
+            str(control["artifact_pcm_sha256"]),
+        )
+        canonical = pair_to_name.setdefault(key, name)
+        aliases[name] = canonical
+        if canonical == name:
+            unique_full.append(full)
+            unique_control.append(control)
+    indices = {
+        row["name"]: index for index, row in enumerate(unique_full)
+    }
+    alias_indices = {
+        alias: indices[canonical] for alias, canonical in aliases.items()
+    }
+    required = set(BASE_ORDER)
+    if set(alias_indices) != required:
+        raise ValueError(
+            "binding basis roles changed: "
+            f"{sorted(set(alias_indices) ^ required)}"
+        )
+    return unique_full, unique_control, aliases, alias_indices
 
 
 def _scaled_configs(tile_seconds: float) -> tuple[RoutingConfig, CertifiedRoutingConfig]:
@@ -253,22 +314,64 @@ def _mr_stft_error(candidate: np.ndarray, reference: np.ndarray) -> float:
     return float(np.mean(ratios))
 
 
-def _transform_identity_metrics(raw: np.ndarray, transformed: np.ndarray) -> dict[str, Any]:
-    error = transformed.astype(np.float64) - raw.astype(np.float64)
-    stereo = {
-        row["metric"]: float(row["value"])
-        for row in stereo_v2(transformed, raw) if row["available"]
-    }
+def _transform_identity_metrics(
+    raw: np.ndarray, transformed: np.ndarray, sample_rate_hz: int = 44_100
+) -> dict[str, Any]:
     return {
         "raw_artifact_pcm_sha256": _pcm(raw),
-        "transformed_artifact_pcm_sha256": _pcm(transformed),
-        "decoded_pcm_equal": bool(np.array_equal(raw, transformed)),
-        "max_abs_error": float(np.max(np.abs(error))),
-        "rms_error": float(np.sqrt(np.mean(np.square(error)))),
-        "complex_mr_stft_error_ratio": _mr_stft_error(transformed, raw),
-        "stereo_width_change_db": stereo["stereo_width_dev_db/v2"],
-        "coherence_change": stereo["interchannel_coherence_dev/v2"],
+        "stft_artifact_pcm_sha256": _pcm(transformed),
+        **transform_identity_metrics(
+            raw, transformed, sample_rate_hz=sample_rate_hz
+        ),
     }
+
+
+def _artifact_facts(record: dict[str, Any], source: dict[str, Any]) -> dict[str, Any]:
+    path = Path(record["path"])
+    info = sf.info(path)
+    expected = (
+        int(source["frames"]),
+        int(source["sample_rate_hz"]),
+        len(source["channel_layout"]),
+    )
+    observed = (int(info.frames), int(info.samplerate), int(info.channels))
+    if observed != expected or info.subtype != "FLOAT":
+        raise ValueError(
+            f"artifact grid/subtype mismatch at {path}: "
+            f"{observed}/{info.subtype} != {expected}/FLOAT"
+        )
+    return {
+        "artifact_pcm_sha256": str(record["artifact_pcm_sha256"]),
+        "container_sha256": str(record["container_sha256"]),
+        "frames": expected[0],
+        "sample_rate_hz": expected[1],
+        "channels": list(source["channel_layout"]),
+        "subtype": "FLOAT",
+    }
+
+
+def _route_artifact_metrics(
+    output: np.ndarray,
+    accompaniment: np.ndarray,
+    *,
+    view,
+    routing: RoutingConfig,
+) -> dict[str, Any]:
+    boundaries = [
+        min(len(output) - 1, stop * routing.hop_length)
+        for _, stop in view.time_frame_ranges[:-1]
+    ]
+    seam = time_boundary_seam_metrics(
+        output, boundary_samples=boundaries
+    )
+    frequency = frequency_boundary_error_metrics(
+        output,
+        accompaniment,
+        n_fft=routing.n_fft,
+        hop_length=routing.hop_length,
+        boundary_bins=[start for start, _ in view.frequency_bin_ranges[1:]],
+    )
+    return {**seam, **frequency}
 
 
 def _route_metrics(
@@ -281,10 +384,23 @@ def _route_metrics(
     if cache is not None and key in cache:
         return cache[key]
     _, labels = _source_metrics(value, accompaniment, vocal)
-    result = (
-        exact_metrics(value, accompaniment, vocal, 44_100, labels=labels),
-        _worst_identifiable(labels),
+    metrics = exact_metrics(
+        value, accompaniment, vocal, 44_100, labels=labels
     )
+    worst = _worst_identifiable(labels)
+    if not worst.get("available"):
+        raise ValueError("binding work has no identifiable exact-label event")
+    metrics.update(
+        {
+            "transient_loss_ratio/v2": metrics["transient_loss/v2"],
+            "transient_excess_ratio/v2": metrics["transient_excess/v2"],
+            "worst_event_composite_risk": float(worst["composite_risk"]),
+            **hall_tail_preservation_metrics(
+                value, accompaniment, sample_rate_hz=44_100
+            ),
+        }
+    )
+    result = (metrics, worst)
     if cache is not None:
         cache[key] = result
     return result
@@ -430,8 +546,13 @@ def _decision(works: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def _load_control(path: Path, work: str, member_names: list[str],
-                  frames: int) -> tuple[list[np.ndarray], dict[str, Any]]:
+def _load_control(
+    path: Path,
+    work: str,
+    member_names: list[str],
+    frames: int,
+    control_lib_root: Path | None = None,
+) -> tuple[list[dict[str, Any]], TrackLayout, dict[str, Any], dict[str, Any]]:
     report = json.loads(path.read_text())
     if (report.get("schema") != "audio-extract/classical-gate-controls/v1"
             or report.get("status") != "complete"
@@ -442,25 +563,52 @@ def _load_control(path: Path, work: str, member_names: list[str],
     missing = sorted(set(member_names) - set(rows))
     if missing:
         raise ValueError(f"no-vocal report lacks binding members: {missing}")
-    values = []
+    source = report.get("source")
+    track_id = report.get("track_id")
+    if not isinstance(source, dict) or not isinstance(track_id, str):
+        raise ValueError(f"no-vocal report lacks source/track identity: {path}")
+    first_path = Path(rows[member_names[0]]["accompaniment"]["path"])
+    control_root = (
+        control_lib_root if control_lib_root is not None else first_path.parents[3]
+    )
+    layout = TrackLayout(control_root, track_id)
+    if json.loads((layout.source_dir / "source.json").read_text()) != source:
+        raise ValueError(f"no-vocal source identity mismatch: {path}")
+    members = []
     records = []
     for name in member_names:
         record = rows[name]["accompaniment"]
-        audio_path = Path(record["path"])
+        audio_path = layout.candidate_dir(record["recipe_id"]) / "output.f32.wav"
         value = _read_exact(audio_path, frames)
         if (_pcm(value) != record["artifact_pcm_sha256"]
                 or _sha_file(audio_path) != record["container_sha256"]):
             raise ValueError(f"no-vocal control identity mismatch: {name}")
-        values.append(value)
+        recipe_id = record["recipe_id"]
+        recipe = json.loads(
+            (layout.candidate_dir(recipe_id) / "recipe.json").read_text()
+        )
+        if identity.recipe_id(recipe) != recipe_id:
+            raise ValueError(f"no-vocal candidate recipe mismatch: {name}")
+        members.append(
+            {
+                "name": name,
+                "recipe_id": recipe_id,
+                "recipe": recipe,
+                "path": str(audio_path),
+                "artifact_pcm_sha256": record["artifact_pcm_sha256"],
+                "container_sha256": record["container_sha256"],
+                "value": value,
+            }
+        )
         records.append({"name": name, **record})
-    return values, {
+    return members, layout, source, {
         "report": str(path.resolve()),
         "report_sha256": _sha_file(path),
         "members": records,
     }
 
 
-def run(args: argparse.Namespace) -> dict[str, Any]:
+def _run_obsolete(args: argparse.Namespace) -> dict[str, Any]:
     code_commit = __import__("subprocess").run(
         ["git", "rev-parse", "HEAD"], check=True, capture_output=True, text=True
     ).stdout.strip()
@@ -651,6 +799,10 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
                         layout=layout, source=source, mixture=mixture,
                         accompaniment=output, parent=artifact, code_commit=code_commit,
                     )
+                print(json.dumps({
+                    "stage": "metrics", "work": work,
+                    "resolution": resolution, "mode": mode,
+                }), flush=True)
                 metrics, worst = _route_metrics(
                     output, accompaniment, vocal, metric_cache
                 )
@@ -701,7 +853,11 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             if tile_seconds == 2.0:
                 primary_view, primary_routing, primary_grid = view, routing, grid
 
-        assert primary_view is not None and primary_routing is not None
+        assert (
+            primary_view is not None
+            and primary_routing is not None
+            and primary_grid is not None
+        )
         o1_index = work_report["resolutions"][PRIMARY_RESOLUTION]["O1_selected_index"]
         baseline_indices["O1_placeholder"] = o1_index
         for label, index in (
@@ -710,6 +866,9 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             ("mdx", indices["mdx23c"]),
         ):
             raw = values[index]
+            print(json.dumps({
+                "stage": "baseline_metrics", "work": work, "baseline": label,
+            }), flush=True)
             metrics, worst = _route_metrics(
                 raw, accompaniment, vocal, metric_cache
             )
@@ -722,6 +881,9 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             ("O1_stft_identity", o1_index),
             ("median_stft_identity", indices["median_mdx_mel_bs"]),
         ):
+            print(json.dumps({
+                "stage": "transform_identity", "work": work, "control": label,
+            }), flush=True)
             labels = np.full(primary_grid.Q.shape[:2], index, dtype=np.int32)
             weights = legacy_one_hot_weights(labels, len(members))
             transformed = _render(
@@ -772,6 +934,625 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     return report
 
 
+def _false_positive_ratio(value: np.ndarray, reference: np.ndarray) -> float:
+    error = value.astype(np.float64) - reference.astype(np.float64)
+    return float(
+        np.square(error).sum()
+        / max(float(np.square(reference.astype(np.float64)).sum()), 1e-30)
+    )
+
+
+def _baseline_output(
+    member: dict[str, Any],
+    value: np.ndarray,
+    source: dict[str, Any],
+    accompaniment: np.ndarray,
+    vocal: np.ndarray,
+    cache: dict[str, tuple[dict[str, Any], dict[str, Any]]],
+) -> dict[str, Any]:
+    metrics, worst = _route_metrics(
+        value, accompaniment, vocal, cache
+    )
+    return {
+        "artifact": _artifact_facts(member, source),
+        "metrics": metrics,
+        "worst_identifiable_event": worst,
+    }
+
+
+def _no_vocal_output(
+    member: dict[str, Any],
+    value: np.ndarray,
+    source: dict[str, Any],
+    accompaniment: np.ndarray,
+) -> dict[str, Any]:
+    return {
+        "artifact": _artifact_facts(member, source),
+        "false_positive_energy_ratio": _false_positive_ratio(
+            value, accompaniment
+        ),
+    }
+
+
+def run(args: argparse.Namespace) -> dict[str, Any]:
+    """Run the complete weighted binding report and formally checked gate."""
+
+    code_commit = __import__("subprocess").run(
+        ["git", "rev-parse", "HEAD"],
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    rows = _manifest_rows(args.candidate_manifest)
+    works = tuple(args.work)
+    routing_manifest = {
+        "primary_resolution_seconds": 1.0,
+        "sensitivity_resolutions_seconds": [0.5, 2.0],
+        "baseline_methods": list(BASELINE_METHODS),
+        "routed_methods": ["O2", "O3"],
+        "resolutions": {
+            format(seconds, "g"): {
+                "routing": _scaled_configs(seconds)[0].identity_dict(),
+                "certified": _scaled_configs(seconds)[1].identity_dict(),
+            }
+            for seconds in RESOLUTIONS
+        },
+    }
+    report: dict[str, Any] = {
+        "schema": SCHEMA,
+        "status": "final",
+        "claim": "exact-reference diagnostic only",
+        "code_commit": code_commit,
+        "candidate_manifest": str(args.candidate_manifest.resolve()),
+        "candidate_manifest_sha256": _sha_file(args.candidate_manifest),
+        "routing_config": routing_manifest,
+        "routing_config_sha256": identity.blob_sha256(
+            canon.canonicalize(routing_manifest)
+        ),
+        "truth_manifest": [],
+        "basis": [],
+        "resolutions": {
+            format(seconds, "g"): {"works": {}}
+            for seconds in RESOLUTIONS
+        },
+    }
+
+    for work in works:
+        print(json.dumps({"stage": "load", "work": work}), flush=True)
+        layout = TrackLayout(args.lib_root, work)
+        source = json.loads((layout.source_dir / "source.json").read_text())
+        truth = args.truth_root / work
+        mixture_path = truth / "mix_with_voice.wav"
+        accompaniment_path = truth / "orchestra_only.wav"
+        vocal_path = truth / "voice_ref.wav"
+        mixture = _read_exact(mixture_path, source["frames"])
+        accompaniment = _read_exact(accompaniment_path, source["frames"])
+        vocal = _read_exact(vocal_path, source["frames"])
+        if _pcm(mixture) != source["input_pcm_sha256"]:
+            raise ValueError(f"truth/source mixture identity mismatch: {work}")
+        report["truth_manifest"].append(
+            {
+                "work_id": work,
+                "frames": int(source["frames"]),
+                "sample_rate_hz": int(source["sample_rate_hz"]),
+                "channels": list(source["channel_layout"]),
+                "mixture": {
+                    "path": str(mixture_path.resolve()),
+                    "artifact_pcm_sha256": _pcm(mixture),
+                    "container_sha256": _sha_file(mixture_path),
+                },
+                "accompaniment": {
+                    "path": str(accompaniment_path.resolve()),
+                    "artifact_pcm_sha256": _pcm(accompaniment),
+                    "container_sha256": _sha_file(accompaniment_path),
+                },
+                "vocal": {
+                    "path": str(vocal_path.resolve()),
+                    "artifact_pcm_sha256": _pcm(vocal),
+                    "container_sha256": _sha_file(vocal_path),
+                },
+            }
+        )
+
+        residuals = _residual_members(
+            manifest_rows=rows,
+            layout=layout,
+            source=source,
+            work=work,
+            generating_commit=rows[(work, "median_mdx_mel_bs")]["code_commit"],
+        )
+        requested = [
+            _external_demucs_member(
+                name="htdemucs_04573f0d",
+                eval_root=args.htdemucs_045,
+                work=work,
+                source=source,
+            ),
+            _external_demucs_member(
+                name="htdemucs_955717e8",
+                eval_root=args.htdemucs_955,
+                work=work,
+                source=source,
+            ),
+            residuals["mdx23c"],
+            residuals["melband"],
+            residuals["bs_roformer"],
+        ]
+        requested.extend(
+            _manifest_member(
+                rows[(work, name)], layout, source["frames"]
+            )
+            for name in BASE_ORDER[5:]
+        )
+        if tuple(member["name"] for member in requested) != BASE_ORDER:
+            raise RuntimeError("requested binding basis order changed")
+
+        no_vocal_path = (
+            args.control_root / f"{work}.no_vocal.binding-basis.json"
+        )
+        (
+            requested_control,
+            control_layout,
+            control_source,
+            control_evidence,
+        ) = _load_control(
+            no_vocal_path,
+            work,
+            list(BASE_ORDER),
+            len(mixture),
+            args.control_lib_root,
+        )
+        if (
+            int(control_source["frames"]) != int(source["frames"])
+            or int(control_source["sample_rate_hz"])
+            != int(source["sample_rate_hz"])
+            or list(control_source["channel_layout"])
+            != list(source["channel_layout"])
+        ):
+            raise ValueError(f"full/no-vocal source grids differ: {work}")
+
+        for scope, panel in (
+            ("full", requested),
+            ("no_vocal", requested_control),
+        ):
+            report["basis"].extend(
+                {
+                    "work_id": work,
+                    "scope": scope,
+                    "role": member["name"],
+                    "candidate_id": member["recipe_id"],
+                    "artifact_pcm_sha256": member["artifact_pcm_sha256"],
+                }
+                for member in panel
+            )
+
+        members, control_members, aliases, indices = (
+            _deduplicate_paired_members(requested, requested_control)
+        )
+        values, accompaniment, vocal = validate_basis(
+            [member["value"] for member in members], accompaniment, vocal
+        )
+        control_values = [
+            np.asarray(member["value"], dtype=np.float32)
+            for member in control_members
+        ]
+        if any(value.shape != accompaniment.shape for value in control_values):
+            raise ValueError(f"no-vocal candidate grid differs: {work}")
+        for member, value in zip(members, values):
+            member["value"] = value
+        for member, value in zip(control_members, control_values):
+            member["value"] = value
+        member_names = [member["name"] for member in members]
+
+        print(
+            json.dumps(
+                {
+                    "stage": "stft",
+                    "work": work,
+                    "members": len(members),
+                }
+            ),
+            flush=True,
+        )
+        base_routing = RoutingConfig()
+        candidate_spectra = stft_stack(values, base_routing)
+        truth_spectra = stft_stack(
+            [accompaniment, vocal], base_routing
+        )
+        no_vocal_spectra = stft_stack(control_values, base_routing)
+        metric_cache: dict[
+            str, tuple[dict[str, Any], dict[str, Any]]
+        ] = {}
+
+        for tile_seconds in RESOLUTIONS:
+            resolution = format(tile_seconds, "g")
+            routing, certified = _scaled_configs(tile_seconds)
+            time_ranges = _time_ranges(
+                candidate_spectra.shape[-1], routing
+            )
+            frequency_ranges = _frequency_ranges(
+                candidate_spectra.shape[-2], routing
+            )
+            grid = build_spectral_quadratic_grid(
+                candidate_spectra,
+                truth_spectra[0],
+                truth_spectra[1],
+                time_ranges=time_ranges,
+                frequency_ranges=frequency_ranges,
+                sample_rate_hz=routing.sample_rate_hz,
+                n_fft=routing.n_fft,
+                hop_length=routing.hop_length,
+                config=certified,
+            )
+            view = _routing_view(grid, time_ranges, frequency_ranges)
+            o1_index, o1_costs = best_whole_track(grid)
+            print(
+                json.dumps(
+                    {
+                        "stage": "certified_O2",
+                        "work": work,
+                        "resolution": resolution,
+                    }
+                ),
+                flush=True,
+            )
+            o2 = solve_discrete_global(grid, certified)
+            print(
+                json.dumps(
+                    {
+                        "stage": "certified_O3",
+                        "work": work,
+                        "resolution": resolution,
+                    }
+                ),
+                flush=True,
+            )
+            try:
+                o3 = solve_convex_certified(
+                    grid,
+                    certified,
+                    o1_index=o1_index,
+                    o2_labels=o2.labels,
+                )
+                o3_error = None
+            except CertifiedRoutingError as exc:
+                o3 = None
+                o3_error = str(exc)
+
+            work_report: dict[str, Any] = {
+                "outputs": {},
+                "no_vocal": {},
+                "basis_aliases": aliases,
+                "no_vocal_control": control_evidence,
+                "routing_evidence": {
+                    "routing_config": routing.to_dict(),
+                    "certified_config": certified.to_dict(),
+                    "cell_measure_sha256": identity.blob_sha256(
+                        canon.canonicalize(
+                            {
+                                "time_ranges": [list(row) for row in time_ranges],
+                                "frequency_ranges": [
+                                    list(row) for row in frequency_ranges
+                                ],
+                                "weights": grid.cell_weights.tolist(),
+                            }
+                        )
+                    ),
+                    "cell_mode_counts": dict(
+                        Counter(str(value) for value in grid.modes.flat)
+                    ),
+                    "O1_selected_member": member_names[o1_index],
+                    "O1_costs": {
+                        name: float(cost)
+                        for name, cost in zip(member_names, o1_costs)
+                    },
+                },
+            }
+
+            for method in BASE_ORDER:
+                index = indices[method]
+                requested_member = next(
+                    row for row in requested if row["name"] == method
+                )
+                requested_control_member = next(
+                    row
+                    for row in requested_control
+                    if row["name"] == method
+                )
+                work_report["outputs"][method] = _baseline_output(
+                    requested_member,
+                    values[index],
+                    source,
+                    accompaniment,
+                    vocal,
+                    metric_cache,
+                )
+                work_report["no_vocal"][method] = _no_vocal_output(
+                    requested_control_member,
+                    control_values[index],
+                    control_source,
+                    accompaniment,
+                )
+            work_report["outputs"]["best_whole_track_single"] = (
+                _baseline_output(
+                    members[o1_index],
+                    values[o1_index],
+                    source,
+                    accompaniment,
+                    vocal,
+                    metric_cache,
+                )
+            )
+            work_report["no_vocal"]["best_whole_track_single"] = (
+                _no_vocal_output(
+                    control_members[o1_index],
+                    control_values[o1_index],
+                    control_source,
+                    accompaniment,
+                )
+            )
+
+            routes = {"O2": one_hot_weights(o2.labels, len(members))}
+            if o3 is not None:
+                routes["O3"] = o3.weights
+            else:
+                rejected = {
+                    "status": "rejected",
+                    "certificate_error": o3_error,
+                }
+                work_report["outputs"]["O3"] = dict(rejected)
+                work_report["no_vocal"]["O3"] = dict(rejected)
+
+            for mode, weights in routes.items():
+                output = _render(
+                    candidate_spectra,
+                    weights,
+                    view,
+                    len(mixture),
+                    routing,
+                )
+                no_vocal_output = _render(
+                    no_vocal_spectra,
+                    weights,
+                    view,
+                    len(mixture),
+                    routing,
+                )
+                plan = (
+                    o2.labels.astype(np.int32)
+                    if mode == "O2"
+                    else o3.weights.astype(np.float64)
+                )
+                solver = {
+                    "core": "audio_extract.oracle_routing_certified_v2/v2",
+                    "certified_config": certified.identity_dict(),
+                    "cell_measure_sha256": work_report[
+                        "routing_evidence"
+                    ]["cell_measure_sha256"],
+                    "result": (
+                        {
+                            "objective": o2.objective,
+                            "data_objective": o2.data_objective,
+                            "temporal_switches": o2.temporal_switches,
+                            "frequency_switches": o2.frequency_switches,
+                            "weighted_temporal_switches": (
+                                o2.weighted_temporal_switches
+                            ),
+                            "weighted_frequency_switches": (
+                                o2.weighted_frequency_switches
+                            ),
+                            "solver_status": o2.solver_status,
+                            "mip_gap": o2.mip_gap,
+                        }
+                        if mode == "O2"
+                        else {
+                            "objective": o3.objective,
+                            "data_objective": o3.data_objective,
+                            "iterations": o3.iterations,
+                            "converged": o3.converged,
+                            "projected_gradient_norm": (
+                                o3.projected_gradient_norm
+                            ),
+                            "selected_start": o3.selected_start,
+                            "start_objectives": o3.start_objectives,
+                        }
+                    ),
+                }
+                solver_identity = _identity_values(solver)
+                artifact = _write_route(
+                    layout=layout,
+                    source=source,
+                    mode=f"CERTIFIED_V2_{mode}_{resolution}S",
+                    output=output,
+                    parents=members,
+                    plan=plan,
+                    config=routing,
+                    code_commit=code_commit,
+                    execution={
+                        "oracle_diagnostic_only": True,
+                        "routing_plan": plan.tolist(),
+                        "cell_modes": grid.modes.tolist(),
+                        "cell_weights": grid.cell_weights.tolist(),
+                        "solver": solver,
+                    },
+                    truth_pcm={
+                        "accompaniment": _pcm(accompaniment),
+                        "vocal": _pcm(vocal),
+                    },
+                    solver_config=solver_identity,
+                    adapter_revision="certified-weighted-route/v2",
+                )
+                control_artifact = _write_route(
+                    layout=control_layout,
+                    source=control_source,
+                    mode=f"CERTIFIED_V2_{mode}_{resolution}S",
+                    output=no_vocal_output,
+                    parents=control_members,
+                    plan=plan,
+                    config=routing,
+                    code_commit=code_commit,
+                    execution={
+                        "oracle_diagnostic_only": True,
+                        "full_route_plan_reused": True,
+                        "routing_plan": plan.tolist(),
+                        "solver": solver,
+                    },
+                    truth_pcm={
+                        "accompaniment": _pcm(accompaniment),
+                        "vocal": _pcm(np.zeros_like(vocal)),
+                    },
+                    solver_config=solver_identity,
+                    adapter_revision="certified-weighted-route/v2",
+                )
+                if (
+                    artifact["routing_plan_sha256"]
+                    != control_artifact["routing_plan_sha256"]
+                ):
+                    raise RuntimeError("full/no-vocal route-plan identity changed")
+                print(
+                    json.dumps(
+                        {
+                            "stage": "metrics",
+                            "work": work,
+                            "resolution": resolution,
+                            "mode": mode,
+                        }
+                    ),
+                    flush=True,
+                )
+                metrics, worst = _route_metrics(
+                    output, accompaniment, vocal, metric_cache
+                )
+                metrics.update(
+                    _route_artifact_metrics(
+                        output,
+                        accompaniment,
+                        view=view,
+                        routing=routing,
+                    )
+                )
+                work_report["outputs"][mode] = {
+                    "artifact": _artifact_facts(artifact, source),
+                    "recipe_id": artifact["recipe_id"],
+                    "routing_plan_sha256": artifact[
+                        "routing_plan_sha256"
+                    ],
+                    "metrics": metrics,
+                    "worst_identifiable_event": worst,
+                    "solver": solver,
+                }
+                work_report["no_vocal"][mode] = {
+                    "artifact": _artifact_facts(
+                        control_artifact, control_source
+                    ),
+                    "routing_plan_sha256": control_artifact[
+                        "routing_plan_sha256"
+                    ],
+                    "false_positive_energy_ratio": _false_positive_ratio(
+                        no_vocal_output, accompaniment
+                    ),
+                }
+                if tile_seconds == 1.0:
+                    work_report["outputs"][mode]["removed_vocal"] = (
+                        _write_removed_vocal(
+                            layout=layout,
+                            source=source,
+                            mixture=mixture,
+                            accompaniment=output,
+                            parent=artifact,
+                            code_commit=code_commit,
+                        )
+                    )
+
+            if tile_seconds == 1.0:
+                controls = {}
+                for name, index in (
+                    ("O1", o1_index),
+                    (
+                        "median_mdx_mel_bs",
+                        indices["median_mdx_mel_bs"],
+                    ),
+                ):
+                    labels = np.full(
+                        grid.Q.shape[:2], index, dtype=np.int32
+                    )
+                    weights = one_hot_weights(labels, len(members))
+                    transformed = _render(
+                        candidate_spectra,
+                        weights,
+                        view,
+                        len(mixture),
+                        routing,
+                    )
+                    transform_artifact = _write_route(
+                        layout=layout,
+                        source=source,
+                        mode=f"{name.upper()}_STFT_IDENTITY_1S",
+                        output=transformed,
+                        parents=members,
+                        plan=labels,
+                        config=routing,
+                        code_commit=code_commit,
+                        execution={
+                            "oracle_diagnostic_only": True,
+                            "transform_identity_control": True,
+                            "routing_plan": labels.tolist(),
+                        },
+                        truth_pcm={
+                            "accompaniment": _pcm(accompaniment),
+                            "vocal": _pcm(vocal),
+                        },
+                        solver_config={
+                            "solver": "fixed-one-hot-transform-identity/v2",
+                            "selected_index": index,
+                        },
+                        adapter_revision="certified-weighted-route/v2",
+                    )
+                    controls[name] = {
+                        **_transform_identity_metrics(
+                            values[index],
+                            transformed,
+                            int(source["sample_rate_hz"]),
+                        ),
+                        "stft_recipe_id": transform_artifact["recipe_id"],
+                    }
+                work_report["transform_controls"] = controls
+
+            report["resolutions"][resolution]["works"][work] = work_report
+        print(json.dumps({"stage": "complete", "work": work}), flush=True)
+
+    report["truth_manifest_sha256"] = identity.blob_sha256(
+        canon.canonicalize(report["truth_manifest"])
+    )
+    required = set(DEFAULT_WORKS)
+    if required <= set(works):
+        gate_config = default_opera_binding_config(
+            baseline_methods=BASELINE_METHODS,
+            primary_resolution_seconds=1.0,
+        )
+        report["decision"] = evaluate_binding_report(report, gate_config)
+        if report["decision"]["status"] == "INVALID_EVIDENCE":
+            raise RuntimeError(
+                f"binding gate rejected report evidence: {report['decision']}"
+            )
+    else:
+        report["status"] = "needs_human_ab"
+        report["decision"] = {
+            "status": "INCOMPLETE_FRAGMENT",
+            "missing_works": sorted(required - set(works)),
+            "actionable_methods": [],
+        }
+    payload = json.dumps(report, indent=2, sort_keys=True, allow_nan=False) + "\n"
+    args.output.parent.mkdir(parents=True, exist_ok=True)
+    if args.output.exists() and args.output.read_text() != payload:
+        raise RuntimeError(
+            f"refusing to rewrite differing binding report: {args.output}"
+        )
+    if not args.output.exists():
+        args.output.write_text(payload)
+    return report
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser()
     parser.add_argument("--candidate-manifest", required=True, type=Path)
@@ -780,6 +1561,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--htdemucs-045", required=True, type=Path)
     parser.add_argument("--htdemucs-955", required=True, type=Path)
     parser.add_argument("--control-root", required=True, type=Path)
+    parser.add_argument("--control-lib-root", type=Path)
     parser.add_argument("--work", action="append", choices=FULL_WORKS, default=None)
     parser.add_argument("--output", required=True, type=Path)
     return parser
@@ -792,7 +1574,10 @@ def main(argv: list[str] | None = None) -> int:
     result = run(args)
     print(json.dumps({
         "status": result["status"],
-        "learned_gate_authorized": result["decision"]["learned_gate_authorized"],
+        "binding_status": result["decision"]["status"],
+        "actionable_methods": result["decision"].get(
+            "actionable_methods", []
+        ),
         "output": str(args.output),
     }, sort_keys=True))
     return 0

@@ -9,6 +9,7 @@ from audio_extract.oracle_routing_certified_v2 import (
     CertifiedRoutingError,
     best_whole_track,
     build_cell_quadratic,
+    build_spectral_quadratic_grid,
     cell_measure_weights,
     one_hot_weights,
     project_simplex,
@@ -75,7 +76,15 @@ def _unary_grid(unary, *, cell_weights=None):
 
 def test_config_refuses_zero_reference_floor():
     with pytest.raises(ValueError, match="reference_floor"):
-        CertifiedRoutingConfig(reference_floor=0.0).validate()
+        CertifiedRoutingConfig(
+            reference_floor=0.0, reference_floor_relative=0.0
+        ).validate()
+
+
+def test_config_identity_materializes_exact_float_text():
+    identity = CertifiedRoutingConfig().identity_dict()
+    assert identity["ridge_relative"] == "1e-08"
+    assert identity["max_projected_gradient_iterations"] == 20_000
 
 
 def test_scale_relative_psd_repairs_roundoff_and_refuses_material_negative():
@@ -151,6 +160,65 @@ def test_silent_cell_penalizes_routed_noise():
 def test_measure_weights_are_time_by_frequency_extent():
     result = cell_measure_weights([2.0, 0.5], [10.0, 30.0])
     assert result.tolist() == [[20.0, 60.0], [5.0, 15.0]]
+
+
+def test_spectral_adapter_uses_physical_cell_measures():
+    rng = np.random.default_rng(88)
+    accompaniment = (
+        rng.normal(size=(2, 5, 4)) + 1j * rng.normal(size=(2, 5, 4))
+    ).astype(np.complex64)
+    vocal = (
+        rng.normal(size=(2, 5, 4)) + 1j * rng.normal(size=(2, 5, 4))
+    ).astype(np.complex64)
+    candidates = np.stack((accompaniment, accompaniment + 0.2 * vocal))
+    grid = build_spectral_quadratic_grid(
+        candidates,
+        accompaniment,
+        vocal,
+        time_ranges=((0, 1), (1, 4)),
+        frequency_ranges=((0, 2), (2, 5)),
+        sample_rate_hz=8,
+        n_fft=8,
+        hop_length=2,
+        config=_config(),
+    )
+    assert grid.cell_weights.tolist() == [[0.5, 0.75], [1.5, 2.25]]
+
+
+def test_track_relative_floors_preserve_quadratics_under_gain_scaling():
+    estimates, accompaniment, vocal = _basis(
+        [0.8, 1.2], beta=[0.15, -0.1]
+    )
+    config = _config(
+        accompaniment_floor=0.0,
+        vocal_floor=0.0,
+        reference_floor=0.0,
+        min_source_power_relative=1e-6,
+        reference_floor_relative=1e-8,
+    )
+    power_a = float(np.mean(np.abs(accompaniment) ** 2))
+    power_v = float(np.mean(np.abs(vocal) ** 2))
+    base = build_cell_quadratic(
+        estimates,
+        accompaniment,
+        vocal,
+        config,
+        global_accompaniment_power=power_a,
+        global_vocal_power=power_v,
+    )
+    gain = 1e-4
+    scaled = build_cell_quadratic(
+        gain * estimates,
+        gain * accompaniment,
+        gain * vocal,
+        config,
+        global_accompaniment_power=gain**2 * power_a,
+        global_vocal_power=gain**2 * power_v,
+    )
+    assert scaled.mode == base.mode
+    assert np.allclose(scaled.Q, base.Q, rtol=2e-8, atol=2e-8)
+    assert np.allclose(scaled.c, base.c, rtol=2e-8, atol=2e-8)
+    assert scaled.constant == pytest.approx(base.constant)
 
 
 def test_grid_refuses_nonpositive_weights_and_empty_modes():

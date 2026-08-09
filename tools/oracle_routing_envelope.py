@@ -121,6 +121,10 @@ def _external_demucs_member(
     if checkpoint["signature"] != expected_signature:
         raise ValueError(f"{name} resolved to wrong checkpoint: {checkpoint}")
     checkpoint_path = Path(checkpoint["path"])
+    if not checkpoint_path.is_file():
+        relocated = run_dir / "model-files" / checkpoint_path.name
+        if relocated.is_file():
+            checkpoint_path = relocated
     if _sha_file(checkpoint_path) != checkpoint["sha256"]:
         raise ValueError(f"checkpoint hash mismatch: {checkpoint_path}")
     path = eval_root / work / "accompaniment.f32.wav"

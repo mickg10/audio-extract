@@ -31,6 +31,31 @@ def test_binding_basis_deduplicates_decoded_pcm_and_retains_alias_indices():
     assert indices["geomedian_mdx_mel_bs"] == indices["median_mdx_mel_bs"]
 
 
+def test_paired_dedup_requires_identity_in_full_and_no_vocal_scopes():
+    full = [
+        _member(name, "same" if index < 2 else f"full-{index}")
+        for index, name in enumerate(module.BASE_ORDER)
+    ]
+    control = [
+        _member(name, "same" if index == 0 else f"control-{index}")
+        for index, name in enumerate(module.BASE_ORDER)
+    ]
+    unique_full, unique_control, aliases, indices = (
+        module._deduplicate_paired_members(full, control)
+    )
+    assert len(unique_full) == len(unique_control) == len(module.BASE_ORDER)
+    assert aliases[module.BASE_ORDER[1]] == module.BASE_ORDER[1]
+    assert indices[module.BASE_ORDER[1]] == 1
+
+    control[1]["artifact_pcm_sha256"] = "same"
+    unique_full, unique_control, aliases, indices = (
+        module._deduplicate_paired_members(full, control)
+    )
+    assert len(unique_full) == len(unique_control) == len(module.BASE_ORDER) - 1
+    assert aliases[module.BASE_ORDER[1]] == module.BASE_ORDER[0]
+    assert indices[module.BASE_ORDER[1]] == 0
+
+
 def test_resolution_scaling_is_frozen_and_physical():
     routing_2, certified_2 = module._scaled_configs(2.0)
     routing_half, certified_half = module._scaled_configs(0.5)
@@ -85,12 +110,25 @@ def test_route_metric_cache_reuses_labels_and_fidelity(monkeypatch):
     def exact_metrics(*_args, labels=None):
         calls["metrics"] += 1
         assert labels == ("labels",)
-        return {"metric": 1.0}
+        return {
+            "metric": 1.0,
+            "transient_loss/v2": 0.1,
+            "transient_excess/v2": 0.2,
+        }
 
     monkeypatch.setattr(module, "_pcm", lambda _value: "sha256:cached")
     monkeypatch.setattr(module, "_source_metrics", source_metrics)
     monkeypatch.setattr(module, "exact_metrics", exact_metrics)
-    monkeypatch.setattr(module, "_worst_identifiable", lambda _labels: {"risk": 0.0})
+    monkeypatch.setattr(
+        module,
+        "_worst_identifiable",
+        lambda _labels: {"available": True, "composite_risk": 0.0},
+    )
+    monkeypatch.setattr(
+        module,
+        "hall_tail_preservation_metrics",
+        lambda *_args, **_kwargs: {"hall_tail_error_db/v1": 0.0},
+    )
     audio = np.zeros((8, 2), dtype="float32")
     cache = {}
     first = module._route_metrics(audio, audio, audio, cache)

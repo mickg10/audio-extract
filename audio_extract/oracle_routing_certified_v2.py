@@ -20,7 +20,7 @@ reference-free judge.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from typing import Iterable, Sequence
 import math
 
@@ -44,6 +44,8 @@ class CertifiedRoutingConfig:
     accompaniment_floor: float = 1e-12
     vocal_floor: float = 1e-12
     reference_floor: float = 1e-12
+    min_source_power_relative: float = 1e-6
+    reference_floor_relative: float = 1e-8
     psd_relative_tolerance: float = 1e-10
     temporal_switch_penalty: float = 0.05
     frequency_switch_penalty: float = 0.05
@@ -56,6 +58,8 @@ class CertifiedRoutingConfig:
         nonnegative = (
             "alpha_weight", "voice_weight", "residual_weight", "direct_weight",
             "ridge_relative", "accompaniment_floor", "vocal_floor",
+            "reference_floor", "min_source_power_relative",
+            "reference_floor_relative",
             "temporal_switch_penalty", "frequency_switch_penalty",
             "temporal_weight_smoothness", "frequency_weight_smoothness",
         )
@@ -64,8 +68,7 @@ class CertifiedRoutingConfig:
             if not math.isfinite(value) or value < 0.0:
                 raise ValueError(f"{name} must be finite and non-negative")
         positive = (
-            "reference_floor", "psd_relative_tolerance",
-            "projected_gradient_tolerance",
+            "psd_relative_tolerance", "projected_gradient_tolerance",
         )
         for name in positive:
             value = float(getattr(self, name))
@@ -75,6 +78,20 @@ class CertifiedRoutingConfig:
             raise ValueError("max_condition must be finite and greater than one")
         if int(self.max_projected_gradient_iterations) < 1:
             raise ValueError("max_projected_gradient_iterations must be positive")
+        if self.reference_floor == 0.0 and self.reference_floor_relative == 0.0:
+            raise ValueError(
+                "reference_floor and reference_floor_relative cannot both be zero"
+            )
+
+    def to_dict(self) -> dict[str, object]:
+        self.validate()
+        return asdict(self)
+
+    def identity_dict(self) -> dict[str, object]:
+        return {
+            key: format(value, ".17g") if isinstance(value, float) else value
+            for key, value in self.to_dict().items()
+        }
 
 
 def _matrix_scale(matrix: np.ndarray) -> float:
@@ -297,6 +314,9 @@ def build_cell_quadratic(
     accompaniment: np.ndarray,
     vocal: np.ndarray,
     config: CertifiedRoutingConfig | None = None,
+    *,
+    global_accompaniment_power: float | None = None,
+    global_vocal_power: float | None = None,
 ) -> CellQuadratic:
     """Build one exact convex routing cost, with direct exact fallbacks."""
     cfg = config or CertifiedRoutingConfig()
@@ -308,6 +328,34 @@ def build_cell_quadratic(
         raise ValueError("candidate and truth cell lengths differ")
     accompaniment_energy = float(np.real(np.vdot(a, a)))
     vocal_energy = float(np.real(np.vdot(v, v)))
+    for name, value in (
+        ("global_accompaniment_power", global_accompaniment_power),
+        ("global_vocal_power", global_vocal_power),
+    ):
+        if value is not None and (
+            not math.isfinite(float(value)) or float(value) < 0.0
+        ):
+            raise ValueError(f"{name} must be finite and non-negative")
+    accompaniment_floor = max(
+        cfg.accompaniment_floor,
+        cfg.min_source_power_relative
+        * float(global_accompaniment_power or 0.0)
+        * a.size,
+    )
+    vocal_floor = max(
+        cfg.vocal_floor,
+        cfg.min_source_power_relative
+        * float(global_vocal_power or 0.0)
+        * v.size,
+    )
+    relative_reference_floor = (
+        cfg.reference_floor_relative
+        * (
+            float(global_accompaniment_power or 0.0)
+            + float(global_vocal_power or 0.0)
+        )
+        * a.size
+    )
     basis = np.column_stack((a, v))
     gram = basis.conj().T @ basis
     try:
@@ -315,8 +363,8 @@ def build_cell_quadratic(
     except np.linalg.LinAlgError:
         condition = math.inf
     identifiable = (
-        accompaniment_energy > cfg.accompaniment_floor
-        and vocal_energy > cfg.vocal_floor
+        accompaniment_energy > accompaniment_floor
+        and vocal_energy > vocal_floor
         and math.isfinite(condition) and condition <= cfg.max_condition
     )
     if identifiable:
@@ -329,7 +377,12 @@ def build_cell_quadratic(
         )
         alpha, beta = coefficients[0], coefficients[1]
         residuals = ys - alpha[:, None] * a[None] - beta[:, None] * v[None]
-        scale = max(accompaniment_energy, cfg.reference_floor)
+        scale = max(
+            accompaniment_energy,
+            cfg.reference_floor,
+            relative_reference_floor,
+            _TINY,
+        )
         raw_q = (
             cfg.alpha_weight * np.real(np.outer(np.conj(alpha), alpha))
             + cfg.voice_weight * (vocal_energy / scale)
@@ -342,18 +395,23 @@ def build_cell_quadratic(
         mode = "source_coordinates"
     else:
         errors = ys - a[None]
-        scale = max(accompaniment_energy + vocal_energy, cfg.reference_floor)
+        scale = max(
+            accompaniment_energy + vocal_energy,
+            cfg.reference_floor,
+            relative_reference_floor,
+            _TINY,
+        )
         raw_q = cfg.direct_weight * np.real(errors.conj() @ errors.T) / scale
         c = np.zeros(ys.shape[0], dtype=np.float64)
         constant = 0.0
         if (
-            accompaniment_energy <= cfg.accompaniment_floor
-            and vocal_energy <= cfg.vocal_floor
+            accompaniment_energy <= accompaniment_floor
+            and vocal_energy <= vocal_floor
         ):
             mode = "silent_direct_fallback"
-        elif vocal_energy <= cfg.vocal_floor:
+        elif vocal_energy <= vocal_floor:
             mode = "no_vocal_direct_fallback"
-        elif accompaniment_energy <= cfg.accompaniment_floor:
+        elif accompaniment_energy <= accompaniment_floor:
             mode = "vocal_only_direct_fallback"
         else:
             mode = "ill_conditioned_direct_fallback"
@@ -370,6 +428,101 @@ def build_cell_quadratic(
     )
     cell.validate()
     return cell
+
+
+def build_spectral_quadratic_grid(
+    candidate_spectra: np.ndarray,
+    accompaniment_spectrum: np.ndarray,
+    vocal_spectrum: np.ndarray,
+    *,
+    time_ranges: Sequence[Sequence[int]],
+    frequency_ranges: Sequence[Sequence[int]],
+    sample_rate_hz: int,
+    n_fft: int,
+    hop_length: int,
+    config: CertifiedRoutingConfig | None = None,
+) -> QuadraticGrid:
+    """Build a complete weighted grid from one exact shared STFT geometry."""
+
+    cfg = config or CertifiedRoutingConfig()
+    cfg.validate()
+    candidates = np.asarray(candidate_spectra)
+    accompaniment = np.asarray(accompaniment_spectrum)
+    vocal = np.asarray(vocal_spectrum)
+    if candidates.ndim != 4 or candidates.shape[1] != 2:
+        raise ValueError(
+            "candidate spectra must be (members,2,frequency,time)"
+        )
+    if (
+        accompaniment.shape != candidates.shape[1:]
+        or vocal.shape != accompaniment.shape
+    ):
+        raise ValueError("candidate and truth spectral grids differ")
+    if not (
+        np.all(np.isfinite(candidates))
+        and np.all(np.isfinite(accompaniment))
+        and np.all(np.isfinite(vocal))
+    ):
+        raise ValueError("spectral grid contains non-finite values")
+    for name, value in (
+        ("sample_rate_hz", sample_rate_hz),
+        ("n_fft", n_fft),
+        ("hop_length", hop_length),
+    ):
+        if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
+            raise ValueError(f"{name} must be a positive integer")
+
+    tranges = tuple((int(start), int(stop)) for start, stop in time_ranges)
+    franges = tuple((int(start), int(stop)) for start, stop in frequency_ranges)
+
+    def _covers(ranges, extent):
+        return (
+            bool(ranges)
+            and ranges[0][0] == 0
+            and ranges[-1][1] == extent
+            and all(start < stop for start, stop in ranges)
+            and all(
+                left[1] == right[0]
+                for left, right in zip(ranges, ranges[1:])
+            )
+        )
+
+    if not _covers(tranges, candidates.shape[-1]) or not _covers(
+        franges, candidates.shape[-2]
+    ):
+        raise ValueError(
+            "time/frequency ranges must cover each spectral axis exactly"
+        )
+
+    global_accompaniment_power = float(np.mean(np.abs(accompaniment) ** 2))
+    global_vocal_power = float(np.mean(np.abs(vocal) ** 2))
+    cells = []
+    for t0, t1 in tranges:
+        row = []
+        for f0, f1 in franges:
+            row.append(
+                build_cell_quadratic(
+                    candidates[:, :, f0:f1, t0:t1],
+                    accompaniment[:, f0:f1, t0:t1],
+                    vocal[:, f0:f1, t0:t1],
+                    cfg,
+                    global_accompaniment_power=global_accompaniment_power,
+                    global_vocal_power=global_vocal_power,
+                )
+            )
+        cells.append(row)
+    time_lengths = [
+        (stop - start) * hop_length / sample_rate_hz
+        for start, stop in tranges
+    ]
+    frequency_widths = [
+        (stop - start) * sample_rate_hz / n_fft
+        for start, stop in franges
+    ]
+    return stack_cell_grid(
+        cells,
+        cell_weights=cell_measure_weights(time_lengths, frequency_widths),
+    )
 
 
 def stack_cell_grid(

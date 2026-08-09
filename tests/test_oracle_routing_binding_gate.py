@@ -427,3 +427,27 @@ def test_fractional_sample_grid_facts_are_invalid():
         "outputs"
     ]["O2"]["artifact"]["frames"] = 441000.5
     assert evaluate_binding_report(report, _config())["status"] == "INVALID_EVIDENCE"
+
+
+def test_certified_o3_rejection_does_not_invalidate_actionable_o2():
+    report = _report()
+    for resolution in report["resolutions"].values():
+        for work in resolution["works"].values():
+            rejected = {
+                "status": "rejected",
+                "certificate_error": "every-start KKT convergence failed",
+            }
+            work["outputs"]["O3"] = dict(rejected)
+            work["no_vocal"]["O3"] = dict(rejected)
+    decision = evaluate_binding_report(report, _config())
+    assert decision["status"] == "ACTIONABLE"
+    assert decision["actionable_methods"] == ["O2"]
+    assert not decision["primary"]["methods"]["O3"]["actionable"]
+
+
+def test_unexplained_routed_rejection_is_invalid_evidence():
+    report = _report()
+    report["resolutions"]["1"]["works"]["bologna_verdi"][
+        "outputs"
+    ]["O3"] = {"status": "rejected"}
+    assert evaluate_binding_report(report, _config())["status"] == "INVALID_EVIDENCE"
