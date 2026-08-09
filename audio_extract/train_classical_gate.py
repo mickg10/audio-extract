@@ -462,7 +462,12 @@ def _render_evaluation(gate: SmoothResidualGate, batch: dict[str, Any], *, step:
         "metrics": metrics, "accompaniment": accompaniment_record,
         "removed_vocal": removed_record,
         "step_zero_exact_parent": step == 0,
-        "gate_amplitude": float(output["diagnostics"]["amplitude"].cpu()),
+        "raw_gate_amplitude": float(
+            output["diagnostics"]["raw_amplitude"].cpu()
+        ),
+        "effective_gate_amplitude": float(
+            output["diagnostics"]["amplitude"].cpu()
+        ),
     }
 
 
@@ -588,14 +593,14 @@ def run_training(config_path: Path, output_root: Path, *, device: str,
         if not np.isfinite(gradient_norm):
             raise ValueError("gate gradient norm is non-finite")
         optimizer.step()
+        gate.project_parameters()
         history.append({
             "step": step + 1, "work_id": batch["work_id"],
             "start_frame": batch["start_frame"], "objective": float(total.detach().cpu()),
             "regularization": float(regularization.detach().cpu()),
             "gradient_norm_before_clip": gradient_norm,
-            "gate_amplitude": float(torch.clamp(
-                gate.correction_amplitude.detach(), 0, 1
-            ).cpu()),
+            "raw_gate_amplitude": float(gate.correction_amplitude.detach().cpu()),
+            "effective_gate_amplitude": float(gate.correction_amplitude.detach().cpu()),
             "components": _json_numbers(components),
         })
 

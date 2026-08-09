@@ -14,7 +14,11 @@ import yaml
 
 from audio_extract.classical_baselines import _ensure_exact_source, _pinned_bundles
 from audio_extract.model_lock import ModelLock
-from audio_extract.separate import render_candidate, render_residual_candidate
+from audio_extract.separate import (
+    render_candidate,
+    render_ensemble_candidate,
+    render_residual_candidate,
+)
 from audio_extract.storage import TrackLayout
 from tools.render_oracle_no_vocal_basis import (
     BASIS_ORDER,
@@ -64,6 +68,26 @@ def _member_record(layout: TrackLayout, name: str, accompaniment: dict,
             "artifact_pcm_sha256": accompaniment["artifact_pcm_sha256"],
             "container_sha256": _sha_file(accompaniment_path),
         },
+    }
+
+
+def _median_record(layout: TrackLayout, accompaniment: dict,
+                   parent_rows: list[dict]) -> dict:
+    path = layout.candidate_dir(accompaniment["recipe_id"]) / "output.f32.wav"
+    info = sf.info(path)
+    if (info.samplerate, info.channels, info.subtype) != (44_100, 2, "FLOAT"):
+        raise RuntimeError(f"median control output is not exact FLOAT stereo: {path}")
+    return {
+        "name": "median_mdx_mel_bs",
+        "executed_bundle_hashes": sorted(
+            row["executed_bundle_hash"] for row in parent_rows
+        ),
+        "accompaniment": {
+            "recipe_id": accompaniment["recipe_id"], "path": str(path),
+            "artifact_pcm_sha256": accompaniment["artifact_pcm_sha256"],
+            "container_sha256": _sha_file(path),
+        },
+        "parent_vocal_recipe_ids": list(accompaniment["parents"]),
     }
 
 
@@ -133,16 +157,33 @@ def run(args: argparse.Namespace) -> dict:
             layout, name, accompaniment, bundle["bundle_sha256"]
         ))
 
+    if args.include_median:
+        median_names = ("mdx23c", "melband", "bs_roformer")
+        by_name = {row["name"]: row for row in members}
+        if not set(median_names) <= set(by_name):
+            raise ValueError("--include-median requires mdx23c melband bs_roformer")
+        parents = [
+            by_name[name]["vocal"]["recipe_id"] for name in median_names
+        ]
+        median = render_ensemble_candidate(
+            layout, source, member_recipe_ids=parents, algo="median",
+            code_commit=code_commit,
+        )
+        members.append(_median_record(
+            layout, median, [by_name[name] for name in median_names]
+        ))
+
     # Only the executed members must be resolvable from the combined lock.
     by_hash = {
         lock.resolve(logical_id)["bundle_sha256"]: logical_id
         for logical_id in lock.logical_ids()
     }
     for row in members:
-        bundle_hash = row["executed_bundle_hash"]
-        if bundle_hash not in by_hash:
-            raise RuntimeError(f"executed bundle is absent from the lock: {bundle_hash}")
-        lock.verify(by_hash[bundle_hash], bundle_dir)
+        hashes = row.get("executed_bundle_hashes") or [row["executed_bundle_hash"]]
+        for bundle_hash in hashes:
+            if bundle_hash not in by_hash:
+                raise RuntimeError(f"executed bundle is absent from the lock: {bundle_hash}")
+            lock.verify(by_hash[bundle_hash], bundle_dir)
 
     source_audio, sr = sf.read(source_path, dtype="float32", always_2d=True)
     if sr != 44_100 or len(source_audio) != source["frames"]:
@@ -153,9 +194,15 @@ def run(args: argparse.Namespace) -> dict:
         else "false_negative_energy_ratio"
     )
     for row in members:
-        estimate, _ = sf.read(
-            row["vocal"]["path"], dtype="float32", always_2d=True
-        )
+        if "vocal" in row:
+            estimate, _ = sf.read(
+                row["vocal"]["path"], dtype="float32", always_2d=True
+            )
+        else:
+            accompaniment, _ = sf.read(
+                row["accompaniment"]["path"], dtype="float32", always_2d=True
+            )
+            estimate = source_audio.astype("float32") - accompaniment.astype("float32")
         error = estimate if args.control == "no_vocal" else source_audio - estimate
         row[diagnostic_name] = float(
             np.sum(error.astype(np.float64) ** 2) / denominator
@@ -182,6 +229,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--work", required=True)
     parser.add_argument("--control", required=True, choices=sorted(CONTROL_FILES))
     parser.add_argument("--members", nargs="+", required=True, choices=BASIS_ORDER)
+    parser.add_argument("--include-median", action="store_true")
     parser.add_argument("--output-store", required=True, type=Path)
     parser.add_argument("--model-dir", required=True, type=Path)
     parser.add_argument("--baseline-config", required=True, type=Path)

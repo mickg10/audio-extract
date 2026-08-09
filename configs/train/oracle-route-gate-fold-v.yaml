@@ -15,7 +15,7 @@ data:
 model:
   sample_rate_hz: 44100
   n_fft: 2048
-  hop_length: 512
+  hop_length: 1024
   tile_seconds: 2.0
   band_edges_hz: [0, 250, 500, 1000, 2000, 4000, 8000, 16000, 22050]
   feature_channels: 4

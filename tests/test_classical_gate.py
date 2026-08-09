@@ -57,6 +57,24 @@ def test_gate_is_bounded_stereo_coherent_and_trainable_from_zero():
     assert not torch.equal(output, conservative)
 
 
+def test_projected_amplitude_recovers_from_negative_raw_state():
+    mixture, conservative, aggressive = _audio()
+    gate = SmoothResidualGate(_config())
+    optimizer = torch.optim.SGD(list(gate.parameters()), lr=0.5)
+    with torch.no_grad():
+        gate.correction_amplitude.fill_(-0.2)
+    gate.project_parameters()
+    assert float(gate.correction_amplitude.detach()) == 0.0
+    output, diagnostics = gate(mixture, conservative, aggressive)
+    loss = (output - aggressive).square().mean()
+    optimizer.zero_grad(set_to_none=True)
+    loss.backward()
+    optimizer.step()
+    gate.project_parameters()
+    assert float(gate.correction_amplitude.detach()) > 0.0
+    assert float(diagnostics["raw_amplitude"].detach()) == 0.0
+
+
 def test_regularization_is_finite_and_zero_at_step_zero():
     mixture, conservative, aggressive = _audio()
     config = _config()

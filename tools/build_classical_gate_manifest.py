@@ -31,9 +31,22 @@ def _rows(path: Path) -> dict[str, dict]:
     return result
 
 
+def _candidate_rows(path: Path) -> dict[tuple[str, str], dict]:
+    result = {}
+    for line in path.read_text().splitlines():
+        if line.strip():
+            row = json.loads(line)
+            result[(row["work_id"], row["candidate"])] = row
+    return result
+
+
+def _local_path(value: str) -> Path:
+    return Path(value.removeprefix("research6:"))
+
+
 def _basis_record(row: dict, label: str) -> dict:
     record = audio_record(
-        Path(row["path"]), recipe_id=row["recipe_id"],
+        _local_path(row["path"]), recipe_id=row["recipe_id"],
         executed_bundle_hash=row.get("executed_bundle_hash"),
     )
     for key in ("container_sha256", "artifact_pcm_sha256"):
@@ -48,12 +61,13 @@ def _control_member(report: dict, member: str, label: str) -> dict:
         raise ValueError(f"{label} does not uniquely contain {member}")
     row = matches[0]
     record = dict(row["accompaniment"])
-    record["executed_bundle_hash"] = row["executed_bundle_hash"]
+    bundle_hashes = row.get("executed_bundle_hashes") or [row["executed_bundle_hash"]]
+    record["executed_bundle_hashes"] = bundle_hashes
     # Reopen/re-hash rather than trusting the control report transitively.
     actual = audio_record(
         Path(record["path"]), recipe_id=record["recipe_id"],
-        executed_bundle_hash=record["executed_bundle_hash"],
     )
+    actual["executed_bundle_hashes"] = bundle_hashes
     for key in ("container_sha256", "artifact_pcm_sha256"):
         if actual[key] != record[key]:
             raise ValueError(f"{label}/{member}/{key} mismatch")
@@ -65,6 +79,9 @@ def run(args: argparse.Namespace) -> dict:
     if oracle.get("schema") != "audio-extract/oracle-routing-envelope/v1":
         raise ValueError("wrong oracle routing report schema")
     dataset_rows = _rows(args.dataset_manifest)
+    candidate_rows = (
+        _candidate_rows(args.candidate_manifest) if args.candidate_manifest else {}
+    )
     members = {
         "conservative": args.conservative,
         "aggressive": args.aggressive,
@@ -75,7 +92,10 @@ def run(args: argparse.Namespace) -> dict:
         if work not in oracle["works"] or work not in dataset_rows:
             raise ValueError(f"work absent from oracle/dataset manifests: {work}")
         basis = {row["name"]: row for row in oracle["works"][work]["basis"]}
-        missing = sorted(set(members.values()) - set(basis))
+        available = set(basis)
+        if (work, "median_mdx_mel_bs") in candidate_rows:
+            available.add("median_mdx_mel_bs")
+        missing = sorted(set(members.values()) - available)
         if missing:
             raise ValueError(f"{work} oracle basis lacks members: {missing}")
         controls = {}
@@ -101,7 +121,10 @@ def run(args: argparse.Namespace) -> dict:
             "truth": truth,
             "estimates": {
                 "mixture": {
-                    role: _basis_record(basis[name], f"{work}/{role}")
+                    role: _basis_record(
+                        basis[name] if name in basis else candidate_rows[(work, name)],
+                        f"{work}/{role}",
+                    )
                     for role, name in members.items()
                 },
                 **controls,
@@ -134,6 +157,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--control-root", required=True, type=Path)
     parser.add_argument("--materialized-root", required=True, type=Path)
     parser.add_argument("--dataset-manifest", required=True, type=Path)
+    parser.add_argument("--candidate-manifest", type=Path)
     parser.add_argument("--conservative", required=True)
     parser.add_argument("--aggressive", required=True)
     parser.add_argument("--works", nargs="*")

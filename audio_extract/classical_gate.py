@@ -29,7 +29,7 @@ from typing import Any
 class SmoothGateConfig:
     sample_rate_hz: int = 44_100
     n_fft: int = 2_048
-    hop_length: int = 512
+    hop_length: int = 1_024
     tile_seconds: float = 2.0
     band_edges_hz: tuple[int, ...] = (
         0, 250, 500, 1_000, 2_000, 4_000, 8_000, 16_000, 22_050
@@ -128,6 +128,16 @@ class SmoothResidualGate:
                 *args, **kwargs
             )
         return self
+
+    def project_parameters(self) -> None:
+        """Projected-optimizer constraint for the global correction amplitude.
+
+        The raw parameter is kept in ``[0, 1]`` after every optimizer step.  The
+        forward therefore does not contain a clamp with a dead region, and a
+        state perturbed below zero can recover after projection.
+        """
+        with _torch().no_grad():
+            self.correction_amplitude.clamp_(0.0, 1.0)
 
     def state_dict(self) -> dict[str, object]:
         return {
@@ -244,7 +254,13 @@ class SmoothResidualGate:
             mixture_spectrum, conservative_spectrum, aggressive_spectrum, delta
         ))
         spatial = torch.sigmoid(self.network(features))
-        amplitude = torch.clamp(self.correction_amplitude, min=0.0, max=1.0)
+        raw_amplitude = self.correction_amplitude
+        raw_value = float(raw_amplitude.detach().cpu())
+        if not 0.0 <= raw_value <= 1.0:
+            raise ValueError(
+                "gate correction amplitude is outside [0,1]; project after optimizer step"
+            )
+        amplitude = raw_amplitude
         coarse_gate = amplitude * spatial
 
         full_gate = torch.zeros(
@@ -263,7 +279,9 @@ class SmoothResidualGate:
         ).reshape(batch, channels, frames)
         estimate = conservative_estimate + correction
         return estimate, {
-            "amplitude": amplitude, "coarse_gate": coarse_gate,
+            "raw_amplitude": raw_amplitude.detach().clone(),
+            "amplitude": amplitude.detach().clone(),
+            "coarse_gate": coarse_gate,
             "full_gate": full_gate, "correction": correction,
         }
 
