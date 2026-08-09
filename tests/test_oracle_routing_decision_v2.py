@@ -2,13 +2,15 @@ from audio_extract.oracle_routing_decision_v2 import (
     REPORT_SCHEMA,
     evaluate_report,
 )
-
-WORKS = (
-    "bologna_verdi",
-    "bologna_donizetti",
-    "bologna_puccini",
-    "aalto_mozart_dry",
+from audio_extract.oracle_routing_work_contract_v3 import (
+    REQUIRED_WORKS,
+    WORK_CONTRACT_SHA256,
 )
+from audio_extract.oracle_routing_work_contract_v3 import (
+    identity_dict as work_contract_identity,
+)
+
+WORKS = REQUIRED_WORKS
 RESOLUTIONS = ("2.0", "1.0", "0.5")
 
 
@@ -114,7 +116,12 @@ def work_evidence(*, actionable_o2=False):
 
 
 def complete_report(*, actionable_at=None):
-    report = {"schema": REPORT_SCHEMA, "resolutions": {}}
+    report = {
+        "schema": REPORT_SCHEMA,
+        "work_contract": work_contract_identity(),
+        "work_contract_sha256": WORK_CONTRACT_SHA256,
+        "resolutions": {},
+    }
     for resolution in RESOLUTIONS:
         works = {work: work_evidence() for work in WORKS}
         if resolution == actionable_at:
@@ -191,6 +198,24 @@ def test_missing_resolution_is_incomplete_evidence():
         for item in result["method_decisions"]
         for failure in item["failures"]
     )
+
+
+def test_missing_hall_work_or_contract_identity_is_incomplete():
+    report = complete_report()
+    del report["resolutions"]["1.0"]["works"]["aalto_mozart_hall"]
+    result = evaluate_report(report)
+    assert result["decision"] == "INCOMPLETE_EVIDENCE"
+    assert any(
+        "hall-bearing contract" in failure
+        for row in result["method_decisions"]
+        for failure in row["failures"]
+    )
+
+    report = complete_report()
+    report["work_contract_sha256"] = "sha256:" + "0" * 64
+    result = evaluate_report(report)
+    assert result["decision"] == "INCOMPLETE_EVIDENCE"
+    assert result["method_decisions"] == []
 
 
 def test_uncertified_o3_blocks_a_no_gap_conclusion():

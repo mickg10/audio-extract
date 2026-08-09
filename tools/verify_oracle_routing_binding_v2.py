@@ -63,11 +63,14 @@ from audio_extract.oracle_routing_source_lineage_v2 import (
     _stable_json,
     expected_source_from_audio,
 )
+from audio_extract.oracle_routing_work_contract_v3 import (
+    NO_VOCAL_CONTROL_WORK_ID,
+)
 
 RUN_INPUT_SCHEMA = "audio-extract/oracle-routing-run-inputs/v2"
 VERIFICATION_SCHEMA = "audio-extract/oracle-routing-binding-verification/v2"
 SOURCE_MANIFEST_GROUPS = ("voiced", "no_vocal")
-NO_VOCAL_WORKS = ("aalto_mozart_dry",)
+NO_VOCAL_WORKS = (NO_VOCAL_CONTROL_WORK_ID,)
 
 
 class BindingVerificationError(RuntimeError):

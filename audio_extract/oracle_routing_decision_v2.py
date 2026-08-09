@@ -13,15 +13,18 @@ from collections.abc import Mapping, Sequence
 from dataclasses import asdict, dataclass
 from typing import Any
 
+from .oracle_routing_work_contract_v3 import (
+    NO_VOCAL_CONTROL_WORK_ID,
+    REQUIRED_WORKS,
+    WORK_CONTRACT_SHA256,
+)
+from .oracle_routing_work_contract_v3 import (
+    identity_dict as work_contract_identity,
+)
+
 DECISION_SCHEMA = "audio-extract/oracle-routing-decision/v2"
 REPORT_SCHEMA = "audio-extract/oracle-routing-envelope/v2"
 
-REQUIRED_WORKS = (
-    "bologna_verdi",
-    "bologna_donizetti",
-    "bologna_puccini",
-    "aalto_mozart_dry",
-)
 REQUIRED_RESOLUTIONS = ("2.0", "1.0", "0.5")
 BASELINE = "median_raw"
 FALLBACK = "residual_mdx23c"
@@ -271,6 +274,12 @@ def evaluate_method(
     failures: list[str] = []
     gains: dict[str, float] = {}
     try:
+        if set(works) != set(REQUIRED_WORKS):
+            raise DecisionEvidenceError(
+                "work set differs from the frozen hall-bearing contract: "
+                f"missing={sorted(set(REQUIRED_WORKS) - set(works))}, "
+                f"extra={sorted(set(works) - set(REQUIRED_WORKS))}"
+            )
         rows = {
             work: _mapping(works.get(work), f"{resolution}.{work}")
             for work in REQUIRED_WORKS
@@ -375,9 +384,10 @@ def evaluate_method(
             if event_regression > config.worst_event_regression:
                 failures.append(f"{work} worst identifiable event regresses")
 
-        aalto = rows["aalto_mozart_dry"]
-        candidate_fp = _no_vocal(aalto, method_name, f"{resolution}.aalto_mozart_dry")
-        baseline_fp = _no_vocal(aalto, BASELINE, f"{resolution}.aalto_mozart_dry")
+        no_vocal = rows[NO_VOCAL_CONTROL_WORK_ID]
+        control_label = f"{resolution}.{NO_VOCAL_CONTROL_WORK_ID}"
+        candidate_fp = _no_vocal(no_vocal, method_name, control_label)
+        baseline_fp = _no_vocal(no_vocal, BASELINE, control_label)
         if _ratio(candidate_fp, baseline_fp, config.near_zero) > (
             config.no_vocal_ratio_limit
         ):
@@ -418,6 +428,19 @@ def evaluate_report(
             "decision": "INCOMPLETE_EVIDENCE",
             "reason": f"wrong report schema: {report.get('schema')!r}",
             "config": asdict(cfg),
+            "method_decisions": [],
+        }
+    if (
+        report.get("work_contract") != work_contract_identity()
+        or report.get("work_contract_sha256") != WORK_CONTRACT_SHA256
+    ):
+        return {
+            "schema": DECISION_SCHEMA,
+            "decision": "INCOMPLETE_EVIDENCE",
+            "reason": "report work contract differs from the frozen hall-bearing identity",
+            "config": asdict(cfg),
+            "recommendation": "COMPLETE_CERTIFICATES_AND_CONTROLS",
+            "selected": None,
             "method_decisions": [],
         }
     try:

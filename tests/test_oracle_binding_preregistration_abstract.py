@@ -6,7 +6,7 @@ from audio_extract.oracle_binding_preregistration_abstract import (
 )
 
 
-def test_all_131072_preregistration_states_satisfy_promotion_invariants():
+def test_all_524288_preregistration_states_satisfy_promotion_invariants():
     count = 0
     decisions = set()
     for state in exhaustive_states():
@@ -34,7 +34,7 @@ def test_all_131072_preregistration_states_satisfy_promotion_invariants():
         if not state.complete:
             assert decision is Decision.INVALID_EVIDENCE
 
-    assert count == 131_072
+    assert count == 524_288
     assert decisions == set(Decision)
 
 
@@ -54,6 +54,8 @@ def _valid(**changes):
         "output_absent_through_preflight": True,
         "preflight_valid": True,
         "report_binds_run_input_claim": True,
+        "hall_reference_complete": True,
+        "hall_metric_evidence_valid": True,
         "all_method_resolution_evidence_valid": True,
         "selected_primary_passes": True,
         "selected_sensitivity_passes": False,
@@ -96,6 +98,11 @@ def test_missing_preflight_or_report_v3_binding_cannot_promote():
     assert (
         decide(_valid(report_binds_run_input_claim=False)) is Decision.INVALID_EVIDENCE
     )
+
+
+def test_missing_hall_reference_or_metric_evidence_cannot_promote():
+    assert decide(_valid(hall_reference_complete=False)) is Decision.INVALID_EVIDENCE
+    assert decide(_valid(hall_metric_evidence_valid=False)) is Decision.INVALID_EVIDENCE
 
 
 def test_sensitivity_only_success_is_nonpromoting():

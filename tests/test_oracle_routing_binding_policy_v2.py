@@ -3,7 +3,13 @@ from audio_extract.oracle_routing_binding_policy_v2 import (
     evaluate_report_strict,
 )
 from audio_extract.oracle_routing_decision_v2 import REPORT_SCHEMA
-
+from audio_extract.oracle_routing_work_contract_v3 import (
+    REQUIRED_WORKS,
+    WORK_CONTRACT_SHA256,
+)
+from audio_extract.oracle_routing_work_contract_v3 import (
+    identity_dict as work_contract_identity,
+)
 
 METHODS = ("O2_global_medoid", "O3_certified_convex")
 RESOLUTIONS = ("1.0", "2.0", "0.5")
@@ -69,14 +75,16 @@ def certificate(name):
 
 def routed(name, values=None, *, seed="2"):
     result = base_method(values, seed=seed)
-    result.update({
-        "optimizer_certificate": certificate(name),
-        "seam_check": {
-            "max_time_boundary_jump_over_p99_derivative": 1.0,
-            "max_frequency_ringing_ratio": 1.0,
-        },
-        "worst_identifiable_event": event(1.05),
-    })
+    result.update(
+        {
+            "optimizer_certificate": certificate(name),
+            "seam_check": {
+                "max_time_boundary_jump_over_p99_derivative": 1.0,
+                "max_frequency_ringing_ratio": 1.0,
+            },
+            "worst_identifiable_event": event(1.05),
+        }
+    )
     return result
 
 
@@ -95,12 +103,8 @@ def work_evidence():
         ),
         "median_stft_identity": identity_method("5"),
         "O1_stft_identity": identity_method("6"),
-        "O2_global_medoid": routed(
-            "O2_global_medoid", metrics(), seed="2"
-        ),
-        "O3_certified_convex": routed(
-            "O3_certified_convex", metrics(), seed="3"
-        ),
+        "O2_global_medoid": routed("O2_global_medoid", metrics(), seed="2"),
+        "O3_certified_convex": routed("O3_certified_convex", metrics(), seed="3"),
     }
     return {
         "methods": methods,
@@ -113,27 +117,21 @@ def work_evidence():
 
 
 def complete_report():
-    works = (
-        "bologna_verdi",
-        "bologna_donizetti",
-        "bologna_puccini",
-        "aalto_mozart_dry",
-    )
     return {
         "schema": REPORT_SCHEMA,
+        "work_contract": work_contract_identity(),
+        "work_contract_sha256": WORK_CONTRACT_SHA256,
         "resolutions": {
-            resolution: {
-                "works": {work: work_evidence() for work in works}
-            }
+            resolution: {"works": {work: work_evidence() for work in REQUIRED_WORKS}}
             for resolution in RESOLUTIONS
         },
     }
 
 
 def make_o2_actionable(report, resolution):
-    report["resolutions"][resolution]["works"]["bologna_verdi"][
-        "methods"
-    ]["O2_global_medoid"] = routed(
+    report["resolutions"][resolution]["works"]["bologna_verdi"]["methods"][
+        "O2_global_medoid"
+    ] = routed(
         "O2_global_medoid",
         metrics(voice=-7.0, hole=1.2),
         seed="7",
@@ -141,9 +139,9 @@ def make_o2_actionable(report, resolution):
 
 
 def make_o3_actionable(report, resolution):
-    report["resolutions"][resolution]["works"]["bologna_verdi"][
-        "methods"
-    ]["O3_certified_convex"] = routed(
+    report["resolutions"][resolution]["works"]["bologna_verdi"]["methods"][
+        "O3_certified_convex"
+    ] = routed(
         "O3_certified_convex",
         metrics(voice=-7.0, hole=1.2),
         seed="8",
@@ -175,9 +173,9 @@ def test_sensitivity_only_pass_is_non_promoting():
 def test_any_invalid_required_row_blocks_even_primary_pass():
     report = complete_report()
     make_o2_actionable(report, "1.0")
-    report["resolutions"]["0.5"]["works"]["bologna_verdi"][
-        "methods"
-    ]["O3_certified_convex"]["optimizer_certificate"]["converged"] = False
+    report["resolutions"]["0.5"]["works"]["bologna_verdi"]["methods"][
+        "O3_certified_convex"
+    ]["optimizer_certificate"]["converged"] = False
     result = evaluate_report_strict(report)
     assert result["decision"] == "INCOMPLETE_EVIDENCE"
     assert result["selected"] is None
@@ -203,14 +201,16 @@ def test_other_method_sensitivity_cannot_promote_selected_method():
 
 
 def test_policy_is_closed_and_identity_bearing():
-    policy = BindingPolicyConfig.from_mapping({
-        "schema": "audio-extract/oracle-routing-binding-policy/v2",
-        "task_id": "soloist_vs_rest",
-        "selected_method": "O2_global_medoid",
-        "primary_resolution": "1.0",
-        "sensitivity_resolutions": ["2.0", "0.5"],
-        "required_methods": list(METHODS),
-    })
+    policy = BindingPolicyConfig.from_mapping(
+        {
+            "schema": "audio-extract/oracle-routing-binding-policy/v2",
+            "task_id": "soloist_vs_rest",
+            "selected_method": "O2_global_medoid",
+            "primary_resolution": "1.0",
+            "sensitivity_resolutions": ["2.0", "0.5"],
+            "required_methods": list(METHODS),
+        }
+    )
     assert policy.required_resolutions == RESOLUTIONS
     assert policy.identity_dict()["selected_method"] == "O2_global_medoid"
 

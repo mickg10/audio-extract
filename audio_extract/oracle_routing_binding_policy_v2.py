@@ -15,29 +15,41 @@ changing any semantic field is refused.
 
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
 import hashlib
 import json
-from typing import Any, Mapping, Sequence
+from collections.abc import Mapping, Sequence
+from dataclasses import asdict, dataclass
+from typing import Any
 
 from .oracle_binding_gate_abstract import (
+    METHODS as ABSTRACT_METHODS,
+)
+from .oracle_binding_gate_abstract import (
+    PRIMARY_RESOLUTION,
     AbstractCell,
     AbstractDecision,
     AbstractReport,
-    METHODS as ABSTRACT_METHODS,
-    PRIMARY_RESOLUTION,
-    RESOLUTIONS as ABSTRACT_RESOLUTIONS,
     decide,
+)
+from .oracle_binding_gate_abstract import (
+    RESOLUTIONS as ABSTRACT_RESOLUTIONS,
 )
 from .oracle_routing_decision_v2 import (
     DECISION_SCHEMA as LEGACY_DECISION_SCHEMA,
+)
+from .oracle_routing_decision_v2 import (
     REPORT_SCHEMA,
-    MethodDecision,
     ROUTED_METHODS,
+    MethodDecision,
     RoutingGateConfig,
     evaluate_method,
 )
-
+from .oracle_routing_work_contract_v3 import (
+    WORK_CONTRACT_SHA256,
+)
+from .oracle_routing_work_contract_v3 import (
+    identity_dict as work_contract_identity,
+)
 
 POLICY_SCHEMA = "audio-extract/oracle-routing-binding-policy/v2"
 DECISION_SCHEMA = "audio-extract/oracle-routing-binding-decision/v3"
@@ -74,13 +86,11 @@ class BindingPolicyConfig:
     task_id: str = CANONICAL_TASK_ID
     selected_method: str = CANONICAL_SELECTED_METHOD
     primary_resolution: str = CANONICAL_PRIMARY_RESOLUTION
-    sensitivity_resolutions: tuple[str, ...] = (
-        CANONICAL_SENSITIVITY_RESOLUTIONS
-    )
+    sensitivity_resolutions: tuple[str, ...] = CANONICAL_SENSITIVITY_RESOLUTIONS
     required_methods: tuple[str, ...] = CANONICAL_REQUIRED_METHODS
 
     @classmethod
-    def from_mapping(cls, value: Mapping[str, Any]) -> "BindingPolicyConfig":
+    def from_mapping(cls, value: Mapping[str, Any]) -> BindingPolicyConfig:
         data = dict(value)
         for name in ("sensitivity_resolutions", "required_methods"):
             if name in data:
@@ -157,9 +167,7 @@ def _abstract_method(method: str) -> str:
     try:
         result = mapping[method]
     except KeyError as exc:
-        raise ValueError(
-            f"method has no formal abstraction: {method!r}"
-        ) from exc
+        raise ValueError(f"method has no formal abstraction: {method!r}") from exc
     if result not in ABSTRACT_METHODS:
         raise AssertionError(result)
     return result
@@ -206,16 +214,18 @@ def reduce_method_decisions(
     }
     if set(by_key) != expected:
         raise ValueError(
-            f"method decision set differs: missing={sorted(expected-set(by_key))}, "
-            f"extra={sorted(set(by_key)-expected)}"
+            f"method decision set differs: missing={sorted(expected - set(by_key))}, "
+            f"extra={sorted(set(by_key) - expected)}"
         )
 
     abstract_cells = {
-        (_abstract_method(method), _abstract_resolution(resolution, policy)):
-            AbstractCell(
-                valid=by_key[(method, resolution)].evidence_valid,
-                passes=by_key[(method, resolution)].actionable_oracle_gap,
-            )
+        (
+            _abstract_method(method),
+            _abstract_resolution(resolution, policy),
+        ): AbstractCell(
+            valid=by_key[(method, resolution)].evidence_valid,
+            passes=by_key[(method, resolution)].actionable_oracle_gap,
+        )
         for method, resolution in expected
     }
     abstract = AbstractReport(
@@ -309,6 +319,23 @@ def evaluate_report_strict(
             "sensitivity_hits": [],
             "method_decisions": [],
         }
+    if (
+        report.get("work_contract") != work_contract_identity()
+        or report.get("work_contract_sha256") != WORK_CONTRACT_SHA256
+    ):
+        return {
+            "schema": DECISION_SCHEMA,
+            "decision": "INCOMPLETE_EVIDENCE",
+            "recommendation": "COMPLETE_CERTIFICATES_AND_CONTROLS",
+            "reason": (
+                "report work contract differs from the frozen hall-bearing identity"
+            ),
+            "policy": selected_policy.identity_dict(),
+            "policy_semantic_sha256": CANONICAL_POLICY_SHA256,
+            "selected": None,
+            "sensitivity_hits": [],
+            "method_decisions": [],
+        }
     resolutions = report.get("resolutions")
     if not isinstance(resolutions, Mapping):
         return {
@@ -327,9 +354,7 @@ def evaluate_report_strict(
     for resolution in selected_policy.required_resolutions:
         resolution_row = resolutions.get(resolution)
         works = (
-            resolution_row.get("works")
-            if isinstance(resolution_row, Mapping)
-            else None
+            resolution_row.get("works") if isinstance(resolution_row, Mapping) else None
         )
         if not isinstance(works, Mapping):
             rows.extend(

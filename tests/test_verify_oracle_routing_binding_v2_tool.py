@@ -22,6 +22,13 @@ from audio_extract.oracle_routing_run_contract_v3 import (
     validate_run_input,
     write_run_input,
 )
+from audio_extract.oracle_routing_work_contract_v3 import (
+    REQUIRED_WORKS,
+    WORK_CONTRACT_SHA256,
+)
+from audio_extract.oracle_routing_work_contract_v3 import (
+    identity_dict as work_contract_identity,
+)
 from tools import verify_oracle_routing_binding_v2 as tool
 
 ANCHOR = "https://github.com/mickg10/audio-extract/issues/1#issuecomment-5232987267"
@@ -133,12 +140,7 @@ def _fixture(tmp_path, monkeypatch, *, reordered_preregistration=False):
     inputs = {
         "schema": tool.RUN_INPUT_SCHEMA,
         "code_commit": "a" * 40,
-        "works": [
-            "bologna_verdi",
-            "bologna_donizetti",
-            "bologna_puccini",
-            "aalto_mozart_dry",
-        ],
+        "works": list(REQUIRED_WORKS),
         "run_config": {"resolutions_seconds": [2.0, 1.0, 0.5]},
         "decision_config": {},
         "binding_policy": policy,
@@ -162,6 +164,8 @@ def _fixture(tmp_path, monkeypatch, *, reordered_preregistration=False):
         "schema": "audio-extract/oracle-routing-envelope/v2",
         "code_commit": inputs["code_commit"],
         "works": inputs["works"],
+        "work_contract": work_contract_identity(),
+        "work_contract_sha256": WORK_CONTRACT_SHA256,
         "config": inputs["run_config"],
         "resolutions": {
             value: {"works": {work: {} for work in inputs["works"]}}

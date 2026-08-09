@@ -77,28 +77,23 @@ from .oracle_routing_spectral_v2 import (
     stft_stack,
     validate_exact_audio_basis,
 )
+from .oracle_routing_work_contract_v3 import (
+    NO_VOCAL_CONTROL_WORK_ID,
+    WORK_CONTRACT_SHA256,
+)
+from .oracle_routing_work_contract_v3 import (
+    REQUIRED_BASIS_ALIASES as REQUIRED_ALIASES,
+)
+from .oracle_routing_work_contract_v3 import REQUIRED_WORKS as DEFAULT_WORKS
+from .oracle_routing_work_contract_v3 import (
+    identity_dict as work_contract_identity,
+)
 
 RUN_SCHEMA = "audio-extract/oracle-routing-run/v2"
 RECIPE_SCHEMA = "audio-extract/oracle-routing-artifact-recipe/v2"
 TRUTH_SCHEMA = "audio-extract/oracle-routing-truth/v2"
 
-DEFAULT_WORKS = (
-    "bologna_verdi",
-    "bologna_donizetti",
-    "bologna_puccini",
-    "aalto_mozart_dry",
-)
 DEFAULT_RESOLUTIONS = (2.0, 1.0, 0.5)
-REQUIRED_ALIASES = (
-    "median_mdx_mel_bs",
-    "geomedian_mdx_mel_bs",
-    "convex_fusion_uniform",
-    "residual_mdx23c",
-    "residual_melband",
-    "residual_bs_roformer",
-    "htdemucs_04573f0d",
-    "htdemucs_955717e8",
-)
 
 
 class CertifiedRoutingRunError(RuntimeError):
@@ -999,6 +994,8 @@ def run_experiment(
             "spectral": asdict(cfg.spectral),
         },
         "works": list(works),
+        "work_contract": work_contract_identity(),
+        "work_contract_sha256": WORK_CONTRACT_SHA256,
         "resolutions": {},
         "run_input_binding": dict(preflight.binding),
         **binding_fields(initial),
@@ -1030,7 +1027,7 @@ def run_experiment(
                 code_commit=code_commit,
                 preregistration_facts=recipe_preregistration,
             )
-            if work == "aalto_mozart_dry" and no_vocal_basis_rows is not None:
+            if work == NO_VOCAL_CONTROL_WORK_ID and no_vocal_basis_rows is not None:
                 work_report["no_vocal"] = apply_no_vocal_controls(
                     truth=truths[work],
                     voiced_runtime=runtime,

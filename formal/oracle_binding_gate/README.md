@@ -11,6 +11,8 @@ from the observed results. Promotion also requires the concrete v3 chronology:
 a prewritten run input, valid semantic/container/sidecar dependency bindings, an
 exact public issue-comment claim while the output root is absent, a successful
 runner preflight, and an exact input/claim binding in the final report. The
+shared work contract additionally requires complete Aalto hall truth, basis,
+source lineage, and finite hall-row evidence. The
 state machine permits four terminal outcomes:
 
 - `INVALID_EVIDENCE`: at least one required cell is invalid;
@@ -36,7 +38,7 @@ java -XX:+UseParallelGC -cp tla2tools.jar tlc2.TLC \
 ```
 
 The committed preregistration Python mirror exhaustively enumerates all
-`2^17 = 131072` publication/evidence assignments in ordinary CI. The separate
+`2^19 = 524288` publication/evidence assignments in ordinary CI. The separate
 closed method-resolution gate still enumerates its complete cell matrix:
 
 ```bash

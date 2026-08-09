@@ -15,6 +15,8 @@ VARIABLES policyPinned,
           outputAbsentThroughPreflight,
           preflightValid,
           reportBindsRunInputClaim,
+          hallReferenceComplete,
+          hallMetricEvidenceValid,
           allEvidenceValid,
           primaryPass,
           sensitivityPass,
@@ -26,6 +28,7 @@ vars ==
       runInputPreexists, claimPreexists, externalAnchorValid,
       digestBindingsValid, outputAbsentThroughPreflight, preflightValid,
       reportBindsRunInputClaim,
+      hallReferenceComplete, hallMetricEvidenceValid,
       allEvidenceValid, primaryPass, sensitivityPass, decision>>
 
 Decisions ==
@@ -47,6 +50,8 @@ TypeOK ==
     /\ outputAbsentThroughPreflight \in BOOLEAN
     /\ preflightValid \in BOOLEAN
     /\ reportBindsRunInputClaim \in BOOLEAN
+    /\ hallReferenceComplete \in BOOLEAN
+    /\ hallMetricEvidenceValid \in BOOLEAN
     /\ allEvidenceValid \in BOOLEAN
     /\ primaryPass \in BOOLEAN
     /\ sensitivityPass \in BOOLEAN
@@ -60,6 +65,8 @@ RunContractValid ==
     /\ outputAbsentThroughPreflight
     /\ preflightValid
     /\ reportBindsRunInputClaim
+    /\ hallReferenceComplete
+    /\ hallMetricEvidenceValid
 
 PreregistrationValid ==
     /\ policyPinned
@@ -94,6 +101,8 @@ Init ==
     /\ outputAbsentThroughPreflight \in BOOLEAN
     /\ preflightValid \in BOOLEAN
     /\ reportBindsRunInputClaim \in BOOLEAN
+    /\ hallReferenceComplete \in BOOLEAN
+    /\ hallMetricEvidenceValid \in BOOLEAN
     /\ allEvidenceValid \in BOOLEAN
     /\ primaryPass \in BOOLEAN
     /\ sensitivityPass \in BOOLEAN
@@ -108,6 +117,7 @@ Decide ==
           runInputPreexists, claimPreexists, externalAnchorValid,
           digestBindingsValid, outputAbsentThroughPreflight, preflightValid,
           reportBindsRunInputClaim,
+          hallReferenceComplete, hallMetricEvidenceValid,
           allEvidenceValid, primaryPass, sensitivityPass>>
 
 Done ==
@@ -142,6 +152,10 @@ NoInvalidV3BindingPromotion ==
 
 NoPostOutputClaimPromotion ==
     ~outputAbsentThroughPreflight => decision # "ACTIONABLE"
+
+NoMissingHallPromotion ==
+    (~hallReferenceComplete \/ ~hallMetricEvidenceValid) =>
+        decision # "ACTIONABLE"
 
 SensitivityDoesNotPromote ==
     (~primaryPass /\ sensitivityPass) => decision # "ACTIONABLE"

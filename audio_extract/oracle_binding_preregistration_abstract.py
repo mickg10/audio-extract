@@ -38,6 +38,8 @@ class State:
     output_absent_through_preflight: bool
     preflight_valid: bool
     report_binds_run_input_claim: bool
+    hall_reference_complete: bool
+    hall_metric_evidence_valid: bool
     all_method_resolution_evidence_valid: bool
     selected_primary_passes: bool
     selected_sensitivity_passes: bool
@@ -71,6 +73,8 @@ class State:
             and self.output_absent_through_preflight
             and self.preflight_valid
             and self.report_binds_run_input_claim
+            and self.hall_reference_complete
+            and self.hall_metric_evidence_valid
         )
 
     @property
@@ -89,5 +93,5 @@ def decide(state: State) -> Decision:
 
 
 def exhaustive_states() -> Iterable[State]:
-    for values in product((False, True), repeat=17):
+    for values in product((False, True), repeat=19):
         yield State(*values)

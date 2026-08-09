@@ -28,18 +28,23 @@ from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Any
 
+from .oracle_routing_work_contract_v3 import (
+    REQUIRED_WORKS,
+    WORK_CONTRACT_SHA256,
+)
+from .oracle_routing_work_contract_v3 import (
+    identity_dict as work_contract_identity,
+)
+from .oracle_routing_work_contract_v3 import (
+    validate_identity as validate_work_contract,
+)
+
 RUN_INPUT_SCHEMA = "audio-extract/oracle-routing-run-input/v3"
 RUN_CLAIM_SCHEMA = "audio-extract/oracle-routing-run-claim/v1"
 REPORT_BINDING_SCHEMA = "audio-extract/oracle-routing-run-binding/v3"
 TASK_ID = "soloist_vs_rest"
 SELECTED_METHOD = "O2_global_medoid"
 REQUIRED_METHODS = ("O2_global_medoid", "O3_certified_convex")
-REQUIRED_WORKS = (
-    "bologna_verdi",
-    "bologna_donizetti",
-    "bologna_puccini",
-    "aalto_mozart_dry",
-)
 SOURCE_GROUPS = ("voiced", "no_vocal")
 
 
@@ -73,6 +78,7 @@ FROZEN_POLICY = {
     "selected_method": SELECTED_METHOD,
     "required_methods": list(REQUIRED_METHODS),
     "required_works": list(REQUIRED_WORKS),
+    "work_contract_sha256": WORK_CONTRACT_SHA256,
     "resolutions": [item.to_dict() for item in CANONICAL_RESOLUTIONS],
 }
 
@@ -464,6 +470,8 @@ def build_run_input(
         "frozen_policy_sha256": policy_sha256(),
         "required_methods": list(REQUIRED_METHODS),
         "required_works": list(REQUIRED_WORKS),
+        "work_contract": work_contract_identity(),
+        "work_contract_sha256": WORK_CONTRACT_SHA256,
         "resolutions": [item.to_dict() for item in CANONICAL_RESOLUTIONS],
         "source_manifests": {
             group: _record_mapping(groups[group]) for group in SOURCE_GROUPS
@@ -488,6 +496,8 @@ def _validate_semantics(document: Mapping[str, Any]) -> None:
         "frozen_policy_sha256",
         "required_methods",
         "required_works",
+        "work_contract",
+        "work_contract_sha256",
         "resolutions",
         "source_manifests",
         "truth_manifest",
@@ -520,6 +530,18 @@ def _validate_semantics(document: Mapping[str, Any]) -> None:
         raise RunContractError("run-input method set/order differs")
     if tuple(document.get("required_works") or ()) != REQUIRED_WORKS:
         raise RunContractError("run-input work set/order differs")
+    work_contract = document.get("work_contract")
+    if not isinstance(work_contract, Mapping):
+        raise RunContractError("run-input work contract must be an object")
+    try:
+        validate_work_contract(work_contract)
+    except ValueError as exc:
+        raise RunContractError(f"run-input work contract differs: {exc}") from exc
+    if (
+        _require_sha(document.get("work_contract_sha256"), "work_contract_sha256")
+        != WORK_CONTRACT_SHA256
+    ):
+        raise RunContractError("run-input work contract digest differs")
     if document.get("resolutions") != [
         item.to_dict() for item in CANONICAL_RESOLUTIONS
     ]:
@@ -861,6 +883,7 @@ def report_binding(
         "claimed_at_utc": claim["claimed_at_utc"],
         "claim_nonce": claim["claim_nonce"],
         "frozen_policy_sha256": policy_sha256(),
+        "work_contract_sha256": WORK_CONTRACT_SHA256,
         "source_commit": validated.document["source_commit"],
         "external_anchor": claim["external_anchor"],
     }
