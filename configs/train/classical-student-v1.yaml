@@ -1,7 +1,9 @@
 schema: audio-extract/train/classical-student-v1
 base_arch: HTDemucs
-base_arch_fact: trainable torch nn.Module (verified fwd+bwd, no dora); exports via
-  audio_separator.demucs_separator
+base_checkpoint: htdemucs
+base_arch_fact: pretrained four-source HTDemucs; supervise vocals directly and
+  accompaniment as drums+bass+other. A random two-source initialization is smoke-only,
+  not a fine-tuning base.
 sources:
 - accompaniment
 - vocals
@@ -26,16 +28,15 @@ optim:
   batch: 4
   crop_s: 7.8
 loss:
-  multi_res_stft_mag: 1.0
+  complex_stft: 0.5
   waveform_l1: 1.0
   mixture_consistency: 0.1
-  TODO_bigoracle:
-  - complex_stft_phase
-  - no_vocal_false_positive
-  - vocal_false_negative
-  - source_coord_alpha_beta_R
-  - stereo_coherence
-  - event_tail_weighting
+  no_vocal_false_positive: 0.25
+  vocal_only_false_negative: 0.25
+  source_coordinate_alpha_beta_R: 0.1
+  stereo_coherence: 0.05
+  exact_event_weighting: 0.25
+  implementation: audio_extract.classical_loss:classical_separation_loss
 export:
   to: audio_separator demucs_separator (production inference adapter)
 note: 'Do NOT optimize the SHADOW judge (gpt56 H4). SMOKE (100 steps/2 works/eval
