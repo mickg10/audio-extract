@@ -1,6 +1,7 @@
 import numpy as np
 import pytest
 
+from audio_extract import canon
 from audio_extract.oracle_routing import (
     CellStatistics,
     RoutingConfig,
@@ -36,6 +37,14 @@ def test_validate_basis_rejects_grid_mismatch_and_nonfinite():
     bad = a.copy(); bad[3, 0] = np.nan
     with pytest.raises(ValueError, match="finite"):
         validate_basis([a, bad], a, v)
+
+
+def test_routing_config_has_float_runtime_and_exact_identity_forms():
+    cfg = RoutingConfig()
+    assert cfg.to_dict()["temporal_switch_penalty"] == 0.05
+    assert cfg.identity_dict()["temporal_switch_penalty"] == "0.05"
+    # The identity form is accepted by the repository's strict canonicalizer.
+    canon.canonicalize(cfg.identity_dict())
 
 
 def test_o1_and_o2_smooth_global_solution():
@@ -87,4 +96,3 @@ def test_spectral_statistics_mask_silent_source_and_render_exact_grid():
     # Constant one-hot routing is exactly the common STFT/ISTFT reconstruction
     # within normal floating synthesis tolerance.
     assert np.max(np.abs(output - candidates[o1])) < 2e-6
-

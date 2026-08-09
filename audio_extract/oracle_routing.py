@@ -52,6 +52,15 @@ class RoutingConfig:
         payload["band_edges_hz"] = list(payload["band_edges_hz"])
         return payload
 
+    def identity_dict(self) -> dict[str, Any]:
+        """Canonical-recipe form: every non-integer quantity is exact text."""
+
+        payload = self.to_dict()
+        return {
+            key: (str(value) if isinstance(value, float) else value)
+            for key, value in payload.items()
+        }
+
 
 @dataclass
 class CellStatistics:

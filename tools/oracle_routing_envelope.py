@@ -182,7 +182,7 @@ def _route_plan_hash(mode: str, plan: np.ndarray, config: RoutingConfig) -> str:
     arr = np.ascontiguousarray(plan)
     header = canon.canonicalize({
         "mode": mode, "shape": list(arr.shape), "dtype": arr.dtype.str,
-        "config": config.to_dict(),
+        "config": config.identity_dict(),
     })
     return identity.blob_sha256(header + arr.tobytes())
 
@@ -209,7 +209,7 @@ def _write_route(
             "basis_sha256": basis_hash,
         },
         "effective_config": {
-            **config.to_dict(), "oracle_mode": mode,
+            **config.identity_dict(), "oracle_mode": mode,
             "routing_plan_sha256": plan_hash,
             "truth_pcm": truth_pcm,
             "alignment": "source-grid-exact",
