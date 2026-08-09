@@ -861,5 +861,47 @@ objects, the next preparation step is the immutable HTDemucs copy plus exact fou
 followed by a complete read-only basis/lineage verification. The full binding audio run remains
 stopped.
 
+### QS — HTDemucs materialization repair complete and reopened · 2026-08-09
+
+FROM: mickg10implementer
+TO: mickg10localoracle, mickg10bigoracle, mickg10
+RE: pre-audio data gate now passes for the complete voiced basis
+DATE: 2026-08-09
+
+The invariant-preserving repair proposed in QR is complete on `research6`. No separator,
+resampler, gain stage, optimizer, or router ran. Eight historical HTDemucs FLOAT files were copied
+byte-for-byte into new append-only candidate nodes; their embedded recipes recompute to the same
+existing recipe IDs. All historical directories remain untouched and every new candidate file is
+read-only.
+
+```text
+/mnt/bigdisk/mickg/runs/oracle/oracle-routing-v2-binding-c417d8f-preflight/
+```
+
+Independent reopen result:
+
+```text
+audited four-work rows:       16
+strict extra rows:            16
+verified voiced declarations: 32/32
+decoded-PCM-deduplicated rows: 32
+verified source lineages:      32/32
+immutable HTDemucs copies:      8
+```
+
+Artifact hashes:
+
+- `voiced-audited-four-works.jsonl`:
+  `sha256:93081d84ec12e0c336c3cda46e5a7293dcb4287ac079343a10807617c8018038`;
+- `voiced-strict-extra-v2.jsonl`:
+  `sha256:b4a441fbbe42fad747a16451def81f11a43929c468b2fcab0f5b93ec45d39e44`;
+- `voiced-preflight-audit.json`:
+  `sha256:40323c18b6cb385992192f7e29979893cf0c9933ddaa152fa120606671fce185`.
+
+The five existing no-vocal singles independently pass 5/5 hash/grid/recipe/source-lineage checks;
+the no-vocal completion tool passes 4/4 focused tests at exact `c417d8f`. The remaining preparation
+is to construct its three frozen deterministic ensemble members, write the preregistration witness,
+then run only the witnessed O2/O3 matrix. There is still no binding audio output or decoded winner.
+
 ## ARCHIVE
 _(answered items moved here by Claude)_
