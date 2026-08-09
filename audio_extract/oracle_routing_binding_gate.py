@@ -718,7 +718,8 @@ def _validate_no_vocal_panels(
 
     methods = tuple(config.baseline_methods) + tuple(config.routed_methods)
     result = {}
-    for work_id in _works(resolution):
+    # Keep derived panel mappings deterministic across sorted JSON round trips.
+    for work_id in sorted(str(key) for key in _works(resolution)):
         full_grid = _artifact(
             _output(
                 resolution,
@@ -864,7 +865,9 @@ def _evaluate_method(
     config: BindingGateConfig,
 ) -> dict[str, Any]:
     rejected = []
-    for work_id in _works(resolution):
+    # Reports are serialized with sorted object keys.  Re-evaluating that exact
+    # report must not reorder list-valued rejection evidence.
+    for work_id in sorted(str(key) for key in _works(resolution)):
         output = _output(
             resolution, work_id, method, config.routed_methods
         )

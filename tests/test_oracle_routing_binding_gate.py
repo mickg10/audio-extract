@@ -1,3 +1,4 @@
+import json
 import math
 
 import pytest
@@ -443,6 +444,24 @@ def test_certified_o3_rejection_does_not_invalidate_actionable_o2():
     assert decision["status"] == "ACTIONABLE"
     assert decision["actionable_methods"] == ["O2"]
     assert not decision["primary"]["methods"]["O3"]["actionable"]
+
+
+def test_decision_is_exactly_stable_after_sorted_json_roundtrip():
+    report = _report()
+    for resolution in report["resolutions"].values():
+        for index, work in enumerate(resolution["works"].values()):
+            rejected = {
+                "status": "rejected",
+                "certificate_error": f"every-start failure {index}",
+            }
+            work["outputs"]["O3"] = dict(rejected)
+            work["no_vocal"]["O3"] = dict(rejected)
+
+    before = evaluate_binding_report(report, _config())
+    restored = json.loads(json.dumps(report, sort_keys=True))
+    after = evaluate_binding_report(restored, _config())
+
+    assert after == before
 
 
 def test_unexplained_routed_rejection_is_invalid_evidence():
