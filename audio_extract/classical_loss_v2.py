@@ -1,6 +1,6 @@
 """Stable residual loss for classical/operatic featured-soloist removal.
 
-This is a new, versioned contract.  It deliberately does not mutate the v1
+This is a new, versioned contract. It deliberately does not mutate the v1
 ``classical_separation_loss`` semantics, so previous experiments remain
 reproducible.
 
@@ -8,10 +8,10 @@ For the supported construction,
 
 ``A_hat = M - V_hat`` and ``M = A + V``
 
-there is only one independent source error.  Scoring both ``A_hat - A`` and
+there is only one independent source error. Scoring both ``A_hat - A`` and
 ``V_hat - V`` duplicates the same residual and, when the two copies use
 source-normalized spectral denominators, can make near-silent vocal targets
-arbitrarily dominant.  This module scores the residual once, normalizes spectral
+arbitrarily dominant. This module scores the residual once, normalizes spectral
 error to the mixture/reference scale, and requires explicit A-only and V-only
 control forwards.
 """
@@ -37,6 +37,7 @@ class ClassicalResidualLossConfig:
     source_coord_max_condition: float = 1e6
     target_consistency_tolerance: float = 1e-5
     residual_consistency_tolerance: float = 1e-6
+    identity_roundoff_ulps: float = 8.0
     eps: float = 1e-8
 
 
@@ -66,14 +67,76 @@ def _finite(name: str, tensor: object) -> None:
         raise ValueError(f"{name} contains non-finite samples")
 
 
-def _require_identity(name: str, lhs: object, rhs: object, tolerance: float) -> None:
-    if tolerance < 0:
-        raise ValueError(f"{name} tolerance must be non-negative")
-    error = float((lhs.detach() - rhs.detach()).abs().max().cpu())
-    scale = max(1.0, float(rhs.detach().abs().max().cpu()))
-    limit = float(tolerance) * scale
+def _largest_epsilon(*tensors: object) -> float:
+    """Largest machine epsilon among floating inputs.
+
+    Identity checks are diagnostics, not loss terms. They must tolerate the
+    arithmetic precision of the declared construction without allowing a fixed,
+    dtype-blind threshold to abort mixed-precision training.
+    """
+    torch = _torch()
+    values = []
+    for tensor in tensors:
+        if not tensor.is_floating_point():
+            raise ValueError("audio identity tensors must be floating point")
+        values.append(float(torch.finfo(tensor.dtype).eps))
+    return max(values)
+
+
+def _identity_limit(*, reference: object, operands: tuple[object, ...],
+                    relative_tolerance: float, roundoff_ulps: float) -> float:
+    if relative_tolerance < 0 or roundoff_ulps < 0:
+        raise ValueError("identity tolerances must be non-negative")
+    reference_scale = max(1.0, float(reference.detach().abs().max().cpu()))
+    arithmetic = None
+    for operand in operands:
+        value = operand.detach().abs().to(dtype=_torch().float64)
+        arithmetic = value if arithmetic is None else arithmetic + value
+    arithmetic_scale = max(1.0, float(arithmetic.max().cpu()))
+    roundoff = roundoff_ulps * _largest_epsilon(reference, *operands) * arithmetic_scale
+    return max(float(relative_tolerance) * reference_scale, roundoff)
+
+
+def _require_sum_identity(name: str, total: object, left: object, right: object,
+                          relative_tolerance: float, roundoff_ulps: float) -> None:
+    """Require ``total == left + right`` with a dtype-aware arithmetic bound."""
+    expected = left.detach().to(dtype=_torch().float64) + right.detach().to(
+        dtype=_torch().float64
+    )
+    observed = total.detach().to(dtype=_torch().float64)
+    error = float((observed - expected).abs().max().cpu())
+    limit = _identity_limit(
+        reference=total, operands=(left, right),
+        relative_tolerance=relative_tolerance, roundoff_ulps=roundoff_ulps,
+    )
     if error > limit:
         raise ValueError(f"{name} violated: max_abs={error} > tolerance={limit}")
+
+
+def _require_residual_construction(accompaniment: object, vocal: object,
+                                   mixture: object, relative_tolerance: float,
+                                   roundoff_ulps: float) -> None:
+    """Require the supported construction directly: ``A_hat = M - V_hat``.
+
+    Checking ``A_hat + V_hat == M`` after another rounded addition can reject a
+    correct FP16/BF16 construction. Comparing to a high-precision subtraction of
+    the already represented operands isolates the construction and derives the
+    tolerance from their dtype and magnitudes.
+    """
+    expected = mixture.detach().to(dtype=_torch().float64) - vocal.detach().to(
+        dtype=_torch().float64
+    )
+    observed = accompaniment.detach().to(dtype=_torch().float64)
+    error = float((observed - expected).abs().max().cpu())
+    limit = _identity_limit(
+        reference=mixture, operands=(mixture, vocal),
+        relative_tolerance=relative_tolerance, roundoff_ulps=roundoff_ulps,
+    )
+    if error > limit:
+        raise ValueError(
+            "mixture-residual identity A_hat=M-V_hat violated: "
+            f"max_abs={error} > tolerance={limit}"
+        )
 
 
 def _normalized_waveform_l1(error: object, reference: object, floor: float):
@@ -96,20 +159,21 @@ def _complex_stft_log_ratio(error: object, reference: object,
     if floor <= 0:
         raise ValueError("stft_reference_floor must be positive")
     frames = error.shape[-1]
-    usable = tuple(int(n) for n in ffts if 2 <= int(n) <= frames)
+    usable = tuple(int(n) for n in ffts if 4 <= int(n) <= frames)
     if not usable:
-        raise ValueError(f"no STFT size fits {frames} frames")
+        raise ValueError(f"no STFT size with positive hop fits {frames} frames")
     flat_error = error.reshape(-1, frames)
     flat_reference = reference.reshape(-1, frames)
     total = error.new_zeros(())
     for n_fft in usable:
+        hop_length = n_fft // 4
         window = torch.hann_window(n_fft, device=error.device, dtype=error.dtype)
         e = torch.stft(
-            flat_error, n_fft=n_fft, hop_length=n_fft // 4, window=window,
+            flat_error, n_fft=n_fft, hop_length=hop_length, window=window,
             return_complex=True, normalized=True,
         )
         r = torch.stft(
-            flat_reference, n_fft=n_fft, hop_length=n_fft // 4, window=window,
+            flat_reference, n_fft=n_fft, hop_length=hop_length, window=window,
             return_complex=True, normalized=True,
         )
         numerator = e.abs().mean(dim=(-2, -1))
@@ -154,7 +218,6 @@ def _source_coordinate_loss(estimate: object, accompaniment: object, vocals: obj
     raw_gram = torch.stack(
         (torch.stack((aa, av), -1), torch.stack((av, vv), -1)), -2
     )
-    # Conditioning is a mask/diagnostic, not a differentiable objective.
     condition = torch.linalg.cond(raw_gram.detach())
     valid = (
         (aa.detach() > cfg.eps)
@@ -201,17 +264,16 @@ def classical_residual_loss_v2(
     for name, value in named.items():
         _finite(name, value)
 
-    _require_identity(
+    _require_sum_identity(
         "exact target identity M=A+V", mixture,
-        accompaniment_target + vocal_target, cfg.target_consistency_tolerance,
+        accompaniment_target, vocal_target,
+        cfg.target_consistency_tolerance, cfg.identity_roundoff_ulps,
     )
-    _require_identity(
-        "mixture-residual identity A_hat+V_hat=M",
-        accompaniment_estimate + vocal_estimate, mixture,
-        cfg.residual_consistency_tolerance,
+    _require_residual_construction(
+        accompaniment_estimate, vocal_estimate, mixture,
+        cfg.residual_consistency_tolerance, cfg.identity_roundoff_ulps,
     )
 
-    # Under the two identities above, this is the one independent source error.
     source_error = vocal_estimate - vocal_target
     components: dict[str, object] = {
         "residual_waveform": _normalized_waveform_l1(
