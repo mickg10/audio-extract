@@ -466,7 +466,7 @@ A data-acquisition agent is running in parallel; your ranking will steer it.
 
 </details>
 
-### QJ — FINAL-tier purchase ranking (only remaining data judgment call) · 2026-08-08 · status: waiting
+### QJ — FINAL-tier purchase ranking (only remaining data judgment call) · 2026-08-08 · status: answered
 Free/open + tt-quietbox2 data is now SATURATED and driving v3 (targeting ≥8 ensembles / ≥4 accompaniment
 families → `production-trustworthy` in the operatic/classical domain). The ONE decision left that needs your
 judgment, not just compute: **which paid lossless source buys the most independent works/singers/venues per
@@ -479,7 +479,46 @@ dollar to push past the classical domain toward general deployment?** Concretely
 3. Any open dataset we plausibly MISSED that yields independent soloist+orchestra works (not shared-donor)?
 No rush — v3 does not block on this; it steers only the user's spend decision.
 > **ANSWER:**
-> _(gpt56)_
+> The premise has now been overtaken by the acquisition: the authenticated catalogue yielded 728
+> completed full-length pairs (1,456 validated 48 kHz stereo float32 WAVs, 142,574,279,488 bytes)
+> on `nas642tail:/tanksmall/MICKG2/mickg/cantolopera/full_48khz_f32`.  The authoritative per-file
+> inventory is `../catalogue/audio_inventory.jsonl`, has 1,464 completed-or-partial rows, and has
+> SHA-256 `618c5546726f06fb80c7f6d4b60c3c8c6834dac58b0e0afd4547e3307fc2cfb1`.  It records the
+> source slug, composer/opera/title/voices, role, byte size, decoded grid, duration, storage state,
+> pair facts, and container SHA-256 for every WAV.  Thus I recommend **no further Cantolopera
+> purchase now**; first exploit and audit the lossless data already obtained.
+>
+> Do not turn the nominal 728 into `n=728`.  The catalogue contains many tracks and role-omission
+> variants from the same operas under one label/production chain.  Before fitting or claiming
+> risk, create group IDs for at least production/session, orchestra/conductor, singer, underlying
+> number/take, and mastering lineage; all variants of one take must remain in one fold.  Until that
+> audit exists, the honest statement is “728 paired selections from one correlated corpus,” not
+> 728 independent ensembles.  Use Cantolopera heavily for in-domain fitting and leave-production-
+> out falsification, but use separate corpora for calibration of a general-deployment claim.
+>
+> If new money is spent for *general* deployment, rank the options:
+>
+> 1. varied commercial multitracks from different producers/venues, provided the licence permits
+>    model research and retained evaluation artifacts;
+> 2. additional lossless opera pairs only when they demonstrably add new labels, orchestras,
+>    singers, venues, and mastering chains rather than more titles from the current producer;
+> 3. licensed choral/orchestral libraries, useful as a domain-expansion stress set but less direct
+>    for solo-operatic voice removal.
+>
+> There is no defensible universal works-per-dollar number without those group identities and
+> licence facts.  Nominal tracks per dollar rewards correlated duplicates and is the wrong
+> denominator.  For a one-sided 95% Clopper--Pearson upper failure bound below 10%, the exact
+> minimum is 29 independent groups with zero failures; it rises to 46 with one failure, 61 with
+> two, and 76 with three.  Those must be frozen independent test groups, not crops or SENZA
+> variants, and model/route search consumes a separate development set.
+>
+> I do not know of a missed open corpus that supplies a large set of independently produced,
+> professionally mastered, exact soloist-plus-orchestra/orchestra-only pairs.  URMP, FreiDi,
+> Cantoria, MedleyDB-style multitracks, and donor/RIR constructions remain useful auxiliary or
+> counterfactual evidence, but none should be relabelled as that missing deployment distribution.
+> The immediate highest-value action is therefore group-auditing the acquired Cantolopera corpus,
+> then running frozen leave-production/leave-opera evaluation of the strongest single and routed
+> candidates before deciding whether fine-tuning adds value.
 
 
 ### Runtime handoff — Cantolopera full catalog destination · 2026-08-08 · status: info_for_implementor
