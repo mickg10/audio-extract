@@ -1,15 +1,20 @@
 """Score and package the best currently available exact classical candidates.
 
-This module is the delivery lane for the audited ``candidates-v2`` artifacts. It
-uses exact accompaniment and featured-soloist references, writes a complete
-metric table, applies an explicit engineering screening policy, and packages a
-primary plus alternate without making a population-risk or arbitrary-master
-claim.
+This is the immediate delivery lane for the audited ``candidates-v2`` FLOAT
+artifacts.  It reopens and rehashes every candidate, measures it against exact
+accompaniment/featured-soloist references, applies an explicit *engineering*
+screening policy, and emits one primary plus one byte-distinct alternate.
 
-The policy is deliberately separate from the measurements. A candidate that
-fails every screening policy can still be packaged as an ``engineering_preview``
-with the failure reasons and alternate visible; it is never silently called
-certified.
+The tool makes no population-risk or arbitrary-master claim.  Its only terminal
+statuses follow the repository contract:
+
+``final``
+    At least one candidate passes every declared exact-reference screen.
+
+``needs_human_ab``
+    No candidate passes, or required exact evidence is unavailable.  The tool may
+    still package a clearly labelled engineering preview and alternate; it never
+    calls that preview certified.
 """
 from __future__ import annotations
 
@@ -19,6 +24,7 @@ import json
 import math
 import os
 import shutil
+import tempfile
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
@@ -42,22 +48,41 @@ class ClassicalReleaseError(RuntimeError):
 class ScreeningPolicy:
     policy_id: str
     retained_voice_coef_p90_max: float
+    retained_voice_db_p90_max: float
     event_hole_db_p90_max: float
     event_hole_db_max_max: float
     alpha_error_p90_max: float
     stereo_width_dev_db_max: float
     coherence_dev_max: float
+    min_identifiable_tiles: int
+    min_identifiable_fraction: float
     artifact_ratio_p90_max: float | None = None
 
     @classmethod
     def from_mapping(cls, value: dict) -> "ScreeningPolicy":
         policy = cls(**value)
-        for name, item in asdict(policy).items():
-            if name == "policy_id":
-                if not str(item).strip():
-                    raise ValueError("policy_id must be non-empty")
-            elif item is not None and (not math.isfinite(float(item)) or float(item) <= 0):
+        if not str(policy.policy_id).strip():
+            raise ValueError("policy_id must be non-empty")
+        positive = (
+            "retained_voice_coef_p90_max", "event_hole_db_p90_max",
+            "event_hole_db_max_max", "alpha_error_p90_max",
+            "stereo_width_dev_db_max", "coherence_dev_max",
+        )
+        for name in positive:
+            item = float(getattr(policy, name))
+            if not math.isfinite(item) or item <= 0:
                 raise ValueError(f"{name} must be positive and finite")
+        if not math.isfinite(float(policy.retained_voice_db_p90_max)):
+            raise ValueError("retained_voice_db_p90_max must be finite")
+        if policy.artifact_ratio_p90_max is not None:
+            value = float(policy.artifact_ratio_p90_max)
+            if not math.isfinite(value) or value <= 0:
+                raise ValueError("artifact_ratio_p90_max must be positive when enabled")
+        if int(policy.min_identifiable_tiles) < 1:
+            raise ValueError("min_identifiable_tiles must be at least one")
+        fraction = float(policy.min_identifiable_fraction)
+        if not math.isfinite(fraction) or not 0 < fraction <= 1:
+            raise ValueError("min_identifiable_fraction must lie in (0,1]")
         return policy
 
 
@@ -78,7 +103,7 @@ class CandidateRow:
 def _sha_file(path: Path) -> str:
     h = hashlib.sha256()
     with path.open("rb") as handle:
-        for block in iter(lambda: handle.read(1024 * 1024), b""):
+        for block in iter(lambda: handle.read(1 << 20), b""):
             h.update(block)
     return "sha256:" + h.hexdigest()
 
@@ -113,8 +138,12 @@ def load_candidate_manifest(path: Path) -> list[CandidateRow]:
             channels=tuple(raw["channels"]),
             subtype=str(raw["subtype"]),
         )
+        if not row.recipe_id.startswith("sha256:"):
+            raise ClassicalReleaseError(f"noncanonical recipe identity: {row.recipe_id}")
         if row.subtype != "FLOAT" or row.channels != ("FL", "FR"):
             raise ClassicalReleaseError(f"non-FLOAT/stereo analysis row: {row}")
+        if row.frames <= 0 or row.sr_hz <= 0:
+            raise ClassicalReleaseError(f"invalid candidate grid: {row}")
         rows.append(row)
     if not rows:
         raise ClassicalReleaseError(f"empty candidate manifest: {path}")
@@ -139,15 +168,44 @@ def _read_float(path: Path, *, sr: int | None = None,
     return audio, int(actual_sr)
 
 
-def verify_candidate(row: CandidateRow) -> tuple[Path, np.ndarray]:
+def _audio_record(path: Path, *, expected_sr: int | None = None,
+                  expected_frames: int | None = None) -> dict:
+    audio, sr = _read_float(path, sr=expected_sr, frames=expected_frames)
+    return {
+        "path": str(path),
+        "container_sha256": _sha_file(path),
+        "artifact_pcm_sha256": identity.artifact_pcm_sha256(
+            audio, sr, ["FL", "FR"], len(audio)
+        ),
+        "frames": len(audio),
+        "sample_rate_hz": sr,
+        "channels": ["FL", "FR"],
+        "subtype": "FLOAT",
+    }
+
+
+def verify_candidate(row: CandidateRow, *, expected_sr: int,
+                     expected_frames: int) -> tuple[Path, np.ndarray]:
+    if row.sr_hz != expected_sr or row.frames != expected_frames:
+        raise ClassicalReleaseError(
+            f"truth-grid mismatch for {row.work_id}/{row.candidate}: "
+            f"candidate=({row.frames},{row.sr_hz}) truth=({expected_frames},{expected_sr})"
+        )
     path = _resolve_host_path(row.path)
-    if _sha_file(path) != row.container_sha256:
+    record = _audio_record(path, expected_sr=expected_sr, expected_frames=expected_frames)
+    if record["container_sha256"] != row.container_sha256:
         raise ClassicalReleaseError(f"container hash mismatch: {row.work_id}/{row.candidate}")
-    audio, sr = _read_float(path, sr=row.sr_hz, frames=row.frames)
-    pcm = identity.artifact_pcm_sha256(audio, sr, list(row.channels), len(audio))
-    if pcm != row.artifact_pcm_sha256:
+    if record["artifact_pcm_sha256"] != row.artifact_pcm_sha256:
         raise ClassicalReleaseError(f"PCM hash mismatch: {row.work_id}/{row.candidate}")
+    audio, _ = _read_float(path, sr=expected_sr, frames=expected_frames)
     return path, audio
+
+
+def _finite_metric(metrics: dict, name: str) -> float:
+    value = metrics.get(name)
+    if not isinstance(value, (int, float)) or not math.isfinite(float(value)):
+        raise ClassicalReleaseError(f"required metric unavailable/non-finite: {name}={value!r}")
+    return float(value)
 
 
 def exact_metrics(candidate: np.ndarray, accompaniment: np.ndarray,
@@ -160,8 +218,23 @@ def exact_metrics(candidate: np.ndarray, accompaniment: np.ndarray,
         hop_frames=max(128, round(0.25 * sr)),
     )
     metrics = label_targets(labels)
-    if metrics.get("_available_tiles", 0) <= 0:
-        raise ClassicalReleaseError("no identifiable exact-label tiles")
+    available = int(metrics.get("_available_tiles", 0))
+    total = int(metrics.get("_total_tiles", 0))
+    if total <= 0 or not 0 <= available <= total:
+        raise ClassicalReleaseError(
+            f"invalid exact-label coverage: available={available}, total={total}"
+        )
+    metrics["identifiable_fraction"] = available / total
+    required = (
+        "retained_voice_db_p90", "retained_voice_coef_p90",
+        "event_hole_db_p90", "event_hole_db_max", "alpha_error_p90",
+        "artifact_ratio_p90",
+    )
+    for name in required:
+        _finite_metric(metrics, name)
+    if metrics["event_hole_db_max"] + 1e-9 < metrics["event_hole_db_p90"]:
+        raise ClassicalReleaseError("incoherent exact hole labels: max < p90")
+
     error = candidate.astype(np.float64) - accompaniment.astype(np.float64)
     signal_energy = float(np.square(accompaniment.astype(np.float64)).sum())
     error_energy = float(np.square(error).sum())
@@ -175,64 +248,89 @@ def exact_metrics(candidate: np.ndarray, accompaniment: np.ndarray,
         + stereo_v2(candidate, accompaniment)
     )
     for observation in observations:
-        metrics[observation["metric"]] = (
-            observation["value"] if observation["available"] else None
-        )
+        if not observation["available"] or observation["value"] is None:
+            raise ClassicalReleaseError(
+                f"required fidelity observation unavailable: {observation['metric']}"
+            )
+        metrics[observation["metric"]] = float(observation["value"])
+    for name in (
+        "scale_dependent_sdr_db", "band_deficit_db/v2", "contiguous_hole_db/v2",
+        "erb_envelope_dist_db/v2", "transient_loss/v2", "transient_excess/v2",
+        "stereo_width_dev_db/v2", "interchannel_coherence_dev/v2",
+    ):
+        _finite_metric(metrics, name)
     return metrics
 
 
 def screening(metrics: dict, policy: ScreeningPolicy) -> dict:
-    checks = {
-        "retained_voice_coef_p90": (
-            float(metrics["retained_voice_coef_p90"]),
-            policy.retained_voice_coef_p90_max,
+    checks: list[dict] = []
+
+    def upper(name: str, limit: float, *, severity: float | None = None) -> None:
+        value = _finite_metric(metrics, name)
+        checks.append({
+            "metric": name, "value": value, "limit": float(limit),
+            "comparator": "<=", "passed": value <= limit,
+            "normalized_severity": float(value / limit if severity is None else severity),
+        })
+
+    upper("retained_voice_coef_p90", policy.retained_voice_coef_p90_max)
+    voice_db = _finite_metric(metrics, "retained_voice_db_p90")
+    checks.append({
+        "metric": "retained_voice_db_p90", "value": voice_db,
+        "limit": float(policy.retained_voice_db_p90_max), "comparator": "<=",
+        "passed": voice_db <= policy.retained_voice_db_p90_max,
+        "normalized_severity": float(
+            10.0 ** ((voice_db - policy.retained_voice_db_p90_max) / 20.0)
         ),
-        "event_hole_db_p90": (
-            float(metrics["event_hole_db_p90"]), policy.event_hole_db_p90_max,
-        ),
-        "event_hole_db_max": (
-            float(metrics["event_hole_db_max"]), policy.event_hole_db_max_max,
-        ),
-        "alpha_error_p90": (
-            float(metrics["alpha_error_p90"]), policy.alpha_error_p90_max,
-        ),
-        "stereo_width_dev_db/v2": (
-            float(metrics["stereo_width_dev_db/v2"]),
-            policy.stereo_width_dev_db_max,
-        ),
-        "interchannel_coherence_dev/v2": (
-            float(metrics["interchannel_coherence_dev/v2"]),
-            policy.coherence_dev_max,
-        ),
-    }
+    })
+    upper("event_hole_db_p90", policy.event_hole_db_p90_max)
+    upper("event_hole_db_max", policy.event_hole_db_max_max)
+    upper("alpha_error_p90", policy.alpha_error_p90_max)
+    upper("stereo_width_dev_db/v2", policy.stereo_width_dev_db_max)
+    upper("interchannel_coherence_dev/v2", policy.coherence_dev_max)
     if policy.artifact_ratio_p90_max is not None:
-        checks["artifact_ratio_p90"] = (
-            float(metrics["artifact_ratio_p90"]), policy.artifact_ratio_p90_max,
-        )
-    failures = [
-        {"metric": name, "value": value, "limit": limit}
-        for name, (value, limit) in checks.items()
-        if not math.isfinite(value) or value > limit
-    ]
-    normalized = {
-        name: value / limit for name, (value, limit) in checks.items()
-    }
+        upper("artifact_ratio_p90", policy.artifact_ratio_p90_max)
+
+    available = int(_finite_metric(metrics, "_available_tiles"))
+    total = int(_finite_metric(metrics, "_total_tiles"))
+    fraction = _finite_metric(metrics, "identifiable_fraction")
+    checks.extend([
+        {
+            "metric": "_available_tiles", "value": available,
+            "limit": int(policy.min_identifiable_tiles), "comparator": ">=",
+            "passed": available >= policy.min_identifiable_tiles,
+            "normalized_severity": float(
+                policy.min_identifiable_tiles / max(available, _EPS)
+            ),
+        },
+        {
+            "metric": "identifiable_fraction", "value": fraction,
+            "limit": float(policy.min_identifiable_fraction), "comparator": ">=",
+            "passed": fraction >= policy.min_identifiable_fraction,
+            "normalized_severity": float(
+                policy.min_identifiable_fraction / max(fraction, _EPS)
+            ),
+            "total_tiles": total,
+        },
+    ])
+    failures = [check for check in checks if not check["passed"]]
     return {
         "passed": not failures,
+        "checks": checks,
         "failures": failures,
-        "normalized": normalized,
-        "critical_max": max(normalized.values()),
+        "critical_max": max(float(check["normalized_severity"]) for check in checks),
     }
 
 
 def _dominates(left: dict, right: dict) -> bool:
     names = (
-        "retained_voice_coef_p90", "event_hole_db_p90",
-        "event_hole_db_max", "alpha_error_p90", "artifact_ratio_p90",
-        "stereo_width_dev_db/v2", "interchannel_coherence_dev/v2",
+        "retained_voice_coef_p90", "retained_voice_db_p90",
+        "event_hole_db_p90", "event_hole_db_max", "alpha_error_p90",
+        "artifact_ratio_p90", "stereo_width_dev_db/v2",
+        "interchannel_coherence_dev/v2",
     )
-    lv = [float(left[name]) for name in names]
-    rv = [float(right[name]) for name in names]
+    lv = [_finite_metric(left, name) for name in names]
+    rv = [_finite_metric(right, name) for name in names]
     return all(a <= b for a, b in zip(lv, rv)) and any(a < b for a, b in zip(lv, rv))
 
 
@@ -253,12 +351,28 @@ def rank_rows(rows: list[dict]) -> list[dict]:
         key=lambda row: (
             not row["screening"]["passed"],
             row["screening"]["critical_max"],
-            float(row["metrics"]["artifact_ratio_p90"]),
-            -float(row["metrics"]["scale_dependent_sdr_db"]),
-            float(row["metrics"].get("erb_envelope_dist_db/v2") or math.inf),
+            _finite_metric(row["metrics"], "artifact_ratio_p90"),
+            -_finite_metric(row["metrics"], "scale_dependent_sdr_db"),
+            _finite_metric(row["metrics"], "erb_envelope_dist_db/v2"),
             row["candidate"],
         ),
     )
+
+
+def _unique_artifacts(scored: list[dict]) -> tuple[list[dict], dict[str, list[str]]]:
+    by_pcm: dict[str, list[dict]] = {}
+    for row in scored:
+        by_pcm.setdefault(row["artifact_pcm_sha256"], []).append(row)
+    unique = []
+    aliases: dict[str, list[str]] = {}
+    for rows in by_pcm.values():
+        ranked = rank_rows(rows)
+        representative = ranked[0]
+        unique.append(representative)
+        aliases[representative["candidate"]] = sorted(
+            row["candidate"] for row in rows if row is not representative
+        )
+    return unique, aliases
 
 
 def score_work(rows: list[CandidateRow], truth_root: Path,
@@ -283,7 +397,9 @@ def score_work(rows: list[CandidateRow], truth_root: Path,
         raise ClassicalReleaseError(f"{work_id}: M=A+V identity failed")
     scored = []
     for row in selected:
-        path, audio = verify_candidate(row)
+        path, audio = verify_candidate(
+            row, expected_sr=sr, expected_frames=len(mixture)
+        )
         metrics = exact_metrics(audio, accompaniment, vocal, sr)
         scored.append({
             "work_id": work_id,
@@ -292,18 +408,30 @@ def score_work(rows: list[CandidateRow], truth_root: Path,
             "path": str(path),
             "artifact_pcm_sha256": row.artifact_pcm_sha256,
             "container_sha256": row.container_sha256,
+            "frames": row.frames,
+            "sample_rate_hz": row.sr_hz,
+            "channels": list(row.channels),
+            "subtype": row.subtype,
             "metrics": metrics,
             "screening": screening(metrics, policy),
         })
-    ranked = rank_rows(scored)
-    status = "exact_benchmark_qualified" if ranked[0]["screening"]["passed"] else "engineering_preview"
+    unique, aliases = _unique_artifacts(scored)
+    ranked = rank_rows(unique)
+    if len(ranked) < 2:
+        raise ClassicalReleaseError(f"{work_id}: fewer than two byte-distinct candidates")
+    status = "final" if ranked[0]["screening"]["passed"] else "needs_human_ab"
+    release_scope = (
+        "exact_benchmark_qualified" if status == "final" else "engineering_preview"
+    )
     return {
         "work_id": work_id,
         "policy_id": policy.policy_id,
         "status": status,
+        "release_scope": release_scope,
         "primary": ranked[0]["candidate"],
         "alternate": ranked[1]["candidate"],
-        "pareto_front": pareto_front(scored),
+        "pareto_front": pareto_front(unique),
+        "artifact_aliases": aliases,
         "candidates": scored,
         "ranking": [row["candidate"] for row in ranked],
         "truth": {
@@ -316,37 +444,78 @@ def score_work(rows: list[CandidateRow], truth_root: Path,
     }
 
 
-def _link_or_copy(source: Path, destination: Path) -> None:
+def _copy_verified(source: Path, destination: Path, *, expected: dict) -> dict:
+    """Copy to a distinct inode and verify both source and destination identities."""
+    source_record = _audio_record(
+        source, expected_sr=int(expected["sample_rate_hz"]),
+        expected_frames=int(expected["frames"]),
+    )
+    for name in ("container_sha256", "artifact_pcm_sha256"):
+        if source_record[name] != expected[name]:
+            raise ClassicalReleaseError(
+                f"source changed since scoring: {source} {name} "
+                f"{source_record[name]} != {expected[name]}"
+            )
     destination.parent.mkdir(parents=True, exist_ok=True)
-    if destination.exists():
-        if _sha_file(destination) != _sha_file(source):
-            raise ClassicalReleaseError(f"refusing to replace differing file: {destination}")
-        return
+    if not destination.exists():
+        fd, name = tempfile.mkstemp(
+            prefix=f".{destination.name}.", suffix=".tmp", dir=destination.parent
+        )
+        os.close(fd)
+        temporary = Path(name)
+        try:
+            shutil.copy2(source, temporary)
+            temporary.replace(destination)
+        finally:
+            temporary.unlink(missing_ok=True)
+    destination_record = _audio_record(
+        destination, expected_sr=int(expected["sample_rate_hz"]),
+        expected_frames=int(expected["frames"]),
+    )
+    for name in ("container_sha256", "artifact_pcm_sha256"):
+        if destination_record[name] != expected[name]:
+            raise ClassicalReleaseError(
+                f"packaged artifact mismatch: {destination} {name}"
+            )
     try:
-        os.link(source, destination)
-    except OSError:
-        shutil.copy2(source, destination)
-    if _sha_file(destination) != _sha_file(source):
-        raise ClassicalReleaseError(f"packaged file hash mismatch: {destination}")
+        if os.path.samefile(source, destination):
+            raise ClassicalReleaseError(
+                f"release artifact shares an inode with immutable source: {destination}"
+            )
+    except FileNotFoundError:  # pragma: no cover - already checked above
+        raise ClassicalReleaseError(f"missing package artifact: {destination}")
+    destination_record["path"] = destination.name
+    return destination_record
 
 
 def _write_float(path: Path, audio: np.ndarray, sr: int) -> dict:
     path.parent.mkdir(parents=True, exist_ok=True)
-    if path.exists():
-        reopened, reopened_sr = _read_float(path, sr=sr, frames=len(audio))
-        if not np.array_equal(reopened, audio.astype(np.float32)):
-            raise ClassicalReleaseError(f"refusing to replace differing FLOAT: {path}")
-    else:
-        sf.write(path, audio.astype(np.float32), sr, subtype="FLOAT")
-        reopened, reopened_sr = _read_float(path, sr=sr, frames=len(audio))
-        if not np.array_equal(reopened, audio.astype(np.float32)):
-            raise ClassicalReleaseError(f"FLOAT reopen mismatch: {path}")
+    if not path.exists():
+        fd, name = tempfile.mkstemp(
+            prefix=f".{path.name}.", suffix=".tmp", dir=path.parent
+        )
+        os.close(fd)
+        temporary = Path(name)
+        try:
+            sf.write(temporary, audio.astype(np.float32), sr,
+                     subtype="FLOAT", format="WAV")
+            temporary.replace(path)
+        finally:
+            temporary.unlink(missing_ok=True)
+    reopened, reopened_sr = _read_float(path, sr=sr, frames=len(audio))
+    if not np.array_equal(reopened, audio.astype(np.float32)):
+        raise ClassicalReleaseError(f"FLOAT reopen mismatch: {path}")
+    record = _audio_record(path, expected_sr=sr, expected_frames=len(audio))
+    record["path"] = path.name
+    return record
+
+
+def _candidate_expected(row: dict) -> dict:
     return {
-        "path": str(path),
-        "container_sha256": _sha_file(path),
-        "artifact_pcm_sha256": identity.artifact_pcm_sha256(
-            reopened, reopened_sr, ["FL", "FR"], len(reopened)
-        ),
+        "container_sha256": row["container_sha256"],
+        "artifact_pcm_sha256": row["artifact_pcm_sha256"],
+        "frames": row["frames"],
+        "sample_rate_hz": row["sample_rate_hz"],
     }
 
 
@@ -358,8 +527,9 @@ def _markdown(work_reports: list[dict]) -> str:
         "",
     ]
     columns = [
-        "work", "candidate", "status", "voice coef p90", "voice dB p90",
+        "work", "candidate", "screen", "voice coef p90", "voice dB p90",
         "hole p90", "hole max", "alpha err", "artifact", "SDR", "stereo dev",
+        "coverage",
     ]
     lines += ["| " + " | ".join(columns) + " |", "|" + "---|" * len(columns)]
     for report in work_reports:
@@ -376,13 +546,14 @@ def _markdown(work_reports: list[dict]) -> str:
                 f"{metrics['artifact_ratio_p90']:.4f}",
                 f"{metrics['scale_dependent_sdr_db']:.2f}",
                 f"{metrics['stereo_width_dev_db/v2']:.3f}",
+                f"{metrics['_available_tiles']}/{metrics['_total_tiles']}",
             ]) + " |")
     lines += ["", "## Selected outputs", ""]
     for report in work_reports:
         lines += [
-            f"### {report['work_id']}",
-            "",
-            f"- Status: `{report['status']}`",
+            f"### {report['work_id']}", "",
+            f"- Terminal status: `{report['status']}`",
+            f"- Release scope: `{report['release_scope']}`",
             f"- Primary: `{report['primary']}`",
             f"- Alternate: `{report['alternate']}`",
             f"- Pareto front: `{', '.join(report['pareto_front'])}`",
@@ -396,31 +567,58 @@ def package_work(report: dict, output_root: Path) -> dict:
     rows = {row["candidate"]: row for row in report["candidates"]}
     primary = rows[report["primary"]]
     alternate = rows[report["alternate"]]
-    _link_or_copy(Path(primary["path"]), work_dir / "accompaniment.primary.f32.wav")
-    _link_or_copy(Path(alternate["path"]), work_dir / "accompaniment.alternate.f32.wav")
     truth = report["truth"]
-    _link_or_copy(Path(truth["accompaniment"]), work_dir / "exact-orchestra-target.f32.wav")
-    _link_or_copy(Path(truth["vocal"]), work_dir / "exact-voice-target.f32.wav")
     mixture, sr = _read_float(Path(truth["mixture"]))
+    if sr != truth["sample_rate_hz"] or len(mixture) != truth["frames"]:
+        raise ClassicalReleaseError("truth grid changed before packaging")
+
+    truth_records = {
+        "exact_orchestra_target": _audio_record(
+            Path(truth["accompaniment"]), expected_sr=sr,
+            expected_frames=len(mixture),
+        ),
+        "exact_voice_target": _audio_record(
+            Path(truth["vocal"]), expected_sr=sr, expected_frames=len(mixture),
+        ),
+    }
+    packaged = {
+        "accompaniment_primary": _copy_verified(
+            Path(primary["path"]), work_dir / "accompaniment.primary.f32.wav",
+            expected=_candidate_expected(primary),
+        ),
+        "accompaniment_alternate": _copy_verified(
+            Path(alternate["path"]), work_dir / "accompaniment.alternate.f32.wav",
+            expected=_candidate_expected(alternate),
+        ),
+        "exact_orchestra_target": _copy_verified(
+            Path(truth["accompaniment"]), work_dir / "exact-orchestra-target.f32.wav",
+            expected=truth_records["exact_orchestra_target"],
+        ),
+        "exact_voice_target": _copy_verified(
+            Path(truth["vocal"]), work_dir / "exact-voice-target.f32.wav",
+            expected=truth_records["exact_voice_target"],
+        ),
+    }
     primary_audio, _ = _read_float(
         Path(primary["path"]), sr=sr, frames=len(mixture)
     )
-    removed = _write_float(
+    packaged["removed_vocal_primary"] = _write_float(
         work_dir / "removed-vocal.primary.f32.wav",
         mixture.astype(np.float32) - primary_audio.astype(np.float32), sr,
     )
     manifest = {
         "schema": "audio-extract/classical-exact-release/v1",
-        "scope": "exact_linear_reference_engineering_release",
+        "status": report["status"],
+        "release_scope": report["release_scope"],
         "population_risk_claim": None,
         "work_id": report["work_id"],
-        "status": report["status"],
         "policy_id": report["policy_id"],
         "primary": primary,
         "alternate": alternate,
         "pareto_front": report["pareto_front"],
-        "removed_vocal_primary": removed,
-        "truth": truth,
+        "artifact_aliases": report["artifact_aliases"],
+        "packaged_artifacts": packaged,
+        "truth_source_paths": truth,
     }
     payload = json.dumps(manifest, indent=2, sort_keys=True) + "\n"
     path = work_dir / "manifest.json"
@@ -437,9 +635,11 @@ def run(*, candidate_manifest: Path, truth_root: Path, policy_path: Path,
     policy = ScreeningPolicy.from_mapping(yaml.safe_load(policy_path.read_text()))
     works = sorted({row.work_id for row in rows})
     reports = [score_work(rows, truth_root, policy, work) for work in works]
+    status = "final" if all(report["status"] == "final" for report in reports) else "needs_human_ab"
     result = {
         "schema": "audio-extract/classical-exact-release-report/v1",
-        "scope": "exact_linear_reference_engineering_release",
+        "status": status,
+        "release_scope": "exact_linear_reference_engineering_release",
         "population_risk_claim": None,
         "policy": asdict(policy),
         "candidate_manifest": str(candidate_manifest),
@@ -448,6 +648,7 @@ def run(*, candidate_manifest: Path, truth_root: Path, policy_path: Path,
     }
     payload = json.dumps(result, indent=2, sort_keys=True) + "\n"
     report_json.parent.mkdir(parents=True, exist_ok=True)
+    report_md.parent.mkdir(parents=True, exist_ok=True)
     if report_json.exists() and report_json.read_text() != payload:
         raise ClassicalReleaseError(f"refusing to replace differing report: {report_json}")
     if not report_json.exists():
@@ -486,7 +687,7 @@ def main(argv: list[str] | None = None) -> int:
         package_root=args.package_root,
     )
     print(json.dumps({
-        "status": "complete", "works": len(result["works"]),
+        "status": result["status"], "works": len(result["works"]),
         "packages": result["packages"], "report": str(args.report_json),
     }, sort_keys=True))
     return 0
