@@ -50,6 +50,37 @@ def test_dataset_refuses_an_incomplete_frozen_work_list(tmp_path):
         raise AssertionError("missing frozen training work was silently skipped")
 
 
+def test_dataset_verifies_recipe_and_decoded_pcm_identity(tmp_path):
+    import numpy as np
+    import soundfile as sf
+
+    from audio_extract.materialize_classical_train import materialize_cantoria
+
+    source = tmp_path / "source"
+    output = tmp_path / "materialized"
+    source.mkdir()
+    accompaniment = np.linspace(-0.1, 0.1, 256, dtype="float32")[:, None]
+    vocal = np.linspace(0.02, -0.02, 256, dtype="float32")[:, None]
+    sf.write(source / "Cantoria_X_MixOrgan.wav", accompaniment + vocal, 44100,
+             subtype="FLOAT")
+    sf.write(source / "Cantoria_X_Mix.wav", vocal, 44100, subtype="FLOAT")
+    materialize_cantoria(source, output, "X")
+
+    dataset = ClassicalDataset(output, ["cantoria_X"], crop_frames=64)
+    assert [item[0] for item in dataset.items] == ["cantoria_X"]
+
+    mixture_path = output / "cantoria_X" / "M.f32.wav"
+    mixture, rate = sf.read(mixture_path, dtype="float32", always_2d=True)
+    mixture[0, 0] += 0.125
+    sf.write(mixture_path, mixture, rate, subtype="FLOAT")
+    try:
+        ClassicalDataset(output, ["cantoria_X"], crop_frames=64)
+    except ValueError as exc:
+        assert "materialized PCM hash mismatch for cantoria_X/M" in str(exc)
+    else:  # pragma: no cover
+        raise AssertionError("corrupted materialized PCM was accepted")
+
+
 def test_manifest_train_works_uses_group_manifest_without_resplitting(tmp_path):
     manifest = tmp_path / "dataset.jsonl"
     splits = tmp_path / "splits.json"

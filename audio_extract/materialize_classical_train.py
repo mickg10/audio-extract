@@ -69,7 +69,7 @@ def _stereo(audio: np.ndarray) -> tuple[np.ndarray, dict | None]:
 
 def _activity_mask(vocal: np.ndarray) -> np.ndarray:
     env = np.mean(np.abs(vocal), axis=1)
-    window = max(1, round(0.05 * SR))
+    window = min(len(env), max(1, round(0.05 * SR)))
     smooth = np.convolve(env, np.ones(window) / window, mode="same")
     threshold = 0.05 * (float(smooth.max()) + 1e-12)
     return (smooth > threshold).astype("float32")

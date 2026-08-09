@@ -15,6 +15,7 @@ import argparse
 import hashlib
 import json
 import math
+import struct
 import subprocess
 import sys
 import time
@@ -24,6 +25,7 @@ import numpy as np
 import soundfile as sf
 import yaml
 
+from . import identity
 from .classical_loss import ClassicalLossConfig, classical_separation_loss
 from .challenges import EVALUATION_TASKS, SOLOIST_VS_REST_ROLES
 from .demucs_affine import (
@@ -90,6 +92,29 @@ def _read_exact(path: Path, *, start: int = 0, frames: int | None = None):
     return torch.from_numpy(audio.T.copy())
 
 
+def _pcm_sha_file(path: Path, *, expected_frames: int) -> str:
+    """Hash decoded PCM without loading a complete training work into memory."""
+
+    h = hashlib.sha256()
+    frames = 0
+    for block in sf.blocks(
+        path, blocksize=262_144, dtype="float32", always_2d=True
+    ):
+        if block.shape[1] != 2 or not np.all(np.isfinite(block)):
+            raise ValueError(f"invalid decoded training audio: {path}")
+        value = np.ascontiguousarray(block, dtype="<f4")
+        h.update(value.tobytes())
+        frames += len(value)
+    if frames != expected_frames:
+        raise ValueError(
+            f"decoded training frame mismatch: {path}, expected {expected_frames}, got {frames}"
+        )
+    h.update(struct.pack("<I", SR))
+    h.update(identity.channel_layout_descriptor(["FL", "FR"]))
+    h.update(struct.pack("<Q", frames))
+    return "sha256:" + h.hexdigest()
+
+
 class ClassicalDataset:
     """Random exact-grid crops from immutable materializations."""
 
@@ -107,6 +132,20 @@ class ClassicalDataset:
                 continue
             reports = json.loads((directory / "report.json").read_text())
             recipe = json.loads((directory / "recipe.json").read_text())
+            claimed_recipe_id = recipe.get("recipe_id")
+            recipe_body = dict(recipe)
+            recipe_body.pop("recipe_id", None)
+            from .materialize_classical_train import _recipe_id
+            actual_recipe_id = _recipe_id(recipe_body)
+            if claimed_recipe_id != actual_recipe_id:
+                raise ValueError(
+                    f"materialization recipe identity mismatch for {work}: "
+                    f"{claimed_recipe_id!r} != {actual_recipe_id!r}"
+                )
+            if reports.get("recipe_id") != claimed_recipe_id:
+                raise ValueError(f"materialization report/recipe mismatch for {work}")
+            if recipe.get("work_id") != work or reports.get("work_id") != work:
+                raise ValueError(f"materialization work identity mismatch for {work}")
             if required_integrity is not None and recipe.get("integrity_class") != required_integrity:
                 raise ValueError(
                     f"materialization integrity mismatch for {work}: "
@@ -133,6 +172,34 @@ class ClassicalDataset:
             frames, sr, channels, subtype = next(iter(grids))
             if sr != SR or channels != 2 or subtype != "FLOAT":
                 raise ValueError(f"invalid materialized grid for {work}: {next(iter(grids))}")
+            if (
+                recipe.get("frames") != frames
+                or recipe.get("sample_rate_hz") != SR
+                or recipe.get("channel_layout") != ["FL", "FR"]
+                or recipe.get("sample_format") != "float32-le-interleaved"
+                or reports.get("frames") != frames
+            ):
+                raise ValueError(f"materialization recipe/report grid mismatch for {work}")
+            expected_pcm = reports.get("pcm_sha256")
+            if not isinstance(expected_pcm, dict) or set(expected_pcm) != {"M", "A", "V"}:
+                raise ValueError(f"materialization lacks complete PCM identities: {work}")
+            for role in "MAV":
+                actual_pcm = _pcm_sha_file(
+                    directory / f"{role}.f32.wav", expected_frames=frames
+                )
+                if actual_pcm != expected_pcm[role]:
+                    raise ValueError(
+                        f"materialized PCM hash mismatch for {work}/{role}: "
+                        f"{actual_pcm} != {expected_pcm[role]}"
+                    )
+            activity = np.load(directory / "vocal_activity.npy", mmap_mode="r")
+            if (
+                activity.shape != (frames,)
+                or activity.dtype != np.dtype("float32")
+                or not np.all(np.isfinite(activity))
+                or not np.all((activity == 0.0) | (activity == 1.0))
+            ):
+                raise ValueError(f"invalid materialized activity grid for {work}")
             if frames < crop_frames:
                 raise ValueError(f"work {work} is shorter than one training crop")
             self.items.append((work, directory, frames, reports["recipe_id"], affines))

@@ -44,6 +44,9 @@ def test_cantoria_materialization_is_float32_stereo_and_exact(tmp_path):
         assert audio.shape == (4096, 2)
         arrays.append(audio)
     assert np.max(np.abs(arrays[0] - arrays[1] - arrays[2])) < 1e-7
+    activity = np.load(output / "cantoria_X" / "vocal_activity.npy")
+    assert activity.shape == (4096,)
+    assert activity.dtype == np.dtype("float32")
     recipe = json.loads((output / "cantoria_X" / "recipe.json").read_text())
     assert recipe["sample_format"] == "float32-le-interleaved"
     assert any(n.get("expression") == "M-V" for n in recipe["operations"])
