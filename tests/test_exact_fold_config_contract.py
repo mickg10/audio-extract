@@ -5,6 +5,7 @@ from pathlib import Path
 import yaml
 
 from audio_extract.challenges import EVALUATION_TASKS
+from audio_extract.challenges import SOLOIST_VS_REST_ROLES
 from audio_extract.optimizer_contract import validate_optimizer_config
 
 
@@ -20,6 +21,9 @@ def test_exact_fold_configs_use_canonical_task_and_explicit_optimizer():
         config = yaml.safe_load(path.read_text())
         assert config["data"]["task"] in EVALUATION_TASKS
         assert config["data"]["task"] == "soloist_vs_rest"
+        assert config["data"]["task_roles"] == {
+            role: list(values) for role, values in SOLOIST_VS_REST_ROLES.items()
+        }
         assert config["data"]["integrity_required"] == "linear_exact"
         resolved = validate_optimizer_config(config["optim"])
         assert resolved["name"] == "adam"

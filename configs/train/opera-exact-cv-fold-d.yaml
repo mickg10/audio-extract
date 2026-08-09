@@ -18,11 +18,14 @@ normalization:
 data:
   manifest: datasets/classical-v1.jsonl
   splits: datasets/classical-v1-splits.json
-  materialized_root: /home/mickg/train_data_exact_cv_affine_v1
+  materialized_root: /home/mickg/train_data_exact_cv_affine_v2
   train_work_ids: [bologna_puccini, bologna_verdi]
   eval_work_ids: [bologna_donizetti, aalto_mozart_dry]
   integrity_required: linear_exact
   task: soloist_vs_rest
+  task_roles:
+    removed: [featured_soloists]
+    retained: [orchestra, chorus, non_target_soloists]
 optim:
   name: adam
   betas: [0.9, 0.999]

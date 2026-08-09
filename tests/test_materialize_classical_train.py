@@ -75,7 +75,11 @@ def test_exact_truth_materialization_preserves_roles_without_transform(tmp_path)
     result = materialize_exact_truth(tmp_path / "truth", output, "opera")
     assert result["status"] == "materialized"
     recipe = json.loads((output / "opera" / "recipe.json").read_text())
-    assert recipe["task"] == "featured_soloist_vs_rest"
+    assert recipe["task"] == "soloist_vs_rest"
+    assert recipe["task_roles"] == {
+        "removed": ["featured_soloists"],
+        "retained": ["orchestra", "chorus", "non_target_soloists"],
+    }
     assert recipe["operations"] == [{"operation": "role_map", "mapping": {
         "mix_with_voice": "M", "orchestra_only": "A", "voice_ref": "V"
     }}]

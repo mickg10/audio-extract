@@ -20,6 +20,7 @@ import numpy as np
 import soundfile as sf
 
 from . import canon, identity
+from .challenges import SOLOIST_VS_REST_ROLES
 from .resample import resample
 
 SR = 44_100
@@ -230,7 +231,10 @@ def materialize_exact_truth(truth_root: Path, output_root: Path, work: str) -> d
         raise GridMismatch(f"exact truth must already be 44.1 kHz stereo: {work}")
     recipe = {
         "integrity_class": "linear_exact",
-        "task": "featured_soloist_vs_rest",
+        "task": "soloist_vs_rest",
+        "task_roles": {
+            role: list(values) for role, values in SOLOIST_VS_REST_ROLES.items()
+        },
         "parents": {role: {"path": str(path), "container_sha256": _file_sha(path)}
                     for role, path in paths.items()},
         "operations": [{"operation": "role_map", "mapping": {

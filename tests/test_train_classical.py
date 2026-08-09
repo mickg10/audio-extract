@@ -5,9 +5,11 @@ from audio_extract.train_classical import (
     _exact_fold_works,
     _manifest_train_works,
     _require_production_normalization,
+    _require_task_contract,
     _separate_controls,
     _state_dict_sha256,
 )
+from audio_extract.optimizer_contract import optimizer_provenance
 
 
 def test_train_classical_cli_contract_parses():
@@ -123,9 +125,39 @@ def test_random_control_optimizer_has_provenance_group_name():
 
     optimizer = _build_optimizer(torch.nn.Linear(2, 1), {
         "base_checkpoint": {"mode": "random_two_source_control"},
-        "optim": {"name": "adam", "lr": 0.0003},
+        "optim": {
+            "name": "adam", "lr": 0.0003, "betas": [0.9, 0.999],
+            "eps": 1e-8, "weight_decay": 0.0,
+        },
     })
+    assert type(optimizer) is torch.optim.Adam
     assert optimizer.param_groups[0]["group_name"] == "all_parameters"
+    assert optimizer_provenance(optimizer)["groups"][0]["weight_decay"] == 0.0
+
+
+def test_pretrained_optimizer_honors_declared_class_and_explicit_defaults():
+    import torch
+
+    config = {
+        "base_checkpoint": {"signature": "test"},
+        "optim": {
+            "name": "adam", "betas": [0.8, 0.98], "eps": 1e-7,
+            "weight_decay": 0.0,
+            "schedule": [{
+                "upper_decoder_lr": 1e-4,
+                "transformer_decoder_lr": 3e-5,
+                "lower_encoder_lr": 0,
+            }],
+        },
+    }
+    optimizer = _build_optimizer(torch.nn.Linear(2, 1), config)
+    provenance = optimizer_provenance(optimizer)
+
+    assert type(optimizer) is torch.optim.Adam
+    assert provenance["class"].endswith(".Adam")
+    assert all(group["betas"] == [0.8, 0.98] for group in provenance["groups"])
+    assert all(group["eps"] == 1e-7 for group in provenance["groups"])
+    assert all(group["weight_decay"] == 0.0 for group in provenance["groups"])
 
 
 def test_training_controls_use_persisted_full_track_affines_independently():
@@ -166,3 +198,22 @@ def test_trainer_refuses_raw_input_normalization_contract():
         "training_statistics_scope": "full_track_per_work_per_control",
         "evaluation_statistics_scope": "complete_input",
     }})
+
+
+def test_trainer_requires_canonical_task_and_explicit_role_scope():
+    roles = {
+        "removed": ["featured_soloists"],
+        "retained": ["orchestra", "chorus", "non_target_soloists"],
+    }
+    _require_task_contract({"data": {"task": "soloist_vs_rest", "task_roles": roles}})
+
+    for data in (
+        {"task": "featured_soloist_vs_rest", "task_roles": roles},
+        {"task": "soloist_vs_rest"},
+    ):
+        try:
+            _require_task_contract({"data": data})
+        except ValueError:
+            pass
+        else:  # pragma: no cover
+            raise AssertionError(f"invalid task contract was accepted: {data}")

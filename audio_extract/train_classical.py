@@ -25,11 +25,16 @@ import soundfile as sf
 import yaml
 
 from .classical_loss import ClassicalLossConfig, classical_separation_loss
+from .challenges import EVALUATION_TASKS, SOLOIST_VS_REST_ROLES
 from .demucs_affine import (
     DemucsAffine,
     forward_demucs_production_affine,
     normalize_demucs_batch,
     restore_demucs_sources,
+)
+from .optimizer_contract import (
+    build_optimizer as build_optimizer_from_contract,
+    optimizer_provenance,
 )
 
 SR = 44_100
@@ -244,12 +249,14 @@ def _load_model(cfg: dict, device: str, seed: int):
 def _build_optimizer(model, cfg: dict):
     torch = _torch()
     if cfg["base_checkpoint"].get("mode") == "random_two_source_control":
-        if cfg["optim"]["name"] != "adam":
-            raise ValueError("random A2 control optimizer must be Adam")
-        optimizer = torch.optim.Adam(model.parameters(), lr=float(cfg["optim"]["lr"]))
-        optimizer.param_groups[0]["group_name"] = "all_parameters"
-        return optimizer
-    return torch.optim.AdamW(_parameter_groups(model, cfg["optim"]["schedule"]))
+        groups = [{
+            "params": model.parameters(),
+            "lr": float(cfg["optim"]["lr"]),
+            "group_name": "all_parameters",
+        }]
+    else:
+        groups = _parameter_groups(model, cfg["optim"]["schedule"])
+    return build_optimizer_from_contract(torch, groups, cfg["optim"])
 
 
 def _parameter_groups(model, schedule: list[dict]):
@@ -321,6 +328,19 @@ def _require_production_normalization(cfg: dict) -> None:
     }
     if mismatches:
         raise ValueError(f"trainer refuses non-production Demucs normalization: {mismatches}")
+
+
+def _require_task_contract(cfg: dict) -> None:
+    data = cfg.get("data", {})
+    task = data.get("task")
+    if task not in EVALUATION_TASKS:
+        raise ValueError(f"trainer refuses noncanonical task identity: {task!r}")
+    if task == "soloist_vs_rest":
+        expected = {role: list(values) for role, values in SOLOIST_VS_REST_ROLES.items()}
+        if data.get("task_roles") != expected:
+            raise ValueError(
+                f"soloist_vs_rest requires explicit removed/retained roles: {expected}"
+            )
 
 
 def _separate_controls(model, mixture, accompaniment, vocals, vocal_index: int,
@@ -506,6 +526,7 @@ def run_training(args: argparse.Namespace) -> dict:
     run_dir = Path(args.run_dir).resolve()
     cfg = yaml.safe_load(config_path.read_text())
     _require_production_normalization(cfg)
+    _require_task_contract(cfg)
     requested_steps = int(cfg["optim"]["steps_first_run"] if args.steps is None else args.steps)
     if requested_steps < 0:
         raise ValueError("steps must be non-negative")
@@ -532,6 +553,7 @@ def run_training(args: argparse.Namespace) -> dict:
     crop_frames = int(model.valid_length(requested_crop))
     dataset = ClassicalDataset(Path(cfg["data"]["materialized_root"]), train_works, crop_frames)
     optimizer = _build_optimizer(model, cfg)
+    initial_optimizer = optimizer_provenance(optimizer)
     loss_cfg = _loss_config(cfg)
     vocal_index = int(cfg["vocal_source_index"])
     construction = cfg.get("accompaniment_construction", "mixture_residual")
@@ -668,6 +690,10 @@ def run_training(args: argparse.Namespace) -> dict:
         "manifest_sha256": _sha_file(manifest),
         "split_manifest_sha256": _sha_file(splits),
         "config_sha256": _sha_file(config_path),
+        "optimizer": {
+            "initial": initial_optimizer,
+            "final": optimizer_provenance(optimizer),
+        },
         "zero_step_export": zero_export,
         "final_export": final_export,
         "evaluation_steps": [e["step"] for e in evaluations],

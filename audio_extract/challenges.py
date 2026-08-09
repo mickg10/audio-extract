@@ -39,6 +39,10 @@ PROBE_KINDS = ("high_string_cluster", "brass_onset", "low_mid_pad",
 # across tasks — a retained chorus is desired output under soloist_vs_rest.
 EVALUATION_TASKS = ("all_voices_vs_nonvocal", "soloist_vs_rest",
                     "role_specific_voice_removal", "choir_vs_rest")
+SOLOIST_VS_REST_ROLES = {
+    "removed": ("featured_soloists",),
+    "retained": ("orchestra", "chorus", "non_target_soloists"),
+}
 
 # Paired-source integrity classes (§6): equal duration does not prove linearity.
 PAIR_INTEGRITY = ("linear_exact", "same_take_paired_target",
