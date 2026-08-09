@@ -27,14 +27,14 @@ BASELINE = "median_raw"
 FALLBACK = "residual_mdx23c"
 ROUTED_METHODS = ("O2_global_medoid", "O3_certified_convex")
 
-VOICE = "retained_voice_db_p90"              # lower/more negative is better
-HOLE = "event_hole_db_p90"                   # lower is better
-ARTIFACT = "artifact_ratio_p90"               # lower is better
-WIDTH = "stereo_width_dev_db/v2"              # lower is better
-COHERENCE = "interchannel_coherence_dev/v2"   # lower is better
-HALL = "hall_tail_dev_db/v2"                  # lower is better
-TRANSIENT_LOSS = "transient_loss_db/v2"       # lower is better
-TRANSIENT_EXCESS = "transient_excess_db/v2"   # lower is better
+VOICE = "retained_voice_db_p90"  # lower/more negative is better
+HOLE = "event_hole_db_p90"  # lower is better
+ARTIFACT = "artifact_ratio_p90"  # lower is better
+WIDTH = "stereo_width_dev_db/v2"  # lower is better
+COHERENCE = "interchannel_coherence_dev/v2"  # lower is better
+HALL = "hall_tail_dev_db/v2"  # lower is better
+TRANSIENT_LOSS = "transient_loss_db/v2"  # lower is better
+TRANSIENT_EXCESS = "transient_excess_db/v2"  # lower is better
 
 REQUIRED_METRICS = (
     VOICE,
@@ -139,16 +139,13 @@ def _artifact(method: Mapping[str, Any], label: str) -> None:
     for identity_name in ("artifact_pcm_sha256", "container_sha256"):
         value = str(artifact.get(identity_name) or "")
         if not value.startswith("sha256:") or len(value) != 71:
-            raise DecisionEvidenceError(
-                f"{label} artifact lacks valid {identity_name}"
-            )
+            raise DecisionEvidenceError(f"{label} artifact lacks valid {identity_name}")
 
 
-def _identity_control(method: Mapping[str, Any], label: str,
-                      config: RoutingGateConfig) -> None:
-    control = _mapping(
-        method.get("identity_roundtrip"), f"{label}.identity_roundtrip"
-    )
+def _identity_control(
+    method: Mapping[str, Any], label: str, config: RoutingGateConfig
+) -> None:
+    control = _mapping(method.get("identity_roundtrip"), f"{label}.identity_roundtrip")
     maximum = _finite(control.get("max_abs"), f"{label}.identity_roundtrip.max_abs")
     rms = _finite(control.get("rms"), f"{label}.identity_roundtrip.rms")
     if maximum > config.identity_roundtrip_max_abs:
@@ -162,13 +159,16 @@ def _identity_control(method: Mapping[str, Any], label: str,
         )
 
 
-def _certificate(method: Mapping[str, Any], name: str, label: str,
-                 config: RoutingGateConfig) -> None:
+def _certificate(
+    method: Mapping[str, Any], name: str, label: str, config: RoutingGateConfig
+) -> None:
     certificate = _mapping(
         method.get("optimizer_certificate"), f"{label}.optimizer_certificate"
     )
     if certificate.get("objective_recomputed") is not True:
-        raise DecisionEvidenceError(f"{label} objective was not independently recomputed")
+        raise DecisionEvidenceError(
+            f"{label} objective was not independently recomputed"
+        )
     if certificate.get("complete_grid") is not True:
         raise DecisionEvidenceError(f"{label} does not cover the complete cell grid")
     if name == "O2_global_medoid":
@@ -209,8 +209,9 @@ def _certificate(method: Mapping[str, Any], name: str, label: str,
         raise DecisionEvidenceError(f"unknown routed method {name}")
 
 
-def _route_artifacts(method: Mapping[str, Any], label: str,
-                     config: RoutingGateConfig) -> tuple[str, ...]:
+def _route_artifacts(
+    method: Mapping[str, Any], label: str, config: RoutingGateConfig
+) -> tuple[str, ...]:
     failures = []
     seam = _mapping(method.get("seam_check"), f"{label}.seam_check")
     time_ratio = _finite(
@@ -282,25 +283,26 @@ def evaluate_method(
             for name in (BASELINE, FALLBACK, method_name):
                 evidence = _method(row, name, f"{resolution}.{work}")
                 methods[work][name] = evidence
-                values[work][name] = _metrics(
-                    evidence, f"{resolution}.{work}.{name}"
-                )
+                values[work][name] = _metrics(evidence, f"{resolution}.{work}.{name}")
                 _artifact(evidence, f"{resolution}.{work}.{name}")
             # Baseline identity controls make STFT damage explicit.
             identity_name = "median_stft_identity"
             identity = _method(row, identity_name, f"{resolution}.{work}")
             _artifact(identity, f"{resolution}.{work}.{identity_name}")
-            _identity_control(
-                identity, f"{resolution}.{work}.{identity_name}", config
-            )
+            _identity_control(identity, f"{resolution}.{work}.{identity_name}", config)
             _certificate(
-                methods[work][method_name], method_name,
-                f"{resolution}.{work}.{method_name}", config,
-            )
-            failures.extend(_route_artifacts(
                 methods[work][method_name],
-                f"{resolution}.{work}.{method_name}", config,
-            ))
+                method_name,
+                f"{resolution}.{work}.{method_name}",
+                config,
+            )
+            failures.extend(
+                _route_artifacts(
+                    methods[work][method_name],
+                    f"{resolution}.{work}.{method_name}",
+                    config,
+                )
+            )
 
         verdi_base = values["bologna_verdi"][BASELINE]
         verdi = values["bologna_verdi"][method_name]
@@ -367,20 +369,15 @@ def evaluate_method(
                 raise DecisionEvidenceError(
                     f"{work} median lacks a worst identifiable event"
                 )
-            event_regression = (
-                _finite(candidate_event.get("composite_risk"), "candidate event")
-                - _finite(baseline_event.get("composite_risk"), "baseline event")
-            )
+            event_regression = _finite(
+                candidate_event.get("composite_risk"), "candidate event"
+            ) - _finite(baseline_event.get("composite_risk"), "baseline event")
             if event_regression > config.worst_event_regression:
                 failures.append(f"{work} worst identifiable event regresses")
 
         aalto = rows["aalto_mozart_dry"]
-        candidate_fp = _no_vocal(
-            aalto, method_name, f"{resolution}.aalto_mozart_dry"
-        )
-        baseline_fp = _no_vocal(
-            aalto, BASELINE, f"{resolution}.aalto_mozart_dry"
-        )
+        candidate_fp = _no_vocal(aalto, method_name, f"{resolution}.aalto_mozart_dry")
+        baseline_fp = _no_vocal(aalto, BASELINE, f"{resolution}.aalto_mozart_dry")
         if _ratio(candidate_fp, baseline_fp, config.near_zero) > (
             config.no_vocal_ratio_limit
         ):
@@ -439,7 +436,11 @@ def evaluate_report(
         if resolution not in resolutions:
             decisions.extend(
                 MethodDecision(
-                    resolution, method, False, False, {},
+                    resolution,
+                    method,
+                    False,
+                    False,
+                    {},
                     (f"missing required resolution {resolution}",),
                 )
                 for method in ROUTED_METHODS
@@ -450,47 +451,58 @@ def evaluate_report(
             works = _mapping(row.get("works"), f"resolutions.{resolution}.works")
         except DecisionEvidenceError as exc:
             decisions.extend(
-                MethodDecision(
-                    resolution, method, False, False, {}, (str(exc),)
-                )
+                MethodDecision(resolution, method, False, False, {}, (str(exc),))
                 for method in ROUTED_METHODS
             )
             continue
         decisions.extend(
-            evaluate_method(resolution, works, method, cfg)
-            for method in ROUTED_METHODS
+            evaluate_method(resolution, works, method, cfg) for method in ROUTED_METHODS
         )
 
-    actionable = [item for item in decisions if item.actionable_oracle_gap]
     all_valid = bool(decisions) and all(item.evidence_valid for item in decisions)
-    if actionable:
-        selected = max(
-            actionable,
-            key=lambda item: (
-                max(item.critical_gains_db.values(), default=-math.inf),
-                item.method == "O2_global_medoid",  # prefer selection if tied
-                -float(item.resolution_seconds),
-            ),
-        )
+    selected = next(
+        (
+            item
+            for item in decisions
+            if item.method == "O2_global_medoid" and item.resolution_seconds == "1.0"
+        ),
+        None,
+    )
+    sensitivity_hits = [
+        item
+        for item in decisions
+        if item.method == "O2_global_medoid"
+        and item.resolution_seconds in {"2.0", "0.5"}
+        and item.actionable_oracle_gap
+    ]
+    if not all_valid or selected is None:
+        decision = "INCOMPLETE_EVIDENCE"
+        recommendation = "COMPLETE_CERTIFICATES_AND_CONTROLS"
+        reason = "one or more required method/resolution results are invalid or absent"
+        selected_payload = None
+    elif selected.actionable_oracle_gap:
         decision = "ACTIONABLE_ROUTING_GAP"
         recommendation = "TRAIN_TARGET_SINGER_FROZEN_MEMBER_GATE"
         reason = (
-            f"{selected.method} at {selected.resolution_seconds}s passes the "
-            "complete-work certified gate"
+            "preregistered O2_global_medoid passes the complete-work certified "
+            "gate at the exact primary 1.0s resolution"
         )
         selected_payload = selected.to_dict()
-    elif all_valid:
+    elif sensitivity_hits:
+        decision = "RESOLUTION_SENSITIVE_GAP"
+        recommendation = "DO_NOT_PROMOTE__REVIEW_FROZEN_SCALE_SENSITIVITY"
+        reason = (
+            "preregistered O2_global_medoid fails at the primary resolution "
+            "but passes at one or more frozen sensitivity resolutions"
+        )
+        selected_payload = None
+    else:
         decision = "NO_ACTIONABLE_GAP_AT_TESTED_RESOLUTIONS"
         recommendation = "CHANGE_BASIS_OR_BUILD_TARGET_SINGER_CORRECTION"
         reason = (
             "all required certified resolutions completed without a route that "
             "beats the raw median champion under the frozen limits"
         )
-        selected_payload = None
-    else:
-        decision = "INCOMPLETE_EVIDENCE"
-        recommendation = "COMPLETE_CERTIFICATES_AND_CONTROLS"
-        reason = "one or more required method/resolution results are invalid or absent"
         selected_payload = None
 
     return {

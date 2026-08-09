@@ -261,6 +261,12 @@ def test_binding_experiment_refuses_missing_v3_precommit_before_audio(tmp_path):
     assert not (tmp_path / "must-not-exist").exists()
 
 
+def test_binding_experiment_uses_strict_noncherrypicking_reducer():
+    names = set(run_experiment.__code__.co_names)
+    assert "evaluate_report_strict" in names
+    assert "evaluate_report" not in names
+
+
 def test_binding_experiment_refuses_code_commit_mismatch_before_audio(tmp_path):
     voiced = tmp_path / "voiced.jsonl"
     no_vocal = tmp_path / "no-vocal.jsonl"

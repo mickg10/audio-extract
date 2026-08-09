@@ -38,10 +38,10 @@ from .oracle_binding_preregistration import (
     load as load_preregistration,
 )
 from .oracle_routing_basis_v2 import DeduplicatedCandidate
+from .oracle_routing_binding_policy_v2 import evaluate_report_strict
 from .oracle_routing_decision_v2 import (
     REPORT_SCHEMA,
     RoutingGateConfig,
-    evaluate_report,
 )
 from .oracle_routing_math_v2 import (
     best_whole_track,
@@ -1044,10 +1044,9 @@ def run_experiment(
             resolution_report["works"][work] = work_report
         report["resolutions"][resolution_key] = resolution_report
 
-    decision = evaluate_report(
+    decision = evaluate_report_strict(
         report,
-        config=effective_decision_config,
-        required_resolutions=tuple(resolution_keys),
+        metric_config=effective_decision_config,
     )
     payload = json.dumps(report, indent=2, sort_keys=True) + "\n"
     decision_payload = json.dumps(decision, indent=2, sort_keys=True) + "\n"
