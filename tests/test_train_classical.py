@@ -1,5 +1,10 @@
 from audio_extract.cli import build_parser
-from audio_extract.train_classical import _exact_fold_works, _manifest_train_works
+from audio_extract.train_classical import (
+    _exact_fold_works,
+    _manifest_train_works,
+    _separate_controls,
+    _state_dict_sha256,
+)
 
 
 def test_train_classical_cli_contract_parses():
@@ -73,3 +78,36 @@ def test_exact_fold_rejects_nonexact_and_group_overlap(tmp_path):
         assert "source derivatives cross fold roles" in str(exc)
     else:  # pragma: no cover
         raise AssertionError("group overlap was accepted")
+
+
+def test_random_control_model_identity_is_state_based():
+    import torch
+
+    torch.manual_seed(123)
+    model = torch.nn.Linear(3, 2)
+    initial = _state_dict_sha256(model)
+    assert initial == _state_dict_sha256(model)
+    with torch.no_grad():
+        model.weight[0, 0] += 1
+    assert _state_dict_sha256(model) != initial
+
+
+def test_two_source_control_uses_direct_accompaniment_not_residual():
+    import torch
+
+    class ToyModel:
+        def __call__(self, audio):
+            return torch.stack((audio * 2, audio * 3), dim=1)
+
+    mixture = torch.ones(1, 2, 8)
+    accompaniment = mixture * 4
+    vocals = mixture * 5
+    direct = _separate_controls(
+        ToyModel(), mixture, accompaniment, vocals, 1, "direct_source", 0
+    )
+    residual = _separate_controls(
+        ToyModel(), mixture, accompaniment, vocals, 1, "mixture_residual", None
+    )
+    assert torch.equal(direct["A_hat"], mixture * 2)
+    assert torch.equal(direct["V_hat"], mixture * 3)
+    assert torch.equal(residual["A_hat"], mixture - mixture * 3)

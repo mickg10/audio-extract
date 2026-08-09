@@ -1,0 +1,48 @@
+schema: audio-extract/train/classical-student-v1
+experiment: RANDOM-HTDEMUCS-A2-OPERA-EXACT-CV-100
+fold: V
+control_role: from-scratch two-source A2 negative control only
+base_arch: HTDemucs
+base_checkpoint:
+  mode: random_two_source_control
+  initialization_seed: 0
+  initial_state_sha256: bcbac4ad93b9e6ebfbae2f12ce0ba43dfc65e03f61ca2a00c0d36b1295051f6c
+sources: [accompaniment, vocals]
+vocal_source_index: 1
+accompaniment_source_index: 0
+accompaniment_construction: direct_source
+audio_channels: 2
+samplerate: 44100
+model:
+  channels: 48
+  depth: 4
+data:
+  manifest: datasets/classical-v1.jsonl
+  splits: datasets/classical-v1-splits.json
+  materialized_root: /home/mickg/train_data_exact_cv_v1
+  train_work_ids: [bologna_puccini, bologna_donizetti]
+  eval_work_ids: [bologna_verdi, aalto_mozart_dry]
+  integrity_required: linear_exact
+  task: featured_soloist_vs_rest
+optim:
+  name: adam
+  lr: 0.0003
+  steps_first_run: 100
+  batch: 1
+  crop_s: 7.8
+  gradient_clip: 5.0
+  evaluation_steps: [0, 100]
+loss:
+  complex_stft: 0.5
+  waveform_l1: 1.0
+  mixture_consistency: 0.0
+  no_vocal_false_positive: 0.25
+  vocal_only_false_negative: 0.25
+  source_coordinate_alpha_beta_R: 0.1
+  stereo_coherence: 0.05
+  exact_event_weighting: 0.25
+  implementation: audio_extract.classical_loss:classical_separation_loss
+export:
+  to: demucs.states .th -> demucs.apply_model -> audio_separator.demucs_separator
+  zero_step_parity_shifts: 0
+note: Preregistered Fold-V random two-source A2 control; never a promotion candidate.

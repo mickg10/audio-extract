@@ -1,8 +1,12 @@
-"""Pretrained HTDemucs continuation for classical/operatic vocal removal.
+"""HTDemucs experiments for classical/operatic vocal removal.
 
 The first production pilot preserves the released four-source topology.  Only
 the vocal output is task-facing: ``V_hat = output[vocals]`` and the delivered
 accompaniment is the mixture-consistent residual ``A_hat = M - V_hat``.
+
+The explicitly labelled random two-source path exists only for the preregistered
+Fold-V A2 control.  It uses the model's direct accompaniment source and cannot
+be mistaken for, resumed into, or promoted as a pretrained continuation.
 """
 
 from __future__ import annotations
@@ -39,6 +43,23 @@ def _sha_file(path: Path) -> str:
     with path.open("rb") as handle:
         for block in iter(lambda: handle.read(1024 * 1024), b""):
             h.update(block)
+    return "sha256:" + h.hexdigest()
+
+
+def _state_dict_sha256(model) -> str:
+    """Canonical identity for an initialized model state, independent of filenames."""
+    h = hashlib.sha256()
+    h.update(b"audio-extract/model-state/v1\0")
+    for name, tensor in sorted(model.state_dict().items()):
+        value = tensor.detach().cpu().contiguous()
+        metadata = json.dumps(
+            {"name": name, "dtype": str(value.dtype), "shape": list(value.shape)},
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode()
+        payload = value.view(_torch().uint8).numpy().tobytes()
+        h.update(len(metadata).to_bytes(8, "big")); h.update(metadata)
+        h.update(len(payload).to_bytes(8, "big")); h.update(payload)
     return "sha256:" + h.hexdigest()
 
 
@@ -139,11 +160,50 @@ def _exact_fold_works(manifest_path: Path, splits_path: Path, train_ids: list[st
     return list(train_ids), list(eval_ids)
 
 
-def _load_pretrained(cfg: dict, device: str):
+def _load_model(cfg: dict, device: str, seed: int):
     torch = _torch()
-    from demucs.pretrained import get_model
 
     checkpoint = cfg["base_checkpoint"]
+    if checkpoint.get("mode") == "random_two_source_control":
+        from demucs.htdemucs import HTDemucs
+
+        expected_seed = int(checkpoint["initialization_seed"])
+        if seed != expected_seed:
+            raise ValueError(
+                f"random control seed mismatch: CLI seed {seed} != pinned {expected_seed}"
+            )
+        if list(cfg["sources"]) != ["accompaniment", "vocals"]:
+            raise ValueError("random A2 control requires [accompaniment, vocals] topology")
+        model_cfg = cfg["model"]
+        model = HTDemucs(
+            sources=list(cfg["sources"]),
+            audio_channels=int(cfg["audio_channels"]),
+            samplerate=int(cfg["samplerate"]),
+            channels=int(model_cfg["channels"]),
+            depth=int(model_cfg["depth"]),
+        ).to(device)
+        actual = _state_dict_sha256(model)
+        pinned = checkpoint.get("initial_state_sha256")
+        if pinned and actual != "sha256:" + pinned.removeprefix("sha256:"):
+            raise ValueError(f"random initial-state hash mismatch: {actual} != {pinned}")
+        if not all(torch.isfinite(p).all() for p in model.parameters()):
+            raise ValueError("random control model contains non-finite parameters")
+        return model, {
+            "mode": "random_two_source_control",
+            "initialization_seed": seed,
+            "initial_state_sha256": actual,
+            "architecture": {
+                "name": "HTDemucs",
+                "sources": list(cfg["sources"]),
+                "audio_channels": int(cfg["audio_channels"]),
+                "samplerate": int(cfg["samplerate"]),
+                "channels": int(model_cfg["channels"]),
+                "depth": int(model_cfg["depth"]),
+            },
+        }
+
+    from demucs.pretrained import get_model
+
     signature = checkpoint["signature"]
     model = get_model(signature)
     if hasattr(model, "models"):
@@ -161,6 +221,15 @@ def _load_pretrained(cfg: dict, device: str):
     if not all(torch.isfinite(p).all() for p in model.parameters()):
         raise ValueError("pretrained model contains non-finite parameters")
     return model, {"signature": signature, "path": str(candidates[0]), "sha256": actual}
+
+
+def _build_optimizer(model, cfg: dict):
+    torch = _torch()
+    if cfg["base_checkpoint"].get("mode") == "random_two_source_control":
+        if cfg["optim"]["name"] != "adam":
+            raise ValueError("random A2 control optimizer must be Adam")
+        return torch.optim.Adam(model.parameters(), lr=float(cfg["optim"]["lr"]))
+    return torch.optim.AdamW(_parameter_groups(model, cfg["optim"]["schedule"]))
 
 
 def _parameter_groups(model, schedule: list[dict]):
@@ -190,7 +259,9 @@ def _parameter_groups(model, schedule: list[dict]):
 
 
 def _set_learning_rates(model, optimizer, cfg: dict, step: int) -> None:
-    schedule = cfg["optim"]["schedule"]
+    schedule = cfg["optim"].get("schedule")
+    if not schedule:
+        return
     second_start, end = schedule[1]["steps"]
     if step < second_start:
         return
@@ -217,7 +288,8 @@ def _loss_config(cfg: dict) -> ClassicalLossConfig:
     )
 
 
-def _separate_controls(model, mixture, accompaniment, vocals, vocal_index: int):
+def _separate_controls(model, mixture, accompaniment, vocals, vocal_index: int,
+                       construction: str, accompaniment_index: int | None):
     torch = _torch()
     outputs = model(torch.cat((mixture, accompaniment, vocals), dim=0))
     batch = mixture.shape[0]
@@ -225,12 +297,23 @@ def _separate_controls(model, mixture, accompaniment, vocals, vocal_index: int):
     mix_v = vocal_estimates[:batch]
     a_v = vocal_estimates[batch:2 * batch]
     v_v = vocal_estimates[2 * batch:]
+    if construction == "mixture_residual":
+        mix_a, a_a, v_a = mixture - mix_v, accompaniment - a_v, vocals - v_v
+    elif construction == "direct_source":
+        if accompaniment_index is None:
+            raise ValueError("direct_source requires accompaniment_source_index")
+        accompaniment_estimates = outputs[:, accompaniment_index]
+        mix_a = accompaniment_estimates[:batch]
+        a_a = accompaniment_estimates[batch:2 * batch]
+        v_a = accompaniment_estimates[2 * batch:]
+    else:
+        raise ValueError(f"unknown accompaniment construction: {construction}")
     return {
-        "A_hat": mixture - mix_v,
+        "A_hat": mix_a,
         "V_hat": mix_v,
-        "A_only_A_hat": accompaniment - a_v,
+        "A_only_A_hat": a_a,
         "A_only_V_hat": a_v,
-        "V_only_A_hat": vocals - v_v,
+        "V_only_A_hat": v_a,
         "V_only_V_hat": v_v,
     }
 
@@ -285,7 +368,8 @@ def _source_metrics(candidate, accompaniment, vocals) -> dict:
 
 
 def _evaluate(model, truth_root: Path, run_dir: Path, step: int, vocal_index: int,
-              device: str, eval_works: list[str]) -> dict:
+              device: str, eval_works: list[str], construction: str,
+              accompaniment_index: int | None) -> dict:
     torch = _torch()
     from demucs.apply import apply_model
 
@@ -310,7 +394,12 @@ def _evaluate(model, truth_root: Path, run_dir: Path, step: int, vocal_index: in
         if output.shape[-1] != mixture.shape[-1]:
             raise ValueError(f"inference frame mismatch for {work}: {output.shape}, {mixture.shape}")
         vocal_hat = output[vocal_index]
-        accompaniment_hat = mixture - vocal_hat
+        if construction == "mixture_residual":
+            accompaniment_hat = mixture - vocal_hat
+        elif construction == "direct_source" and accompaniment_index is not None:
+            accompaniment_hat = output[accompaniment_index]
+        else:
+            raise ValueError(f"invalid accompaniment construction: {construction}")
         no_vocal_hat = no_vocal_output[vocal_index]
         false_positive_ratio = float(
             no_vocal_hat.square().sum() / accompaniment.square().sum().clamp_min(1e-12)
@@ -379,13 +468,16 @@ def run_training(args: argparse.Namespace) -> dict:
     else:
         train_works = _manifest_train_works(manifest, splits, set(cfg["data"]["train_splits"]))
         eval_works = list(cfg["data"].get("eval_work_ids", DEFAULT_EVAL_WORKS))
-    model, base = _load_pretrained(cfg, device)
+    model, base = _load_model(cfg, device, int(args.seed))
     requested_crop = round(float(cfg["optim"]["crop_s"]) * SR)
     crop_frames = int(model.valid_length(requested_crop))
     dataset = ClassicalDataset(Path(cfg["data"]["materialized_root"]), train_works, crop_frames)
-    optimizer = torch.optim.AdamW(_parameter_groups(model, cfg["optim"]["schedule"]))
+    optimizer = _build_optimizer(model, cfg)
     loss_cfg = _loss_config(cfg)
     vocal_index = int(cfg["vocal_source_index"])
+    construction = cfg.get("accompaniment_construction", "mixture_residual")
+    accompaniment_index = cfg.get("accompaniment_source_index")
+    accompaniment_index = None if accompaniment_index is None else int(accompaniment_index)
     eval_steps = {int(s) for s in cfg["optim"]["evaluation_steps"] if int(s) <= requested_steps}
 
     zero_export = _export_and_parity(
@@ -395,7 +487,8 @@ def run_training(args: argparse.Namespace) -> dict:
     if 0 in eval_steps:
         existing = _existing_evaluation(run_dir, 0, eval_works)
         evaluations.append(existing or _evaluate(
-            model, Path(args.truth_root), run_dir, 0, vocal_index, device, eval_works
+            model, Path(args.truth_root), run_dir, 0, vocal_index, device, eval_works,
+            construction, accompaniment_index
         ))
 
     history = []
@@ -437,7 +530,10 @@ def run_training(args: argparse.Namespace) -> dict:
         sampled.extend(s[4] for s in samples)
 
         model.train()
-        estimates = _separate_controls(model, mixture, accompaniment, vocals, vocal_index)
+        estimates = _separate_controls(
+            model, mixture, accompaniment, vocals, vocal_index,
+            construction, accompaniment_index
+        )
         loss, components = classical_separation_loss(
             estimates["A_hat"], estimates["V_hat"], mixture, accompaniment, vocals,
             no_vocal_accompaniment_estimate=estimates["A_only_A_hat"],
@@ -477,7 +573,8 @@ def run_training(args: argparse.Namespace) -> dict:
                                            if device.startswith("cuda") else None),
                         "history": history, "sampled": sampled}, checkpoint)
             evaluations.append(_evaluate(model, Path(args.truth_root), run_dir, completed,
-                                         vocal_index, device, eval_works))
+                                         vocal_index, device, eval_works, construction,
+                                         accompaniment_index))
 
     final_export = zero_export if requested_steps == 0 else _export_and_parity(
         model, run_dir, cfg, label=f"step-{requested_steps:06d}",
@@ -494,6 +591,7 @@ def run_training(args: argparse.Namespace) -> dict:
         "device": device,
         "train_works": [item[0] for item in dataset.items],
         "eval_works": eval_works,
+        "accompaniment_construction": construction,
         "materialization_recipes": {item[0]: item[3] for item in dataset.items},
         "manifest_sha256": _sha_file(manifest),
         "split_manifest_sha256": _sha_file(splits),
