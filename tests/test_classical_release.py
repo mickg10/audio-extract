@@ -190,7 +190,8 @@ def test_package_work_copies_and_inventories_every_artifact(tmp_path):
     expected_names = {
         "accompaniment.primary.f32.wav", "accompaniment.alternate.f32.wav",
         "exact-orchestra-target.f32.wav", "exact-voice-target.f32.wav",
-        "removed-vocal.primary.f32.wav", "manifest.json",
+        "removed-vocal.primary.f32.wav", "manifest.json", "report.json",
+        "report.md", "COMPLETE",
     }
     assert expected_names <= {path.name for path in work.iterdir()}
     assert not os.path.samefile(paths["primary"], work / "accompaniment.primary.f32.wav")
@@ -213,6 +214,11 @@ def test_package_work_copies_and_inventories_every_artifact(tmp_path):
         assert record["sample_rate_hz"] == 44100
     stored = json.loads((work / "manifest.json").read_text())
     assert stored["primary"]["candidate"] == "primary"
+    lineage = work / "lineage" / "removed-vocal.primary"
+    recipe = json.loads((lineage / "recipe.json").read_text())
+    assert identity.recipe_id(recipe) == stored["removed_vocal_recipe_id"]
+    assert recipe["model"]["members"] == [stored["primary"]["recipe_id"]]
+    assert (lineage / "COMPLETE").is_file()
 
 
 def test_package_refuses_stale_source_bytes_even_when_destination_absent(tmp_path):

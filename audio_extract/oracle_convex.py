@@ -156,6 +156,15 @@ def build_quadratic(stats: CellStatistics,
             and np.all(np.isfinite(residual)) and np.all(np.isfinite(ea))
             and np.all(np.isfinite(ev))):
         raise ValueError("source-coordinate statistics must be finite")
+    residual_scale = max(1.0, float(np.max(np.abs(residual))))
+    hermitian_error = float(
+        np.max(np.abs(residual - np.conj(np.swapaxes(residual, -1, -2))))
+    )
+    if hermitian_error > config.psd_tolerance * residual_scale:
+        raise ConvexOracleError(
+            "source-coordinate residual Gram is not Hermitian: "
+            f"relative_error={hermitian_error / residual_scale}"
+        )
     if not np.any(available):
         raise ConvexOracleError("no identifiable cells for convex oracle")
 
@@ -183,7 +192,8 @@ def build_quadratic(stats: CellStatistics,
             )
             local = 0.5 * (local + local.T)
             eigenvalues = np.linalg.eigvalsh(local)
-            if eigenvalues[0] < -config.psd_tolerance:
+            eigen_scale = max(1.0, float(np.max(np.abs(eigenvalues))))
+            if eigenvalues[0] < -config.psd_tolerance * eigen_scale:
                 raise ConvexOracleError(
                     f"source-coordinate quadratic is not PSD: min={eigenvalues[0]}"
                 )
@@ -336,22 +346,32 @@ def _monotone_fista(start: np.ndarray, quadratic: ConvexQuadratic,
             "convex O3 did not converge: "
             f"iterations={iterations}, projected_gradient_mapping_inf={mapping}"
         )
-    total, data, temporal, frequency = objective(best, quadratic, config)
-    best_mapping = projected_gradient_mapping_inf(best, quadratic, config, L)
-    if best_mapping > config.gradient_mapping_tolerance:
+    # ``x`` is the iterate for which the stopping certificate was evaluated.
+    # Returning an earlier best-objective iterate can violate KKT by a few ULPs
+    # when monotone tolerance admits a numerically insignificant increase.
+    certified = x
+    total, data, temporal, frequency = objective(certified, quadratic, config)
+    certified_mapping = projected_gradient_mapping_inf(
+        certified, quadratic, config, L
+    )
+    if certified_mapping > config.gradient_mapping_tolerance:
         raise ConvexOracleError(
-            f"best convex iterate lacks KKT certificate: {best_mapping}"
+            f"returned convex iterate lacks KKT certificate: {certified_mapping}"
         )
-    return best, {
+    if total > best_value + config.objective_tolerance * max(1.0, abs(best_value)):
+        raise ConvexOracleError(
+            f"certified iterate lost objective monotonicity: {total} > {best_value}"
+        )
+    return certified, {
         "objective": total,
         "data_objective": data,
         "temporal_smoothness": temporal,
         "frequency_smoothness": frequency,
         "iterations": iterations,
         "converged": True,
-        "projected_gradient_mapping_inf": best_mapping,
-        "simplex_error": float(np.max(np.abs(best.sum(axis=-1) - 1.0))),
-        "min_weight": float(best.min()),
+        "projected_gradient_mapping_inf": certified_mapping,
+        "simplex_error": float(np.max(np.abs(certified.sum(axis=-1) - 1.0))),
+        "min_weight": float(certified.min()),
         "lipschitz_constant": L,
         "restart_count": restarts,
         "accelerated_steps": accelerated_steps,

@@ -25,13 +25,13 @@ from audio_extract.classical_baselines import FULL_WORKS
 from audio_extract.judge_labels import local_source_coordinate_labels
 from audio_extract.judge_train import label_targets
 from audio_extract.metrics_v2 import stereo_v2
+from audio_extract.oracle_convex import ConvexOracleConfig, solve_true_convex_oracle
 from audio_extract.oracle_routing import (
     RoutingConfig,
     best_whole_track,
     one_hot_weights,
     render_spectral_route,
     seam_check,
-    solve_convex_routing,
     solve_discrete_routing,
     source_coordinate_statistics,
     stft_stack,
@@ -178,11 +178,14 @@ def _residual_members(
     return result
 
 
-def _route_plan_hash(mode: str, plan: np.ndarray, config: RoutingConfig) -> str:
+def _route_plan_hash(
+    mode: str, plan: np.ndarray, config: RoutingConfig,
+    solver_config: dict[str, Any] | None = None,
+) -> str:
     arr = np.ascontiguousarray(plan)
     header = canon.canonicalize({
         "mode": mode, "shape": list(arr.shape), "dtype": arr.dtype.str,
-        "config": config.identity_dict(),
+        "config": config.identity_dict(), "solver_config": solver_config,
     })
     return identity.blob_sha256(header + arr.tobytes())
 
@@ -191,8 +194,9 @@ def _write_route(
     *, layout: TrackLayout, source: dict[str, Any], mode: str, output: np.ndarray,
     parents: list[dict[str, Any]], plan: np.ndarray, config: RoutingConfig,
     code_commit: str, execution: dict[str, Any], truth_pcm: dict[str, str],
+    solver_config: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    plan_hash = _route_plan_hash(mode, plan, config)
+    plan_hash = _route_plan_hash(mode, plan, config, solver_config)
     parent_ids = [member["recipe_id"] for member in parents]
     basis_hash = identity.blob_sha256(canon.canonicalize(parent_ids))
     recipe = {
@@ -211,6 +215,7 @@ def _write_route(
         "effective_config": {
             **config.identity_dict(), "oracle_mode": mode,
             "routing_plan_sha256": plan_hash,
+            "solver_config": solver_config,
             "truth_pcm": truth_pcm,
             "alignment": "source-grid-exact",
         },
@@ -390,6 +395,7 @@ def _decision(report_works: dict[str, Any]) -> dict[str, Any]:
 
 def run(args: argparse.Namespace) -> dict[str, Any]:
     config = RoutingConfig()
+    convex_config = ConvexOracleConfig()
     code_commit = _git_commit()
     rows = [json.loads(line) for line in args.candidate_manifest.read_text().splitlines()]
     manifest_rows = {(row["work_id"], row["candidate"]): row for row in rows}
@@ -402,6 +408,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         "status": "complete", "code_commit": code_commit,
         "candidate_basis": list(BASIS_ORDER), "works": {},
         "config": config.to_dict(),
+        "convex_o3_config": convex_config.to_dict(),
         "candidate_manifest": str(args.candidate_manifest),
         "candidate_manifest_sha256": _sha_file(args.candidate_manifest),
     }
@@ -446,8 +453,9 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
                           "available": int(stats.available.sum())}), flush=True)
         o2 = solve_discrete_routing(stats, config)
         print(json.dumps({"stage": "O3_convex", "work": work}), flush=True)
-        o3 = solve_convex_routing(stats, config, o1_index=o1_index,
-                                  o2_labels=o2.labels)
+        o3 = solve_true_convex_oracle(
+            stats, o1_index=o1_index, o2_labels=o2.labels, config=convex_config
+        )
         o1_weights = np.zeros(stats.unary_risk.shape, dtype=np.float64)
         o1_weights[..., o1_index] = 1.0
         routes = {
@@ -488,8 +496,19 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             },
             "O3": {
                 "objective": o3.objective, "data_objective": o3.data_objective,
-                "temporal_tv": o3.temporal_tv, "frequency_tv": o3.frequency_tv,
+                "temporal_smoothness": o3.temporal_smoothness,
+                "frequency_smoothness": o3.frequency_smoothness,
                 "initialization": o3.initialization, "iterations": o3.iterations,
+                "converged": o3.converged,
+                "projected_gradient_mapping_inf": o3.projected_gradient_mapping_inf,
+                "simplex_error": o3.simplex_error,
+                "min_weight": o3.min_weight,
+                "solution_objective_spread": o3.solution_objective_spread,
+                "best_vertex_index": o3.best_vertex_index,
+                "best_vertex_objective": o3.best_vertex_objective,
+                "start_objectives": o3.start_objectives,
+                "restart_count": o3.restart_count,
+                "accelerated_steps": o3.accelerated_steps,
                 "mean_weights": {name: float(o3.weights[..., i].mean())
                                  for i, name in enumerate(BASIS_ORDER)},
             },
@@ -511,6 +530,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
                 layout=layout, source=source, mode=mode, output=outputs[mode],
                 parents=members, plan=plan, config=config, code_commit=code_commit,
                 execution=execution, truth_pcm=truth_pcm,
+                solver_config=(convex_config.identity_dict() if mode == "O3" else None),
             )
             metrics, labels = _metrics(outputs[mode], accompaniment, vocal)
             work_report["outputs"][mode] = {

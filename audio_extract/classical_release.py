@@ -24,6 +24,7 @@ import json
 import math
 import os
 import shutil
+import subprocess
 import tempfile
 from dataclasses import asdict, dataclass
 from pathlib import Path
@@ -32,7 +33,7 @@ import numpy as np
 import soundfile as sf
 import yaml
 
-from . import identity
+from . import canon, identity, recipe as recipe_mod
 from .judge_labels import local_source_coordinate_labels
 from .judge_train import label_targets
 from .metrics_v2 import brightness_v2, fullness_v2, stereo_v2, transient_v2
@@ -106,6 +107,67 @@ def _sha_file(path: Path) -> str:
         for block in iter(lambda: handle.read(1 << 20), b""):
             h.update(block)
     return "sha256:" + h.hexdigest()
+
+
+def _git_commit() -> str:
+    return subprocess.run(
+        ["git", "rev-parse", "HEAD"], check=True, text=True, capture_output=True
+    ).stdout.strip()
+
+
+def _write_immutable_text(path: Path, payload: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if path.exists() and path.read_text() != payload:
+        raise ClassicalReleaseError(f"refusing to replace differing file: {path}")
+    if not path.exists():
+        path.write_text(payload)
+
+
+def _input_pcm(record: dict) -> dict:
+    return {
+        "sha256": record["artifact_pcm_sha256"],
+        "sample_rate_hz": int(record["sample_rate_hz"]),
+        "channel_layout": list(record["channels"]),
+        "frames": int(record["frames"]),
+        "sample_format": "float32-le-interleaved",
+    }
+
+
+def _measurement_recipe(
+    row: CandidateRow, truth_records: dict[str, dict], *, code_commit: str,
+) -> tuple[str, dict]:
+    references = {
+        name: record["artifact_pcm_sha256"] for name, record in truth_records.items()
+    }
+    weights = hashlib.sha256(canon.canonicalize(references)).hexdigest()
+    recipe = {
+        "schema": recipe_mod.SCHEMA,
+        "canon": recipe_mod.CANON,
+        "input_pcm": {
+            "sha256": row.artifact_pcm_sha256,
+            "sample_rate_hz": row.sr_hz,
+            "channel_layout": list(row.channels),
+            "frames": row.frames,
+            "sample_format": "float32-le-interleaved",
+        },
+        "operation": {"type": "measure", "target": "exact_classical_release"},
+        "model": {
+            "model_id": "exact-classical-metric-bank-v1",
+            "weights_sha256": weights,
+            "adapter": "audio_extract.classical_release.exact_metrics",
+            "adapter_revision": "exact-classical-metric-bank/v1",
+            "members": [row.recipe_id],
+        },
+        "effective_config": {
+            "parent_recipe_ids": [row.recipe_id],
+            "reference_pcm": references,
+            "tile_seconds": "0.5",
+            "hop_seconds": "0.25",
+            "alignment": "source-grid-exact",
+        },
+        "software": {"audio_extract_commit": code_commit},
+    }
+    return identity.recipe_id(recipe), recipe
 
 
 def _resolve_host_path(value: str) -> Path:
@@ -376,7 +438,7 @@ def _unique_artifacts(scored: list[dict]) -> tuple[list[dict], dict[str, list[st
 
 
 def score_work(rows: list[CandidateRow], truth_root: Path,
-               policy: ScreeningPolicy, work_id: str) -> dict:
+               policy: ScreeningPolicy, work_id: str, *, code_commit: str) -> dict:
     selected = [row for row in rows if row.work_id == work_id]
     if len(selected) < 2:
         raise ClassicalReleaseError(f"{work_id}: fewer than two candidates")
@@ -395,12 +457,26 @@ def score_work(rows: list[CandidateRow], truth_root: Path,
     )
     if float(np.max(np.abs(identity_error))) > 2e-5:
         raise ClassicalReleaseError(f"{work_id}: M=A+V identity failed")
+    truth_records = {
+        "mixture": _audio_record(
+            truth / "mix_with_voice.wav", expected_sr=sr, expected_frames=len(mixture)
+        ),
+        "accompaniment": _audio_record(
+            truth / "orchestra_only.wav", expected_sr=sr, expected_frames=len(mixture)
+        ),
+        "vocal": _audio_record(
+            truth / "voice_ref.wav", expected_sr=sr, expected_frames=len(mixture)
+        ),
+    }
     scored = []
     for row in selected:
         path, audio = verify_candidate(
             row, expected_sr=sr, expected_frames=len(mixture)
         )
         metrics = exact_metrics(audio, accompaniment, vocal, sr)
+        measurement_recipe_id, measurement_recipe = _measurement_recipe(
+            row, truth_records, code_commit=code_commit
+        )
         scored.append({
             "work_id": work_id,
             "candidate": row.candidate,
@@ -414,6 +490,8 @@ def score_work(rows: list[CandidateRow], truth_root: Path,
             "subtype": row.subtype,
             "metrics": metrics,
             "screening": screening(metrics, policy),
+            "measurement_recipe_id": measurement_recipe_id,
+            "measurement_recipe": measurement_recipe,
         })
     unique, aliases = _unique_artifacts(scored)
     ranked = rank_rows(unique)
@@ -440,6 +518,7 @@ def score_work(rows: list[CandidateRow], truth_root: Path,
             "vocal": str(truth / "voice_ref.wav"),
             "frames": len(mixture),
             "sample_rate_hz": sr,
+            "records": truth_records,
         },
     }
 
@@ -562,8 +641,56 @@ def _markdown(work_reports: list[dict]) -> str:
     return "\n".join(lines) + "\n"
 
 
-def package_work(report: dict, output_root: Path) -> dict:
+def _removed_vocal_recipe(
+    *, primary: dict, mixture_record: dict, code_commit: str,
+) -> tuple[str, dict]:
+    parent_id = primary["recipe_id"]
+    recipe = {
+        "schema": recipe_mod.SCHEMA,
+        "canon": recipe_mod.CANON,
+        "input_pcm": _input_pcm(mixture_record),
+        "operation": {
+            "type": "mixture_minus_source",
+            "target": "vocals",
+            "construction": "mixture_minus_source",
+        },
+        "model": {
+            "model_id": "deterministic-complement-residual",
+            "weights_sha256": hashlib.sha256(parent_id.encode()).hexdigest(),
+            "adapter": "audio_extract.classical_release.package_work",
+            "adapter_revision": "exact-grid-complement/v1",
+            "members": [parent_id],
+        },
+        "effective_config": {
+            "parent_recipe_ids": [parent_id],
+            "parent_artifact_pcm_sha256": primary["artifact_pcm_sha256"],
+            "alignment": "source-grid-exact",
+        },
+        "software": {"audio_extract_commit": code_commit},
+    }
+    return identity.recipe_id(recipe), recipe
+
+
+def package_work(
+    report: dict, output_root: Path, *, code_commit: str = "unknown",
+) -> dict:
     work_dir = output_root / report["work_id"]
+    complete = work_dir / "COMPLETE"
+    if complete.exists():
+        required = (
+            "accompaniment.primary.f32.wav", "accompaniment.alternate.f32.wav",
+            "exact-orchestra-target.f32.wav", "exact-voice-target.f32.wav",
+            "removed-vocal.primary.f32.wav", "manifest.json", "report.json", "report.md",
+            "lineage/removed-vocal.primary/recipe.json",
+            "lineage/removed-vocal.primary/execution.json",
+            "lineage/removed-vocal.primary/output.pcm.sha256",
+            "lineage/removed-vocal.primary/COMPLETE",
+        )
+        missing = [name for name in required if not (work_dir / name).exists()]
+        if missing:
+            raise ClassicalReleaseError(
+                f"completed package is incomplete: {work_dir}: {missing}"
+            )
     rows = {row["candidate"]: row for row in report["candidates"]}
     primary = rows[report["primary"]]
     alternate = rows[report["alternate"]]
@@ -573,6 +700,9 @@ def package_work(report: dict, output_root: Path) -> dict:
         raise ClassicalReleaseError("truth grid changed before packaging")
 
     truth_records = {
+        "mixture": _audio_record(
+            Path(truth["mixture"]), expected_sr=sr, expected_frames=len(mixture)
+        ),
         "exact_orchestra_target": _audio_record(
             Path(truth["accompaniment"]), expected_sr=sr,
             expected_frames=len(mixture),
@@ -606,6 +736,27 @@ def package_work(report: dict, output_root: Path) -> dict:
         work_dir / "removed-vocal.primary.f32.wav",
         mixture.astype(np.float32) - primary_audio.astype(np.float32), sr,
     )
+    removed_recipe_id, removed_recipe = _removed_vocal_recipe(
+        primary=primary, mixture_record=truth_records["mixture"],
+        code_commit=code_commit,
+    )
+    lineage = work_dir / "lineage" / "removed-vocal.primary"
+    execution = {
+        **identity.execution_fingerprint(),
+        "parents": [primary["recipe_id"]],
+        "output": packaged["removed_vocal_primary"],
+    }
+    _write_immutable_text(
+        lineage / "recipe.json", json.dumps(removed_recipe, indent=2, sort_keys=True) + "\n"
+    )
+    _write_immutable_text(
+        lineage / "execution.json", json.dumps(execution, indent=2, sort_keys=True) + "\n"
+    )
+    _write_immutable_text(
+        lineage / "output.pcm.sha256",
+        packaged["removed_vocal_primary"]["artifact_pcm_sha256"] + "\n",
+    )
+    _write_immutable_text(lineage / "COMPLETE", "")
     manifest = {
         "schema": "audio-extract/classical-exact-release/v1",
         "status": report["status"],
@@ -613,19 +764,24 @@ def package_work(report: dict, output_root: Path) -> dict:
         "population_risk_claim": None,
         "work_id": report["work_id"],
         "policy_id": report["policy_id"],
+        "code_commit": code_commit,
         "primary": primary,
         "alternate": alternate,
         "pareto_front": report["pareto_front"],
         "artifact_aliases": report["artifact_aliases"],
         "packaged_artifacts": packaged,
+        "removed_vocal_recipe_id": removed_recipe_id,
+        "removed_vocal_recipe": removed_recipe,
         "truth_source_paths": truth,
     }
-    payload = json.dumps(manifest, indent=2, sort_keys=True) + "\n"
-    path = work_dir / "manifest.json"
-    if path.exists() and path.read_text() != payload:
-        raise ClassicalReleaseError(f"refusing to replace differing manifest: {path}")
-    if not path.exists():
-        path.write_text(payload)
+    _write_immutable_text(
+        work_dir / "report.json", json.dumps(report, indent=2, sort_keys=True) + "\n"
+    )
+    _write_immutable_text(work_dir / "report.md", _markdown([report]))
+    _write_immutable_text(
+        work_dir / "manifest.json", json.dumps(manifest, indent=2, sort_keys=True) + "\n"
+    )
+    _write_immutable_text(complete, "")
     return manifest
 
 
@@ -633,14 +789,19 @@ def run(*, candidate_manifest: Path, truth_root: Path, policy_path: Path,
         report_json: Path, report_md: Path, package_root: Path | None) -> dict:
     rows = load_candidate_manifest(candidate_manifest)
     policy = ScreeningPolicy.from_mapping(yaml.safe_load(policy_path.read_text()))
+    code_commit = _git_commit()
     works = sorted({row.work_id for row in rows})
-    reports = [score_work(rows, truth_root, policy, work) for work in works]
+    reports = [
+        score_work(rows, truth_root, policy, work, code_commit=code_commit)
+        for work in works
+    ]
     status = "final" if all(report["status"] == "final" for report in reports) else "needs_human_ab"
     result = {
         "schema": "audio-extract/classical-exact-release-report/v1",
         "status": status,
         "release_scope": "exact_linear_reference_engineering_release",
         "population_risk_claim": None,
+        "code_commit": code_commit,
         "policy": asdict(policy),
         "candidate_manifest": str(candidate_manifest),
         "candidate_manifest_sha256": _sha_file(candidate_manifest),
@@ -660,7 +821,10 @@ def run(*, candidate_manifest: Path, truth_root: Path, policy_path: Path,
         report_md.write_text(markdown)
     packages = []
     if package_root is not None:
-        packages = [package_work(report, package_root) for report in reports]
+        packages = [
+            package_work(report, package_root, code_commit=code_commit)
+            for report in reports
+        ]
     result["packages"] = len(packages)
     return result
 

@@ -42,9 +42,6 @@ class RoutingConfig:
     lambda_residual: float = 1.0
     temporal_switch_penalty: float = 0.05
     frequency_switch_penalty: float = 0.05
-    o3_iterations: int = 800
-    o3_learning_rate: float = 0.08
-    o3_softmax_extent: float = 6.0
 
     def to_dict(self) -> dict[str, Any]:
         payload = asdict(self)
@@ -88,17 +85,6 @@ class DiscreteRoutingResult:
     solver_status: str
     mip_gap: float | None
     mip_node_count: int | None
-
-
-@dataclass(frozen=True)
-class ConvexRoutingResult:
-    weights: np.ndarray
-    objective: float
-    data_objective: float
-    temporal_tv: float
-    frequency_tv: float
-    initialization: str
-    iterations: int
 
 
 def _as_exact_stereo(value: np.ndarray, name: str) -> np.ndarray:
@@ -366,123 +352,6 @@ def solve_discrete_routing(stats: CellStatistics, config: RoutingConfig) -> Disc
         mip_node_count=(None if getattr(result, "mip_node_count", None) is None
                         else int(result.mip_node_count)),
     )
-
-
-def _convex_objective_numpy(weights: np.ndarray, stats: CellStatistics,
-                            config: RoutingConfig) -> tuple[float, float, float, float]:
-    w = np.asarray(weights, dtype=np.float64)
-    q, b, k = stats.unary_risk.shape
-    if w.shape != (q, b, k) or np.any(w < -1e-8) or not np.allclose(w.sum(-1), 1.0, atol=1e-6):
-        raise ValueError("convex weights must be a per-cell simplex")
-    alpha = np.sum(w * stats.alpha, axis=-1)
-    beta = np.sum(w * stats.beta, axis=-1)
-    residual = np.real(np.einsum("qbi,qbij,qbj->qb", w, stats.residual_gram, w))
-    eps = config.reference_floor_relative * np.maximum(
-        stats.accompaniment_energy + stats.vocal_energy, np.finfo(float).tiny
-    )
-    risk = (
-        config.lambda_hole * np.maximum(1.0 - np.abs(alpha), 0.0) ** 2
-        + config.lambda_voice * np.abs(beta) ** 2 * stats.vocal_energy
-        / (np.abs(alpha) ** 2 * stats.accompaniment_energy + eps)
-        + config.lambda_residual * np.maximum(residual, 0.0)
-        / (stats.accompaniment_energy + eps)
-    )
-    denom = max(1, int(stats.available.sum()))
-    data = float(risk[stats.available].sum() / denom)
-    temporal_tv = float(np.abs(w[1:] - w[:-1]).sum())
-    frequency_tv = float(np.abs(w[:, 1:] - w[:, :-1]).sum())
-    objective = data + 0.5 * (
-        config.temporal_switch_penalty * temporal_tv
-        + config.frequency_switch_penalty * frequency_tv
-    ) / denom
-    return objective, data, temporal_tv, frequency_tv
-
-
-def solve_convex_routing(
-    stats: CellStatistics, config: RoutingConfig, *, o1_index: int,
-    o2_labels: np.ndarray,
-) -> ConvexRoutingResult:
-    """O3: optimize nonnegative local weights with time/frequency TV.
-
-    Four deterministic starts are used.  Exact one-hot O1 and O2 routes are also
-    feasible candidates, so the reported convex envelope can never be worse than
-    either merely because the softmax optimizer missed an endpoint.
-    """
-
-    import torch
-
-    torch.set_num_threads(1)
-    q, b, k = stats.unary_risk.shape
-    available = torch.as_tensor(stats.available, dtype=torch.float64)
-    alpha = torch.as_tensor(stats.alpha, dtype=torch.complex128)
-    beta = torch.as_tensor(stats.beta, dtype=torch.complex128)
-    gram = torch.as_tensor(stats.residual_gram, dtype=torch.complex128)
-    ea = torch.as_tensor(stats.accompaniment_energy, dtype=torch.float64)
-    ev = torch.as_tensor(stats.vocal_energy, dtype=torch.float64)
-    eps = config.reference_floor_relative * torch.clamp(ea + ev, min=torch.finfo(torch.float64).tiny)
-    denom = max(1, int(stats.available.sum()))
-
-    def objective(logits):
-        w = torch.softmax(logits, dim=-1)
-        av = torch.sum(w * alpha, dim=-1)
-        bv = torch.sum(w * beta, dim=-1)
-        residual = torch.einsum("qbi,qbij,qbj->qb", w.to(torch.complex128), gram,
-                                w.to(torch.complex128)).real.clamp_min(0.0)
-        risk = (
-            config.lambda_hole * torch.relu(1.0 - torch.abs(av)).square()
-            + config.lambda_voice * torch.abs(bv).square() * ev
-            / (torch.abs(av).square() * ea + eps)
-            + config.lambda_residual * residual / (ea + eps)
-        )
-        data = torch.sum(risk * available) / denom
-        tvt = torch.sum(torch.abs(w[1:] - w[:-1]))
-        tvf = torch.sum(torch.abs(w[:, 1:] - w[:, :-1]))
-        total = data + 0.5 * (
-            config.temporal_switch_penalty * tvt
-            + config.frequency_switch_penalty * tvf
-        ) / denom
-        return total, w
-
-    independent = np.argmin(stats.unary_risk, axis=-1)
-    starts = {
-        "uniform": None,
-        "O1": np.full((q, b), int(o1_index), dtype=np.int64),
-        "O2": np.asarray(o2_labels, dtype=np.int64),
-        "independent": independent,
-    }
-    feasible: list[tuple[float, str, np.ndarray]] = []
-    for name, labels in starts.items():
-        initial = np.zeros((q, b, k), dtype=np.float64)
-        if labels is not None:
-            initial.fill(-config.o3_softmax_extent)
-            np.put_along_axis(initial, labels[..., None], config.o3_softmax_extent, axis=-1)
-        logits = torch.tensor(initial, dtype=torch.float64, requires_grad=True)
-        optimizer = torch.optim.Adam([logits], lr=config.o3_learning_rate)
-        best_value = np.inf
-        best_weights = None
-        for _ in range(config.o3_iterations):
-            optimizer.zero_grad(set_to_none=True)
-            total, weights = objective(logits)
-            if not torch.isfinite(total):
-                raise RuntimeError("non-finite O3 objective")
-            total.backward()
-            optimizer.step()
-            value = float(total.detach())
-            if value < best_value:
-                best_value = value
-                best_weights = weights.detach().cpu().numpy()
-        assert best_weights is not None
-        feasible.append((_convex_objective_numpy(best_weights, stats, config)[0], name,
-                         best_weights))
-
-    o1 = np.zeros((q, b, k), dtype=np.float64); o1[..., o1_index] = 1.0
-    o2 = np.zeros_like(o1); np.put_along_axis(o2, o2_labels[..., None], 1.0, axis=-1)
-    feasible.extend(((_convex_objective_numpy(w, stats, config)[0], name, w)
-                     for name, w in (("O1_exact", o1), ("O2_exact", o2))))
-    _, name, weights = min(feasible, key=lambda item: item[0])
-    total, data, tvt, tvf = _convex_objective_numpy(weights, stats, config)
-    return ConvexRoutingResult(weights, total, data, tvt, tvf, name,
-                               config.o3_iterations)
 
 
 def one_hot_weights(labels: np.ndarray, candidates: int) -> np.ndarray:

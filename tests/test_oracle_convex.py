@@ -164,6 +164,13 @@ def test_non_psd_residual_gram_is_rejected():
         build_quadratic(source, ConvexOracleConfig(psd_tolerance=1e-12))
 
 
+def test_non_hermitian_residual_gram_is_rejected():
+    residual = np.array([[[[1.0, 1.0j], [1.0j, 1.0]]]], dtype=np.complex128)
+    source = stats(np.array([[[1.0, 1.0]]]), residual_gram=residual)
+    with pytest.raises(ConvexOracleError, match="not Hermitian"):
+        build_quadratic(source, ConvexOracleConfig(psd_tolerance=1e-12))
+
+
 def test_unavailable_cells_have_only_smoothness_not_fake_zero_quality():
     source = stats(
         np.array([[[1.0, 2.0]], [[0.0, 2.0]]]),

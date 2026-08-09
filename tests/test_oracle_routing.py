@@ -8,7 +8,6 @@ from audio_extract.oracle_routing import (
     best_whole_track,
     one_hot_weights,
     render_spectral_route,
-    solve_convex_routing,
     solve_discrete_routing,
     source_coordinate_statistics,
     stft_stack,
@@ -62,17 +61,6 @@ def test_o1_and_o2_smooth_global_solution():
     assert o2.mip_gap == 0.0
 
 
-def test_o3_contains_exact_o1_and_o2_endpoints():
-    stats = _synthetic_stats([[[0.0, 1.0], [1.0, 0.0]],
-                              [[0.0, 1.0], [1.0, 0.0]]])
-    cfg = RoutingConfig(o3_iterations=10)
-    o2 = solve_discrete_routing(stats, cfg)
-    o3 = solve_convex_routing(stats, cfg, o1_index=0, o2_labels=o2.labels)
-    assert o3.objective <= o2.objective + 1e-9
-    assert np.all(o3.weights >= 0)
-    assert np.allclose(o3.weights.sum(-1), 1.0)
-
-
 def test_spectral_statistics_mask_silent_source_and_render_exact_grid():
     sr = 8_000
     frames = 8_000
@@ -82,8 +70,7 @@ def test_spectral_statistics_mask_silent_source_and_render_exact_grid():
     candidates = [a + 0.5 * v, 0.9 * a + 0.1 * v]
     cfg = RoutingConfig(sample_rate_hz=sr, n_fft=256, hop_length=128,
                         tile_seconds=0.25,
-                        band_edges_hz=(0, 250, 500, 1_000, 2_000, 4_000),
-                        o3_iterations=5)
+                        band_edges_hz=(0, 250, 500, 1_000, 2_000, 4_000))
     spectra = stft_stack(candidates, cfg)
     truth = stft_stack([a, v], cfg)
     stats = source_coordinate_statistics(spectra, truth[0], truth[1], cfg)
