@@ -11,8 +11,9 @@ Example:
       --truth-root /home/mickg/classical_training/exact \
       --output-root /home/mickg/runs/oracle-routing-v2-certified
 
-The command writes the exact compiled binding policy and separate voiced and
-no-vocal source-manifest groups into ``run-inputs-v2.json`` before rendering.
+Before rendering, the command writes the exact compiled binding policy, separate
+voiced/no-vocal source-manifest groups, and independent source-lineage audits
+that prove every candidate recipe names the exact truth-source PCM and grid.
 The exploratory decision emitted by the runner is not final authority; use
 ``tools/verify_oracle_routing_binding_v2.py`` on the completed report.
 """
@@ -39,6 +40,10 @@ from audio_extract.oracle_routing_runner_v2 import (
     DEFAULT_WORKS,
     REQUIRED_ALIASES,
     run_experiment,
+)
+from audio_extract.oracle_routing_source_lineage_v2 import (
+    audit_basis_source_lineage,
+    expected_source_from_audio,
 )
 from audio_extract.oracle_routing_spectral_v2 import RoutingSpectralConfig
 
@@ -113,12 +118,35 @@ def _manifest_records(paths: Sequence[Path]) -> list[dict[str, str]]:
     result = []
     seen: set[Path] = set()
     for raw_path in paths:
+        if raw_path.is_symlink():
+            raise ValueError(f"refusing symlinked source manifest: {raw_path}")
         path = raw_path.resolve(strict=True)
         if path in seen:
             raise ValueError(f"duplicate source manifest: {path}")
         seen.add(path)
         result.append({"path": str(path), "sha256": _sha_file(path)})
     return result
+
+
+def _expected_sources(
+    truth_root: Path,
+    works: Sequence[str],
+    *,
+    role: str,
+) -> dict[str, Any]:
+    filename = (
+        "mix_with_voice.wav"
+        if role == "voiced_mixture"
+        else "orchestra_only.wav"
+    )
+    return {
+        work: expected_source_from_audio(
+            truth_root / work / filename,
+            work_id=work,
+            role=role,
+        )
+        for work in works
+    }
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -208,6 +236,25 @@ def main(argv: list[str] | None = None) -> int:
         allowed_host_aliases=tuple(args.allowed_host_alias),
         required_aliases=REQUIRED_ALIASES,
     )
+    voiced_expected = _expected_sources(
+        args.truth_root, works, role="voiced_mixture"
+    )
+    no_vocal_works = tuple(sorted({
+        row.declaration.work_id for row in no_vocal_verified
+    }))
+    no_vocal_expected = _expected_sources(
+        args.truth_root,
+        no_vocal_works,
+        role="no_vocal_accompaniment",
+    )
+    voiced_lineage = audit_basis_source_lineage(
+        verified, voiced_expected, role="voiced_mixture"
+    )
+    no_vocal_lineage = audit_basis_source_lineage(
+        no_vocal_verified,
+        no_vocal_expected,
+        role="no_vocal_accompaniment",
+    )
 
     args.output_root.mkdir(parents=True, exist_ok=True)
     write_jsonl(args.output_root / "basis-v2.jsonl", basis)
@@ -217,6 +264,14 @@ def main(argv: list[str] | None = None) -> int:
     _write_immutable_json(args.output_root / "basis-audit-v2.json", voiced_audit)
     _write_immutable_json(
         args.output_root / "no-vocal-basis-audit-v2.json", no_vocal_audit
+    )
+    _write_immutable_json(
+        args.output_root / "source-lineage-audit-v2.json",
+        voiced_lineage,
+    )
+    _write_immutable_json(
+        args.output_root / "no-vocal-source-lineage-audit-v2.json",
+        no_vocal_lineage,
     )
     _write_immutable_json(
         args.output_root / "binding-policy-v2.json",
@@ -243,6 +298,12 @@ def main(argv: list[str] | None = None) -> int:
         ),
         "no_vocal_basis_audit_sha256": _sha_file(
             args.output_root / "no-vocal-basis-audit-v2.json"
+        ),
+        "source_lineage_audit_sha256": _sha_file(
+            args.output_root / "source-lineage-audit-v2.json"
+        ),
+        "no_vocal_source_lineage_audit_sha256": _sha_file(
+            args.output_root / "no-vocal-source-lineage-audit-v2.json"
         ),
     }
     _write_immutable_json(args.output_root / "run-inputs-v2.json", inputs)
