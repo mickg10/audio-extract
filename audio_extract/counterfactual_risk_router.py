@@ -9,8 +9,8 @@ opera separator student:
         -> one shared-stereo candidate label per time/frequency cell
 
 The module never consumes clean accompaniment or vocal references. Exact truth is
-used only by ``build_exact_teacher_targets`` to construct training labels outside
-the inference path.
+used only by ``build_local_counterfactual_teacher_targets`` outside the inference
+path.
 
 Compared with direct imitation of one hard oracle route, a risk student can use
 all ``K x D`` counterfactual candidate/defect labels, preserve calibrated
@@ -20,8 +20,8 @@ when no candidate is confidently feasible.
 
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
-from typing import Any, Mapping, Sequence
+from dataclasses import dataclass
+from typing import Any, Mapping
 import hashlib
 import json
 import math
@@ -68,37 +68,52 @@ def _hash_mapping(value: Mapping[str, Any]) -> str:
 class RiskPanelIdentity:
     """Identity of the frozen inference feature/risk prediction contract."""
 
+    source_pcm_sha256: str
     candidate_ids: tuple[str, ...]
     metric_names: tuple[str, ...]
     feature_contract_sha256: str
     risk_model_sha256: str
     query_encoder_sha256: str | None = None
+    query_condition_sha256: str | None = None
 
     def validate(self) -> None:
+        _sha(self.source_pcm_sha256, "source_pcm_sha256")
         if len(self.candidate_ids) < 2:
             raise ValueError("at least two candidate IDs are required")
         if len(set(self.candidate_ids)) != len(self.candidate_ids):
             raise ValueError("candidate IDs must be unique and ordered")
         for index, value in enumerate(self.candidate_ids):
             _sha(value, f"candidate_ids[{index}]")
-        if not self.metric_names or any(not str(name) for name in self.metric_names):
-            raise ValueError("metric names must be non-empty")
+        if not self.metric_names or any(
+            not isinstance(name, str) or not name for name in self.metric_names
+        ):
+            raise ValueError("metric names must be non-empty strings")
         if len(set(self.metric_names)) != len(self.metric_names):
             raise ValueError("metric names must be unique and ordered")
         _sha(self.feature_contract_sha256, "feature_contract_sha256")
         _sha(self.risk_model_sha256, "risk_model_sha256")
         if self.query_encoder_sha256 is not None:
             _sha(self.query_encoder_sha256, "query_encoder_sha256")
+        if self.query_condition_sha256 is not None:
+            _sha(self.query_condition_sha256, "query_condition_sha256")
+        if (self.query_encoder_sha256 is None) != (
+            self.query_condition_sha256 is None
+        ):
+            raise ValueError(
+                "query encoder and query condition must be both present or absent"
+            )
 
     def identity_dict(self) -> dict[str, Any]:
         self.validate()
         return {
             "schema": PANEL_SCHEMA,
+            "source_pcm_sha256": self.source_pcm_sha256,
             "candidate_ids": list(self.candidate_ids),
             "metric_names": list(self.metric_names),
             "feature_contract_sha256": self.feature_contract_sha256,
             "risk_model_sha256": self.risk_model_sha256,
             "query_encoder_sha256": self.query_encoder_sha256,
+            "query_condition_sha256": self.query_condition_sha256,
         }
 
     @property
@@ -108,11 +123,7 @@ class RiskPanelIdentity:
 
 @dataclass(frozen=True)
 class RiskRouterConfig:
-    """Frozen constrained decoder policy.
-
-    ``critical_thresholds`` and ``secondary_weights`` are ordered pairs to make
-    their canonical identity explicit.
-    """
+    """Frozen constrained decoder policy."""
 
     critical_thresholds: tuple[tuple[str, float], ...]
     secondary_weights: tuple[tuple[str, float], ...] = ()
@@ -121,8 +132,11 @@ class RiskRouterConfig:
     frequency_switch_penalty: float = 0.05
     conservative_index: int = 0
     teacher_near_tie_margin: float = 0.05
+    feasibility_tolerance: float = 0.0
     milp_time_limit_seconds: float = 180.0
     milp_relative_gap: float = 0.0
+    integrality_tolerance: float = 1e-7
+    objective_tolerance: float = 1e-8
 
     def validate(self, panel: RiskPanelIdentity) -> None:
         panel.validate()
@@ -152,14 +166,21 @@ class RiskRouterConfig:
             "temporal_switch_penalty",
             "frequency_switch_penalty",
             "teacher_near_tie_margin",
+            "feasibility_tolerance",
             "milp_time_limit_seconds",
             "milp_relative_gap",
+            "integrality_tolerance",
+            "objective_tolerance",
         ):
             value = float(getattr(self, name))
             if not math.isfinite(value) or value < 0:
                 raise ValueError(f"{name} must be finite and non-negative")
         if self.milp_time_limit_seconds <= 0:
             raise ValueError("milp_time_limit_seconds must be positive")
+        if self.milp_relative_gap > 1:
+            raise ValueError("milp_relative_gap must not exceed one")
+        if self.integrality_tolerance <= 0 or self.objective_tolerance <= 0:
+            raise ValueError("solver validation tolerances must be positive")
         if not 0 <= int(self.conservative_index) < len(panel.candidate_ids):
             raise ValueError("conservative index is outside candidate bank")
 
@@ -167,7 +188,7 @@ class RiskRouterConfig:
         self.validate(panel)
         return {
             "schema": ROUTER_SCHEMA,
-            "panel_sha256": panel.sha256,
+            "panel_identity_sha256": panel.sha256,
             "critical_thresholds": [
                 [name, float(value)] for name, value in self.critical_thresholds
             ],
@@ -176,11 +197,20 @@ class RiskRouterConfig:
             ],
             "critical_slack_weight": float(self.critical_slack_weight),
             "temporal_switch_penalty": float(self.temporal_switch_penalty),
-            "frequency_switch_penalty": float(self.frequency_switch_penalty),
+            "frequency_switch_penalty": float(
+                self.frequency_switch_penalty
+            ),
             "conservative_index": int(self.conservative_index),
-            "teacher_near_tie_margin": float(self.teacher_near_tie_margin),
-            "milp_time_limit_seconds": float(self.milp_time_limit_seconds),
+            "teacher_near_tie_margin": float(
+                self.teacher_near_tie_margin
+            ),
+            "feasibility_tolerance": float(self.feasibility_tolerance),
+            "milp_time_limit_seconds": float(
+                self.milp_time_limit_seconds
+            ),
             "milp_relative_gap": float(self.milp_relative_gap),
+            "integrality_tolerance": float(self.integrality_tolerance),
+            "objective_tolerance": float(self.objective_tolerance),
         }
 
     def sha256(self, panel: RiskPanelIdentity) -> str:
@@ -196,7 +226,8 @@ class RiskPanel:
         available: same shape
 
     There is intentionally no audio-channel axis. One selected label owns both
-    stereo channels for a cell.
+    stereo channels for a cell. Values at unavailable positions are ignored and
+    canonicalized to zero in the panel hash.
     """
 
     identity: RiskPanelIdentity
@@ -223,6 +254,31 @@ class RiskPanel:
         if np.any(upper[available] < 0):
             raise ValueError("available predicted risks must be non-negative")
         return upper.shape
+
+    @property
+    def sha256(self) -> str:
+        self.validate()
+        upper = np.ascontiguousarray(
+            np.where(
+                np.asarray(self.available, dtype=bool),
+                np.asarray(self.upper, dtype=np.float64),
+                0.0,
+            ),
+            dtype="<f8",
+        )
+        available = np.ascontiguousarray(
+            np.asarray(self.available, dtype=np.uint8)
+        )
+        header = {
+            "schema": PANEL_SCHEMA,
+            "identity_sha256": self.identity.sha256,
+            "shape": list(upper.shape),
+            "risk_dtype": upper.dtype.str,
+            "availability_dtype": available.dtype.str,
+        }
+        return "sha256:" + hashlib.sha256(
+            _canonical(header) + upper.tobytes() + available.tobytes()
+        ).hexdigest()
 
 
 @dataclass(frozen=True)
@@ -251,7 +307,9 @@ class TeacherTargets:
         if np.any(~np.isfinite(margins[available])) or np.any(
             margins[available] < 0
         ):
-            raise ValueError("available teacher margins must be finite/nonnegative")
+            raise ValueError(
+                "available teacher margins must be finite/nonnegative"
+            )
         _sha(self.panel_sha256, "teacher panel SHA")
         _sha(self.router_sha256, "teacher router SHA")
         return labels.shape
@@ -280,7 +338,9 @@ class RouteDecision:
             "temporal_switches": self.temporal_switches,
             "frequency_switches": self.frequency_switches,
             "selection_counts": list(self.selection_counts),
-            "infeasible_cells": [list(value) for value in self.infeasible_cells],
+            "infeasible_cells": [
+                list(value) for value in self.infeasible_cells
+            ],
             "routing_plan_sha256": self.routing_plan_sha256,
             "reason": self.reason,
         }
@@ -305,43 +365,46 @@ def _candidate_costs(
     secondary = tuple(config.secondary_weights)
 
     feasible = np.ones((time, bands, candidates), dtype=bool)
-    normalized = np.zeros((time, bands, candidates, len(critical)))
+    normalized = np.zeros(
+        (time, bands, candidates, len(critical)), dtype=np.float64
+    )
     for defect_index, (name, threshold) in enumerate(critical):
         metric = indices[name]
-        feasible &= available[..., metric]
-        value = upper[..., metric]
-        feasible &= value <= float(threshold)
+        metric_available = available[..., metric]
+        value = np.where(metric_available, upper[..., metric], 0.0)
+        feasible &= metric_available
+        feasible &= value <= (
+            float(threshold) + float(config.feasibility_tolerance)
+        )
         normalized[..., defect_index] = value / float(threshold)
 
-    if critical:
-        slack = np.max(normalized, axis=-1)
-    else:  # pragma: no cover - config requires critical metrics
-        slack = np.zeros((time, bands, candidates))
+    slack = np.max(normalized, axis=-1)
     cost = float(config.critical_slack_weight) * slack
     for name, weight in secondary:
         metric = indices[name]
-        feasible &= available[..., metric]
-        cost = cost + float(weight) * upper[..., metric]
+        metric_available = available[..., metric]
+        value = np.where(metric_available, upper[..., metric], 0.0)
+        feasible &= metric_available
+        cost = cost + float(weight) * value
     if np.any(~np.isfinite(cost)):
         raise ValueError("risk unary costs are non-finite")
     return cost, feasible
 
 
-def build_exact_teacher_targets(
+def build_local_counterfactual_teacher_targets(
     exact_risk: RiskPanel,
     config: RiskRouterConfig,
 ) -> TeacherTargets:
-    """Create near-tie-aware direct-imitation targets from exact risks.
+    """Create local near-tie-aware auxiliary targets from exact risks.
 
-    This function is training-only. Exact references are represented solely by
-    the already computed risk tensor. A cell is teachable only when at least one
-    candidate is feasible and the best/second-best normalized cost margin is at
-    least the frozen threshold. Third or unavailable candidates are never
-    relabelled as the conservative parent.
+    This is not the globally smoothed O2 label. It is a local counterfactual
+    best-candidate target intended for auxiliary classification/ranking. A cell
+    is teachable only when at least one candidate is feasible and the local
+    best/second-best scalarized margin is at least the frozen threshold.
     """
 
     cost, feasible = _candidate_costs(exact_risk, config)
-    time, bands, candidates = cost.shape
+    time, bands, _ = cost.shape
     labels = np.full((time, bands), -1, dtype=np.int32)
     available = np.zeros((time, bands), dtype=bool)
     margins = np.full((time, bands), np.nan, dtype=np.float64)
@@ -355,7 +418,7 @@ def build_exact_teacher_targets(
             order = allowed[np.argsort(cost[t, b, allowed], kind="stable")]
             best = int(order[0])
             margin = (
-                math.inf
+                np.finfo(np.float64).max
                 if order.size == 1
                 else float(cost[t, b, order[1]] - cost[t, b, best])
             )
@@ -371,7 +434,7 @@ def build_exact_teacher_targets(
         available=available,
         margins=margins,
         feasible_counts=counts,
-        panel_sha256=exact_risk.identity.sha256,
+        panel_sha256=exact_risk.sha256,
         router_sha256=config.sha256(exact_risk.identity),
     )
     result.validate()
@@ -380,15 +443,16 @@ def build_exact_teacher_targets(
 
 def _plan_sha(
     labels: np.ndarray,
-    panel: RiskPanelIdentity,
+    panel: RiskPanel,
     config: RiskRouterConfig,
 ) -> str:
     array = np.ascontiguousarray(labels, dtype="<i4")
     header = {
         "schema": ROUTE_SCHEMA,
-        "panel_sha256": panel.sha256,
-        "router_sha256": config.sha256(panel),
-        "candidate_ids": list(panel.candidate_ids),
+        "risk_panel_sha256": panel.sha256,
+        "router_sha256": config.sha256(panel.identity),
+        "source_pcm_sha256": panel.identity.source_pcm_sha256,
+        "candidate_ids": list(panel.identity.candidate_ids),
         "shape": list(array.shape),
         "dtype": array.dtype.str,
     }
@@ -401,6 +465,8 @@ def _fallback(
     panel: RiskPanel,
     config: RiskRouterConfig,
     infeasible: np.ndarray,
+    *,
+    status: str,
     reason: str,
 ) -> RouteDecision:
     time, bands, candidates, _ = panel.validate()
@@ -409,10 +475,11 @@ def _fallback(
     )
     counts = np.bincount(labels.ravel(), minlength=candidates)
     cells = tuple(
-        tuple(int(value) for value in row) for row in np.argwhere(infeasible)
+        tuple(int(value) for value in row)
+        for row in np.argwhere(infeasible)
     )
     return RouteDecision(
-        status="ABSTAIN_USE_CONSERVATIVE_WHOLE_TRACK",
+        status=status,
         labels=labels,
         objective=None,
         data_objective=None,
@@ -420,7 +487,7 @@ def _fallback(
         frequency_switches=0,
         selection_counts=tuple(int(value) for value in counts),
         infeasible_cells=cells,
-        routing_plan_sha256=_plan_sha(labels, panel.identity, config),
+        routing_plan_sha256=_plan_sha(labels, panel, config),
         reason=reason,
     )
 
@@ -446,7 +513,8 @@ def solve_risk_route(
             panel,
             config,
             no_candidate,
-            "one or more cells have no confidently feasible candidate",
+            status="ABSTAIN_NO_CONFIDENTLY_FEASIBLE_ROUTE",
+            reason="one or more cells have no confidently feasible candidate",
         )
 
     cells = time * bands
@@ -537,25 +605,41 @@ def solve_risk_route(
             "mip_rel_gap": float(config.milp_relative_gap),
         },
     )
-    if not result.success or result.x is None:
+    if not result.success or result.x is None or int(result.status) != 0:
         return _fallback(
             panel,
             config,
             np.zeros((time, bands), dtype=bool),
-            f"structured decoder lacks an optimality certificate: {result.message}",
+            status="ABSTAIN_SOLVER_UNCERTIFIED",
+            reason=(
+                "structured decoder lacks an optimality certificate: "
+                f"{result.message}"
+            ),
         )
     gap = getattr(result, "mip_gap", None)
-    if gap is not None and float(gap) > float(config.milp_relative_gap) + 1e-12:
+    if gap is not None and (
+        not math.isfinite(float(gap))
+        or float(gap) > float(config.milp_relative_gap) + 1e-12
+    ):
         return _fallback(
             panel,
             config,
             np.zeros((time, bands), dtype=bool),
-            f"structured decoder MIP gap {gap} exceeds configured limit",
+            status="ABSTAIN_SOLVER_UNCERTIFIED",
+            reason=(
+                f"structured decoder MIP gap {gap} exceeds configured limit"
+            ),
         )
 
-    labels = np.argmax(
-        result.x[:x_count].reshape(time, bands, candidates), axis=-1
-    ).astype(np.int32)
+    x = result.x[:x_count].reshape(time, bands, candidates)
+    if (
+        np.max(np.abs(x.sum(axis=-1) - 1.0))
+        > float(config.integrality_tolerance)
+        or np.max(np.minimum(np.abs(x), np.abs(x - 1.0)))
+        > float(config.integrality_tolerance)
+    ):
+        raise RiskRouterError("MILP returned a nonintegral route")
+    labels = np.argmax(x, axis=-1).astype(np.int32)
     selected_feasible = np.take_along_axis(
         feasible, labels[..., None], axis=-1
     )[..., 0]
@@ -567,7 +651,9 @@ def solve_risk_route(
     )[..., 0]
     data_objective = float(selected_cost.mean())
     temporal_switches = int(np.count_nonzero(labels[1:] != labels[:-1]))
-    frequency_switches = int(np.count_nonzero(labels[:, 1:] != labels[:, :-1]))
+    frequency_switches = int(
+        np.count_nonzero(labels[:, 1:] != labels[:, :-1])
+    )
     total = (
         data_objective
         + float(config.temporal_switch_penalty)
@@ -575,6 +661,15 @@ def solve_risk_route(
         + float(config.frequency_switch_penalty)
         * frequency_switches / float(cells)
     )
+    if not math.isclose(
+        float(result.fun),
+        total,
+        rel_tol=float(config.objective_tolerance),
+        abs_tol=float(config.objective_tolerance),
+    ):
+        raise RiskRouterError(
+            f"MILP objective mismatch: {result.fun} != {total}"
+        )
     counts = np.bincount(labels.ravel(), minlength=candidates)
     return RouteDecision(
         status="ROUTE",
@@ -585,6 +680,6 @@ def solve_risk_route(
         frequency_switches=frequency_switches,
         selection_counts=tuple(int(value) for value in counts),
         infeasible_cells=(),
-        routing_plan_sha256=_plan_sha(labels, panel.identity, config),
+        routing_plan_sha256=_plan_sha(labels, panel, config),
         reason="all selected upper-risk cells satisfy the frozen constraints",
     )
