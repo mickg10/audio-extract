@@ -34,10 +34,17 @@ from audio_extract.oracle_binding_preregistration import (
     binding_fields,
     canonical_json,
     sha256_bytes,
+    source_manifest_groups,
     verify_source_manifests,
 )
 from audio_extract.oracle_binding_preregistration import (
+    build_document as build_preregistration_document,
+)
+from audio_extract.oracle_binding_preregistration import (
     load as load_preregistration,
+)
+from audio_extract.oracle_binding_preregistration import (
+    write_once as write_preregistration_once,
 )
 from audio_extract.oracle_routing_basis_sources_v2 import assemble_basis
 from audio_extract.oracle_routing_basis_v2 import basis_report, write_jsonl
@@ -164,22 +171,6 @@ def _write_immutable_json(path: Path, value: Any) -> None:
         path.write_text(payload)
 
 
-def _manifest_records(paths: Sequence[Path]) -> list[dict[str, str]]:
-    if not paths:
-        raise ValueError("source manifest group must not be empty")
-    result = []
-    seen: set[Path] = set()
-    for raw_path in paths:
-        if raw_path.is_symlink():
-            raise ValueError(f"refusing symlinked source manifest: {raw_path}")
-        path = raw_path.resolve(strict=True)
-        if path in seen:
-            raise ValueError(f"duplicate source manifest: {path}")
-        seen.add(path)
-        result.append({"path": str(path), "sha256": _sha_file(path)})
-    return result
-
-
 def _semantic_sha(value: Any) -> str:
     return sha256_bytes(canonical_json(value))
 
@@ -275,7 +266,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--preregistration",
         type=Path,
-        help="preexisting immutable binding witness",
+        help=("immutable legacy witness; --prepare-only creates it when absent"),
+    )
+    parser.add_argument(
+        "--experiment-id",
+        help="legacy witness ID when --prepare-only creates --preregistration",
     )
     parser.add_argument(
         "--run-input-v3",
@@ -369,11 +364,6 @@ def main(argv: list[str] | None = None) -> int:
         ):
             raise SystemExit("--output-root differs from the v3 run input")
 
-    try:
-        preregistration = load_preregistration(args.preregistration)
-        verify_source_manifests(preregistration)
-    except PreregistrationError as exc:
-        raise SystemExit(f"invalid preregistration: {exc}") from exc
     voiced_source_paths = (
         *args.audited_candidate_manifest,
         *args.strict_basis_manifest,
@@ -388,33 +378,64 @@ def main(argv: list[str] | None = None) -> int:
         raise SystemExit(
             "a binding run requires the complete Aalto no-vocal basis manifest"
         )
-    supplied_groups = {
-        "voiced": [str(path.resolve(strict=True)) for path in voiced_source_paths],
-        "no_vocal": [str(path.resolve(strict=True)) for path in no_vocal_source_paths],
-    }
-    frozen_groups = {
-        group: [
-            row["path"] for row in preregistration.document["source_manifests"][group]
-        ]
-        for group in ("voiced", "no_vocal")
-    }
-    if supplied_groups != frozen_groups:
-        raise SystemExit(
-            "CLI source manifests differ from the preregistered groups/order"
-        )
-
-    legacy_resolutions = tuple(
-        float(value) for value in preregistration.document["resolutions_seconds"]
-    )
     resolutions = tuple(item.seconds for item in CANONICAL_RESOLUTIONS)
-    if set(legacy_resolutions) != set(resolutions):
-        raise SystemExit("legacy witness resolution set differs from run-contract v3")
+    preregistration = None
+    bootstrap_source_records = None
+    if args.preregistration.is_symlink():
+        raise SystemExit("--preregistration may not be a symlink")
+    if args.preregistration.exists():
+        try:
+            preregistration = load_preregistration(args.preregistration)
+            verify_source_manifests(preregistration)
+        except PreregistrationError as exc:
+            raise SystemExit(f"invalid preregistration: {exc}") from exc
+        supplied_groups = {
+            "voiced": [str(path.resolve(strict=True)) for path in voiced_source_paths],
+            "no_vocal": [
+                str(path.resolve(strict=True)) for path in no_vocal_source_paths
+            ],
+        }
+        frozen_groups = {
+            group: [
+                row["path"]
+                for row in preregistration.document["source_manifests"][group]
+            ]
+            for group in ("voiced", "no_vocal")
+        }
+        if supplied_groups != frozen_groups:
+            raise SystemExit(
+                "CLI source manifests differ from the preregistered groups/order"
+            )
+        legacy_resolutions = tuple(
+            float(value) for value in preregistration.document["resolutions_seconds"]
+        )
+        if set(legacy_resolutions) != set(resolutions):
+            raise SystemExit(
+                "legacy witness resolution set differs from run-contract v3"
+            )
+    elif args.prepare_only:
+        try:
+            bootstrap_source_records = source_manifest_groups(
+                {
+                    "voiced": voiced_source_paths,
+                    "no_vocal": no_vocal_source_paths,
+                }
+            )
+        except PreregistrationError as exc:
+            raise SystemExit(
+                f"legacy preregistration source snapshot failed: {exc}"
+            ) from exc
+    else:
+        raise SystemExit("--preregistration does not exist")
     run_config = load_run_config(args.run_config_json, resolutions=resolutions)
     decision_config = load_decision_config(args.decision_config_json)
     binding_policy = canonical_binding_policy()
     code_commit = _git_commit(args.code_commit)
     works = tuple(args.work) if args.work else DEFAULT_WORKS
-    if code_commit.lower() != preregistration.document["source_commit"]:
+    if (
+        preregistration is not None
+        and code_commit.lower() != preregistration.document["source_commit"]
+    ):
         raise SystemExit(
             "execution code commit differs from preregistered source_commit"
         )
@@ -467,12 +488,46 @@ def main(argv: list[str] | None = None) -> int:
         "basis_audit_sha256": _semantic_sha(combined_basis_audit),
         "routing_config_sha256": _semantic_sha(routing_config_identity),
     }
-    for field, actual in current_hashes.items():
-        expected = preregistration.document[field]
-        if actual != expected:
-            raise SystemExit(
-                f"{field} differs from preregistration: {actual} != {expected}"
+    if preregistration is None:
+        assert bootstrap_source_records is not None
+        try:
+            preregistration = write_preregistration_once(
+                args.preregistration,
+                build_preregistration_document(
+                    experiment_id=(args.experiment_id or args.run_input_v3.stem),
+                    source_groups={
+                        "voiced": tuple(voiced_source_paths),
+                        "no_vocal": tuple(no_vocal_source_paths),
+                    },
+                    source_commit=code_commit,
+                    truth_manifest_sha256=current_hashes["truth_manifest_sha256"],
+                    basis_audit_sha256=current_hashes["basis_audit_sha256"],
+                    routing_config_sha256=current_hashes["routing_config_sha256"],
+                    resolutions=resolutions,
+                ),
             )
+            verify_source_manifests(preregistration)
+            if preregistration.document["source_manifests"] != (
+                bootstrap_source_records
+            ):
+                raise PreregistrationError(
+                    "source manifests changed while preparing preregistration"
+                )
+        except PreregistrationError as exc:
+            raise SystemExit(
+                f"legacy preregistration preparation failed: {exc}"
+            ) from exc
+    else:
+        for field, actual in current_hashes.items():
+            expected = preregistration.document[field]
+            if actual != expected:
+                raise SystemExit(
+                    f"{field} differs from preregistration: {actual} != {expected}"
+                )
+    if code_commit.lower() != preregistration.document["source_commit"]:
+        raise SystemExit(
+            "execution code commit differs from preregistered source_commit"
+        )
 
     run_input_path = args.run_input_v3.resolve(strict=False)
     artifact_root = run_input_path.parent / f"{run_input_path.stem}.artifacts"

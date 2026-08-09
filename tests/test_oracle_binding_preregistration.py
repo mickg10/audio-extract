@@ -222,8 +222,9 @@ def test_binding_cli_refuses_post_hoc_resolution_before_output(tmp_path):
     assert not output.exists()
 
 
+@pytest.mark.parametrize("tamper_snapshot", [False, True])
 def test_binding_cli_prepare_and_claim_stop_before_output(
-    tmp_path, monkeypatch, capsys
+    tmp_path, monkeypatch, capsys, tamper_snapshot
 ):
     voiced, no_vocal = _files(tmp_path)
     run_config = certified_tool.CertifiedRoutingRunConfig()
@@ -236,23 +237,10 @@ def test_binding_cli_prepare_and_claim_stop_before_output(
     no_vocal_audit = {"schema": "test/no-vocal-audit", "status": "pass"}
     voiced_lineage = {"schema": "test/voiced-lineage", "status": "pass"}
     no_vocal_lineage = {"schema": "test/no-vocal-lineage", "status": "pass"}
-    combined = certified_tool._binding_basis_audit(
-        voiced_audit, no_vocal_audit, voiced_lineage, no_vocal_lineage
-    )
     routing = certified_tool._routing_config_identity(
         run_config, decision_config, certified_tool.DEFAULT_WORKS
     )
-    preregistration = write_once(
-        tmp_path / "preregistration.json",
-        build_document(
-            experiment_id="prepare-only-test",
-            source_groups={"voiced": [voiced], "no_vocal": [no_vocal]},
-            source_commit=COMMIT,
-            truth_manifest_sha256=sha256_bytes(canonical_json(truth_manifest)),
-            basis_audit_sha256=sha256_bytes(canonical_json(combined)),
-            routing_config_sha256=sha256_bytes(canonical_json(routing)),
-        ),
-    )
+    preregistration_path = tmp_path / "preregistration.json"
     calls = 0
 
     def assemble(**_kwargs):
@@ -279,12 +267,23 @@ def test_binding_cli_prepare_and_claim_stop_before_output(
         lambda *a, **k: truth_manifest,
     )
     monkeypatch.setattr(certified_tool, "_git_commit", lambda *_: COMMIT)
+    if tamper_snapshot:
+        source_manifest_groups = certified_tool.source_manifest_groups
+
+        def mismatched_snapshot(groups):
+            snapshot = source_manifest_groups(groups)
+            snapshot["voiced"][0]["sha256"] = "sha256:" + "0" * 64
+            return snapshot
+
+        monkeypatch.setattr(
+            certified_tool, "source_manifest_groups", mismatched_snapshot
+        )
 
     output = tmp_path / "must-not-exist"
     run_input = tmp_path / "run-input-v3.json"
     common = [
         "--preregistration",
-        preregistration.path,
+        str(preregistration_path),
         "--truth-root",
         str(tmp_path / "truth"),
         "--output-root",
@@ -296,11 +295,27 @@ def test_binding_cli_prepare_and_claim_stop_before_output(
         "--run-input-v3",
         str(run_input),
     ]
+    if tamper_snapshot:
+        with pytest.raises(
+            SystemExit,
+            match="source manifests changed while preparing preregistration",
+        ):
+            certified_tool.main([*common, "--prepare-only"])
+        assert preregistration_path.is_file()
+        assert not run_input.exists()
+        assert not output.exists()
+        return
+
     assert certified_tool.main([*common, "--prepare-only"]) == 0
     prepared = json.loads(capsys.readouterr().out)
     assert prepared["status"] == "prepared__external_claim_required"
     assert prepared["run_input_sha256"].startswith("sha256:")
     assert calls == 2
+    prepared_legacy = load(preregistration_path)
+    assert prepared_legacy.document["source_commit"] == COMMIT
+    assert prepared_legacy.document["routing_config_sha256"] == sha256_bytes(
+        canonical_json(routing)
+    )
     assert run_input.is_file()
     assert not output.exists()
 
