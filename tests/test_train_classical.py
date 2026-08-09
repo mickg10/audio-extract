@@ -64,6 +64,51 @@ def test_manifest_split_disagreement_is_refused(tmp_path):
         raise AssertionError("split disagreement was accepted")
 
 
+def test_manifest_training_contract_refuses_wrong_task_or_integrity(tmp_path):
+    import json
+
+    manifest = tmp_path / "dataset.jsonl"
+    splits = tmp_path / "splits.json"
+    row = {
+        "work_id": "one",
+        "group_id": "family",
+        "split": "train",
+        "integrity_class": "same_take_paired_target",
+        "task": "soloist_vs_rest",
+        "eligible_training_targets": ["accompaniment_A"],
+    }
+    manifest.write_text(json.dumps(row) + "\n")
+    splits.write_text('{"group_split":{"family":"train"}}\n')
+    try:
+        _manifest_train_works(
+            manifest,
+            splits,
+            {"train"},
+            required_integrity="same_take_paired_target",
+            required_task="all_voices_vs_nonvocal",
+        )
+    except ValueError as exc:
+        assert "manifest task mismatch" in str(exc)
+    else:  # pragma: no cover
+        raise AssertionError("wrong task identity was accepted")
+
+    row["task"] = "all_voices_vs_nonvocal"
+    row["integrity_class"] = "matched_program"
+    manifest.write_text(json.dumps(row) + "\n")
+    try:
+        _manifest_train_works(
+            manifest,
+            splits,
+            {"train"},
+            required_integrity="same_take_paired_target",
+            required_task="all_voices_vs_nonvocal",
+        )
+    except ValueError as exc:
+        assert "manifest integrity mismatch" in str(exc)
+    else:  # pragma: no cover
+        raise AssertionError("wrong integrity class was accepted")
+
+
 def test_exact_fold_rejects_nonexact_and_group_overlap(tmp_path):
     manifest = tmp_path / "dataset.jsonl"
     splits = tmp_path / "splits.json"

@@ -1,0 +1,60 @@
+schema: audio-extract/train/classical-student-v1
+experiment: CANTOLOPERA-TIER-A-HTDEMUCS-045-100
+base_arch: HTDemucs
+base_checkpoint:
+  signature: 04573f0d
+  role: released vocals-specialized single model
+  sha256: f3cf25b222c4eed7cd49dd8b2c9597d50c18bd154090f7b919cfa5f93cf22c49
+sources: [drums, bass, other, vocals]
+vocal_source_index: 3
+audio_channels: 2
+samplerate: 44100
+normalization:
+  implementation: demucs-full-track-affine/v1
+  training_statistics_scope: full_track_per_work_per_control
+  evaluation_statistics_scope: complete_input
+  epsilon: 1.0e-8
+data:
+  manifest: /data/cantolopera-selection/manifest.jsonl
+  splits: /data/cantolopera-selection/splits.json
+  materialized_root: /data/cantolopera-tier-a-materialized-f32
+  train_splits: [train]
+  eval_work_ids: [bologna_verdi, bologna_puccini, bologna_donizetti, aalto_mozart_dry]
+  integrity_required: same_take_paired_target
+  task: all_voices_vs_nonvocal
+optim:
+  name: adam
+  betas: [0.9, 0.999]
+  eps: 1.0e-8
+  weight_decay: 0.0
+  steps_first_run: 100
+  batch: 1
+  crop_s: 7.8
+  gradient_clip: 5.0
+  schedule:
+    - steps: [0, 500]
+      upper_decoder_lr: 0.0001
+      transformer_decoder_lr: 0.00003
+      lower_encoder_lr: 0
+    - steps: [500, 2000]
+      full_network_lr: 0.00002
+      decay: cosine
+  evaluation_steps: [0, 25, 50, 100]
+loss:
+  complex_stft: 0.5
+  waveform_l1: 1.0
+  mixture_consistency: 0.0
+  no_vocal_false_positive: 0.25
+  vocal_only_false_negative: 0.25
+  source_coordinate_alpha_beta_R: 0.1
+  stereo_coherence: 0.05
+  exact_event_weighting: 0.25
+  implementation: audio_extract.classical_loss:classical_separation_loss
+export:
+  to: demucs.states .th -> demucs.apply_model -> audio_separator.demucs_separator
+  zero_step_parity_shifts: 0
+note: >-
+  First strict Cantolopera same-take pilot for the user-facing objective: remove
+  all voices and retain nonvocal accompaniment. Tier-B rows and related validation
+  components are excluded from fitting. The frozen median/MDX delivery path stays
+  active until exact external controls and audible A/B pass.

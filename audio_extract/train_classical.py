@@ -93,7 +93,9 @@ def _read_exact(path: Path, *, start: int = 0, frames: int | None = None):
 class ClassicalDataset:
     """Random exact-grid crops from immutable materializations."""
 
-    def __init__(self, root: Path, works: list[str], crop_frames: int):
+    def __init__(self, root: Path, works: list[str], crop_frames: int, *,
+                 required_integrity: str | None = None,
+                 required_task: str | None = None):
         self.root = root
         self.crop_frames = crop_frames
         self.items = []
@@ -103,6 +105,16 @@ class ClassicalDataset:
                 continue
             reports = json.loads((directory / "report.json").read_text())
             recipe = json.loads((directory / "recipe.json").read_text())
+            if required_integrity is not None and recipe.get("integrity_class") != required_integrity:
+                raise ValueError(
+                    f"materialization integrity mismatch for {work}: "
+                    f"{recipe.get('integrity_class')!r} != {required_integrity!r}"
+                )
+            if required_task is not None and recipe.get("task") != required_task:
+                raise ValueError(
+                    f"materialization task mismatch for {work}: "
+                    f"{recipe.get('task')!r} != {required_task!r}"
+                )
             affines = recipe.get("demucs_full_track_affine")
             if not isinstance(affines, dict) or set(affines) != {"M", "A", "V"}:
                 raise ValueError(f"materialization lacks pinned full-track M/A/V affines: {work}")
@@ -141,7 +153,14 @@ class ClassicalDataset:
         }, affines
 
 
-def _manifest_train_works(manifest_path: Path, splits_path: Path, train_splits: set[str]) -> list[str]:
+def _manifest_train_works(
+    manifest_path: Path,
+    splits_path: Path,
+    train_splits: set[str],
+    *,
+    required_integrity: str | None = None,
+    required_task: str | None = None,
+) -> list[str]:
     split_doc = json.loads(splits_path.read_text())
     works = []
     for line in manifest_path.read_text().splitlines():
@@ -152,6 +171,22 @@ def _manifest_train_works(manifest_path: Path, splits_path: Path, train_splits: 
         if declared != row["split"]:
             raise ValueError(f"manifest/split disagreement for {row['work_id']}")
         if declared in train_splits:
+            if required_integrity is not None and row.get("integrity_class") != required_integrity:
+                raise ValueError(
+                    f"manifest integrity mismatch for {row['work_id']}: "
+                    f"{row.get('integrity_class')!r} != {required_integrity!r}"
+                )
+            if required_task is not None and row.get("task") != required_task:
+                raise ValueError(
+                    f"manifest task mismatch for {row['work_id']}: "
+                    f"{row.get('task')!r} != {required_task!r}"
+                )
+            if (required_integrity is not None or required_task is not None) and (
+                "accompaniment_A" not in row.get("eligible_training_targets", [])
+            ):
+                raise ValueError(
+                    f"manifest work is not eligible for accompaniment training: {row['work_id']}"
+                )
             works.append(row["work_id"])
     return sorted(set(works))
 
@@ -546,12 +581,30 @@ def run_training(args: argparse.Namespace) -> dict:
             list(cfg["data"]["eval_work_ids"])
         )
     else:
-        train_works = _manifest_train_works(manifest, splits, set(cfg["data"]["train_splits"]))
+        required_integrity = cfg["data"].get("integrity_required")
+        required_task = cfg["data"].get("task") if required_integrity is not None else None
+        train_works = _manifest_train_works(
+            manifest,
+            splits,
+            set(cfg["data"]["train_splits"]),
+            required_integrity=required_integrity,
+            required_task=required_task,
+        )
         eval_works = list(cfg["data"].get("eval_work_ids", DEFAULT_EVAL_WORKS))
     model, base = _load_model(cfg, device, int(args.seed))
     requested_crop = round(float(cfg["optim"]["crop_s"]) * SR)
     crop_frames = int(model.valid_length(requested_crop))
-    dataset = ClassicalDataset(Path(cfg["data"]["materialized_root"]), train_works, crop_frames)
+    dataset = ClassicalDataset(
+        Path(cfg["data"]["materialized_root"]),
+        train_works,
+        crop_frames,
+        required_integrity=cfg["data"].get("integrity_required"),
+        required_task=(
+            cfg["data"].get("task")
+            if cfg["data"].get("integrity_required") is not None
+            else None
+        ),
+    )
     optimizer = _build_optimizer(model, cfg)
     initial_optimizer = optimizer_provenance(optimizer)
     loss_cfg = _loss_config(cfg)

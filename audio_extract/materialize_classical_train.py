@@ -19,7 +19,8 @@ from pathlib import Path
 import numpy as np
 import soundfile as sf
 
-from . import canon, identity
+from . import alignment, canon, identity
+from .cantolopera_training import SELECTION_SCHEMA, TASK
 from .challenges import SOLOIST_VS_REST_ROLES
 from .resample import resample
 
@@ -102,6 +103,32 @@ def _demucs_full_track_affine(audio: np.ndarray) -> dict:
         "mean": format(float(affine.mean[0, 0]), ".9g"),
         "scale": format(float(affine.scale[0, 0]), ".9g"),
     }
+
+
+def _resolved_cantolopera_path(audio_root: Path, source_path: str) -> Path:
+    """Resolve a staged source by filename without trusting the audit host path."""
+
+    source = Path(source_path)
+    if not source.name or source.name in {".", ".."}:
+        raise ValueError(f"invalid Cantolopera source path: {source_path!r}")
+    result = (audio_root / source.name).resolve()
+    root = audio_root.resolve()
+    if root not in result.parents:
+        raise ValueError(f"Cantolopera source escapes audio root: {source_path!r}")
+    return result
+
+
+def _strict_soxr_vhq(audio: np.ndarray, source_rate: int, output_rate: int) -> tuple[np.ndarray, str]:
+    """Run the declared backend or fail; recipe identity never hides a fallback."""
+
+    import soxr
+
+    result = soxr.resample(
+        np.asarray(audio, dtype="float64"), source_rate, output_rate, quality="VHQ"
+    )
+    if not np.all(np.isfinite(result)):
+        raise ValueError("soxr_vhq produced non-finite samples")
+    return np.asarray(result, dtype="float64"), str(soxr.__version__)
 
 
 def _publish(output_root: Path, work: str, mixture: np.ndarray, accompaniment: np.ndarray,
@@ -244,19 +271,177 @@ def materialize_exact_truth(truth_root: Path, output_root: Path, work: str) -> d
     return _publish(output_root, work, arrays["M"], arrays["A"], arrays["V"], recipe)
 
 
+def materialize_cantolopera_pair(
+    selected: dict, audio_root: Path, output_root: Path, *, selection_sha256: str
+) -> dict:
+    """Materialize one strict same-take pair as an explicit aligned M/A/V child."""
+
+    if selected.get("schema") != SELECTION_SCHEMA:
+        raise ValueError("wrong Cantolopera selection schema")
+    assessment = selected.get("assessment") or {}
+    if not assessment.get("eligible") or assessment.get("cohort") != "tier_a":
+        raise ValueError(f"Cantolopera materializer refuses non-Tier-A pair {selected.get('pair_id')}")
+    if selected.get("task") != TASK:
+        raise ValueError(f"Cantolopera task must be {TASK}")
+    if selected.get("split") not in {"train", "val"} or not selected.get("group_id"):
+        raise ValueError("selected pair lacks frozen group/split facts")
+
+    paths = {
+        "M": _resolved_cantolopera_path(audio_root, selected["files"]["voice"]["path"]),
+        "A": _resolved_cantolopera_path(audio_root, selected["files"]["orchestra"]["path"]),
+    }
+    expected = {
+        "M": selected["files"]["voice"]["container_sha256"],
+        "A": selected["files"]["orchestra"]["container_sha256"],
+    }
+    for role, path in paths.items():
+        if not path.is_file():
+            raise FileNotFoundError(path)
+        if _file_sha(path) != expected[role]:
+            raise ValueError(f"Cantolopera {role} container SHA-256 mismatch: {path}")
+        info = sf.info(path)
+        if (info.samplerate, info.channels, info.subtype) != (48_000, 2, "FLOAT"):
+            raise GridMismatch(f"Cantolopera source must be 48 kHz stereo FLOAT: {path}")
+
+    mixture, mix_rate = _read(paths["M"])
+    accompaniment, accompaniment_rate = _read(paths["A"])
+    _same_grid({"M": mixture, "A": accompaniment}, {"M": mix_rate, "A": accompaniment_rate})
+    if mix_rate != 48_000 or mixture.shape[1] != 2:
+        raise GridMismatch("Cantolopera source grid changed after validation")
+
+    transform = assessment["transform"]
+    fixed = transform["mixture_to_orchestra"]
+    fixed_alignment = alignment.Alignment(
+        delay_samples=int(fixed["delay_samples"]),
+        fractional=float(fixed["fractional_samples"]),
+        polarity=int(fixed["polarity"]),
+        channel_swap=bool(fixed["channel_swap"]),
+        confidence=1.0,
+        residual_db=0.0,
+    )
+    aligned_mixture = alignment.apply_alignment(
+        mixture, fixed_alignment, target_len=len(accompaniment)
+    )
+    fixed_gain = float(transform["orchestra_gain"])
+    scaled_accompaniment = accompaniment.astype("float64") * fixed_gain
+    aligned_mixture, soxr_version_m = _strict_soxr_vhq(aligned_mixture, 48_000, SR)
+    scaled_accompaniment, soxr_version_a = _strict_soxr_vhq(
+        scaled_accompaniment, 48_000, SR
+    )
+    if soxr_version_m != soxr_version_a:
+        raise RuntimeError("soxr version changed inside one materialization")
+    _same_grid(
+        {"M": aligned_mixture, "A": scaled_accompaniment},
+        {"M": SR, "A": SR},
+    )
+    mixture_f32 = np.asarray(aligned_mixture, dtype="float32")
+    accompaniment_f32 = np.asarray(scaled_accompaniment, dtype="float32")
+    vocal_f32 = np.asarray(mixture_f32 - accompaniment_f32, dtype="float32")
+    if not all(np.all(np.isfinite(value)) for value in (
+        mixture_f32, accompaniment_f32, vocal_f32
+    )):
+        raise ValueError("Cantolopera materialization produced non-finite audio")
+
+    recipe = {
+        "integrity_class": "same_take_paired_target",
+        "task": TASK,
+        "group_id": selected["group_id"],
+        "split": selected["split"],
+        "audit_sha256": selected["audit_sha256"],
+        "selector_code_commit": selected["selector_code_commit"],
+        "selection_sha256": selection_sha256,
+        "parents": {
+            role: {"path": str(path), "container_sha256": expected[role]}
+            for role, path in paths.items()
+        },
+        "selection_transform": transform,
+        "operations": [
+            {
+                "operation": "align",
+                "role": "M",
+                "reference_role": "A",
+                **fixed,
+                "implementation": "audio_extract.alignment.apply_alignment/v1",
+                "boundary": "zero_pad_then_exact_target_frames",
+            },
+            {
+                "operation": "fixed_gain",
+                "role": "A",
+                "gain": transform["orchestra_gain"],
+            },
+            {
+                "operation": "resample",
+                "roles": ["M", "A"],
+                "resampler": "soxr_vhq",
+                "backend": "python-soxr",
+                "backend_version": soxr_version_m,
+                "source_rate_hz": 48_000,
+                "output_rate_hz": SR,
+            },
+            {"operation": "derive_source", "role": "V", "expression": "M-A"},
+        ],
+    }
+    return _publish(
+        output_root,
+        selected["pair_id"],
+        mixture_f32,
+        accompaniment_f32,
+        vocal_f32,
+        recipe,
+    )
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--source-root",
                         help="root containing freidi/ and cantoria/ source directories")
     parser.add_argument("--truth-root",
                         help="materialize only Bologna/Aalto exact CV truth from this root")
+    parser.add_argument("--cantolopera-selection",
+                        help="Tier-A selection JSONL produced by the pair-audit selector")
+    parser.add_argument("--cantolopera-audio-root",
+                        help="local root containing completed Cantolopera WAV payloads")
+    parser.add_argument("--split", choices=("train", "val"), default="train")
     parser.add_argument("--output-root", required=True)
     args = parser.parse_args(argv)
     output = Path(args.output_root)
     results = []
-    if bool(args.source_root) == bool(args.truth_root):
-        parser.error("provide exactly one of --source-root or --truth-root")
-    if args.truth_root:
+    modes = sum(bool(value) for value in (
+        args.source_root, args.truth_root, args.cantolopera_selection
+    ))
+    if modes != 1:
+        parser.error("provide exactly one of --source-root, --truth-root, or --cantolopera-selection")
+    if bool(args.cantolopera_selection) != bool(args.cantolopera_audio_root):
+        parser.error("Cantolopera selection and audio root are required together")
+    report_name = "materialization-report.json"
+    if args.cantolopera_selection:
+        selection_path = Path(args.cantolopera_selection)
+        selection_sha256 = _file_sha(selection_path)
+        selected_rows = [
+            json.loads(line)
+            for line in selection_path.read_text().splitlines()
+            if line.strip()
+        ]
+        for selected in selected_rows:
+            if not selected.get("assessment", {}).get("eligible"):
+                continue
+            if selected.get("split") != args.split:
+                continue
+            try:
+                results.append(materialize_cantolopera_pair(
+                    selected,
+                    Path(args.cantolopera_audio_root),
+                    output,
+                    selection_sha256=selection_sha256,
+                ))
+            except Exception as exc:
+                results.append({
+                    "work_id": selected.get("pair_id"),
+                    "status": "excluded",
+                    "reason": f"{type(exc).__name__}: {exc}",
+                })
+        report_name = f"materialization-report-cantolopera-{args.split}.json"
+    elif args.truth_root:
         truth = Path(args.truth_root)
         for work in ("bologna_verdi", "bologna_puccini", "bologna_donizetti",
                      "aalto_mozart_dry"):
@@ -285,9 +470,12 @@ def main(argv: list[str] | None = None) -> int:
                                    for r in results),
                "excluded": sum(r["status"] == "excluded" for r in results)}
     output.mkdir(parents=True, exist_ok=True)
-    (output / "materialization-report.json").write_text(
-        json.dumps(summary, indent=2, sort_keys=True) + "\n"
-    )
+    report_path = output / report_name
+    report_payload = json.dumps(summary, indent=2, sort_keys=True) + "\n"
+    if report_path.exists() and report_path.read_text() != report_payload:
+        raise RuntimeError(f"refusing to rewrite differing materialization report: {report_path}")
+    if not report_path.exists():
+        report_path.write_text(report_payload)
     print(json.dumps(summary, indent=2))
     return 0 if summary["materialized"] else 2
 
