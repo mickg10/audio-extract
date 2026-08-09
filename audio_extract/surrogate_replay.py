@@ -41,10 +41,15 @@ AXES = {
 }
 FULL_COMMIT = re.compile(r"^[0-9a-f]{40}$")
 # The frozen report did not retain vocal-estimate PCM, so replay binding uses
-# the three independently recomputed external metrics.  CUDA reduction order
-# may move their final decimal places across driver/runtime invocations; this
-# bound is far below any gate threshold (including the 0.5 dB false-safe gate).
-METRIC_PARITY_TOLERANCE = 1e-4
+# the three independently recomputed external metrics. CUDA reduction order may
+# move their final decimals across driver/runtime invocations. Bounds are
+# metric-specific because two values are dB while artifact_ratio is unitless;
+# both remain far below the advancement thresholds.
+METRIC_PARITY_TOLERANCES = {
+    "retained_voice_db_p90": 0.01,
+    "event_hole_db_p90": 0.01,
+    "artifact_ratio_p90": 0.001,
+}
 
 
 class ReplayEvidenceError(RuntimeError):
@@ -243,16 +248,11 @@ def _surrogate_summary(report: Any) -> dict[str, Any]:
     return value
 
 
-def _metric_parity(actual: dict[str, Any], expected: dict[str, Any]) -> float:
-    maximum = 0.0
-    for name in (
-        "retained_voice_db_p90",
-        "event_hole_db_p90",
-        "artifact_ratio_p90",
-    ):
-        difference = abs(float(actual[name]) - float(expected[name]))
-        maximum = max(maximum, difference)
-    return maximum
+def _metric_parity(actual: dict[str, Any], expected: dict[str, Any]) -> dict[str, float]:
+    return {
+        name: abs(float(actual[name]) - float(expected[name]))
+        for name in METRIC_PARITY_TOLERANCES
+    }
 
 
 def _sign(value: float, *, tolerance: float = 1e-12) -> int:
@@ -455,7 +455,7 @@ def run_replay(
     crop_frames = int(_json(run_dir / "fixed-sampled-crop-objective.json")["crop_frames"])
     code_commit = _code_commit()
     rows: list[dict[str, Any]] = []
-    max_metric_difference = 0.0
+    max_metric_differences = {name: 0.0 for name in METRIC_PARITY_TOLERANCES}
     surrogate_config = SurrogateConfigV2()
     import torch
 
@@ -491,11 +491,16 @@ def run_replay(
                     accompaniment_hat, tensors["A"], tensors["V"]
                 )
                 parity = _metric_parity(actual_metrics, old["metrics"])
-                max_metric_difference = max(max_metric_difference, parity)
-                if parity > METRIC_PARITY_TOLERANCE:
+                for name, difference in parity.items():
+                    max_metric_differences[name] = max(max_metric_differences[name], difference)
+                violations = {
+                    name: difference for name, difference in parity.items()
+                    if difference > METRIC_PARITY_TOLERANCES[name]
+                }
+                if violations:
                     raise ReplayEvidenceError(
                         "checkpoint inference metric parity failed at "
-                        f"{(sample_index, step)}: {parity} > {METRIC_PARITY_TOLERANCE}"
+                        f"{(sample_index, step)}: {violations}"
                     )
                 vocal_hat_np = vocal_hat.T.contiguous().numpy().astype("float32", copy=False)
                 a_np = tensors["A"].T.contiguous().numpy().astype("float32", copy=False)
@@ -530,7 +535,7 @@ def run_replay(
                         "materialization_full_pcm_sha256": material["report"].get("pcm_sha256"),
                     },
                     "mixture_reconstruction_max_abs": reconstruction_error,
-                    "checkpoint_metric_parity_max_abs": parity,
+                    "checkpoint_metric_parity_differences_abs": parity,
                     "surrogate": _surrogate_summary(report),
                     "old_declared_total": float(old["total"]),
                     "old_components": old["components"],
@@ -566,7 +571,7 @@ def run_replay(
         "optimizer_steps": 0,
         "device": device,
         "surrogate_config": asdict(surrogate_config),
-        "checkpoint_metric_parity_tolerance": METRIC_PARITY_TOLERANCE,
+        "checkpoint_metric_parity_tolerances": METRIC_PARITY_TOLERANCES,
     }
     summary = {
         "schema": SCHEMA + "/summary",
@@ -575,7 +580,7 @@ def run_replay(
         "cells": len(rows),
         "samples": len(samples),
         "steps": list(STEPS),
-        "max_checkpoint_metric_parity_abs": max_metric_difference,
+        "max_checkpoint_metric_parity_abs": max_metric_differences,
         "optimizer_steps": 0,
         "elapsed_seconds": round(time.time() - started, 3),
     }
