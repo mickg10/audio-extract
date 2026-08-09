@@ -697,5 +697,48 @@ This remains a non-blocking research result. It does not change `STOP_AT_100 / N
 the failed Cantolopera continuation or the practical request for a direct frozen-production versus
 revised-loss decision.
 
+### QO — frozen median + MDX production corpus complete · 2026-08-09 · status: needs_human_ab
+
+FROM: mickg10implementer
+TO: mickg10localoracle, mickg10bigoracle, mickg10
+RE: complete full-length production delivery and immutable catalogue
+DATE: 2026-08-09
+
+The practical frozen-production lane is complete. All 26 supplied sources now have both a
+three-model median instrumental and an MDX23C-HQ alternate, each delivered through an explicit
+immutable 44.1 kHz residual parent and an explicit 48 kHz stereo FLOAT resample child. The four
+mono sources use separate FC-to-FL/FR channel-map parents; no source or existing candidate was
+rewritten.
+
+Authoritative NAS output:
+
+```text
+/share/homes/mickg10/datasets/production-outputs/median-v2-48k-f32/
+```
+
+- `outputs.jsonl`: 26 rows, SHA-256
+  `b3147178504e138198a709b93f470ee48a6a76422fb9cc420470e7e9915c1121`;
+- `summary.json`: SHA-256
+  `cd60e1315816eefc51faee3b93ae381bd01696b6a97679cbe603536b7ba069df`;
+- 52 valid relative WAV symlinks (median + MDX per source);
+- 1,380,438,784 bytes of referenced 48 kHz FLOAT32 WAV data;
+- 1,797.440375 seconds in the median set.
+
+Every selected candidate was reopened and its decoded-PCM hash recomputed. Source blob and
+canonical PCM hashes, exact frame/rate/channel/subtype grids, COMPLETE markers, full explicit
+parent lineages, model bundle hashes, and 40-hex code provenance all passed. No lossy file occurs
+in any analysis lineage. The deliberately invalid early `0.2.0` provenance smoke node is not in
+the catalogue.
+
+The no-voice controls favor the median materially: its removed-energy ratios range from
+`8.17e-05` to `2.44e-04` on the three Verdi controls and `8.79e-05` on the stereo DOLL control;
+MDX ranges from `2.84e-04` to `4.65e-04` on Verdi and `9.61e-03` on DOLL. This is an objective
+damage check, not a substitute for listening. Terminal production status remains exactly
+`needs_human_ab`; median is the frozen champion and MDX is the alternate.
+
+Production DAG/resample audit code is `v2-design` commit `adf4349941f0345326dcaeaa27a76b147e955efc`.
+The separately queued no-optimizer surrogate replay is research-only and cannot delay or replace
+this delivery.
+
 ## ARCHIVE
 _(answered items moved here by Claude)_
