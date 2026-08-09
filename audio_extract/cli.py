@@ -591,6 +591,22 @@ def cmd_candidate_resample(args: argparse.Namespace) -> int:
     return _emit(_envelope("candidate.resample", "ok", args.run_id, candidate=rec))
 
 
+def cmd_candidate_residual(args: argparse.Namespace) -> int:
+    """Render an explicit mixture-minus-one-vocal-estimate candidate."""
+    from .separate import render_residual_candidate
+
+    layout = TrackLayout(args.lib, args.run_id)
+    src_json = layout.source_dir / "source.json"
+    if not src_json.exists():
+        return _emit(_envelope("candidate.residual", "error", args.run_id,
+                               message=f"run {args.run_id!r} not ingested"), code=2)
+    rec = render_residual_candidate(
+        layout, json.loads(src_json.read_text()),
+        vocal_recipe_id=args.vocal_recipe_id, code_commit=_code_commit(),
+        mixture_recipe_id=args.mixture_recipe_id)
+    return _emit(_envelope("candidate.residual", "ok", args.run_id, candidate=rec))
+
+
 def cmd_finalists_render(args: argparse.Namespace) -> int:
     """Certified delivery is bound to an immutable decision (--decision-id). Direct
     candidate rendering is allowed ONLY as an explicit --uncertified-preview (§9)."""
@@ -778,6 +794,13 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--algo", default="scipy_polyphase", choices=["scipy_polyphase"])
     sp.add_argument("--json", action="store_true")
     sp.set_defaults(func=cmd_candidate_resample)
+    sp = g_cand.add_parser("residual", help="mixture minus one immutable vocal estimate")
+    sp.add_argument("--run-id", required=True)
+    sp.add_argument("--vocal-recipe-id", required=True)
+    sp.add_argument("--mixture-recipe-id",
+                    help="explicit channel-map candidate used as the mixture/input")
+    sp.add_argument("--json", action="store_true")
+    sp.set_defaults(func=cmd_candidate_residual)
     sp = g_cand.add_parser("render", help="render an immutable separator candidate")
     sp.add_argument("--run-id", required=True)
     sp.add_argument("--model", required=True, help="separator model filename (audio-separator registry)")

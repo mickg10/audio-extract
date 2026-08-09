@@ -576,7 +576,8 @@ def render_ensemble_candidate(layout, source_record: dict, *, member_recipe_ids:
 
 
 def render_residual_candidate(layout, source_record: dict, *, vocal_recipe_id: str,
-                              code_commit: str = "") -> dict:
+                              code_commit: str = "",
+                              mixture_recipe_id: str | None = None) -> dict:
     """Render the exact-grid ``M - V_hat`` child of one immutable vocal candidate.
 
     The vocal candidate is an explicit recipe parent.  Alignment is therefore a
@@ -594,12 +595,14 @@ def render_residual_candidate(layout, source_record: dict, *, vocal_recipe_id: s
     from .manifest import Manifest
     from .storage import ImmutableWriteError
 
-    canonical = Path(layout.source_dir) / "canonical.f32.wav"
+    canonical, mixture_record, mixture_parents = _resolve_model_input(
+        layout, source_record, mixture_recipe_id
+    )
     mix, sr = sf.read(str(canonical), dtype="float64", always_2d=True)
     sr = int(sr)
     expected_grid = (
-        int(source_record["frames"]), int(source_record["sample_rate_hz"]),
-        len(source_record["channel_layout"]),
+        int(mixture_record["frames"]), int(mixture_record["sample_rate_hz"]),
+        len(mixture_record["channel_layout"]),
     )
     if (len(mix), sr, mix.shape[1]) != expected_grid:
         raise ValueError(
@@ -620,6 +623,12 @@ def render_residual_candidate(layout, source_record: dict, *, vocal_recipe_id: s
         and parent_op.get("target") == "vocals"
     ):
         raise ValueError(f"candidate {vocal_recipe_id} is not a native vocal parent")
+    if mixture_parents:
+        parent_input = parent_recipe.get("input_pcm", {})
+        if parent_input.get("sha256") != mixture_record["input_pcm_sha256"]:
+            raise ValueError(
+                f"vocal parent {vocal_recipe_id} was not rendered from the selected mixture"
+            )
     vocal, vocal_sr = sf.read(str(parent_output), dtype="float64", always_2d=True)
     if (len(vocal), int(vocal_sr), vocal.shape[1]) != expected_grid:
         raise ValueError(
@@ -629,16 +638,19 @@ def render_residual_candidate(layout, source_record: dict, *, vocal_recipe_id: s
     alignment = estimate_alignment(mix, vocal)
     aligned = apply_alignment(vocal, alignment, target_len=len(mix))
 
+    input_pcm = {
+        "sha256": mixture_record["input_pcm_sha256"],
+        "sample_rate_hz": sr,
+        "channel_layout": mixture_record["channel_layout"],
+        "frames": len(mix),
+        "sample_format": "float32-le-interleaved",
+    }
+    if mixture_parents:
+        input_pcm["parent_recipe_ids"] = mixture_parents
     recipe = {
         "schema": recipe_mod.SCHEMA,
         "canon": recipe_mod.CANON,
-        "input_pcm": {
-            "sha256": source_record["input_pcm_sha256"],
-            "sample_rate_hz": sr,
-            "channel_layout": source_record["channel_layout"],
-            "frames": len(mix),
-            "sample_format": "float32-le-interleaved",
-        },
+        "input_pcm": input_pcm,
         "operation": {"type": "mixture_minus_source", "target": "instrumental",
                       "construction": "mixture_minus_source"},
         "model": {
@@ -666,7 +678,7 @@ def render_residual_candidate(layout, source_record: dict, *, vocal_recipe_id: s
     else:
         accompaniment = (mix - aligned).astype("float32")
         artifact = identity.artifact_pcm_sha256(
-            accompaniment, sr, source_record["channel_layout"], len(accompaniment)
+            accompaniment, sr, mixture_record["channel_layout"], len(accompaniment)
         )
         fd, tmp_name = tempfile.mkstemp(suffix=".f32.wav")
         os.close(fd)
@@ -689,10 +701,10 @@ def render_residual_candidate(layout, source_record: dict, *, vocal_recipe_id: s
     record = {
         "recipe_id": rid,
         "operation": "mixture_minus_source",
-        "parents": [vocal_recipe_id],
+        "parents": mixture_parents + [vocal_recipe_id],
         "artifact_pcm_sha256": artifact,
         "sample_rate_hz": sr,
-        "channels": source_record["channel_layout"],
+        "channels": mixture_record["channel_layout"],
         "frames": len(mix),
         "sample_format": "float32",
         "status": "complete",

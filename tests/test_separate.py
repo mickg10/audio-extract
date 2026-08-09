@@ -12,6 +12,7 @@ from audio_extract.separate import (
     render_candidate,
     render_channel_map_candidate,
     render_ensemble_candidate,
+    render_residual_candidate,
 )
 from audio_extract.storage import TrackLayout
 
@@ -119,6 +120,21 @@ def test_mono_channel_map_is_explicit_parent_for_separator_and_ensemble(tmp_path
         vocal_ids.append(record["recipe_id"])
         recipe = json.loads((layout.candidate_dir(record["recipe_id"]) / "recipe.json").read_text())
         assert recipe["input_pcm"]["parent_recipe_ids"] == [mapped["recipe_id"]]
+
+    residual = render_residual_candidate(
+        layout, source, vocal_recipe_id=vocal_ids[0], code_commit="test",
+        mixture_recipe_id=mapped["recipe_id"],
+    )
+    assert residual["parents"] == [mapped["recipe_id"], vocal_ids[0]]
+    residual_recipe = json.loads(
+        (layout.candidate_dir(residual["recipe_id"]) / "recipe.json").read_text()
+    )
+    assert residual_recipe["input_pcm"]["parent_recipe_ids"] == [mapped["recipe_id"]]
+    residual_audio, _ = sf.read(
+        layout.candidate_dir(residual["recipe_id"]) / "output.f32.wav",
+        dtype="float32", always_2d=True,
+    )
+    assert np.allclose(residual_audio, stereo * 0.9, atol=2e-7)
 
     ensemble = render_ensemble_candidate(
         layout, source, member_recipe_ids=vocal_ids, algo="median",
