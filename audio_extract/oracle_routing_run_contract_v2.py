@@ -1,7 +1,7 @@
 """Immutable pre-run and exact-truth contract for binding oracle routing.
 
-This module is deliberately independent of the routing optimizer. It closes
-three provenance ambiguities before expensive audio work begins:
+This module is independent of the routing optimizer. It closes provenance
+ambiguities before expensive audio work begins:
 
 * resolution identity is the exact numeric tuple ``(2.0, 1.0, 0.5)`` and is
   never inferred from formatted labels;
@@ -10,7 +10,7 @@ three provenance ambiguities before expensive audio work begins:
 * every exact M/A/V reference and the complete run-input record are frozen and
   content-bound before the first route is computed.
 
-The completed routing report must carry the SHA-256 of the prewritten run-input
+A completed routing report must carry the SHA-256 of the prewritten run-input
 record. An independent verifier can then reject a report paired with a record
 created or changed after the run.
 """
@@ -66,6 +66,7 @@ class RunInputAnchor:
     code_commit: str
     works: tuple[str, ...]
     resolutions_seconds: tuple[float, ...]
+    truth_manifest_path: str
     truth_manifest_sha256: str
 
     def to_dict(self) -> dict[str, Any]:
@@ -76,6 +77,7 @@ class RunInputAnchor:
             "code_commit": self.code_commit,
             "works": list(self.works),
             "resolutions_seconds": list(self.resolutions_seconds),
+            "truth_manifest_path": self.truth_manifest_path,
             "truth_manifest_sha256": self.truth_manifest_sha256,
         }
 
@@ -96,7 +98,7 @@ def _signature(value: os.stat_result) -> tuple[int, int, int, int]:
 
 
 def stable_file(path: Path) -> tuple[bytes, StableFile]:
-    """Read one non-symlink regular file and bind path to the opened inode."""
+    """Read one non-symlink regular file and bind the path to its opened inode."""
 
     try:
         if path.is_symlink():
@@ -112,7 +114,10 @@ def stable_file(path: Path) -> tuple[bytes, StableFile]:
         raise
     except OSError as exc:
         raise RunContractError(f"cannot read {path}: {exc}") from exc
-    if _signature(before) != _signature(after) or _signature(before) != _signature(current):
+    if (
+        _signature(before) != _signature(after)
+        or _signature(before) != _signature(current)
+    ):
         raise RunContractError(f"input changed or path was replaced: {path}")
     digest = "sha256:" + hashlib.sha256(payload).hexdigest()
     return payload, StableFile(
@@ -147,11 +152,36 @@ def _reject_nonfinite(value: Any, label: str) -> None:
         for key, item in value.items():
             _reject_nonfinite(item, f"{label}.{key}")
         return
-    if isinstance(value, Sequence) and not isinstance(value, (str, bytes, bytearray)):
+    if isinstance(value, Sequence) and not isinstance(
+        value, (str, bytes, bytearray)
+    ):
         for index, item in enumerate(value):
             _reject_nonfinite(item, f"{label}[{index}]")
         return
-    raise RunContractError(f"{label} contains unsupported JSON value {type(value)!r}")
+    raise RunContractError(
+        f"{label} contains unsupported JSON value {type(value)!r}"
+    )
+
+
+def canonical_json(value: Mapping[str, Any]) -> bytes:
+    """Canonical semantic JSON for equality/hashing, with tuples as arrays."""
+
+    _reject_nonfinite(value, "canonical JSON")
+    return json.dumps(
+        dict(value),
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=False,
+        allow_nan=False,
+    ).encode("utf-8")
+
+
+def semantic_sha256(value: Mapping[str, Any]) -> str:
+    return "sha256:" + hashlib.sha256(canonical_json(value)).hexdigest()
+
+
+def _same_json(left: Mapping[str, Any], right: Mapping[str, Any]) -> bool:
+    return canonical_json(left) == canonical_json(right)
 
 
 def validate_resolutions(values: Sequence[Any]) -> tuple[float, ...]:
@@ -162,7 +192,9 @@ def validate_resolutions(values: Sequence[Any]) -> tuple[float, ...]:
     result = []
     for value in values:
         if isinstance(value, bool) or not isinstance(value, (int, float)):
-            raise RunContractError("routing resolutions must be numeric, not bool/string")
+            raise RunContractError(
+                "routing resolutions must be numeric, not bool/string"
+            )
         numeric = float(value)
         if not math.isfinite(numeric):
             raise RunContractError("routing resolutions must be finite")
@@ -178,7 +210,9 @@ def validate_resolutions(values: Sequence[Any]) -> tuple[float, ...]:
 
 def resolution_key(value: Any) -> str:
     if isinstance(value, bool) or not isinstance(value, (int, float)):
-        raise RunContractError("resolution must be a numeric preregistered value")
+        raise RunContractError(
+            "resolution must be a numeric preregistered value"
+        )
     numeric = float(value)
     try:
         return RESOLUTION_KEYS[numeric]
@@ -193,7 +227,9 @@ def verify_disjoint_manifest_groups(
 ) -> tuple[tuple[str, StableFile, str], ...]:
     """Verify exact source-manifest groups and reject hard-link aliases."""
 
-    if set(groups) != set(SOURCE_MANIFEST_GROUPS):
+    if not isinstance(groups, Mapping) or set(groups) != set(
+        SOURCE_MANIFEST_GROUPS
+    ):
         raise RunContractError(
             "source manifest groups must contain exactly voiced and no_vocal"
         )
@@ -208,17 +244,28 @@ def verify_disjoint_manifest_groups(
                 f"source manifest group {group!r} must be a non-empty array"
             )
         for index, record in enumerate(records):
-            if not isinstance(record, Mapping) or set(record) != {"path", "sha256"}:
+            if not isinstance(record, Mapping) or set(record) != {
+                "path",
+                "sha256",
+            }:
                 raise RunContractError(
-                    f"{group} source record {index} must contain exactly path and sha256"
+                    f"{group} source record {index} must contain exactly "
+                    "path and sha256"
                 )
-            path = Path(str(record.get("path") or ""))
-            if not str(path):
-                raise RunContractError(f"{group} source record {index} has no path")
+            path_text = str(record.get("path") or "")
+            if not path_text:
+                raise RunContractError(
+                    f"{group} source record {index} has no path"
+                )
+            path = Path(path_text)
             payload, file_record = stable_file(path)
-            expected = _sha_identity(record.get("sha256"), f"{group} source SHA")
+            expected = _sha_identity(
+                record.get("sha256"), f"{group} source SHA"
+            )
             if file_record.container_sha256 != expected:
-                raise RunContractError(f"{group} source manifest changed: {path}")
+                raise RunContractError(
+                    f"{group} source manifest changed: {path}"
+                )
             physical = (file_record.device, file_record.inode)
             previous = seen_physical.get(physical)
             if previous is not None:
@@ -233,8 +280,10 @@ def verify_disjoint_manifest_groups(
     return tuple(result)
 
 
-def _read_audio_record(path: Path) -> tuple[np.ndarray, dict[str, Any]]:
-    """Hash and decode one exact FLOAT file through the same stable descriptor."""
+def _read_audio_record(
+    path: Path,
+) -> tuple[np.ndarray, dict[str, Any], tuple[int, int]]:
+    """Hash/decode one exact FLOAT file through one stable descriptor."""
 
     try:
         if path.is_symlink():
@@ -242,26 +291,41 @@ def _read_audio_record(path: Path) -> tuple[np.ndarray, dict[str, Any]]:
         with path.open("rb") as handle:
             before = os.fstat(handle.fileno())
             if not stat.S_ISREG(before.st_mode):
-                raise RunContractError(f"truth audio is not a regular file: {path}")
+                raise RunContractError(
+                    f"truth audio is not a regular file: {path}"
+                )
             digest = hashlib.sha256()
             for block in iter(lambda: handle.read(1 << 20), b""):
                 digest.update(block)
             handle.seek(0)
             info = sf.info(handle)
-            if info.samplerate != 44_100 or info.channels != 2 or info.subtype != "FLOAT":
+            if (
+                info.samplerate != 44_100
+                or info.channels != 2
+                or info.subtype != "FLOAT"
+            ):
                 raise RunContractError(
                     f"expected 44.1-kHz stereo FLOAT truth: {path}: {info}"
                 )
             handle.seek(0)
-            audio, sample_rate = sf.read(handle, dtype="float32", always_2d=True)
+            audio, sample_rate = sf.read(
+                handle, dtype="float32", always_2d=True
+            )
             after = os.fstat(handle.fileno())
         current = path.stat()
     except RunContractError:
         raise
     except (OSError, RuntimeError) as exc:
-        raise RunContractError(f"cannot read truth audio {path}: {exc}") from exc
-    if _signature(before) != _signature(after) or _signature(before) != _signature(current):
-        raise RunContractError(f"truth audio changed or path was replaced: {path}")
+        raise RunContractError(
+            f"cannot read truth audio {path}: {exc}"
+        ) from exc
+    if (
+        _signature(before) != _signature(after)
+        or _signature(before) != _signature(current)
+    ):
+        raise RunContractError(
+            f"truth audio changed or path was replaced: {path}"
+        )
     if audio.shape != (info.frames, 2) or not np.all(np.isfinite(audio)):
         raise RunContractError(f"truth audio is invalid: {path}")
     record = {
@@ -274,10 +338,8 @@ def _read_audio_record(path: Path) -> tuple[np.ndarray, dict[str, Any]]:
         "sample_rate_hz": int(sample_rate),
         "channels": ["FL", "FR"],
         "subtype": "FLOAT",
-        "device": int(before.st_dev),
-        "inode": int(before.st_ino),
     }
-    return audio, record
+    return audio, record, (int(before.st_dev), int(before.st_ino))
 
 
 def build_truth_manifest(
@@ -286,30 +348,51 @@ def build_truth_manifest(
     *,
     identity_tolerance: float = 2e-5,
 ) -> dict[str, Any]:
-    """Freeze every exact M/A/V artifact and reprove M=A+V."""
+    """Freeze every exact M/A/V artifact and reprove ``M=A+V``."""
 
-    if not math.isfinite(float(identity_tolerance)) or identity_tolerance < 0:
-        raise RunContractError("truth identity tolerance must be finite/non-negative")
+    if (
+        not math.isfinite(float(identity_tolerance))
+        or identity_tolerance < 0
+    ):
+        raise RunContractError(
+            "truth identity tolerance must be finite/non-negative"
+        )
     work_ids = tuple(str(work) for work in works)
-    if not work_ids or any(not work for work in work_ids) or len(set(work_ids)) != len(work_ids):
+    if (
+        not work_ids
+        or any(not work for work in work_ids)
+        or len(set(work_ids)) != len(work_ids)
+    ):
         raise RunContractError("truth work IDs must be unique and non-empty")
     records: dict[str, Any] = {}
     for work in work_ids:
         audio: dict[str, np.ndarray] = {}
         roles: dict[str, Any] = {}
+        physical: set[tuple[int, int]] = set()
         for role, filename in TRUTH_FILENAMES.items():
-            value, record = _read_audio_record(truth_root / work / filename)
+            value, record, file_identity = _read_audio_record(
+                truth_root / work / filename
+            )
+            if file_identity in physical:
+                raise RunContractError(
+                    f"truth roles reuse one physical file: {work}/{role}"
+                )
+            physical.add(file_identity)
             audio[role] = value
             roles[role] = record
         grids = {
             (
-                record["frames"], record["sample_rate_hz"],
-                tuple(record["channels"]), record["subtype"],
+                record["frames"],
+                record["sample_rate_hz"],
+                tuple(record["channels"]),
+                record["subtype"],
             )
             for record in roles.values()
         }
         if len(grids) != 1:
-            raise RunContractError(f"truth grids differ for work {work}: {grids}")
+            raise RunContractError(
+                f"truth grids differ for work {work}: {grids}"
+            )
         residual = (
             audio["mixture"].astype(np.float64)
             - audio["accompaniment"].astype(np.float64)
@@ -318,7 +401,8 @@ def build_truth_manifest(
         maximum = float(np.max(np.abs(residual)))
         if maximum > float(identity_tolerance):
             raise RunContractError(
-                f"truth identity failed for {work}: {maximum} > {identity_tolerance}"
+                f"truth identity failed for {work}: {maximum} > "
+                f"{identity_tolerance}"
             )
         records[work] = {
             "roles": roles,
@@ -332,16 +416,23 @@ def build_truth_manifest(
     }
 
 
-def canonical_json(value: Mapping[str, Any]) -> bytes:
-    _reject_nonfinite(value, "canonical JSON")
-    return json.dumps(
-        dict(value), sort_keys=True, separators=(",", ":"),
-        ensure_ascii=False, allow_nan=False,
-    ).encode("utf-8")
-
-
-def semantic_sha256(value: Mapping[str, Any]) -> str:
-    return "sha256:" + hashlib.sha256(canonical_json(value)).hexdigest()
+def _max_fact_matches(current: float, declared: Any) -> bool:
+    if (
+        isinstance(declared, bool)
+        or not isinstance(declared, (int, float))
+        or not math.isfinite(float(declared))
+        or float(declared) < 0
+    ):
+        return False
+    expected = float(declared)
+    allowance = (
+        8.0
+        * np.finfo(np.float64).eps
+        * max(1.0, abs(current), abs(expected))
+    )
+    return math.isclose(
+        current, expected, rel_tol=0.0, abs_tol=allowance
+    )
 
 
 def verify_truth_manifest(value: Mapping[str, Any]) -> str:
@@ -352,32 +443,70 @@ def verify_truth_manifest(value: Mapping[str, Any]) -> str:
     works = value.get("works")
     records = value.get("records")
     tolerance = value.get("identity_tolerance")
-    if not isinstance(works, list) or not works or not isinstance(records, Mapping):
+    if (
+        not isinstance(works, list)
+        or not works
+        or not isinstance(records, Mapping)
+    ):
         raise RunContractError("truth manifest lacks works/records")
-    if set(records) != set(works) or len(set(works)) != len(works):
+    if (
+        any(not isinstance(work, str) or not work for work in works)
+        or set(records) != set(works)
+        or len(set(works)) != len(works)
+    ):
         raise RunContractError("truth manifest work set is incoherent")
-    if not isinstance(tolerance, (int, float)) or isinstance(tolerance, bool) or (
-        not math.isfinite(float(tolerance)) or float(tolerance) < 0
+    if (
+        not isinstance(tolerance, (int, float))
+        or isinstance(tolerance, bool)
+        or not math.isfinite(float(tolerance))
+        or float(tolerance) < 0
     ):
         raise RunContractError("truth manifest tolerance is invalid")
+
     for work in works:
         work_record = records[work]
         if not isinstance(work_record, Mapping) or set(work_record) != {
-            "roles", "mixture_identity_max_abs"
+            "roles",
+            "mixture_identity_max_abs",
         }:
-            raise RunContractError(f"truth manifest work record is invalid: {work}")
+            raise RunContractError(
+                f"truth manifest work record is invalid: {work}"
+            )
         declared_roles = work_record["roles"]
-        if not isinstance(declared_roles, Mapping) or set(declared_roles) != set(TRUTH_FILENAMES):
-            raise RunContractError(f"truth role set is incomplete: {work}")
+        if (
+            not isinstance(declared_roles, Mapping)
+            or set(declared_roles) != set(TRUTH_FILENAMES)
+        ):
+            raise RunContractError(
+                f"truth role set is incomplete: {work}"
+            )
         audio: dict[str, np.ndarray] = {}
+        physical: set[tuple[int, int]] = set()
         for role in TRUTH_FILENAMES:
             declared = declared_roles[role]
             if not isinstance(declared, Mapping):
-                raise RunContractError(f"truth role record is invalid: {work}/{role}")
-            current_audio, current = _read_audio_record(Path(str(declared.get("path") or "")))
+                raise RunContractError(
+                    f"truth role record is invalid: {work}/{role}"
+                )
+            path_text = str(declared.get("path") or "")
+            if not path_text:
+                raise RunContractError(
+                    f"truth role path is missing: {work}/{role}"
+                )
+            current_audio, current, file_identity = _read_audio_record(
+                Path(path_text)
+            )
+            if file_identity in physical:
+                raise RunContractError(
+                    f"truth roles reuse one physical file: {work}/{role}"
+                )
+            physical.add(file_identity)
             if current != dict(declared):
-                raise RunContractError(f"truth artifact changed: {work}/{role}")
+                raise RunContractError(
+                    f"truth artifact changed: {work}/{role}"
+                )
             audio[role] = current_audio
+
         residual = (
             audio["mixture"].astype(np.float64)
             - audio["accompaniment"].astype(np.float64)
@@ -385,12 +514,15 @@ def verify_truth_manifest(value: Mapping[str, Any]) -> str:
         )
         maximum = float(np.max(np.abs(residual)))
         if maximum > float(tolerance):
-            raise RunContractError(f"truth identity no longer holds: {work}")
-        declared_max = work_record["mixture_identity_max_abs"]
-        if not isinstance(declared_max, (int, float)) or isinstance(declared_max, bool) or (
-            not math.isfinite(float(declared_max))
-        ) or maximum != float(declared_max):
-            raise RunContractError(f"truth identity fact changed: {work}")
+            raise RunContractError(
+                f"truth identity no longer holds: {work}"
+            )
+        if not _max_fact_matches(
+            maximum, work_record["mixture_identity_max_abs"]
+        ):
+            raise RunContractError(
+                f"truth identity fact changed: {work}"
+            )
     return semantic_sha256(value)
 
 
@@ -401,6 +533,7 @@ def load_run_input_anchor(
     expected_works: Sequence[str],
     expected_run_config: Mapping[str, Any],
     expected_truth_manifest_sha256: str,
+    expected_binding_policy_sha256: str | None = None,
 ) -> RunInputAnchor:
     """Verify and bind a record that must exist before routing starts."""
 
@@ -409,32 +542,75 @@ def load_run_input_anchor(
     if value.get("schema") != RUN_INPUT_SCHEMA:
         raise RunContractError("wrong run-input schema")
     if value.get("code_commit") != expected_code_commit:
-        raise RunContractError("run-input code commit differs from execution")
+        raise RunContractError(
+            "run-input code commit differs from execution"
+        )
     works = tuple(value.get("works") or ())
     if works != tuple(expected_works):
-        raise RunContractError("run-input work order differs from execution")
+        raise RunContractError(
+            "run-input work order differs from execution"
+        )
     run_config = value.get("run_config")
-    if not isinstance(run_config, Mapping) or dict(run_config) != dict(expected_run_config):
-        raise RunContractError("run-input configuration differs from execution")
-    resolutions = validate_resolutions(run_config.get("resolutions_seconds") or ())
-    verify_disjoint_manifest_groups(value.get("source_manifest_groups") or {})
+    if not isinstance(run_config, Mapping) or not _same_json(
+        run_config, expected_run_config
+    ):
+        raise RunContractError(
+            "run-input configuration differs from execution"
+        )
+    resolutions = validate_resolutions(
+        run_config.get("resolutions_seconds") or ()
+    )
+    verify_disjoint_manifest_groups(
+        value.get("source_manifest_groups") or {}
+    )
+
+    if expected_binding_policy_sha256 is not None:
+        expected_policy = _sha_identity(
+            expected_binding_policy_sha256,
+            "expected binding policy SHA",
+        )
+        declared_policy = _sha_identity(
+            value.get("binding_policy_sha256"),
+            "run-input binding policy SHA",
+        )
+        if declared_policy != expected_policy:
+            raise RunContractError(
+                "run-input binding-policy SHA differs from execution"
+            )
+
     truth_record = value.get("truth_manifest")
-    if not isinstance(truth_record, Mapping) or set(truth_record) != {"path", "sha256"}:
-        raise RunContractError("run inputs lack the exact truth-manifest record")
+    if not isinstance(truth_record, Mapping) or set(truth_record) != {
+        "path",
+        "sha256",
+    }:
+        raise RunContractError(
+            "run inputs lack the exact truth-manifest record"
+        )
     expected_truth_sha = _sha_identity(
-        expected_truth_manifest_sha256, "expected truth manifest SHA"
+        expected_truth_manifest_sha256,
+        "expected truth manifest SHA",
     )
     declared_truth_sha = _sha_identity(
-        truth_record.get("sha256"), "run-input truth manifest SHA"
+        truth_record.get("sha256"),
+        "run-input truth manifest SHA",
     )
     if declared_truth_sha != expected_truth_sha:
-        raise RunContractError("run-input truth-manifest SHA differs from execution")
-    truth_payload, truth_file = stable_file(Path(str(truth_record.get("path") or "")))
+        raise RunContractError(
+            "run-input truth-manifest SHA differs from execution"
+        )
+    truth_path_text = str(truth_record.get("path") or "")
+    if not truth_path_text:
+        raise RunContractError("run-input truth manifest has no path")
+    truth_payload, truth_file = stable_file(Path(truth_path_text))
     if truth_file.container_sha256 != declared_truth_sha:
         raise RunContractError("truth-manifest file bytes changed")
     truth_value = _json_object(truth_payload, "truth manifest")
-    if verify_truth_manifest(truth_value) != semantic_sha256(truth_value):
-        raise AssertionError("truth-manifest semantic verification drifted")
+    if tuple(truth_value.get("works") or ()) != works:
+        raise RunContractError(
+            "truth-manifest work order differs from run inputs"
+        )
+    verify_truth_manifest(truth_value)
+
     return RunInputAnchor(
         schema=RUN_ANCHOR_SCHEMA,
         path=file_record.path,
@@ -442,5 +618,6 @@ def load_run_input_anchor(
         code_commit=expected_code_commit,
         works=works,
         resolutions_seconds=resolutions,
+        truth_manifest_path=truth_file.path,
         truth_manifest_sha256=declared_truth_sha,
     )
