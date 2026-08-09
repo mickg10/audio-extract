@@ -76,6 +76,18 @@ def test_routing_manifest_uses_exact_canonical_resolution_quantities():
     canon.canonicalize(manifest)
 
 
+def test_cell_measure_identity_materializes_nested_solver_float_weights():
+    payload = module._cell_measure_identity(
+        [(0, 2)], [(0, 3)], np.array([[253.00000000000003]])
+    )
+    assert payload == {
+        "time_ranges": [[0, 2]],
+        "frequency_ranges": [[0, 3]],
+        "weights": [["253.00000000000003"]],
+    }
+    canon.canonicalize(payload)
+
+
 def test_frequency_boundary_diagnostic_is_finite():
     spectrum = np.ones((2, 5, 4), dtype=np.complex64)
     spectrum[:, 2:] *= 2

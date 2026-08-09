@@ -263,6 +263,20 @@ def _routing_manifest() -> dict[str, Any]:
     }
 
 
+def _cell_measure_identity(
+    time_ranges: tuple[tuple[int, int], ...] | list[tuple[int, int]],
+    frequency_ranges: tuple[tuple[int, int], ...] | list[tuple[int, int]],
+    weights: np.ndarray,
+) -> dict[str, Any]:
+    """Materialize the measured solver grid without binary floats in JCS."""
+
+    return _identity_values({
+        "time_ranges": [list(row) for row in time_ranges],
+        "frequency_ranges": [list(row) for row in frequency_ranges],
+        "weights": weights.tolist(),
+    })
+
+
 def _routing_view(grid, time_ranges, frequency_ranges):
     """Supply only the geometry fields used by the common FLOAT renderer."""
 
@@ -1236,15 +1250,9 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
                     "routing_config": routing.to_dict(),
                     "certified_config": certified.to_dict(),
                     "cell_measure_sha256": identity.blob_sha256(
-                        canon.canonicalize(
-                            {
-                                "time_ranges": [list(row) for row in time_ranges],
-                                "frequency_ranges": [
-                                    list(row) for row in frequency_ranges
-                                ],
-                                "weights": grid.cell_weights.tolist(),
-                            }
-                        )
+                        canon.canonicalize(_cell_measure_identity(
+                            time_ranges, frequency_ranges, grid.cell_weights
+                        ))
                     ),
                     "cell_mode_counts": dict(
                         Counter(str(value) for value in grid.modes.flat)
