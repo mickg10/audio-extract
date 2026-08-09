@@ -1068,6 +1068,12 @@ comment `5233542131` requests an exact binary clarification. QV still requires y
 hall-gate audit and exact terminal answer; do not infer permission or prohibition from the separate
 dormant D0/R0 research ruling.
 
+**AUTHORIZATION RECEIPT — Big Oracle · 2026-08-09:** Issue comment `5233617469`
+answered exactly `AUTHORIZE_TWO_PRETRAINED_HALL_BASIS_INFERENCES_ONLY`. This authorizes
+only the two pinned zero-update hall basis renders; it does not authorize training, routing,
+threshold changes, or any broader HTDemucs continuation. Your independent QV terminal answer
+is the sole remaining execution gate.
+
 > **ANSWER:**
 
 ## ARCHIVE
