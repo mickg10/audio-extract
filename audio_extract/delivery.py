@@ -61,6 +61,24 @@ def tpdf_dither_float(x: np.ndarray, bits: int, seed: int = 0) -> np.ndarray:
     return np.clip(np.asarray(x, dtype=np.float64) + d, -1.0, 1.0)
 
 
+def _ffmpeg_exe() -> str:
+    """Resolve a usable ffmpeg binary: system ffmpeg on PATH, else the imageio-ffmpeg
+    bundled binary. Raises a clear error if neither exists (never a bare
+    FileNotFoundError from subprocess)."""
+    import shutil
+    exe = shutil.which("ffmpeg")
+    if exe:
+        return exe
+    try:
+        import imageio_ffmpeg
+        return imageio_ffmpeg.get_ffmpeg_exe()
+    except Exception as e:  # pragma: no cover - only when neither is present
+        raise RuntimeError(
+            "ffmpeg is required for AAC delivery but was not found on PATH and "
+            "imageio-ffmpeg is not installed; install ffmpeg or add imageio-ffmpeg"
+        ) from e
+
+
 def encode_aac(master_f32: np.ndarray, sr: int, out_path: Path, bitrate: str = "256k") -> dict:
     """AAC from the float master via ffmpeg — no dithered intermediate. Returns the
     identity-bearing encoder facts (§19.5): ffmpeg version, encoder, command."""
@@ -69,12 +87,13 @@ def encode_aac(master_f32: np.ndarray, sr: int, out_path: Path, bitrate: str = "
     fd, tmp = tempfile.mkstemp(suffix=".f32.wav")
     import os
     os.close(fd)
-    cmd = ["ffmpeg", "-y", "-i", tmp, "-c:a", "aac", "-b:a", bitrate, str(out_path)]
+    exe = _ffmpeg_exe()
+    cmd = [exe, "-y", "-i", tmp, "-c:a", "aac", "-b:a", bitrate, str(out_path)]
     try:
         sf.write(tmp, np.asarray(master_f32, dtype=np.float32), sr, subtype="FLOAT")
         subprocess.run(cmd, check=True, capture_output=True)
         try:
-            ver = subprocess.run(["ffmpeg", "-version"], capture_output=True,
+            ver = subprocess.run([exe, "-version"], capture_output=True,
                                  text=True).stdout.splitlines()[0]
         except Exception:
             ver = "unknown"

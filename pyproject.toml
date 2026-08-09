@@ -9,7 +9,8 @@ dependencies = [
     "soundfile",
     "librosa",
     "matplotlib>=3.10.9",
-    "pyyaml",                 # v2 panel.yaml loader
+    "pyyaml",
+    "imageio-ffmpeg",   # bundled ffmpeg binary so AAC delivery never needs a system ffmpeg                 # v2 panel.yaml loader
 ]
 
 [project.optional-dependencies]
