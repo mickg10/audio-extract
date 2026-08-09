@@ -38,6 +38,7 @@ from audio_extract.oracle_routing import (
     validate_basis,
 )
 from audio_extract.oracle_routing_certified import (
+    CertifiedRoutingError,
     CertifiedRoutingConfig,
     best_whole_track,
     build_spectral_quadratic_grid,
@@ -299,6 +300,22 @@ def _decision(works: dict[str, Any]) -> dict[str, Any]:
         for mode in ("O2", "O3"):
             key = f"{mode}@{resolution}s"
             failures: list[str] = []
+            rejected = {
+                work: report["resolutions"][resolution][mode].get(
+                    "certificate_error"
+                )
+                for work, report in works.items()
+                if "metrics" not in report["resolutions"][resolution][mode]
+            }
+            if rejected:
+                decisions[key] = {
+                    "binding_gate_passed": False,
+                    "failures": [
+                        f"{work}/{key} rejected: {reason}"
+                        for work, reason in sorted(rejected.items())
+                    ],
+                }
+                continue
             for target, metric in (
                 ("bologna_verdi", "retained_voice_db_p90"),
                 ("bologna_donizetti", "event_hole_db_p90"),
@@ -515,13 +532,19 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             o2 = solve_discrete_global(grid, certified)
             print(json.dumps({"stage": "certified_O3", "work": work,
                               "resolution": resolution}), flush=True)
-            o3 = solve_convex_certified(
-                grid, certified, o1_index=o1_index, o2_labels=o2.labels
-            )
+            try:
+                o3 = solve_convex_certified(
+                    grid, certified, o1_index=o1_index, o2_labels=o2.labels
+                )
+                o3_error = None
+            except CertifiedRoutingError as exc:
+                o3 = None
+                o3_error = str(exc)
             routes = {
                 "O2": one_hot_weights(o2.labels, len(members)),
-                "O3": o3.weights,
             }
+            if o3 is not None:
+                routes["O3"] = o3.weights
             resolution_report: dict[str, Any] = {
                 "routing_config": routing.to_dict(),
                 "certified_config": certified.to_dict(),
@@ -541,6 +564,11 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
                 "metrics": o1_metrics,
                 "worst_identifiable_event": o1_worst,
             }
+            if o3 is None:
+                resolution_report["O3"] = {
+                    "status": "rejected",
+                    "certificate_error": o3_error,
+                }
             for mode, weights in routes.items():
                 output = _render(
                     candidate_spectra, weights, view, len(mixture), routing
