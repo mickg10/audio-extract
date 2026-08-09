@@ -19,13 +19,16 @@ import argparse
 import hashlib
 import json
 import math
+import os
+import subprocess
+import tempfile
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
 import numpy as np
 import soundfile as sf
 
-from . import identity
+from . import identity, recipe as recipe_mod
 from .judge_labels import fit_source_coordinates, local_source_coordinate_labels
 from .judge_train import label_targets
 from .metrics_v2 import brightness_v2, fullness_v2, stereo_v2, transient_v2
@@ -91,6 +94,7 @@ class OracleEnvelopeConfig:
 class BasisRow:
     work_id: str
     candidate_id: str
+    recipe_id: str
     path: str
     artifact_pcm_sha256: str | None = None
     container_sha256: str | None = None
@@ -131,6 +135,7 @@ def load_basis_manifest(path: Path, work_id: str | None = None) -> list[BasisRow
         rows.append(BasisRow(
             work_id=row_work,
             candidate_id=candidate_id,
+            recipe_id=str(raw.get("recipe_id") or candidate_id),
             path=str(raw["path"]),
             artifact_pcm_sha256=raw.get("artifact_pcm_sha256"),
             container_sha256=raw.get("container_sha256"),
@@ -591,7 +596,21 @@ def _write_float_verified(path: Path, audio: np.ndarray, sr: int) -> dict:
         if not np.array_equal(reopened, audio.astype(np.float32)):
             raise OracleEnvelopeError(f"refusing to replace different output: {path}")
     else:
-        sf.write(path, audio.astype(np.float32), sr, subtype="FLOAT")
+        fd, name = tempfile.mkstemp(prefix=f".{path.name}.", suffix=".tmp",
+                                    dir=path.parent)
+        os.close(fd)
+        temporary = Path(name)
+        try:
+            sf.write(temporary, audio.astype(np.float32), sr, subtype="FLOAT",
+                     format="WAV")
+            reopened, reopened_sr = _read_float_stereo(
+                temporary, expected_sr=sr, expected_frames=len(audio)
+            )
+            if not np.array_equal(reopened, audio.astype(np.float32)):
+                raise OracleEnvelopeError(f"FLOAT reopen mismatch: {temporary}")
+            temporary.replace(path)
+        finally:
+            temporary.unlink(missing_ok=True)
         reopened, reopened_sr = _read_float_stereo(
             path, expected_sr=sr, expected_frames=len(audio)
         )
@@ -608,6 +627,139 @@ def _write_float_verified(path: Path, audio: np.ndarray, sr: int) -> dict:
         "channels": ["FL", "FR"],
         "subtype": "FLOAT",
     }
+
+
+def _git_commit() -> str:
+    return subprocess.run(
+        ["git", "rev-parse", "HEAD"], check=True, capture_output=True, text=True
+    ).stdout.strip()
+
+
+def _identity_config(value):
+    if isinstance(value, float):
+        return str(value)
+    if isinstance(value, tuple):
+        return [_identity_config(item) for item in value]
+    if isinstance(value, list):
+        return [_identity_config(item) for item in value]
+    if isinstance(value, dict):
+        return {key: _identity_config(item) for key, item in value.items()}
+    return value
+
+
+def _write_text_immutable(path: Path, value: str) -> None:
+    if path.exists():
+        if path.read_text() != value:
+            raise OracleEnvelopeError(f"refusing to replace different metadata: {path}")
+        return
+    path.write_text(value)
+
+
+def _write_recipe_metadata(
+    *, method_dir: Path, method: str, optimization: dict, selected: list[BasisRow],
+    config: OracleEnvelopeConfig, mixture: np.ndarray, accompaniment: np.ndarray,
+    vocal: np.ndarray, artifact: dict, removed_artifact: dict, code_commit: str,
+) -> tuple[str, str]:
+    """Bind each diagnostic transform to explicit immutable recipe parents."""
+
+    parents = [row.recipe_id for row in selected]
+    if any(not value.startswith("sha256:") for value in parents):
+        raise OracleEnvelopeError(f"basis lacks canonical parent recipe IDs: {parents}")
+    plan = {
+        "method": method, "parents": parents, "optimization": optimization,
+        "config": asdict(config),
+    }
+    try:
+        plan_bytes = json.dumps(
+            plan, sort_keys=True, separators=(",", ":"), allow_nan=False
+        ).encode()
+    except ValueError as exc:
+        raise OracleEnvelopeError(f"non-finite routing plan: {exc}") from exc
+    plan_sha = "sha256:" + hashlib.sha256(plan_bytes).hexdigest()
+    frames = len(mixture)
+    mixture_pcm = identity.artifact_pcm_sha256(
+        mixture, 44_100, ["FL", "FR"], frames
+    )
+    truth_pcm = {
+        "accompaniment": identity.artifact_pcm_sha256(
+            accompaniment, 44_100, ["FL", "FR"], frames
+        ),
+        "vocal": identity.artifact_pcm_sha256(vocal, 44_100, ["FL", "FR"], frames),
+    }
+    input_pcm = {
+        "sha256": mixture_pcm, "sample_rate_hz": 44_100,
+        "channel_layout": ["FL", "FR"], "frames": frames,
+        "sample_format": "float32-le-interleaved",
+    }
+    route_recipe = {
+        "schema": recipe_mod.SCHEMA, "canon": recipe_mod.CANON,
+        "input_pcm": input_pcm,
+        "operation": {"type": "phrase_route", "target": "instrumental"},
+        "model": {
+            "model_id": f"oracle-envelope-{method}",
+            "weights_sha256": plan_sha.removeprefix("sha256:"),
+            "adapter": "audio-extract-oracle-envelope",
+            "adapter_revision": "exact-source-coordinate-envelope/v1",
+            "members": parents,
+        },
+        "effective_config": {
+            **_identity_config(asdict(config)),
+            "routing_plan_sha256": plan_sha, "truth_pcm": truth_pcm,
+            "alignment": "source-grid-exact", "diagnostic_only": True,
+        },
+        "software": {"audio_extract_commit": code_commit},
+    }
+    route_id = identity.recipe_id(route_recipe)
+    removed_recipe = {
+        "schema": recipe_mod.SCHEMA, "canon": recipe_mod.CANON,
+        "input_pcm": input_pcm,
+        "operation": {"type": "mixture_minus_source", "target": "vocals",
+                      "construction": "mixture_minus_source"},
+        "model": {
+            "model_id": "mixture-minus-routed-accompaniment",
+            "weights_sha256": hashlib.sha256(route_id.encode()).hexdigest(),
+            "adapter": "audio-extract-residual",
+            "adapter_revision": "residual-exact-grid-v1",
+            "members": [route_id],
+        },
+        "effective_config": {
+            "model_sample_rate_hz": 44_100, "alignment": "source-grid-exact",
+        },
+        "software": {"audio_extract_commit": code_commit},
+    }
+    removed_id = identity.recipe_id(removed_recipe)
+    execution = {
+        **identity.execution_fingerprint(), "diagnostic_only": True,
+        "routing_plan": plan, "routing_plan_sha256": plan_sha,
+        "parent_recipe_ids": parents,
+    }
+    _write_text_immutable(
+        method_dir / "accompaniment.recipe.json",
+        json.dumps(route_recipe, indent=2, sort_keys=True) + "\n",
+    )
+    _write_text_immutable(
+        method_dir / "accompaniment.execution.json",
+        json.dumps(execution, indent=2, sort_keys=True) + "\n",
+    )
+    _write_text_immutable(
+        method_dir / "accompaniment.pcm.sha256",
+        artifact["artifact_pcm_sha256"] + "\n",
+    )
+    _write_text_immutable(
+        method_dir / "removed-vocal.recipe.json",
+        json.dumps(removed_recipe, indent=2, sort_keys=True) + "\n",
+    )
+    _write_text_immutable(
+        method_dir / "removed-vocal.execution.json",
+        json.dumps({**identity.execution_fingerprint(),
+                    "parent_recipe_ids": [route_id]}, indent=2, sort_keys=True) + "\n",
+    )
+    _write_text_immutable(
+        method_dir / "removed-vocal.pcm.sha256",
+        removed_artifact["artifact_pcm_sha256"] + "\n",
+    )
+    _write_text_immutable(method_dir / "COMPLETE", "")
+    return route_id, removed_id
 
 
 def run_work(rows: list[BasisRow], truth_root: Path, work_id: str,
@@ -684,6 +836,7 @@ def run_work(rows: list[BasisRow], truth_root: Path, work_id: str,
         ),
     }
     outputs = {}
+    code_commit = _git_commit()
     for method, (audio, optimization) in methods.items():
         method_dir = work_dir / method
         artifact = _write_float_verified(
@@ -693,15 +846,24 @@ def run_work(rows: list[BasisRow], truth_root: Path, work_id: str,
             method_dir / "removed-vocal.f32.wav",
             mixture.astype(np.float32) - audio.astype(np.float32), sr,
         )
+        route_id, removed_id = _write_recipe_metadata(
+            method_dir=method_dir, method=method, optimization=optimization,
+            selected=selected, config=cfg, mixture=mixture,
+            accompaniment=accompaniment, vocal=vocal, artifact=artifact,
+            removed_artifact=removed_artifact, code_commit=code_commit,
+        )
         outputs[method] = {
             "artifact": artifact,
             "removed_vocal_artifact": removed_artifact,
+            "recipe_id": route_id,
+            "removed_vocal_recipe_id": removed_id,
             "optimization": optimization,
             "metrics": exact_metrics(audio, accompaniment, vocal, sr),
         }
     report = {
         "schema": "audio-extract/oracle-envelope/v1",
         "diagnostic_only": True,
+        "code_commit": code_commit,
         "work_id": work_id,
         "config": asdict(cfg),
         "basis": [

@@ -2,7 +2,9 @@ import numpy as np
 import pytest
 
 from audio_extract.oracle_envelope import (
+    BasisRow,
     OracleEnvelopeConfig,
+    _write_recipe_metadata,
     project_simplex,
     reconstruct_convex,
     reconstruct_medoid,
@@ -10,6 +12,7 @@ from audio_extract.oracle_envelope import (
     smooth_medoid_labels,
     source_coordinate_quadratics,
 )
+from audio_extract import identity
 
 
 def config(**kwargs):
@@ -115,3 +118,28 @@ def test_reconstruction_uses_one_stereo_candidate_or_convex_vector_per_cell():
     weights = np.full((2, 2, 2), 0.5)
     convex = reconstruct_convex(specs, weights, info)
     assert np.all(convex == 2.0)
+
+
+def test_diagnostic_outputs_are_explicit_recipe_nodes(tmp_path):
+    frames = 32
+    mixture = np.zeros((frames, 2), dtype=np.float32)
+    accompaniment = mixture.copy()
+    vocal = mixture.copy()
+    parent_ids = ["sha256:" + "1" * 64, "sha256:" + "2" * 64]
+    rows = [
+        BasisRow("work", f"c{i}", recipe_id, f"/candidate/{i}")
+        for i, recipe_id in enumerate(parent_ids)
+    ]
+    pcm = identity.artifact_pcm_sha256(mixture, 44100, ["FL", "FR"], frames)
+    artifact = {"artifact_pcm_sha256": pcm}
+    route_id, removed_id = _write_recipe_metadata(
+        method_dir=tmp_path, method="O2_smooth_tilewise_medoid",
+        optimization={"labels": [[0], [1]], "objective": 0.25},
+        selected=rows, config=OracleEnvelopeConfig(), mixture=mixture,
+        accompaniment=accompaniment, vocal=vocal, artifact=artifact,
+        removed_artifact=artifact, code_commit="a" * 40,
+    )
+    assert route_id.startswith("sha256:") and removed_id.startswith("sha256:")
+    assert (tmp_path / "COMPLETE").is_file()
+    assert (tmp_path / "accompaniment.recipe.json").is_file()
+    assert (tmp_path / "removed-vocal.recipe.json").is_file()
