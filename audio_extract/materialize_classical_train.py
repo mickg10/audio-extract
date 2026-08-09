@@ -192,28 +192,66 @@ def materialize_cantoria(source_root: Path, output_root: Path, code: str) -> dic
                     arrays["V"], recipe)
 
 
+def materialize_exact_truth(truth_root: Path, output_root: Path, work: str) -> dict:
+    paths = {
+        "M": truth_root / work / "mix_with_voice.wav",
+        "A": truth_root / work / "orchestra_only.wav",
+        "V": truth_root / work / "voice_ref.wav",
+    }
+    arrays, rates = {}, {}
+    for role, path in paths.items():
+        arrays[role], rates[role] = _read(path)
+    _same_grid(arrays, rates)
+    if rates["M"] != SR or arrays["M"].shape[1] != 2:
+        raise GridMismatch(f"exact truth must already be 44.1 kHz stereo: {work}")
+    recipe = {
+        "integrity_class": "linear_exact",
+        "task": "featured_soloist_vs_rest",
+        "parents": {role: {"path": str(path), "container_sha256": _file_sha(path)}
+                    for role, path in paths.items()},
+        "operations": [{"operation": "role_map", "mapping": {
+            "mix_with_voice": "M", "orchestra_only": "A", "voice_ref": "V"
+        }}],
+    }
+    return _publish(output_root, work, arrays["M"], arrays["A"], arrays["V"], recipe)
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--source-root", required=True,
+    parser.add_argument("--source-root",
                         help="root containing freidi/ and cantoria/ source directories")
+    parser.add_argument("--truth-root",
+                        help="materialize only Bologna/Aalto exact CV truth from this root")
     parser.add_argument("--output-root", required=True)
     args = parser.parse_args(argv)
-    source = Path(args.source_root)
     output = Path(args.output_root)
     results = []
-    for number in ("06", "08", "09"):
-        try:
-            results.append(materialize_freidi(source / "freidi", output, number))
-        except Exception as exc:
-            results.append({"work_id": f"freidi_no{number}", "status": "excluded",
-                            "reason": f"{type(exc).__name__}: {exc}"})
-    for code in ("CEA", "EJB1", "EJB2", "HCB", "LBM1", "LBM2", "LJT1", "LJT2",
-                 "LNG", "RRC", "SSS", "THM", "VBP", "YSM"):
-        try:
-            results.append(materialize_cantoria(source / "cantoria", output, code))
-        except Exception as exc:
-            results.append({"work_id": f"cantoria_{code}", "status": "excluded",
-                            "reason": f"{type(exc).__name__}: {exc}"})
+    if bool(args.source_root) == bool(args.truth_root):
+        parser.error("provide exactly one of --source-root or --truth-root")
+    if args.truth_root:
+        truth = Path(args.truth_root)
+        for work in ("bologna_verdi", "bologna_puccini", "bologna_donizetti",
+                     "aalto_mozart_dry"):
+            try:
+                results.append(materialize_exact_truth(truth, output, work))
+            except Exception as exc:
+                results.append({"work_id": work, "status": "excluded",
+                                "reason": f"{type(exc).__name__}: {exc}"})
+    else:
+        source = Path(args.source_root)
+        for number in ("06", "08", "09"):
+            try:
+                results.append(materialize_freidi(source / "freidi", output, number))
+            except Exception as exc:
+                results.append({"work_id": f"freidi_no{number}", "status": "excluded",
+                                "reason": f"{type(exc).__name__}: {exc}"})
+        for code in ("CEA", "EJB1", "EJB2", "HCB", "LBM1", "LBM2", "LJT1", "LJT2",
+                     "LNG", "RRC", "SSS", "THM", "VBP", "YSM"):
+            try:
+                results.append(materialize_cantoria(source / "cantoria", output, code))
+            except Exception as exc:
+                results.append({"work_id": f"cantoria_{code}", "status": "excluded",
+                                "reason": f"{type(exc).__name__}: {exc}"})
     summary = {"schema": SCHEMA + "/report", "results": results,
                "materialized": sum(r["status"] in {"materialized", "verified_existing"}
                                    for r in results),

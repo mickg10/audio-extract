@@ -1,5 +1,5 @@
 from audio_extract.cli import build_parser
-from audio_extract.train_classical import _manifest_train_works
+from audio_extract.train_classical import _exact_fold_works, _manifest_train_works
 
 
 def test_train_classical_cli_contract_parses():
@@ -52,3 +52,24 @@ def test_manifest_split_disagreement_is_refused(tmp_path):
         assert "manifest/split disagreement" in str(exc)
     else:  # pragma: no cover
         raise AssertionError("split disagreement was accepted")
+
+
+def test_exact_fold_rejects_nonexact_and_group_overlap(tmp_path):
+    manifest = tmp_path / "dataset.jsonl"
+    splits = tmp_path / "splits.json"
+    base = {
+        "integrity_class": "linear_exact",
+        "files": {"M": {}, "A": {}, "V": {}},
+        "eligible_training_targets": ["accompaniment_A"],
+        "split": "test-v1",
+    }
+    one = {**base, "work_id": "one", "group_id": "shared"}
+    two = {**base, "work_id": "two", "group_id": "shared"}
+    manifest.write_text("\n".join((__import__("json").dumps(one), __import__("json").dumps(two))) + "\n")
+    splits.write_text('{"group_split":{"shared":"test-v1"}}\n')
+    try:
+        _exact_fold_works(manifest, splits, ["one"], ["two"])
+    except ValueError as exc:
+        assert "source derivatives cross fold roles" in str(exc)
+    else:  # pragma: no cover
+        raise AssertionError("group overlap was accepted")

@@ -7,6 +7,7 @@ import soundfile as sf
 from audio_extract.materialize_classical_train import (
     GridMismatch,
     materialize_cantoria,
+    materialize_exact_truth,
 )
 
 
@@ -59,3 +60,22 @@ def test_existing_immutable_materialization_is_verified(tmp_path):
     materialize_cantoria(source, output, "X")
     again = materialize_cantoria(source, output, "X")
     assert again["status"] == "verified_existing"
+
+
+def test_exact_truth_materialization_preserves_roles_without_transform(tmp_path):
+    truth = tmp_path / "truth" / "opera"
+    output = tmp_path / "out"
+    truth.mkdir(parents=True)
+    rng = np.random.default_rng(4)
+    accompaniment = rng.normal(0, 0.01, (256, 2)).astype("float32")
+    vocal = rng.normal(0, 0.01, (256, 2)).astype("float32")
+    _write(truth / "mix_with_voice.wav", accompaniment + vocal)
+    _write(truth / "orchestra_only.wav", accompaniment)
+    _write(truth / "voice_ref.wav", vocal)
+    result = materialize_exact_truth(tmp_path / "truth", output, "opera")
+    assert result["status"] == "materialized"
+    recipe = json.loads((output / "opera" / "recipe.json").read_text())
+    assert recipe["task"] == "featured_soloist_vs_rest"
+    assert recipe["operations"] == [{"operation": "role_map", "mapping": {
+        "mix_with_voice": "M", "orchestra_only": "A", "voice_ref": "V"
+    }}]

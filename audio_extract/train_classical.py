@@ -23,7 +23,7 @@ import yaml
 from .classical_loss import ClassicalLossConfig, classical_separation_loss
 
 SR = 44_100
-EVAL_WORKS = ("bologna_verdi", "bologna_puccini", "bologna_donizetti", "aalto_mozart_dry")
+DEFAULT_EVAL_WORKS = ("bologna_verdi", "bologna_puccini", "bologna_donizetti", "aalto_mozart_dry")
 
 
 def _torch():
@@ -110,6 +110,33 @@ def _manifest_train_works(manifest_path: Path, splits_path: Path, train_splits: 
         if declared in train_splits:
             works.append(row["work_id"])
     return sorted(set(works))
+
+
+def _exact_fold_works(manifest_path: Path, splits_path: Path, train_ids: list[str],
+                      eval_ids: list[str]) -> tuple[list[str], list[str]]:
+    rows = {row["work_id"]: row for row in
+            (json.loads(line) for line in manifest_path.read_text().splitlines() if line.strip())}
+    split_doc = json.loads(splits_path.read_text())
+    requested = list(dict.fromkeys([*train_ids, *eval_ids]))
+    missing = sorted(set(requested) - set(rows))
+    if missing:
+        raise ValueError(f"fold works missing from manifest: {missing}")
+    train_groups, eval_groups = set(), set()
+    for work in requested:
+        row = rows[work]
+        if split_doc["group_split"].get(row["group_id"]) != row["split"]:
+            raise ValueError(f"manifest/split disagreement for {work}")
+        if row.get("integrity_class") != "linear_exact":
+            raise ValueError(f"exact fold refuses {work} integrity={row.get('integrity_class')}")
+        if not {"M", "A", "V"}.issubset(row.get("files", {})):
+            raise ValueError(f"exact fold requires explicit M/A/V for {work}")
+        if "accompaniment_A" not in row.get("eligible_training_targets", []):
+            raise ValueError(f"work is not eligible for accompaniment training: {work}")
+        (train_groups if work in train_ids else eval_groups).add(row["group_id"])
+    overlap = train_groups & eval_groups
+    if overlap:
+        raise ValueError(f"source derivatives cross fold roles: {sorted(overlap)}")
+    return list(train_ids), list(eval_ids)
 
 
 def _load_pretrained(cfg: dict, device: str):
@@ -248,11 +275,17 @@ def _source_metrics(candidate, accompaniment, vocals) -> dict:
     labels = local_source_coordinate_labels(
         y, a, v, tile_frames=round(0.5 * SR), hop_frames=round(0.25 * SR)
     )
-    return label_targets(labels)
+    metrics = label_targets(labels)
+    from .metrics_v2 import stereo_v2
+    stereo = stereo_v2(y, a)
+    for observation in stereo:
+        if observation["available"]:
+            metrics[observation["metric"]] = observation["value"]
+    return metrics
 
 
 def _evaluate(model, truth_root: Path, run_dir: Path, step: int, vocal_index: int,
-              device: str) -> dict:
+              device: str, eval_works: list[str]) -> dict:
     torch = _torch()
     from demucs.apply import apply_model
 
@@ -262,7 +295,7 @@ def _evaluate(model, truth_root: Path, run_dir: Path, step: int, vocal_index: in
     step_dir.mkdir(parents=True)
     result = {"step": step, "works": {}}
     model.eval()
-    for work in EVAL_WORKS:
+    for work in eval_works:
         directory = truth_root / work
         mixture = _read_exact(directory / "mix_with_voice.wav")
         accompaniment = _read_exact(directory / "orchestra_only.wav")
@@ -272,10 +305,16 @@ def _evaluate(model, truth_root: Path, run_dir: Path, step: int, vocal_index: in
         with torch.no_grad():
             output = apply_model(model, mixture.unsqueeze(0), device=device, shifts=0,
                                  split=True, overlap=0.25)[0].cpu()
+            no_vocal_output = apply_model(model, accompaniment.unsqueeze(0), device=device,
+                                          shifts=0, split=True, overlap=0.25)[0].cpu()
         if output.shape[-1] != mixture.shape[-1]:
             raise ValueError(f"inference frame mismatch for {work}: {output.shape}, {mixture.shape}")
         vocal_hat = output[vocal_index]
         accompaniment_hat = mixture - vocal_hat
+        no_vocal_hat = no_vocal_output[vocal_index]
+        false_positive_ratio = float(
+            no_vocal_hat.square().sum() / accompaniment.square().sum().clamp_min(1e-12)
+        )
         work_path = step_dir / work
         work_path.mkdir()
         sf.write(work_path / "accompaniment.f32.wav", accompaniment_hat.T.numpy(), SR,
@@ -284,6 +323,7 @@ def _evaluate(model, truth_root: Path, run_dir: Path, step: int, vocal_index: in
         result["works"][work] = {
             "frames": int(mixture.shape[-1]),
             "metrics": _source_metrics(accompaniment_hat, accompaniment, vocals),
+            "no_vocal_false_positive_energy_ratio": false_positive_ratio,
             "accompaniment_pcm_sha256": hashlib.sha256(
                 np.ascontiguousarray(accompaniment_hat.T.numpy(), dtype="float32").tobytes()
             ).hexdigest(),
@@ -292,7 +332,7 @@ def _evaluate(model, truth_root: Path, run_dir: Path, step: int, vocal_index: in
     return result
 
 
-def _existing_evaluation(run_dir: Path, step: int) -> dict | None:
+def _existing_evaluation(run_dir: Path, step: int, eval_works: list[str]) -> dict | None:
     step_dir = run_dir / "evaluation" / f"step-{step:06d}"
     if not step_dir.exists():
         return None
@@ -300,7 +340,7 @@ def _existing_evaluation(run_dir: Path, step: int) -> dict | None:
     if not report_path.exists():
         raise RuntimeError(f"incomplete immutable evaluation requires inspection: {step_dir}")
     report = json.loads(report_path.read_text())
-    if report.get("step") != step or set(report.get("works", {})) != set(EVAL_WORKS):
+    if report.get("step") != step or set(report.get("works", {})) != set(eval_works):
         raise RuntimeError(f"invalid existing evaluation report: {report_path}")
     for work, facts in report["works"].items():
         for filename in ("accompaniment.f32.wav", "removed-vocal.f32.wav"):
@@ -331,7 +371,14 @@ def run_training(args: argparse.Namespace) -> dict:
     device = args.device or ("cuda" if torch.cuda.is_available() else "cpu")
     torch.manual_seed(int(args.seed)); np.random.seed(int(args.seed))
     rng = np.random.default_rng(int(args.seed))
-    train_works = _manifest_train_works(manifest, splits, set(cfg["data"]["train_splits"]))
+    if cfg["data"].get("train_work_ids"):
+        train_works, eval_works = _exact_fold_works(
+            manifest, splits, list(cfg["data"]["train_work_ids"]),
+            list(cfg["data"]["eval_work_ids"])
+        )
+    else:
+        train_works = _manifest_train_works(manifest, splits, set(cfg["data"]["train_splits"]))
+        eval_works = list(cfg["data"].get("eval_work_ids", DEFAULT_EVAL_WORKS))
     model, base = _load_pretrained(cfg, device)
     requested_crop = round(float(cfg["optim"]["crop_s"]) * SR)
     crop_frames = int(model.valid_length(requested_crop))
@@ -346,9 +393,9 @@ def run_training(args: argparse.Namespace) -> dict:
     )
     evaluations = []
     if 0 in eval_steps:
-        existing = _existing_evaluation(run_dir, 0)
+        existing = _existing_evaluation(run_dir, 0, eval_works)
         evaluations.append(existing or _evaluate(
-            model, Path(args.truth_root), run_dir, 0, vocal_index, device
+            model, Path(args.truth_root), run_dir, 0, vocal_index, device, eval_works
         ))
 
     history = []
@@ -374,7 +421,7 @@ def run_training(args: argparse.Namespace) -> dict:
         resumed_from = {"path": str(resume_path), "sha256": _sha_file(resume_path),
                         "step": start_step}
         for eval_step in sorted(s for s in eval_steps if 0 < s <= start_step):
-            existing = _existing_evaluation(run_dir, eval_step)
+            existing = _existing_evaluation(run_dir, eval_step, eval_works)
             if existing is None:
                 raise RuntimeError(f"checkpoint step {start_step} lacks evaluation step {eval_step}")
             evaluations.append(existing)
@@ -430,7 +477,7 @@ def run_training(args: argparse.Namespace) -> dict:
                                            if device.startswith("cuda") else None),
                         "history": history, "sampled": sampled}, checkpoint)
             evaluations.append(_evaluate(model, Path(args.truth_root), run_dir, completed,
-                                         vocal_index, device))
+                                         vocal_index, device, eval_works))
 
     final_export = zero_export if requested_steps == 0 else _export_and_parity(
         model, run_dir, cfg, label=f"step-{requested_steps:06d}",
@@ -446,6 +493,7 @@ def run_training(args: argparse.Namespace) -> dict:
         "steps": requested_steps,
         "device": device,
         "train_works": [item[0] for item in dataset.items],
+        "eval_works": eval_works,
         "materialization_recipes": {item[0]: item[3] for item in dataset.items},
         "manifest_sha256": _sha_file(manifest),
         "split_manifest_sha256": _sha_file(splits),
