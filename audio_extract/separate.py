@@ -77,6 +77,7 @@ class Separator:
         self.overlap = overlap
         self.model_dir = Path(model_dir)
         self.model_dir.mkdir(parents=True, exist_ok=True)
+        self._owns_out = output_dir is None
         self._out = Path(output_dir) if output_dir else Path(tempfile.mkdtemp(prefix="ae_sep_"))
         self._out.mkdir(parents=True, exist_ok=True)
         self._sep = ASeparator(
@@ -104,6 +105,13 @@ class Separator:
         for p in produced:  # scan the dir so we capture every stem, not just the return value
             arr, sr = sf.read(str(p), dtype="float64", always_2d=True)
             stems[_normalize_stem_name(p.stem)] = arr
+        if self._owns_out:
+            for p in produced:
+                p.unlink(missing_ok=True)
+            try:
+                self._out.rmdir()
+            except OSError:
+                pass
         return SepOutput(stems, int(sr), self.model_filename, self.model_sha256, self.overlap)
 
 

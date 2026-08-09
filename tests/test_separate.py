@@ -1,6 +1,7 @@
 import numpy as np
+import soundfile as sf
 
-from audio_extract.separate import _normalize_stem_name, _residual_primary
+from audio_extract.separate import Separator, _normalize_stem_name, _residual_primary
 
 
 def test_stem_tag_beats_model_name_collision():
@@ -23,3 +24,24 @@ def test_residual_primary_prefers_vocals_no_truthiness_error():
     assert _residual_primary({"vocals": v, "instrumental": i}) is v
     assert _residual_primary({"instrumental": i}) is i
     assert _residual_primary({}) is None
+
+
+def test_owned_separator_scratch_is_removed_after_read(tmp_path):
+    scratch = tmp_path / "scratch"
+    scratch.mkdir()
+
+    class Backend:
+        def separate(self, _audio_path):
+            sf.write(scratch / "mix_(Vocals)_model.wav", np.zeros((32, 2), dtype="float32"),
+                     44_100, subtype="FLOAT")
+
+    separator = Separator.__new__(Separator)
+    separator._out = scratch
+    separator._owns_out = True
+    separator._sep = Backend()
+    separator.model_filename = "model.ckpt"
+    separator.model_sha256 = "sha256:model"
+    separator.overlap = 8
+    result = separator.separate_file(tmp_path / "unused.wav")
+    assert result.stems["vocals"].shape == (32, 2)
+    assert not scratch.exists()
