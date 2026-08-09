@@ -137,6 +137,41 @@ def test_recipe_spec_bakeoff(tmp_path):
         assert c["si_sdr_db"] > 25
 
 
+def _voc_orch():
+    v, _ = fx.synth_vocal(SR, 2.0); o = fx.synth_orchestra(SR, 2.0)
+    n = min(len(v), len(o)); return v[:n], o[:n]
+
+
+def test_geometric_median_rejects_outlier_member():
+    # 3 members: two agree, one is a wild outlier. Geometric median follows the two;
+    # the mean gets dragged toward the outlier. (gpt56's robustness rationale.)
+    good, orch = _voc_orch()
+    n = len(good)
+    members = {"a": good, "b": good * 0.98,
+               "outlier": good + 2.0 * orch[:n]}                # member steals orchestra
+    def fac(name):
+        return lambda mix: {"vocals": members[name]}
+    geo = auto.compose_accompaniment(
+        {"kind": "geometric_median", "models": ["a", "b", "outlier"]}, fac)(orch[:n] + good)
+    mean = auto.compose_accompaniment(
+        {"kind": "convex_fusion", "models": ["a", "b", "outlier"]}, fac)(orch[:n] + good)
+    # residual should recover the orchestra; geo-median (rejecting the outlier vocal) is closer
+    err_geo = np.sqrt(np.mean((geo[:n] - orch[:n]) ** 2))
+    err_mean = np.sqrt(np.mean((mean[:n] - orch[:n]) ** 2))
+    assert err_geo < err_mean
+
+
+def test_convex_fusion_projects_to_simplex():
+    good, orch = _voc_orch()
+    n = len(good)
+    def fac(name):
+        return lambda mix: {"vocals": good if name == "a" else good * 0.5}
+    # negative / unnormalized weights are clipped + normalized to the simplex
+    out = auto.compose_accompaniment(
+        {"kind": "convex_fusion", "models": ["a", "b"], "weights": [-1.0, 3.0]}, fac)(orch[:n] + good)
+    assert out.shape[0] == n and np.all(np.isfinite(out))
+
+
 def test_recipe_spec_id_stable_and_distinct():
     a = {"kind": "residual", "models": ["mdx23c"], "overlap": 8}
     b = {"kind": "native", "models": ["mdx23c"], "overlap": 8}

@@ -1,0 +1,51 @@
+# Bounded tuning panel for the voice-removal judge (deliverable 4).
+# gpt56's rule: broaden by ARCHITECTURE/failure-mode diversity, not correlated checkpoints;
+# ≤3 challengers; advance a challenger only on held-out-WORK source-coordinate gates + stereo/
+# transient/artifact checks, never because its training objective is lower.
+schema: audio-extract/tuning-panel/v1
+
+anchors:
+  - id: median_mdx_mel_bs
+    kind: ensemble_residual
+    algo: median                       # component-wise median of the 3 vocal estimates -> residual
+    members: [mdx23c, melband, bs_roformer]
+    note: bake-off global champion (calibration/bakeoff_report.md)
+  - id: residual_mdx23c
+    kind: residual
+    members: [mdx23c]
+    note: cheap robust fallback; native:MDX23C is operationally identical (deduplicated)
+
+challengers:                           # at most three initially
+  - id: htdemucs_ft
+    kind: residual
+    members: [htdemucs_ft]
+    note: genuinely different waveform/hybrid family (not another Roformer)
+  - id: geomedian_mdx_mel_bs
+    kind: geometric_median              # gpt56 QG def
+    members: [mdx23c, melband, bs_roformer]
+    stft: {n_fft: 2048, hop: 512, window: hann}
+    whitening: identity                 # start with no per-band whitening
+    rho: identity                       # Huber optional later
+    weights: uniform                    # frozen global reliability weights; no time-varying
+    solver: {tol: 1.0e-4, max_iter: 40}
+    metamorphic: lr_to_ms_to_lr_within_tol   # required L/R->M/S->L/R invariance test
+    note: stereo-coherent robust median; avoids component-median contributor-switch artifacts
+  - id: convex_fusion_mdx_mel_bs
+    kind: convex_fusion                 # gpt56 QG def
+    members: [mdx23c, melband, bs_roformer]
+    weights: simplex                    # one global non-negative weight vector, fit on TRAIN works
+    fit: worst_work_cvar                # minimize worst-work / CVaR secondary s.t. per-work tail
+    constraints: {alpha_dev_max: 0.15, beta_max: 0.10, artifact_ratio_max: 0.20}
+    canonicalize: member_weight_pairs   # (member_recipe_id, weight) canonicalized together
+    note: work-robust global fusion; frequency-band weights are a later separate challenger
+
+# One deterministic overlap/segment sweep per recipe (the only tuned parameter initially).
+parameters:
+  overlap: [4, 8]
+  segment_samples: [null]              # model default
+
+advancement:
+  screen: {passages: successive_halving, keep_fraction: 0.5}
+  finalists: 5                         # full-track exact scoring only for the top few
+  gate: held_out_work                  # advance on unseen-WORK source-coordinate + stereo/transient/artifact
+  never: lower_training_objective_alone
