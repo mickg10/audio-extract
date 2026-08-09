@@ -1,6 +1,7 @@
 from audio_extract.cli import build_parser
 from audio_extract.demucs_affine import DemucsAffine
 from audio_extract.train_classical import (
+    ClassicalDataset,
     _build_optimizer,
     _exact_fold_works,
     _manifest_train_works,
@@ -36,6 +37,17 @@ def test_train_classical_cli_accepts_explicit_zero_step_parity_mode():
         "--steps", "0",
     ])
     assert args.steps == 0
+
+
+def test_dataset_refuses_an_incomplete_frozen_work_list(tmp_path):
+    try:
+        ClassicalDataset(tmp_path, ["present-only-in-manifest"], crop_frames=4)
+    except ValueError as exc:
+        assert str(exc) == (
+            "missing immutable training materializations: present-only-in-manifest"
+        )
+    else:  # pragma: no cover
+        raise AssertionError("missing frozen training work was silently skipped")
 
 
 def test_manifest_train_works_uses_group_manifest_without_resplitting(tmp_path):

@@ -99,9 +99,11 @@ class ClassicalDataset:
         self.root = root
         self.crop_frames = crop_frames
         self.items = []
+        missing = []
         for work in works:
             directory = root / work
             if not directory.is_dir():
+                missing.append(work)
                 continue
             reports = json.loads((directory / "report.json").read_text())
             recipe = json.loads((directory / "recipe.json").read_text())
@@ -134,6 +136,10 @@ class ClassicalDataset:
             if frames < crop_frames:
                 raise ValueError(f"work {work} is shorter than one training crop")
             self.items.append((work, directory, frames, reports["recipe_id"], affines))
+        if missing:
+            raise ValueError(
+                "missing immutable training materializations: " + ", ".join(missing)
+            )
         if not self.items:
             raise ValueError("no eligible immutable training works were materialized")
 
