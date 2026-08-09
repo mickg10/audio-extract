@@ -1,0 +1,408 @@
+{
+ "cli": "audio-extract train classical",
+ "arch": "HTDemucs",
+ "source_commit": "5d65333",
+ "device": "cuda",
+ "resolved_config": {
+  "schema": "audio-extract/train/classical-student-v1",
+  "base_arch": "HTDemucs",
+  "base_arch_fact": "trainable torch nn.Module (verified fwd+bwd, no dora); exports via demucs.states + audio_separator.demucs_separator",
+  "sources": [
+   "accompaniment",
+   "vocals"
+  ],
+  "audio_channels": 2,
+  "samplerate": 44100,
+  "model": {
+   "channels": 48,
+   "depth": 4
+  },
+  "data": {
+   "manifest": "datasets/classical-v1.jsonl",
+   "splits": "datasets/classical-v1-splits.json",
+   "train_splits": [
+    "train"
+   ],
+   "holdout": "test-v1 (Bologna/Aalto \u2014 CONTAMINATED legacy; held out from THIS run, not for final acceptance)"
+  },
+  "optim": {
+   "name": "adam",
+   "lr": 0.0003,
+   "steps_first_run": 1500,
+   "batch": 4,
+   "crop_s": 6
+  },
+  "loss": {
+   "wav": 1.0,
+   "stft": 0.5,
+   "mix": 0.1,
+   "theft": 0.5,
+   "fn": 0.3,
+   "alpha": 0.2,
+   "stereo": 0.2,
+   "event_vocal": 2.0,
+   "event_tutti": 1.5
+  },
+  "export": {
+   "to": "demucs.states .th -> demucs.apply_model (== audio-separator demucs_separator inference); registry packaging is final step"
+  },
+  "note": "Do NOT optimize the SHADOW judge (gpt56 H4). Stage-1 = dry exact linear stems only."
+ },
+ "steps": 560,
+ "batch": 4,
+ "crop_frames": 441000,
+ "n_params": 26894916,
+ "train_works": [
+  "cantoria_CEA",
+  "cantoria_EJB1",
+  "cantoria_EJB2",
+  "cantoria_HCB",
+  "cantoria_LBM1",
+  "cantoria_LBM2",
+  "cantoria_LJT1",
+  "cantoria_LJT2",
+  "cantoria_LNG",
+  "cantoria_RRC",
+  "cantoria_SSS",
+  "cantoria_THM",
+  "cantoria_VBP",
+  "cantoria_YSM",
+  "freidi_no06",
+  "freidi_no08",
+  "freidi_no09"
+ ],
+ "train_work_M_sha": {
+  "cantoria_CEA": "sha256:f2c83f3bcd8a15fa5a63fede85e383dc9b9a0f9effdbacd74e2258ecddb7fb2e",
+  "cantoria_EJB1": "sha256:3d089c6eb8034324bbbf957c7f8b786e816539c1298f84ca3ddf59d4a86d22f3",
+  "cantoria_EJB2": "sha256:c2ad6ee756855a0a6db163d507d87e21e887a4678b9e0eba5b411ba558013d9e",
+  "cantoria_HCB": "sha256:fad03a6ecdcaae0b7506056ad70ab120afea15874946963792d07a78f23e8c99",
+  "cantoria_LBM1": "sha256:d981f15b488697116ea91dbb6e8cd901bdfaf80fa81cd292acdb201844bbada9",
+  "cantoria_LBM2": "sha256:e800847898bd87e5b5f57ddc8f78a567ae180e752dcbcdd9c3c455168d0c6c12",
+  "cantoria_LJT1": "sha256:fd751ce2acfe383a9f0e68694d15365c68b3d9232ac83730ed45825cbf903ebf",
+  "cantoria_LJT2": "sha256:3a223893cec65d7aa0c88bc1f9fa7059fc1f70a14e49940195bd8feddd7a85cc",
+  "cantoria_LNG": "sha256:1ca32bb9b489d984cc367fb88f1f01735bd17850b4c09fe30d0616f85bc6d901",
+  "cantoria_RRC": "sha256:e9f25b3eded6a0406a8874ecd90eef37ac13dd19dc01fdf347a0c9b979e6fbef",
+  "cantoria_SSS": "sha256:4d79e47185020675da6702c8c95ca4143c28e09f8cc8c2522590960f20984dbe",
+  "cantoria_THM": "sha256:688a5908d70baaa53c1e8a6229d1deb2fedb2e767280652f34226cac5eeba2e8",
+  "cantoria_VBP": "sha256:f5e6e06f04eff6000445484c19f300d70fa608f1aa32a15ee74e50539532e6db",
+  "cantoria_YSM": "sha256:ad35f41fdb77d9a2d2a9141a1ba69a0c52093201a29c1c270b7191a8b977b7b7",
+  "freidi_no06": "sha256:cab12bc30fae37cf68a86a5e273a3b89b3cb2371cf383304e96ffe7af2e6b715",
+  "freidi_no08": "sha256:d952356e5ee22fd05aa07541c4dbca206a1e5b0fd804b39335ea0192ca075e4a",
+  "freidi_no09": "sha256:a95e1091a6c1a9df9ef6177a7c8a83c0aec4448a0095a19a84db5e230a234358"
+ },
+ "splits_used": {
+  "train": [
+   "freidi:freidi_freischuetz:freidi_no06_singers:freidi_orchestra",
+   "freidi:freidi_freischuetz:freidi_no08_singers:freidi_orchestra",
+   "freidi:freidi_freischuetz:freidi_no09_singers:freidi_orchestra",
+   "cantoria:cantoria:cantoria_SATB_quartet:cantoria_organ"
+  ]
+ },
+ "loss_family": [
+  "wav",
+  "stft",
+  "mix",
+  "theft",
+  "fn",
+  "alpha",
+  "stereo",
+  "event_vocal",
+  "event_tutti"
+ ],
+ "convergence": {
+  "first100": 0.7578,
+  "last100": 0.7578,
+  "decreasing": false,
+  "all_finite": true
+ },
+ "evals": [
+  {
+   "step": 558,
+   "works": {
+    "bologna_verdi": {
+     "parity": true,
+     "student": {
+      "retained_voice_db_p90": -7.45,
+      "retained_voice_coef_p90": 0.621,
+      "event_hole_db_p90": 7.17,
+      "event_hole_db_max": 15.88,
+      "event_hole_cvar90": 9.32,
+      "alpha_error_p90": 0.562,
+      "si_sdr_db": 2.88,
+      "avail_tiles": 257
+     },
+     "residual_mdx23c": {
+      "retained_voice_db_p90": -18.35,
+      "retained_voice_coef_p90": 0.636,
+      "event_hole_db_p90": 1.19,
+      "event_hole_db_max": 4.9,
+      "event_hole_cvar90": 2.47,
+      "alpha_error_p90": 0.128,
+      "si_sdr_db": 18.72,
+      "avail_tiles": 257
+     },
+     "median_mdx_mel_bs": {
+      "retained_voice_db_p90": -21.87,
+      "retained_voice_coef_p90": 0.584,
+      "event_hole_db_p90": 0.51,
+      "event_hole_db_max": 3.4,
+      "event_hole_cvar90": 1.15,
+      "alpha_error_p90": 0.057,
+      "si_sdr_db": 21.78,
+      "avail_tiles": 257
+     }
+    },
+    "bologna_puccini": {
+     "parity": true,
+     "student": {
+      "retained_voice_db_p90": -6.88,
+      "retained_voice_coef_p90": 0.775,
+      "event_hole_db_p90": 7.38,
+      "event_hole_db_max": 14.03,
+      "event_hole_cvar90": 9.73,
+      "alpha_error_p90": 0.572,
+      "si_sdr_db": 2.96,
+      "avail_tiles": 357
+     },
+     "residual_mdx23c": {
+      "retained_voice_db_p90": -22.86,
+      "retained_voice_coef_p90": 0.87,
+      "event_hole_db_p90": 0.29,
+      "event_hole_db_max": 7.19,
+      "event_hole_cvar90": 1.56,
+      "alpha_error_p90": 0.033,
+      "si_sdr_db": 24.61,
+      "avail_tiles": 357
+     },
+     "median_mdx_mel_bs": {
+      "retained_voice_db_p90": -26.0,
+      "retained_voice_coef_p90": 0.822,
+      "event_hole_db_p90": 0.09,
+      "event_hole_db_max": 0.53,
+      "event_hole_cvar90": 0.19,
+      "alpha_error_p90": 0.011,
+      "si_sdr_db": 25.97,
+      "avail_tiles": 357
+     }
+    },
+    "bologna_donizetti": {
+     "parity": true,
+     "student": {
+      "retained_voice_db_p90": 8.57,
+      "retained_voice_coef_p90": 0.725,
+      "event_hole_db_p90": 11.2,
+      "event_hole_db_max": 24.24,
+      "event_hole_cvar90": 14.1,
+      "alpha_error_p90": 0.724,
+      "si_sdr_db": 0.75,
+      "avail_tiles": 423
+     },
+     "residual_mdx23c": {
+      "retained_voice_db_p90": -29.81,
+      "retained_voice_coef_p90": 0.143,
+      "event_hole_db_p90": 2.54,
+      "event_hole_db_max": 10.06,
+      "event_hole_cvar90": 4.72,
+      "alpha_error_p90": 0.254,
+      "si_sdr_db": 25.66,
+      "avail_tiles": 423
+     },
+     "median_mdx_mel_bs": {
+      "retained_voice_db_p90": -32.85,
+      "retained_voice_coef_p90": 0.121,
+      "event_hole_db_p90": 0.31,
+      "event_hole_db_max": 4.05,
+      "event_hole_cvar90": 1.73,
+      "alpha_error_p90": 0.036,
+      "si_sdr_db": 27.77,
+      "avail_tiles": 423
+     }
+    },
+    "aalto_mozart_dry": {
+     "parity": true,
+     "student": {
+      "retained_voice_db_p90": 0.86,
+      "retained_voice_coef_p90": 0.538,
+      "event_hole_db_p90": 6.58,
+      "event_hole_db_max": 12.58,
+      "event_hole_cvar90": 8.04,
+      "alpha_error_p90": 0.531,
+      "si_sdr_db": 1.91,
+      "avail_tiles": 359
+     },
+     "residual_mdx23c": {
+      "retained_voice_db_p90": -31.81,
+      "retained_voice_coef_p90": 0.655,
+      "event_hole_db_p90": 0.28,
+      "event_hole_db_max": 2.97,
+      "event_hole_cvar90": 0.71,
+      "alpha_error_p90": 0.031,
+      "si_sdr_db": 21.46,
+      "avail_tiles": 359
+     },
+     "median_mdx_mel_bs": {
+      "retained_voice_db_p90": -34.9,
+      "retained_voice_coef_p90": 0.429,
+      "event_hole_db_p90": 0.19,
+      "event_hole_db_max": 2.94,
+      "event_hole_cvar90": 0.49,
+      "alpha_error_p90": 0.022,
+      "si_sdr_db": 23.67,
+      "avail_tiles": 359
+     }
+    }
+   }
+  },
+  {
+   "step": 559,
+   "works": {
+    "bologna_verdi": {
+     "parity": true,
+     "student": {
+      "retained_voice_db_p90": -6.97,
+      "retained_voice_coef_p90": 0.63,
+      "event_hole_db_p90": 6.91,
+      "event_hole_db_max": 14.93,
+      "event_hole_cvar90": 8.89,
+      "alpha_error_p90": 0.549,
+      "si_sdr_db": 3.15,
+      "avail_tiles": 257
+     },
+     "residual_mdx23c": {
+      "retained_voice_db_p90": -18.35,
+      "retained_voice_coef_p90": 0.636,
+      "event_hole_db_p90": 1.19,
+      "event_hole_db_max": 4.9,
+      "event_hole_cvar90": 2.47,
+      "alpha_error_p90": 0.128,
+      "si_sdr_db": 18.72,
+      "avail_tiles": 257
+     },
+     "median_mdx_mel_bs": {
+      "retained_voice_db_p90": -21.87,
+      "retained_voice_coef_p90": 0.584,
+      "event_hole_db_p90": 0.51,
+      "event_hole_db_max": 3.4,
+      "event_hole_cvar90": 1.15,
+      "alpha_error_p90": 0.057,
+      "si_sdr_db": 21.78,
+      "avail_tiles": 257
+     }
+    },
+    "bologna_puccini": {
+     "parity": true,
+     "student": {
+      "retained_voice_db_p90": -6.63,
+      "retained_voice_coef_p90": 0.794,
+      "event_hole_db_p90": 6.92,
+      "event_hole_db_max": 13.86,
+      "event_hole_cvar90": 9.58,
+      "alpha_error_p90": 0.549,
+      "si_sdr_db": 3.1,
+      "avail_tiles": 357
+     },
+     "residual_mdx23c": {
+      "retained_voice_db_p90": -22.86,
+      "retained_voice_coef_p90": 0.87,
+      "event_hole_db_p90": 0.29,
+      "event_hole_db_max": 7.19,
+      "event_hole_cvar90": 1.56,
+      "alpha_error_p90": 0.033,
+      "si_sdr_db": 24.61,
+      "avail_tiles": 357
+     },
+     "median_mdx_mel_bs": {
+      "retained_voice_db_p90": -26.0,
+      "retained_voice_coef_p90": 0.822,
+      "event_hole_db_p90": 0.09,
+      "event_hole_db_max": 0.53,
+      "event_hole_cvar90": 0.19,
+      "alpha_error_p90": 0.011,
+      "si_sdr_db": 25.97,
+      "avail_tiles": 357
+     }
+    },
+    "bologna_donizetti": {
+     "parity": true,
+     "student": {
+      "retained_voice_db_p90": 8.99,
+      "retained_voice_coef_p90": 0.741,
+      "event_hole_db_p90": 10.61,
+      "event_hole_db_max": 26.94,
+      "event_hole_cvar90": 13.97,
+      "alpha_error_p90": 0.705,
+      "si_sdr_db": 0.82,
+      "avail_tiles": 423
+     },
+     "residual_mdx23c": {
+      "retained_voice_db_p90": -29.81,
+      "retained_voice_coef_p90": 0.143,
+      "event_hole_db_p90": 2.54,
+      "event_hole_db_max": 10.06,
+      "event_hole_cvar90": 4.72,
+      "alpha_error_p90": 0.254,
+      "si_sdr_db": 25.66,
+      "avail_tiles": 423
+     },
+     "median_mdx_mel_bs": {
+      "retained_voice_db_p90": -32.85,
+      "retained_voice_coef_p90": 0.121,
+      "event_hole_db_p90": 0.31,
+      "event_hole_db_max": 4.05,
+      "event_hole_cvar90": 1.73,
+      "alpha_error_p90": 0.036,
+      "si_sdr_db": 27.77,
+      "avail_tiles": 423
+     }
+    },
+    "aalto_mozart_dry": {
+     "parity": true,
+     "student": {
+      "retained_voice_db_p90": 1.13,
+      "retained_voice_coef_p90": 0.552,
+      "event_hole_db_p90": 6.36,
+      "event_hole_db_max": 11.45,
+      "event_hole_cvar90": 7.87,
+      "alpha_error_p90": 0.519,
+      "si_sdr_db": 1.81,
+      "avail_tiles": 359
+     },
+     "residual_mdx23c": {
+      "retained_voice_db_p90": -31.81,
+      "retained_voice_coef_p90": 0.655,
+      "event_hole_db_p90": 0.28,
+      "event_hole_db_max": 2.97,
+      "event_hole_cvar90": 0.71,
+      "alpha_error_p90": 0.031,
+      "si_sdr_db": 21.46,
+      "avail_tiles": 359
+     },
+     "median_mdx_mel_bs": {
+      "retained_voice_db_p90": -34.9,
+      "retained_voice_coef_p90": 0.429,
+      "event_hole_db_p90": 0.19,
+      "event_hole_db_max": 2.94,
+      "event_hole_cvar90": 0.49,
+      "alpha_error_p90": 0.022,
+      "si_sdr_db": 23.67,
+      "avail_tiles": 359
+     }
+    }
+   }
+  }
+ ],
+ "checkpoint": {
+  "path": "research6:/home/mickg/runs/train/classical-v1-run1/checkpoint.pt",
+  "sha256": "sha256:c74a3fcef8227a01193b2de8cbe53012fc6b2cfa713c6402f96e9768a62d9285",
+  "resumable": true
+ },
+ "export_bridge": {
+  "export_path": "research6:/home/mickg/runs/train/classical-v1-run1/htdemucs_export.th",
+  "export_sha256": "sha256:0a194bf14e94ffa84ca4d6099bfaef3a6b53a7f4cca9d03ccc6501458788057a",
+  "roundtrip_infer_ok": true,
+  "note": "reloaded via demucs.states.load_model + apply_model (audio-separator demucs_separator uses the same demucs inference); audio-separator model-registry packaging is the final step"
+ },
+ "train_time_s": 86.7,
+ "repro_cmd": "./run.sh python -m audio_extract.train_classical --manifest datasets/classical-v1.jsonl --split-manifest datasets/classical-v1-splits.json --config configs/train/classical-student-v1.yaml --run-dir /home/mickg/runs/train/classical-v1-run1",
+ "do_not_optimize_shadow_judge": true
+}
