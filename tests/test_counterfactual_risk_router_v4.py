@@ -16,6 +16,7 @@ from audio_extract.counterfactual_risk_router_v4 import (
     QueryCalibrationScopeV4,
     RiskPanelIdentityV4,
     RiskPanelV4,
+    RouteDecisionV4,
     exhaustive_optimal_routes_v4,
     solve_risk_route_v4,
 )
@@ -97,10 +98,7 @@ def identity(**changes):
 def panel(**changes):
     values = dict(
         identity=identity(),
-        upper=np.asarray(
-            [[[[0.1, 0.1], [0.7, 0.7]]]],
-            dtype=np.float64,
-        ),
+        upper=np.asarray([[[[0.1, 0.1], [0.7, 0.7]]]], dtype=np.float64),
         available=np.ones((1, 1, 2, 2), dtype=bool),
     )
     values.update(changes)
@@ -122,28 +120,19 @@ def test_calibration_is_bound_to_query_encoder_bundle():
     value = identity()
     other = bundle(12)
     with pytest.raises(ValueError, match="query encoder bundle mismatch"):
-        dataclasses.replace(
-            value,
-            query_encoder_bundle=other,
-        ).validate()
+        dataclasses.replace(value, query_encoder_bundle=other).validate()
 
 
 def test_calibration_is_bound_to_query_quality_stratum():
     value = identity()
     with pytest.raises(ValueError, match="query quality stratum mismatch"):
-        dataclasses.replace(
-            value,
-            query_quality_stratum_sha256=sha("2"),
-        ).validate()
+        dataclasses.replace(value, query_quality_stratum_sha256=sha("2")).validate()
 
 
 def test_calibration_is_bound_to_selected_quantile():
     value = identity()
     with pytest.raises(ValueError, match="selected quantile mismatch"):
-        dataclasses.replace(
-            value,
-            selected_quantile_level=0.9,
-        ).validate()
+        dataclasses.replace(value, selected_quantile_level=0.9).validate()
 
 
 def test_query_scope_changes_panel_identity():
@@ -161,8 +150,7 @@ def test_query_scope_changes_panel_identity():
         query_quality_stratum_sha256=sha("2"),
         calibration_certificate=changed_certificate,
     )
-    first.validate()
-    second.validate()
+    first.validate(); second.validate()
     assert first.sha256 != second.sha256
 
 
@@ -177,17 +165,12 @@ def test_route_json_contains_exact_labels_and_content_hash():
 
 def test_exhaustive_mirror_uses_true_minimum_before_tolerance():
     tolerance = 1e-9
-    costs = np.asarray(
-        [[[0.0, 0.75 * tolerance, 1.5 * tolerance]]]
-    )
+    costs = np.asarray([[[0.0, 0.75 * tolerance, 1.5 * tolerance]]])
     feasible = np.ones_like(costs, dtype=bool)
     best, routes = exhaustive_optimal_routes_v4(
         costs,
         feasible,
-        config(
-            critical_thresholds=(("voice", 1.0),),
-            uniqueness_tolerance=tolerance,
-        ),
+        config(critical_thresholds=(("voice", 1.0),), uniqueness_tolerance=tolerance),
     )
     assert best == 0.0
     assert [int(row[0, 0]) for row in routes] == [0, 1]
@@ -199,16 +182,10 @@ def test_exhaustive_mirror_sorts_equal_routes_lexicographically():
     _, routes = exhaustive_optimal_routes_v4(
         costs,
         feasible,
-        config(
-            critical_thresholds=(("voice", 1.0),),
-            uniqueness_tolerance=0.0,
-        ),
+        config(critical_thresholds=(("voice", 1.0),), uniqueness_tolerance=0.0),
     )
     assert [tuple(row.ravel()) for row in routes] == [
-        (0, 0),
-        (0, 1),
-        (1, 0),
-        (1, 1),
+        (0, 0), (0, 1), (1, 0), (1, 1)
     ]
 
 
@@ -220,20 +197,14 @@ def test_v4_solver_plan_identity_changes_with_query_stratum():
         original.calibration_certificate.query_scope,
         query_quality_stratum_sha256=sha("2"),
     )
-    certificate = dataclasses.replace(
-        original.calibration_certificate,
-        query_scope=scope,
-    )
+    cert = dataclasses.replace(original.calibration_certificate, query_scope=scope)
     second_identity = dataclasses.replace(
         original,
         query_quality_stratum_sha256=sha("2"),
-        calibration_certificate=certificate,
+        calibration_certificate=cert,
     )
     second = solve_risk_route_v4(
-        dataclasses.replace(
-            first_panel,
-            identity=second_identity,
-        ),
+        dataclasses.replace(first_panel, identity=second_identity),
         config(),
     )
     assert first.labels.tolist() == second.labels.tolist()
@@ -242,9 +213,21 @@ def test_v4_solver_plan_identity_changes_with_query_stratum():
 
 def test_decision_refuses_non_grid_labels_at_json_boundary():
     source = solve_risk_route_v4(panel(), config())
-    broken = dataclasses.replace(
-        source,
-        labels=np.asarray([0, 1]),
-    )
+    broken = dataclasses.replace(source, labels=np.asarray([0, 1]))
     with pytest.raises(Exception, match="two-dimensional"):
         broken.to_dict()
+
+
+def test_calibration_metric_order_is_identity_bearing():
+    value = identity()
+    reversed_certificate = dataclasses.replace(
+        value.calibration_certificate,
+        metric_coverages=tuple(
+            reversed(value.calibration_certificate.metric_coverages)
+        ),
+    )
+    with pytest.raises(ValueError, match="in order"):
+        dataclasses.replace(
+            value,
+            calibration_certificate=reversed_certificate,
+        ).validate()
