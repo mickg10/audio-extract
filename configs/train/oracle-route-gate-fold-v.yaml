@@ -1,0 +1,57 @@
+schema: audio-extract/train/classical-smooth-gate/v1
+experiment: ORACLE-ROUTE-GATE-045-BS-EXACT-CV-100
+fold: V
+members:
+  conservative: htdemucs_04573f0d
+  aggressive: bs_roformer
+data:
+  manifest: /home/mickg/runs/gate-controls-463e757/gate-inputs-045-bs.json
+  train_work_ids: [bologna_puccini, bologna_donizetti]
+  eval_work_ids: [bologna_verdi, aalto_mozart_dry]
+  task: soloist_vs_rest
+  task_roles:
+    removed: [featured_soloists]
+    retained: [orchestra, chorus, non_target_soloists]
+model:
+  sample_rate_hz: 44100
+  n_fft: 2048
+  hop_length: 512
+  tile_seconds: 2.0
+  band_edges_hz: [0, 250, 500, 1000, 2000, 4000, 8000, 16000, 22050]
+  feature_channels: 4
+  hidden_channels: 8
+  correction_weight: 0.05
+  temporal_tv_weight: 0.02
+  frequency_tv_weight: 0.02
+  reference_floor: 0.000001
+  adapter_revision: smooth-residual-tf-gate/v1
+optim:
+  name: adam
+  lr: 0.005
+  betas: [0.9, 0.999]
+  eps: 0.00000001
+  weight_decay: 0.0
+  steps: 100
+  batch: 1
+  crop_s: 7.8
+  gradient_clip: 1.0
+loss_implementation: audio_extract.classical_loss_v2:classical_residual_loss_v2
+loss:
+  residual_waveform: 1.0
+  residual_complex_stft: 0.5
+  no_vocal_false_positive: 1.0
+  vocal_only_false_negative: 0.5
+  source_coordinate: 0.1
+  stereo_accompaniment: 0.05
+  event_weighted_residual: 0.25
+  stft_ffts: [512, 1024, 2048]
+  waveform_reference_floor: 0.001
+  stft_reference_floor: 0.001
+  source_coord_ridge: 0.000001
+  source_coord_max_condition: 1000000.0
+  target_consistency_tolerance: 0.00001
+  residual_consistency_tolerance: 0.000001
+  identity_roundoff_ulps: 8.0
+  eps: 0.00000001
+evaluation_steps: [0, 100]
+note: Frozen-member engineering falsification fold; requires independent review and human A/B.

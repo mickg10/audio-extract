@@ -472,7 +472,10 @@ def _config_objects(config: dict[str, Any]) -> tuple[SmoothGateConfig, Classical
         model["band_edges_hz"] = tuple(model["band_edges_hz"])
     gate_config = SmoothGateConfig(**model)
     gate_config.validate()
-    loss_config = ClassicalResidualLossConfig(**dict(config["loss"]))
+    loss = dict(config["loss"])
+    if "stft_ffts" in loss:
+        loss["stft_ffts"] = tuple(loss["stft_ffts"])
+    loss_config = ClassicalResidualLossConfig(**loss)
     return gate_config, loss_config
 
 
