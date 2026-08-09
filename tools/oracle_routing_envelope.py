@@ -274,6 +274,91 @@ def _write_route(
     }
 
 
+def _write_removed_vocal(
+    *, layout: TrackLayout, source: dict[str, Any], mixture: np.ndarray,
+    accompaniment: np.ndarray, parent: dict[str, Any], code_commit: str,
+) -> dict[str, Any]:
+    """Write the exact-grid ``M - routed accompaniment`` diagnostic child node."""
+    expected = (int(source["frames"]), len(source["channel_layout"]))
+    if mixture.shape != expected or accompaniment.shape != expected:
+        raise ValueError(
+            f"route complement grid mismatch: {mixture.shape}/{accompaniment.shape} != {expected}"
+        )
+    parent_path = Path(parent["path"])
+    parent_audio = _read_exact(parent_path, source["frames"])
+    if (
+        not np.array_equal(parent_audio, accompaniment.astype(np.float32))
+        or _pcm(parent_audio) != parent["artifact_pcm_sha256"]
+        or _sha_file(parent_path) != parent["container_sha256"]
+    ):
+        raise ValueError("routed accompaniment parent changed before complement write")
+    parent_id = parent["recipe_id"]
+    recipe = {
+        "schema": recipe_mod.SCHEMA,
+        "canon": recipe_mod.CANON,
+        "input_pcm": _input_pcm(source),
+        "operation": {
+            "type": "mixture_minus_source",
+            "target": "vocals",
+            "construction": "mixture_minus_source",
+        },
+        "model": {
+            "model_id": "oracle-routing-removed-vocal",
+            "weights_sha256": hashlib.sha256(parent_id.encode()).hexdigest(),
+            "adapter": "audio-extract-oracle-routing-complement",
+            "adapter_revision": "exact-grid-complement/v1",
+            "members": [parent_id],
+        },
+        "effective_config": {
+            "parent_recipe_ids": [parent_id],
+            "parent_artifact_pcm_sha256": parent["artifact_pcm_sha256"],
+            "alignment": "source-grid-exact",
+            "oracle_diagnostic_only": True,
+        },
+        "software": {"audio_extract_commit": code_commit},
+    }
+    rid = identity.recipe_id(recipe)
+    cdir = layout.candidate_dir(rid)
+    output = mixture.astype(np.float32) - accompaniment.astype(np.float32)
+    artifact = _pcm(output)
+    cached = (cdir / "COMPLETE").is_file()
+    if cached:
+        if json.loads((cdir / "recipe.json").read_text()) != recipe:
+            raise ValueError(f"cached removed-vocal recipe mismatch: {rid}")
+        reopened = _read_exact(cdir / "output.f32.wav", source["frames"])
+        if not np.array_equal(reopened, output):
+            raise ValueError(f"cached removed-vocal output mismatch: {rid}")
+        if (cdir / "output.pcm.sha256").read_text().strip() != artifact:
+            raise ValueError(f"cached removed-vocal PCM identity mismatch: {rid}")
+    else:
+        fd, name = tempfile.mkstemp(suffix=".f32.wav")
+        os.close(fd)
+        tmp = Path(name)
+        sf.write(tmp, output, 44_100, subtype="FLOAT")
+        try:
+            layout.write_candidate(
+                rid, recipe,
+                {
+                    **identity.execution_fingerprint(),
+                    "oracle_diagnostic_only": True,
+                    "parents": [parent],
+                },
+                tmp, artifact,
+            )
+        except ImmutableWriteError:
+            cached = True
+        finally:
+            tmp.unlink(missing_ok=True)
+    return {
+        "recipe_id": rid,
+        "parent_recipe_id": parent_id,
+        "path": str(cdir / "output.f32.wav"),
+        "artifact_pcm_sha256": artifact,
+        "container_sha256": _sha_file(cdir / "output.f32.wav"),
+        "cached": cached,
+    }
+
+
 def _metrics(value: np.ndarray, accompaniment: np.ndarray, vocal: np.ndarray) -> tuple[dict, tuple]:
     labels = local_source_coordinate_labels(
         value, accompaniment, vocal, tile_frames=round(0.5 * 44_100),
@@ -723,9 +808,14 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
                     convex_config.identity_dict()
                 ),
             )
+            removed_vocal = _write_removed_vocal(
+                layout=layout, source=source, mixture=mixture,
+                accompaniment=outputs[mode], parent=artifact,
+                code_commit=code_commit,
+            )
             metrics, labels = _metrics(outputs[mode], accompaniment, vocal)
             work_report["outputs"][mode] = {
-                **artifact, "metrics": metrics,
+                **artifact, "removed_vocal": removed_vocal, "metrics": metrics,
                 "worst_identifiable_event": _worst_identifiable(labels),
                 "seam_check": seam_check(outputs[mode], stats, config),
             }
