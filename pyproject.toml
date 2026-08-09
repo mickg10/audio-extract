@@ -6,6 +6,7 @@ requires-python = ">=3.10,<3.13"
 dependencies = [
     "audio-separator[cpu]",   # Apple Silicon: CPU/CoreML onnxruntime (not the CUDA [gpu] extra)
     "numpy",
+    "scipy",
     "soundfile",
     "librosa",
     "matplotlib>=3.10.9",
