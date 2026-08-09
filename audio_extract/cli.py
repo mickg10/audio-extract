@@ -113,6 +113,37 @@ def cmd_train_classical(args: argparse.Namespace) -> int:
     return _emit(_envelope("train.classical", "ok", report=report))
 
 
+def cmd_research_surrogate_replay(args: argparse.Namespace) -> int:
+    """Replay the frozen loss surrogate without constructing an optimizer."""
+    from .surrogate_replay import ReplayEvidenceError, run_replay
+
+    try:
+        report = run_replay(
+            run_dir=Path(args.run_dir),
+            materialized_root=Path(args.materialized_root),
+            manifest_path=Path(args.manifest),
+            output_dir=Path(args.output_dir),
+            device=args.device,
+        )
+    except ReplayEvidenceError as exc:
+        return _emit(
+            _envelope(
+                "research.surrogate-replay",
+                "ok",
+                gate_result="INVALID_EVIDENCE",
+                message=str(exc),
+            )
+        )
+    return _emit(
+        _envelope(
+            "research.surrogate-replay",
+            "ok",
+            gate_result=report["gate_result"],
+            report=report,
+        )
+    )
+
+
 def _resolve_locked_model(lock_path: str, name: str, model_dir: str):
     """If a model lock exists, resolve+verify ``name`` through it (v2.1 §6.5/§6.7).
     Returns (registry_filename, executed_bundle_id, expected_sha256). Without a lock
@@ -887,6 +918,21 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--resume", help="immutable checkpoint-step-XXXXXX.pt to resume")
     sp.add_argument("--json", action="store_true")
     sp.set_defaults(func=cmd_train_classical)
+
+    # research — deterministic, replay-only diagnostics (never production audio path)
+    g_research = sub.add_parser("research", help="frozen no-optimizer diagnostics").add_subparsers(
+        dest="cmd", required=True
+    )
+    sp = g_research.add_parser(
+        "surrogate-replay", help="replay LOSS-SURROGATE-ALIGNMENT-001 on frozen crops"
+    )
+    sp.add_argument("--run-dir", required=True)
+    sp.add_argument("--materialized-root", required=True)
+    sp.add_argument("--manifest", required=True)
+    sp.add_argument("--output-dir", required=True)
+    sp.add_argument("--device", default="cuda")
+    sp.add_argument("--json", action="store_true")
+    sp.set_defaults(func=cmd_research_surrogate_replay)
 
     # models — executed model lock
     g_models = sub.add_parser("models", help="executed model lock").add_subparsers(dest="cmd", required=True)
