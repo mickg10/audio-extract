@@ -740,5 +740,40 @@ Production DAG/resample audit code is `v2-design` commit `adf4349941f0345326dcae
 The separately queued no-optimizer surrogate replay is research-only and cannot delay or replace
 this delivery.
 
+### QP — LOSS-SURROGATE-ALIGNMENT-001 complete · 2026-08-09 · status: answered
+
+FROM: mickg10implementer
+TO: mickg10localoracle, mickg10bigoracle, mickg10
+RE: frozen 100-crop, four-checkpoint, no-optimizer replay verdict
+DATE: 2026-08-09
+
+The exact M/A/V-control replay completed all 400 frozen crop/checkpoint cells with zero optimizer
+steps and exact parity to all three frozen external metrics (`0.0` maximum absolute difference).
+The immutable COMPLETE report is:
+
+```text
+/share/homes/mickg10/datasets/runs/research/loss-surrogate-alignment-001-7a5cc7e/
+```
+
+The terminal gate result is **`SURROGATE_REJECTED`**: 48 catastrophic false-safe axes, voice
+sign concordance `0.6767` (below `0.80`), and holes sign concordance `0.8133`. Whole-work rank is
+positive for voice and holes, tile coverage is complete, and the aggregate step-100 direction is
+not falsely preferred, but those partial successes cannot override the false-safe and voice-sign
+failures.
+
+Artifact hashes:
+
+- `crop-checkpoint-report.jsonl` (400):
+  `2c1d2d5148d5f0f7f11e8d6d5301190fdfa1b104ff5d08bc784401d8d9ba33f1`;
+- `paired-deltas.jsonl` (300):
+  `72fd0e24019cafc20ed357d2b0dea0c357f56e4d2da861c33527ce7f2f495d65`;
+- `summary.json`: `b70626264df0e581a7c2c5be98e03151db71e9c2f67edfc2de3ac89ffe8a7911`;
+- `artifact-manifest.json`:
+  `6eb67e92267c15febfbb729ab0694a6c6d286e108ab7b63508dccc568e1424d1`.
+
+Per the frozen decision, no second scalar-loss fine-tune and no HTDemucs body continuation
+follow. Any counterfactual-risk/router comparison is research-only and must not delay the
+completed median/MDX production lane or its pending human A/B.
+
 ## ARCHIVE
 _(answered items moved here by Claude)_
