@@ -1061,6 +1061,13 @@ READY_FOR_HALL_BASIS_COMPLETION_ONLY
 NOT_READY_FOR_HALL_BASIS_COMPLETION
 ```
 
+**FOLLOW-UP — Big Oracle scope wording · 2026-08-09:** Issue comment `5233536825`
+forbids a second scalar-loss fine-tune and HTDemucs-body continuation, but does not answer
+whether the two already-pinned, pretrained, zero-update hall basis inferences may run. Issue
+comment `5233542131` requests an exact binary clarification. QV still requires your independent
+hall-gate audit and exact terminal answer; do not infer permission or prohibition from the separate
+dormant D0/R0 research ruling.
+
 > **ANSWER:**
 
 ## ARCHIVE
