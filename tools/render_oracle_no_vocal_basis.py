@@ -106,6 +106,7 @@ def _demucs_vocal_recipe(source: dict, *, signature: str, checkpoint_sha256: str
 def _render_demucs(
     *, config_path: Path, layout: TrackLayout, source: dict, device: str,
     code_commit: str, lock: ModelLock, bundle_dir: Path,
+    control: str = "no_vocal", source_role: str = "orchestra_only",
 ) -> dict:
     cfg = yaml.safe_load(config_path.read_text())
     signature = cfg["base_checkpoint"]["signature"]
@@ -137,8 +138,8 @@ def _render_demucs(
         try:
             layout.write_candidate(
                 rid, recipe,
-                {**identity.execution_fingerprint(), "control": "no_vocal",
-                 "source_role": "orchestra_only", "checkpoint": base,
+                {**identity.execution_fingerprint(), "control": control,
+                 "source_role": source_role, "checkpoint": base,
                  "executed_bundle_id": bundle["bundle_sha256"]},
                 tmp, artifact,
             )
@@ -157,9 +158,14 @@ def _render_demucs(
         layout, source, vocal_recipe_id=rid, code_commit=code_commit
     )
     path = layout.candidate_dir(residual["recipe_id"]) / "output.f32.wav"
+    vocal_path = layout.candidate_dir(rid) / "output.f32.wav"
     return {
         "name": f"htdemucs_{signature}", "recipe_id": residual["recipe_id"],
-        "parent_vocal_recipe_id": rid, "path": str(path),
+        "parent_vocal_recipe_id": rid, "parent_vocal_path": str(vocal_path),
+        "parent_vocal_artifact_pcm_sha256": (
+            layout.candidate_dir(rid) / "output.pcm.sha256"
+        ).read_text().strip(),
+        "parent_vocal_container_sha256": _sha_file(vocal_path), "path": str(path),
         "artifact_pcm_sha256": residual["artifact_pcm_sha256"],
         "container_sha256": _sha_file(path), "executed_bundle_hash": bundle["bundle_sha256"],
         "cached": cached and residual["cached"],
