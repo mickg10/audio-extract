@@ -271,14 +271,15 @@ def _finite_metric(metrics: dict, name: str) -> float:
 
 
 def exact_metrics(candidate: np.ndarray, accompaniment: np.ndarray,
-                  vocal: np.ndarray, sr: int) -> dict:
+                  vocal: np.ndarray, sr: int, *, labels=None) -> dict:
     if candidate.shape != accompaniment.shape or candidate.shape != vocal.shape:
         raise ClassicalReleaseError("candidate and exact sources must share one grid")
-    labels = local_source_coordinate_labels(
-        candidate, accompaniment, vocal,
-        tile_frames=max(256, round(0.5 * sr)),
-        hop_frames=max(128, round(0.25 * sr)),
-    )
+    if labels is None:
+        labels = local_source_coordinate_labels(
+            candidate, accompaniment, vocal,
+            tile_frames=max(256, round(0.5 * sr)),
+            hop_frames=max(128, round(0.25 * sr)),
+        )
     metrics = label_targets(labels)
     available = int(metrics.get("_available_tiles", 0))
     total = int(metrics.get("_total_tiles", 0))

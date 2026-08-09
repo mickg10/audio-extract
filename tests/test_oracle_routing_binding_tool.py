@@ -73,3 +73,27 @@ def test_solver_recipe_identity_materializes_decimal_strings():
     assert value == {
         "objective": "0.125", "nested": [1, "0.25", None]
     }
+
+
+def test_route_metric_cache_reuses_labels_and_fidelity(monkeypatch):
+    calls = {"labels": 0, "metrics": 0}
+
+    def source_metrics(*_args):
+        calls["labels"] += 1
+        return {}, ("labels",)
+
+    def exact_metrics(*_args, labels=None):
+        calls["metrics"] += 1
+        assert labels == ("labels",)
+        return {"metric": 1.0}
+
+    monkeypatch.setattr(module, "_pcm", lambda _value: "sha256:cached")
+    monkeypatch.setattr(module, "_source_metrics", source_metrics)
+    monkeypatch.setattr(module, "exact_metrics", exact_metrics)
+    monkeypatch.setattr(module, "_worst_identifiable", lambda _labels: {"risk": 0.0})
+    audio = np.zeros((8, 2), dtype="float32")
+    cache = {}
+    first = module._route_metrics(audio, audio, audio, cache)
+    second = module._route_metrics(audio, audio, audio, cache)
+    assert first == second
+    assert calls == {"labels": 1, "metrics": 1}

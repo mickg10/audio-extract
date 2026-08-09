@@ -271,11 +271,23 @@ def _transform_identity_metrics(raw: np.ndarray, transformed: np.ndarray) -> dic
     }
 
 
-def _route_metrics(value: np.ndarray, accompaniment: np.ndarray,
-                   vocal: np.ndarray) -> tuple[dict[str, Any], dict[str, Any]]:
-    metrics = exact_metrics(value, accompaniment, vocal, 44_100)
+def _route_metrics(
+    value: np.ndarray,
+    accompaniment: np.ndarray,
+    vocal: np.ndarray,
+    cache: dict[str, tuple[dict[str, Any], dict[str, Any]]] | None = None,
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    key = _pcm(value)
+    if cache is not None and key in cache:
+        return cache[key]
     _, labels = _source_metrics(value, accompaniment, vocal)
-    return metrics, _worst_identifiable(labels)
+    result = (
+        exact_metrics(value, accompaniment, vocal, 44_100, labels=labels),
+        _worst_identifiable(labels),
+    )
+    if cache is not None:
+        cache[key] = result
+    return result
 
 
 def _ratio(candidate: float, baseline: float) -> float:
@@ -527,6 +539,9 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             "transform_identity": {},
             "resolutions": {},
         }
+        metric_cache: dict[
+            str, tuple[dict[str, Any], dict[str, Any]]
+        ] = {}
         primary_view = None
         primary_routing = None
         primary_grid = None
@@ -572,7 +587,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
                 )},
             }
             o1_metrics, o1_worst = _route_metrics(
-                values[o1_index], accompaniment, vocal
+                values[o1_index], accompaniment, vocal, metric_cache
             )
             resolution_report["O1_baseline"] = {
                 "member": member_names[o1_index], "index": o1_index,
@@ -636,7 +651,9 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
                         layout=layout, source=source, mixture=mixture,
                         accompaniment=output, parent=artifact, code_commit=code_commit,
                     )
-                metrics, worst = _route_metrics(output, accompaniment, vocal)
+                metrics, worst = _route_metrics(
+                    output, accompaniment, vocal, metric_cache
+                )
                 combined = _combined_spectrum(
                     candidate_spectra, weights, time_ranges, frequency_ranges
                 )
@@ -693,7 +710,9 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             ("mdx", indices["mdx23c"]),
         ):
             raw = values[index]
-            metrics, worst = _route_metrics(raw, accompaniment, vocal)
+            metrics, worst = _route_metrics(
+                raw, accompaniment, vocal, metric_cache
+            )
             work_report["baselines"][label] = {
                 "member": member_names[index], "index": index,
                 "artifact_pcm_sha256": _pcm(raw), "metrics": metrics,
