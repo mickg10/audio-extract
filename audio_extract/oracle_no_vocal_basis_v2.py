@@ -13,21 +13,22 @@ or lossy conversion is performed.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from pathlib import Path
-from typing import Any, Mapping, Sequence
 import hashlib
 import json
 import os
 import shutil
 import tempfile
+from collections.abc import Mapping, Sequence
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any
 
 import numpy as np
 import soundfile as sf
 
 from . import canon, identity
-from .classical_baselines import _stft_geometric_median
 from .oracle_routing_basis_v2 import CandidateDeclaration
+from .separate import _stft_geometric_median
 
 CONTROL_SCHEMA = "audio-extract/oracle-no-vocal-basis/v1"
 ENSEMBLE_RECIPE_SCHEMA = "audio-extract/oracle-no-vocal-ensemble/v2"
@@ -237,7 +238,7 @@ def _recipe(
             "solver": {
                 "name": "weiszfeld",
                 "max_iter": 40,
-                "tolerance": 0.0001,
+                "tolerance": "0.0001",
             },
         }
     elif algorithm == "uniform_mean":

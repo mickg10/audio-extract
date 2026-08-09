@@ -9,8 +9,9 @@ identifiable events, and time/frequency route-boundary diagnostics.
 
 from __future__ import annotations
 
-from typing import Any, Mapping, Sequence
 import math
+from collections.abc import Sequence
+from typing import Any
 
 import numpy as np
 
@@ -322,8 +323,15 @@ def route_boundary_metrics(
         for _, stop in time_frame_ranges[:-1]
         if 0 < int(stop) * int(hop_length) < len(candidate)
     })
+    # STFT cell boundaries identify a hop-sized sample neighborhood rather than
+    # one exact waveform sample (centred windows overlap both sides). Measure the
+    # worst derivative in that neighborhood so a discontinuity between adjacent
+    # frame centres cannot hide in the integer frame-to-sample quantization.
     jumps = np.asarray([
-        np.max(np.abs(candidate[index] - candidate[index - 1]))
+        derivative[
+            max(0, index - int(hop_length)):
+            min(len(derivative), index + int(hop_length))
+        ].max(initial=0.0)
         for index in boundaries
     ], dtype=np.float64)
     time_ratio = float(jumps.max(initial=0.0) / derivative_reference)

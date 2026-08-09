@@ -8,9 +8,10 @@ unverified artifact produce `INCOMPLETE_EVIDENCE`, never an implicit pass.
 
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
-from typing import Any, Mapping, Sequence
 import math
+from collections.abc import Mapping, Sequence
+from dataclasses import asdict, dataclass
+from typing import Any
 
 DECISION_SCHEMA = "audio-extract/oracle-routing-decision/v2"
 REPORT_SCHEMA = "audio-extract/oracle-routing-envelope/v2"
@@ -209,7 +210,8 @@ def _certificate(method: Mapping[str, Any], name: str, label: str,
 
 
 def _route_artifacts(method: Mapping[str, Any], label: str,
-                     config: RoutingGateConfig) -> None:
+                     config: RoutingGateConfig) -> tuple[str, ...]:
+    failures = []
     seam = _mapping(method.get("seam_check"), f"{label}.seam_check")
     time_ratio = _finite(
         seam.get("max_time_boundary_jump_over_p99_derivative"),
@@ -220,12 +222,12 @@ def _route_artifacts(method: Mapping[str, Any], label: str,
         f"{label}.frequency_ringing_ratio",
     )
     if time_ratio > config.max_time_boundary_ratio:
-        raise DecisionEvidenceError(
+        failures.append(
             f"{label} time-boundary ratio {time_ratio} exceeds "
             f"{config.max_time_boundary_ratio}"
         )
     if frequency_ratio > config.max_frequency_ringing_ratio:
-        raise DecisionEvidenceError(
+        failures.append(
             f"{label} frequency-ringing ratio {frequency_ratio} exceeds "
             f"{config.max_frequency_ringing_ratio}"
         )
@@ -236,6 +238,7 @@ def _route_artifacts(method: Mapping[str, Any], label: str,
     if event.get("available") is not True:
         raise DecisionEvidenceError(f"{label} lacks a worst identifiable event")
     _finite(event.get("composite_risk"), f"{label}.worst_event.composite_risk")
+    return tuple(failures)
 
 
 def _ratio(candidate: float, baseline: float, near_zero: float) -> float:
@@ -294,10 +297,10 @@ def evaluate_method(
                 methods[work][method_name], method_name,
                 f"{resolution}.{work}.{method_name}", config,
             )
-            _route_artifacts(
+            failures.extend(_route_artifacts(
                 methods[work][method_name],
                 f"{resolution}.{work}.{method_name}", config,
-            )
+            ))
 
         verdi_base = values["bologna_verdi"][BASELINE]
         verdi = values["bologna_verdi"][method_name]

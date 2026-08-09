@@ -6,6 +6,9 @@ import numpy as np
 import pytest
 import soundfile as sf
 
+from audio_extract.oracle_routing_binding_policy_v2 import (
+    CANONICAL_POLICY_SHA256,
+)
 from audio_extract.oracle_routing_run_contract_v2 import (
     CANONICAL_RESOLUTIONS,
     RUN_INPUT_SCHEMA,
@@ -98,7 +101,9 @@ def test_truth_manifest_reopens_all_roles_and_reproves_identity(tmp_path):
     _truth_tree(truth, ("one", "two"))
     manifest = build_truth_manifest(truth, ("one", "two"))
     assert manifest["schema"].endswith("truth-manifest/v2")
-    assert verify_truth_manifest(manifest) == semantic_sha256(manifest)
+    assert verify_truth_manifest(
+        manifest, truth_root=truth
+    ) == semantic_sha256(manifest)
     for work in ("one", "two"):
         assert set(manifest["records"][work]["roles"]) == {
             "mixture", "accompaniment", "vocal"
@@ -121,7 +126,7 @@ def test_truth_manifest_rejects_post_freeze_role_mutation(tmp_path, filename):
     audio[100, 0] += 0.01
     sf.write(path, audio, sample_rate, subtype="FLOAT")
     with pytest.raises(RunContractError, match="truth artifact changed"):
-        verify_truth_manifest(manifest)
+        verify_truth_manifest(manifest, truth_root=truth)
 
 
 def test_truth_manifest_refuses_symlinked_role(tmp_path):
@@ -145,6 +150,30 @@ def test_truth_manifest_refuses_hardlinked_roles(tmp_path):
     os.link(mixture, vocal)
     with pytest.raises(RunContractError, match="reuse one physical file"):
         build_truth_manifest(truth, ("opera",))
+
+
+def test_truth_manifest_refuses_float_aiff_renamed_wav(tmp_path):
+    truth = tmp_path / "truth"
+    _truth_tree(truth)
+    path = truth / "opera" / "voice_ref.wav"
+    audio, sample_rate = sf.read(path, dtype="float32", always_2d=True)
+    sf.write(path, audio, sample_rate, subtype="FLOAT", format="AIFF")
+    with pytest.raises(RunContractError, match="WAV container"):
+        build_truth_manifest(truth, ("opera",))
+
+
+def test_run_input_json_rejects_duplicate_object_keys(tmp_path):
+    run_path, run_config, truth_sha = _anchored_fixture(tmp_path)
+    payload = run_path.read_text()
+    run_path.write_text('{"schema":"duplicate",' + payload.lstrip()[1:])
+    with pytest.raises(RunContractError, match="duplicate JSON key"):
+        load_run_input_anchor(
+            run_path,
+            expected_code_commit="a" * 40,
+            expected_works=("opera",),
+            expected_run_config=run_config,
+            expected_truth_manifest_sha256=truth_sha,
+        )
 
 
 def test_truth_manifest_rejects_nonfinite_semantics():
@@ -179,7 +208,8 @@ def _anchored_fixture(tmp_path):
         "code_commit": "a" * 40,
         "works": ["opera"],
         "run_config": run_config_json,
-        "binding_policy_sha256": "sha256:" + "f" * 64,
+        "truth_root": str(truth),
+        "binding_policy_sha256": CANONICAL_POLICY_SHA256,
         "source_manifest_groups": {
             "voiced": [_file_record(voiced)],
             "no_vocal": [_file_record(no_vocal)],
@@ -206,7 +236,7 @@ def test_run_input_anchor_binds_preexisting_bytes_config_work_and_truth(tmp_path
         expected_works=("opera",),
         expected_run_config=expected_config,
         expected_truth_manifest_sha256=truth_sha,
-        expected_binding_policy_sha256="sha256:" + "f" * 64,
+        expected_binding_policy_sha256=CANONICAL_POLICY_SHA256,
     )
     assert anchor.sha256.startswith("sha256:")
     assert anchor.resolutions_seconds == CANONICAL_RESOLUTIONS

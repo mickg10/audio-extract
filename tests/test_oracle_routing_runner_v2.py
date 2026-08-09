@@ -2,17 +2,20 @@ import hashlib
 from pathlib import Path
 
 import numpy as np
+import pytest
 import soundfile as sf
 
 from audio_extract import identity
+from audio_extract.oracle_binding_preregistration import build_document, write_once
 from audio_extract.oracle_routing_basis_v2 import DeduplicatedCandidate
 from audio_extract.oracle_routing_runner_v2 import (
     CertifiedRoutingRunConfig,
+    CertifiedRoutingRunError,
     ExactTruth,
+    run_experiment,
     run_work_resolution,
 )
 from audio_extract.oracle_routing_spectral_v2 import RoutingSpectralConfig
-
 
 SR = 44_100
 
@@ -132,7 +135,7 @@ def fixture(tmp_path):
         frequency_smoothness_at_base=0.0,
         o2_time_limit_seconds=30.0,
         o3_tolerance=1e-8,
-        o3_max_iterations=5_000,
+        o3_max_iterations=10_000,
     )
     return truth, rows, config
 
@@ -182,3 +185,47 @@ def test_run_work_resolution_writes_complete_replayable_artifacts(tmp_path):
         report["methods"]["O2_global_medoid"]["artifact"]
     )
     assert np.array_equal(replay_plans["O3"], plans["O3"])
+
+
+def test_binding_experiment_refuses_missing_preregistration_before_audio(tmp_path):
+    with pytest.raises(CertifiedRoutingRunError, match="preregistration"):
+        run_experiment(
+            basis_rows=(),
+            no_vocal_basis_rows=(),
+            truth_root=tmp_path / "truth",
+            output_root=tmp_path / "must-not-exist",
+            code_commit="a" * 40,
+            preregistration=None,
+            works=(),
+        )
+    assert not (tmp_path / "must-not-exist").exists()
+
+
+def test_binding_experiment_refuses_code_commit_mismatch_before_audio(tmp_path):
+    voiced = tmp_path / "voiced.jsonl"
+    no_vocal = tmp_path / "no-vocal.jsonl"
+    voiced.write_text("voiced\n")
+    no_vocal.write_text("no-vocal\n")
+    preregistration = write_once(
+        tmp_path / "preregistration.json",
+        build_document(
+            experiment_id="runner-mismatch",
+            source_groups={"voiced": [voiced], "no_vocal": [no_vocal]},
+            source_commit="a" * 40,
+            truth_manifest_sha256="sha256:" + "1" * 64,
+            basis_audit_sha256="sha256:" + "2" * 64,
+            routing_config_sha256="sha256:" + "3" * 64,
+        ),
+    )
+    output = tmp_path / "must-not-exist"
+    with pytest.raises(CertifiedRoutingRunError, match="code commit"):
+        run_experiment(
+            basis_rows=(),
+            no_vocal_basis_rows=(),
+            truth_root=tmp_path / "truth",
+            output_root=output,
+            code_commit="b" * 40,
+            preregistration=preregistration,
+            works=(),
+        )
+    assert not output.exists()

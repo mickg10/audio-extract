@@ -11,20 +11,32 @@ It never resamples, truncates, aligns, normalizes, or rewrites a candidate.
 
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass, replace
-from pathlib import Path
-from typing import Any, Mapping, Sequence
 import hashlib
 import json
 import math
 import os
 import shutil
+import subprocess
 import tempfile
+from collections.abc import Mapping, Sequence
+from dataclasses import asdict, dataclass, field, replace
+from pathlib import Path
+from typing import Any
 
 import numpy as np
 import soundfile as sf
 
 from . import canon, identity
+from .oracle_binding_preregistration import (
+    PreregisteredRun,
+    bind_report,
+    binding_fields,
+    canonical_resolution_sequence,
+    verify_source_manifests,
+)
+from .oracle_binding_preregistration import (
+    load as load_preregistration,
+)
 from .oracle_routing_basis_v2 import DeduplicatedCandidate
 from .oracle_routing_decision_v2 import (
     REPORT_SCHEMA,
@@ -83,7 +95,7 @@ class CertifiedRoutingRunError(RuntimeError):
 
 @dataclass(frozen=True)
 class CertifiedRoutingRunConfig:
-    spectral: RoutingSpectralConfig = RoutingSpectralConfig()
+    spectral: RoutingSpectralConfig = field(default_factory=RoutingSpectralConfig)
     resolutions_seconds: tuple[float, ...] = DEFAULT_RESOLUTIONS
     base_resolution_seconds: float = 2.0
     temporal_switch_penalty_at_base: float = 0.05
@@ -105,7 +117,7 @@ class CertifiedRoutingRunConfig:
             for value in self.resolutions_seconds
         ):
             raise ValueError("routing resolutions must be finite and positive")
-        if len(set(float(value) for value in self.resolutions_seconds)) != len(
+        if len({float(value) for value in self.resolutions_seconds}) != len(
             self.resolutions_seconds
         ):
             raise ValueError("routing resolutions must be unique")
@@ -312,13 +324,55 @@ def _raw_artifact(candidate: LoadedCandidate) -> dict[str, Any]:
     }
 
 
+def _canonical_recipe_value(value: Any) -> Any:
+    """Materialize recipe decimals as exact strings accepted by v2 canon."""
+
+    if isinstance(value, float):
+        if not math.isfinite(value):
+            raise CertifiedRoutingRunError(
+                f"non-finite value in generated recipe: {value!r}"
+            )
+        return repr(value)
+    if isinstance(value, Mapping):
+        return {
+            str(key): _canonical_recipe_value(item)
+            for key, item in value.items()
+        }
+    if isinstance(value, (list, tuple)):
+        return [_canonical_recipe_value(item) for item in value]
+    return value
+
+
+def _verify_clean_source_tree(expected_commit: str) -> None:
+    root = Path(__file__).resolve().parents[1]
+    try:
+        commit = subprocess.run(
+            ["git", "rev-parse", "HEAD"], cwd=root, check=True,
+            text=True, capture_output=True,
+        ).stdout.strip()
+        status = subprocess.run(
+            ["git", "status", "--porcelain", "--untracked-files=no"],
+            cwd=root, check=True,
+            text=True, capture_output=True,
+        ).stdout
+    except (OSError, subprocess.CalledProcessError) as exc:
+        raise CertifiedRoutingRunError(
+            "binding runner cannot verify its source-tree identity"
+        ) from exc
+    if commit.lower() != expected_commit.lower() or status:
+        raise CertifiedRoutingRunError(
+            "binding runner source tree is dirty or differs from the "
+            "preregistered commit"
+        )
+
+
 def _plan_hash(plan: np.ndarray, header: Mapping[str, Any]) -> str:
     array = np.ascontiguousarray(plan)
-    payload = canon.canonicalize({
+    payload = canon.canonicalize(_canonical_recipe_value({
         **dict(header),
         "shape": list(array.shape),
         "dtype": array.dtype.str,
-    }) + array.tobytes()
+    })) + array.tobytes()
     return identity.blob_sha256(payload)
 
 
@@ -374,14 +428,14 @@ def write_generated_artifact(
         "resolution_seconds": float(resolution_seconds),
         "method": method,
     })
-    recipe = {
+    recipe = _canonical_recipe_value({
         "schema": RECIPE_SCHEMA,
         "work_id": work_id,
         "resolution_seconds": float(resolution_seconds),
         "method": method,
         "routing_plan_sha256": plan_sha,
         **dict(recipe_facts),
-    }
+    })
     recipe_id = identity.blob_sha256(canon.canonicalize(recipe))
     final = (
         output_root / work_id / f"{float(resolution_seconds):.1f}s"
@@ -445,7 +499,7 @@ def _o2_recompute(labels: np.ndarray, grid, temporal: float,
     unary = unary_costs(grid)
     chosen = np.take_along_axis(unary, labels[..., None], axis=-1)[..., 0]
     cells = labels.size
-    data = float(chosen.mean())
+    data = float(np.sum(grid.normalized_measure() * chosen))
     temporal_switches = int(np.count_nonzero(labels[1:] != labels[:-1]))
     frequency_switches = int(np.count_nonzero(labels[:, 1:] != labels[:, :-1]))
     total = (
@@ -473,6 +527,7 @@ def run_work_resolution(
     resolution_seconds: float,
     config: CertifiedRoutingRunConfig,
     code_commit: str,
+    preregistration_facts: Mapping[str, Any] | None = None,
 ) -> tuple[dict[str, Any], dict[str, np.ndarray], dict[str, Any]]:
     """Run one work/resolution and return report, route plans, and runtime facts."""
 
@@ -534,6 +589,7 @@ def run_work_resolution(
 
     common_recipe = {
         "code_commit": code_commit,
+        **dict(preregistration_facts or {}),
         "truth_pcm": truth.pcm_identities,
         "basis": _basis_facts(loaded),
         "spectral_config": asdict(spectral_config),
@@ -722,6 +778,7 @@ def apply_no_vocal_controls(
     output_root: Path,
     resolution_seconds: float,
     code_commit: str,
+    preregistration_facts: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     voiced = tuple(voiced_runtime["loaded"])
     controls = _match_control_rows(
@@ -766,6 +823,7 @@ def apply_no_vocal_controls(
             plan=plan,
             recipe_facts={
                 "code_commit": code_commit,
+                **dict(preregistration_facts or {}),
                 "control": "no_vocal",
                 "source_pcm_sha256": truth.pcm_identities["accompaniment"],
                 "basis": _basis_facts(controls),
@@ -788,11 +846,36 @@ def run_experiment(
     truth_root: Path,
     output_root: Path,
     code_commit: str,
+    preregistration: PreregisteredRun,
     works: Sequence[str] = DEFAULT_WORKS,
     config: CertifiedRoutingRunConfig | None = None,
     decision_config: RoutingGateConfig | None = None,
 ) -> tuple[dict[str, Any], dict[str, Any]]:
+    if not isinstance(preregistration, PreregisteredRun):
+        raise CertifiedRoutingRunError(
+            "binding run requires a preexisting verified preregistration witness"
+        )
+    # This is deliberately the first filesystem-dependent operation in the
+    # runner. No output or optimizer may occur before the witness is reloaded.
+    initial = load_preregistration(Path(preregistration.path))
+    if initial != preregistration:
+        raise CertifiedRoutingRunError(
+            "preregistration changed between caller verification and runner entry"
+        )
+    if code_commit.lower() != initial.document["source_commit"]:
+        raise CertifiedRoutingRunError(
+            "execution code commit differs from preregistration"
+        )
+    _verify_clean_source_tree(code_commit)
+    verify_source_manifests(initial)
     cfg = config or CertifiedRoutingRunConfig()
+    resolution_keys = canonical_resolution_sequence(
+        initial.document["resolutions_seconds"]
+    )
+    cfg = replace(
+        cfg,
+        resolutions_seconds=tuple(float(value) for value in resolution_keys),
+    )
     cfg.validate()
     report: dict[str, Any] = {
         "schema": REPORT_SCHEMA,
@@ -805,6 +888,11 @@ def run_experiment(
         },
         "works": list(works),
         "resolutions": {},
+        **binding_fields(initial),
+    }
+    bind_report(report, initial)
+    recipe_preregistration = {
+        "preregistration": binding_fields(initial),
     }
     truths = {
         work: load_exact_truth(
@@ -813,8 +901,9 @@ def run_experiment(
         )
         for work in works
     }
-    for resolution in cfg.resolutions_seconds:
-        resolution_key = f"{float(resolution):.1f}"
+    for resolution_key, resolution in zip(
+        resolution_keys, cfg.resolutions_seconds, strict=True
+    ):
         resolution_report = {"works": {}}
         for work in works:
             work_report, plans, runtime = run_work_resolution(
@@ -824,6 +913,7 @@ def run_experiment(
                 resolution_seconds=resolution,
                 config=cfg,
                 code_commit=code_commit,
+                preregistration_facts=recipe_preregistration,
             )
             if work == "aalto_mozart_dry" and no_vocal_basis_rows is not None:
                 work_report["no_vocal"] = apply_no_vocal_controls(
@@ -834,6 +924,7 @@ def run_experiment(
                     output_root=output_root,
                     resolution_seconds=resolution,
                     code_commit=code_commit,
+                    preregistration_facts=recipe_preregistration,
                 )
             resolution_report["works"][work] = work_report
         report["resolutions"][resolution_key] = resolution_report
@@ -842,7 +933,7 @@ def run_experiment(
         report,
         config=decision_config,
         required_resolutions=tuple(
-            f"{float(value):.1f}" for value in cfg.resolutions_seconds
+            resolution_keys
         ),
     )
     payload = json.dumps(report, indent=2, sort_keys=True) + "\n"
@@ -860,4 +951,11 @@ def run_experiment(
             )
         if not path.exists():
             path.write_text(text)
+    final = load_preregistration(Path(initial.path))
+    if final != initial:
+        raise CertifiedRoutingRunError(
+            "preregistration changed while routing outputs were being written"
+        )
+    verify_source_manifests(final)
+    bind_report(report, final)
     return report, decision

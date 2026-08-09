@@ -3,6 +3,14 @@ from pathlib import Path
 
 import pytest
 
+from audio_extract.oracle_binding_preregistration import (
+    binding_fields,
+    build_document,
+    canonical_json,
+    load,
+    sha256_bytes,
+    write_once,
+)
 from audio_extract.oracle_routing_binding_policy_v2 import (
     CANONICAL_POLICY_SHA256,
     canonical_binding_policy,
@@ -16,7 +24,7 @@ def _write(path: Path, value, *, sort_keys=True):
     )
 
 
-def _fixture(tmp_path, monkeypatch):
+def _fixture(tmp_path, monkeypatch, *, reordered_preregistration=False):
     voiced_source = tmp_path / "voiced-source.jsonl"
     no_vocal_source = tmp_path / "no-vocal-source.jsonl"
     voiced_source.write_text('{"candidate":"voiced"}\n')
@@ -26,9 +34,47 @@ def _fixture(tmp_path, monkeypatch):
     _write(basis, {"status": "pass"})
     _write(no_vocal, {"status": "pass"})
     policy = canonical_binding_policy().identity_dict()
+    frozen_documents = {
+        "truth_manifest": {"schema": "test/truth", "works": ["fixture"]},
+        "basis_audit": {"schema": "test/basis", "status": "pass"},
+        "routing_config": {"schema": "test/config", "frozen": True},
+    }
+    frozen_paths = {}
+    frozen_hashes = {}
+    for name, value in frozen_documents.items():
+        path = tmp_path / f"{name}.json"
+        _write(path, value)
+        frozen_paths[name] = path
+        frozen_hashes[name] = sha256_bytes(canonical_json(value))
+    preregistration = write_once(
+        tmp_path / "preregistration.json",
+        build_document(
+            experiment_id="verifier-test",
+            source_groups={
+                "voiced": [voiced_source],
+                "no_vocal": [no_vocal_source],
+            },
+            source_commit="a" * 40,
+            truth_manifest_sha256=frozen_hashes["truth_manifest"],
+            basis_audit_sha256=frozen_hashes["basis_audit"],
+            routing_config_sha256=frozen_hashes["routing_config"],
+        ),
+    )
+    if reordered_preregistration:
+        path = Path(preregistration.path)
+        document = json.loads(path.read_text())
+        path.chmod(0o644)
+        path.write_text(
+            json.dumps(
+                {key: document[key] for key in reversed(tuple(document))},
+                separators=(",", ":"),
+            ) + "\n"
+        )
+        preregistration = load(path)
+    witness = binding_fields(preregistration)
     inputs = {
         "schema": tool.RUN_INPUT_SCHEMA,
-        "code_commit": "abc123",
+        "code_commit": "a" * 40,
         "works": [
             "bologna_verdi",
             "bologna_donizetti",
@@ -39,18 +85,21 @@ def _fixture(tmp_path, monkeypatch):
         "decision_config": {},
         "binding_policy": policy,
         "binding_policy_sha256": CANONICAL_POLICY_SHA256,
-        "source_manifest_groups": {
-            "voiced": [{
-                "path": str(voiced_source),
-                "sha256": tool._sha_file(voiced_source),
-            }],
-            "no_vocal": [{
-                "path": str(no_vocal_source),
-                "sha256": tool._sha_file(no_vocal_source),
-            }],
+        "source_manifest_groups": preregistration.document[
+            "source_manifests"
+        ],
+        "preregistration": witness,
+        "preregistered_artifacts": {
+            name: {
+                "path": str(path),
+                "semantic_sha256": frozen_hashes[name],
+            }
+            for name, path in frozen_paths.items()
         },
         "basis_audit_sha256": tool._sha_file(basis),
         "no_vocal_basis_audit_sha256": tool._sha_file(no_vocal),
+        "source_lineage_audit_sha256": "sha256:" + "5" * 64,
+        "no_vocal_source_lineage_audit_sha256": "sha256:" + "6" * 64,
     }
     report = {
         "schema": "audio-extract/oracle-routing-envelope/v2",
@@ -63,6 +112,21 @@ def _fixture(tmp_path, monkeypatch):
             }
             for value in ("1.0", "2.0", "0.5")
         },
+        **witness,
+    }
+    generated = tmp_path / "generated"
+    generated.mkdir()
+    (generated / "output.f32.wav").write_bytes(b"fixture")
+    _write(generated / "recipe.json", {"preregistration": witness})
+    report["resolutions"]["1.0"]["works"][inputs["works"][0]] = {
+        "methods": {
+            "O2_global_medoid": {
+                "artifact": {
+                    "path": str(generated / "output.f32.wav"),
+                    "recipe_id": "sha256:" + "4" * 64,
+                }
+            }
+        }
     }
     report_path = tmp_path / "report.json"
     inputs_path = tmp_path / "run-inputs-v2.json"
@@ -80,15 +144,22 @@ def _fixture(tmp_path, monkeypatch):
             ),
         },
     )
-    return report_path, inputs_path, policy_path
+    monkeypatch.setattr(tool, "_verify_lineage_audit", lambda *a, **k: None)
+    monkeypatch.setattr(tool, "_verify_report_truth", lambda *a, **k: None)
+    monkeypatch.setattr(
+        tool, "_verify_frozen_execution_inputs", lambda *a, **k: None
+    )
+    monkeypatch.setattr(tool, "verify_truth_manifest", lambda *a, **k: None)
+    return preregistration.path, report_path, inputs_path, policy_path
 
 
 def test_verifier_binds_report_inputs_policy_and_writes_immutably(
     tmp_path, monkeypatch
 ):
-    report, inputs, policy = _fixture(tmp_path, monkeypatch)
+    preregistration, report, inputs, policy = _fixture(tmp_path, monkeypatch)
     output = tmp_path / "verification.json"
     result = tool.run(
+        preregistration_path=Path(preregistration),
         report_path=report,
         run_inputs_path=inputs,
         policy_path=policy,
@@ -106,6 +177,7 @@ def test_verifier_binds_report_inputs_policy_and_writes_immutably(
     )
     assert json.loads(output.read_text()) == result
     assert tool.run(
+        preregistration_path=Path(preregistration),
         report_path=report,
         run_inputs_path=inputs,
         policy_path=policy,
@@ -116,7 +188,7 @@ def test_verifier_binds_report_inputs_policy_and_writes_immutably(
 def test_policy_json_order_and_whitespace_do_not_change_authority(
     tmp_path, monkeypatch
 ):
-    report, inputs, policy = _fixture(tmp_path, monkeypatch)
+    preregistration, report, inputs, policy = _fixture(tmp_path, monkeypatch)
     value = json.loads(policy.read_text())
     reordered = {
         key: value[key] for key in reversed(tuple(value))
@@ -125,6 +197,7 @@ def test_policy_json_order_and_whitespace_do_not_change_authority(
         json.dumps(reordered, separators=(",", ":")) + "\n"
     )
     result = tool.run(
+        preregistration_path=Path(preregistration),
         report_path=report,
         run_inputs_path=inputs,
         policy_path=policy,
@@ -134,6 +207,76 @@ def test_policy_json_order_and_whitespace_do_not_change_authority(
     assert result["binding_policy_semantic_sha256"] == (
         CANONICAL_POLICY_SHA256
     )
+
+
+def test_preregistration_key_order_is_semantic_not_authority(tmp_path, monkeypatch):
+    preregistration, report, inputs, policy = _fixture(
+        tmp_path, monkeypatch, reordered_preregistration=True
+    )
+    result = tool.run(
+        preregistration_path=Path(preregistration),
+        report_path=report,
+        run_inputs_path=inputs,
+        policy_path=policy,
+        output_path=None,
+    )
+    assert result["status"] == "verified"
+
+
+def test_missing_preregistration_is_refused(tmp_path, monkeypatch):
+    _, report, inputs, policy = _fixture(tmp_path, monkeypatch)
+    with pytest.raises(tool.BindingVerificationError, match="preregistration"):
+        tool.run(
+            preregistration_path=tmp_path / "never-created.json",
+            report_path=report,
+            run_inputs_path=inputs,
+            policy_path=policy,
+            output_path=None,
+        )
+
+
+def test_witness_changed_after_report_generation_is_refused(tmp_path, monkeypatch):
+    preregistration, report, inputs, policy = _fixture(tmp_path, monkeypatch)
+    path = Path(preregistration)
+    document = json.loads(path.read_text())
+    document["experiment_id"] = "post-hoc-replacement"
+    path.chmod(0o644)
+    _write(path, document)
+    with pytest.raises(
+        tool.BindingVerificationError, match="binding mismatch"
+    ):
+        tool.run(
+            preregistration_path=path,
+            report_path=report,
+            run_inputs_path=inputs,
+            policy_path=policy,
+            output_path=None,
+        )
+
+
+@pytest.mark.parametrize("mutation", ["method", "resolution", "policy_digest"])
+def test_rehashed_post_hoc_preregistration_policy_is_refused(
+    tmp_path, monkeypatch, mutation
+):
+    preregistration, report, inputs, policy = _fixture(tmp_path, monkeypatch)
+    path = Path(preregistration)
+    document = json.loads(path.read_text())
+    if mutation == "method":
+        document["policy"]["selected_method"] = "O3_certified_convex"
+    elif mutation == "resolution":
+        document["resolutions_seconds"][0] = "1.04"
+    else:
+        document["policy_semantic_sha256"] = "sha256:" + "0" * 64
+    path.chmod(0o644)
+    _write(path, document)
+    with pytest.raises(tool.BindingVerificationError, match="preregistration"):
+        tool.run(
+            preregistration_path=path,
+            report_path=report,
+            run_inputs_path=inputs,
+            policy_path=policy,
+            output_path=None,
+        )
 
 
 @pytest.mark.parametrize(
@@ -149,7 +292,7 @@ def test_policy_json_order_and_whitespace_do_not_change_authority(
 def test_schema_valid_post_hoc_policy_variants_are_refused(
     tmp_path, monkeypatch, field, value
 ):
-    report, inputs, policy = _fixture(tmp_path, monkeypatch)
+    preregistration, report, inputs, policy = _fixture(tmp_path, monkeypatch)
     document = json.loads(policy.read_text())
     document[field] = value
     _write(policy, document)
@@ -158,6 +301,7 @@ def test_schema_valid_post_hoc_policy_variants_are_refused(
         match="compiled preregistration",
     ):
         tool.run(
+            preregistration_path=Path(preregistration),
             report_path=report,
             run_inputs_path=inputs,
             policy_path=policy,
@@ -166,7 +310,7 @@ def test_schema_valid_post_hoc_policy_variants_are_refused(
 
 
 def test_report_run_input_mismatch_is_refused(tmp_path, monkeypatch):
-    report, inputs, policy = _fixture(tmp_path, monkeypatch)
+    preregistration, report, inputs, policy = _fixture(tmp_path, monkeypatch)
     value = json.loads(report.read_text())
     value["code_commit"] = "different"
     _write(report, value)
@@ -175,6 +319,7 @@ def test_report_run_input_mismatch_is_refused(tmp_path, monkeypatch):
         match="commit mismatch",
     ):
         tool.run(
+            preregistration_path=Path(preregistration),
             report_path=report,
             run_inputs_path=inputs,
             policy_path=policy,
@@ -183,7 +328,7 @@ def test_report_run_input_mismatch_is_refused(tmp_path, monkeypatch):
 
 
 def test_changed_source_manifest_is_refused(tmp_path, monkeypatch):
-    report, inputs, policy = _fixture(tmp_path, monkeypatch)
+    preregistration, report, inputs, policy = _fixture(tmp_path, monkeypatch)
     run_inputs = json.loads(inputs.read_text())
     path = Path(
         run_inputs["source_manifest_groups"]["voiced"][0]["path"]
@@ -194,6 +339,7 @@ def test_changed_source_manifest_is_refused(tmp_path, monkeypatch):
         match="voiced source manifest changed",
     ):
         tool.run(
+            preregistration_path=Path(preregistration),
             report_path=report,
             run_inputs_path=inputs,
             policy_path=policy,
@@ -205,7 +351,7 @@ def test_changed_source_manifest_is_refused(tmp_path, monkeypatch):
 def test_missing_or_empty_source_manifest_groups_are_refused(
     tmp_path, monkeypatch, replacement
 ):
-    report, inputs, policy = _fixture(tmp_path, monkeypatch)
+    preregistration, report, inputs, policy = _fixture(tmp_path, monkeypatch)
     document = json.loads(inputs.read_text())
     if replacement is None:
         document.pop("source_manifest_groups")
@@ -217,6 +363,7 @@ def test_missing_or_empty_source_manifest_groups_are_refused(
         match="source_manifest_groups|non-empty array",
     ):
         tool.run(
+            preregistration_path=Path(preregistration),
             report_path=report,
             run_inputs_path=inputs,
             policy_path=policy,
@@ -225,7 +372,7 @@ def test_missing_or_empty_source_manifest_groups_are_refused(
 
 
 def test_one_empty_source_manifest_group_is_refused(tmp_path, monkeypatch):
-    report, inputs, policy = _fixture(tmp_path, monkeypatch)
+    preregistration, report, inputs, policy = _fixture(tmp_path, monkeypatch)
     document = json.loads(inputs.read_text())
     document["source_manifest_groups"]["no_vocal"] = []
     _write(inputs, document)
@@ -234,6 +381,7 @@ def test_one_empty_source_manifest_group_is_refused(tmp_path, monkeypatch):
         match="no_vocal.*non-empty array",
     ):
         tool.run(
+            preregistration_path=Path(preregistration),
             report_path=report,
             run_inputs_path=inputs,
             policy_path=policy,
@@ -244,7 +392,7 @@ def test_one_empty_source_manifest_group_is_refused(tmp_path, monkeypatch):
 def test_run_input_policy_digest_is_refused_if_changed(
     tmp_path, monkeypatch
 ):
-    report, inputs, policy = _fixture(tmp_path, monkeypatch)
+    preregistration, report, inputs, policy = _fixture(tmp_path, monkeypatch)
     document = json.loads(inputs.read_text())
     document["binding_policy_sha256"] = "sha256:" + "0" * 64
     _write(inputs, document)
@@ -253,6 +401,7 @@ def test_run_input_policy_digest_is_refused_if_changed(
         match="differs from preregistration",
     ):
         tool.run(
+            preregistration_path=Path(preregistration),
             report_path=report,
             run_inputs_path=inputs,
             policy_path=policy,
@@ -261,7 +410,7 @@ def test_run_input_policy_digest_is_refused_if_changed(
 
 
 def test_resolution_set_is_exactly_policy_closed(tmp_path, monkeypatch):
-    report, inputs, policy = _fixture(tmp_path, monkeypatch)
+    preregistration, report, inputs, policy = _fixture(tmp_path, monkeypatch)
     value = json.loads(report.read_text())
     value["resolutions"]["0.25"] = value["resolutions"]["0.5"]
     _write(report, value)
@@ -270,6 +419,7 @@ def test_resolution_set_is_exactly_policy_closed(tmp_path, monkeypatch):
         match="resolution set differs",
     ):
         tool.run(
+            preregistration_path=Path(preregistration),
             report_path=report,
             run_inputs_path=inputs,
             policy_path=policy,

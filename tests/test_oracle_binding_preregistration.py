@@ -8,12 +8,13 @@ import pytest
 from audio_extract.oracle_binding_preregistration import (
     CANONICAL_POLICY_SEMANTIC_SHA256,
     PRIMARY_RESOLUTION,
-    PreregistrationError,
     REQUIRED_METHODS,
-    SENSITIVITY_RESOLUTIONS,
     SELECTED_METHOD,
+    SENSITIVITY_RESOLUTIONS,
     TASK_ID,
+    PreregistrationError,
     bind_report,
+    binding_fields,
     build_document,
     canonical_json,
     canonical_policy,
@@ -25,7 +26,7 @@ from audio_extract.oracle_binding_preregistration import (
     stable_file_record,
     write_once,
 )
-
+from tools import oracle_routing_v2_certified as certified_tool
 
 SHA1 = "sha256:" + "1" * 64
 SHA2 = "sha256:" + "2" * 64
@@ -43,14 +44,14 @@ def _files(tmp_path: Path):
 
 def _document(tmp_path: Path, **kwargs):
     voiced, no_vocal = _files(tmp_path)
-    values = dict(
-        experiment_id="oracle-routing-binding-001",
-        source_groups={"voiced": [voiced], "no_vocal": [no_vocal]},
-        source_commit=COMMIT,
-        truth_manifest_sha256=SHA1,
-        basis_audit_sha256=SHA2,
-        routing_config_sha256=SHA3,
-    )
+    values = {
+        "experiment_id": "oracle-routing-binding-001",
+        "source_groups": {"voiced": [voiced], "no_vocal": [no_vocal]},
+        "source_commit": COMMIT,
+        "truth_manifest_sha256": SHA1,
+        "basis_audit_sha256": SHA2,
+        "routing_config_sha256": SHA3,
+    }
     values.update(kwargs)
     return build_document(**values)
 
@@ -129,8 +130,8 @@ def test_compiled_policy_and_digest_are_not_caller_selected():
     assert policy["task_id"] == TASK_ID
     assert policy["selected_method"] == SELECTED_METHOD
     assert policy["required_methods"] == list(REQUIRED_METHODS)
-    assert policy["primary_resolution_seconds"] == PRIMARY_RESOLUTION
-    assert policy["sensitivity_resolutions_seconds"] == list(
+    assert policy["primary_resolution"] == PRIMARY_RESOLUTION
+    assert policy["sensitivity_resolutions"] == list(
         SENSITIVITY_RESOLUTIONS
     )
     assert sha256_bytes(canonical_json(policy)) == (
@@ -150,6 +151,33 @@ def test_write_once_replays_identically_and_refuses_different_record(tmp_path):
         write_once(path, mutated)
 
 
+def test_failed_witness_write_never_publishes_partial_path(tmp_path, monkeypatch):
+    path = tmp_path / "run-input.json"
+    monkeypatch.setattr(os, "write", lambda *_: (_ for _ in ()).throw(OSError("boom")))
+    with pytest.raises(OSError, match="boom"):
+        write_once(path, _document(tmp_path))
+    assert not path.exists()
+    assert not list(tmp_path.glob(".run-input.json.*.tmp"))
+
+
+def test_load_rejects_duplicate_keys_and_cross_group_record_alias(tmp_path):
+    document = _document(tmp_path)
+    duplicate = tmp_path / "duplicate.json"
+    duplicate.write_bytes(
+        b'{"schema":"duplicate",' + canonical_json(document)[1:] + b"\n"
+    )
+    with pytest.raises(PreregistrationError, match="duplicate JSON object key"):
+        load(duplicate)
+
+    document["source_manifests"]["no_vocal"] = [
+        dict(document["source_manifests"]["voiced"][0])
+    ]
+    aliased = tmp_path / "aliased.json"
+    aliased.write_bytes(canonical_json(document) + b"\n")
+    with pytest.raises(PreregistrationError, match="filesystem alias"):
+        load(aliased)
+
+
 def test_load_refuses_policy_or_resolution_mutation(tmp_path):
     document = _document(tmp_path)
     path = tmp_path / "run-input.json"
@@ -165,18 +193,7 @@ def test_load_refuses_policy_or_resolution_mutation(tmp_path):
 
 def test_report_must_bind_exact_prewritten_record(tmp_path):
     run = write_once(tmp_path / "run-input.json", _document(tmp_path))
-    report = {
-        "preregistration_path": run.path,
-        "preregistration_container_sha256": run.container_sha256,
-        "preregistration_semantic_sha256": run.semantic_sha256,
-        "experiment_id": run.document["experiment_id"],
-        "task_id": TASK_ID,
-        "policy_semantic_sha256": CANONICAL_POLICY_SEMANTIC_SHA256,
-        "selected_method": SELECTED_METHOD,
-        "primary_resolution_seconds": PRIMARY_RESOLUTION,
-        "sensitivity_resolutions_seconds": list(SENSITIVITY_RESOLUTIONS),
-        "required_methods": list(REQUIRED_METHODS),
-    }
+    report = binding_fields(run)
     bind_report(report, run)
     for key in (
         "preregistration_container_sha256",
@@ -196,3 +213,17 @@ def test_json_key_order_does_not_change_semantic_digest():
     assert sha256_bytes(canonical_json(left)) == sha256_bytes(
         canonical_json(right)
     )
+
+
+def test_binding_cli_refuses_post_hoc_resolution_before_output(tmp_path):
+    document = _document(tmp_path)
+    preregistration = write_once(tmp_path / "prereg.json", document)
+    output = tmp_path / "must-not-exist"
+    with pytest.raises(SystemExit, match="--resolution is forbidden"):
+        certified_tool.main([
+            "--preregistration", preregistration.path,
+            "--truth-root", str(tmp_path / "truth"),
+            "--output-root", str(output),
+            "--resolution", "1.0",
+        ])
+    assert not output.exists()

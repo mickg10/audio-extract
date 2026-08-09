@@ -16,22 +16,33 @@ A report that lacks the preregistration commitment is not binding evidence.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from decimal import Decimal, InvalidOperation
-from pathlib import Path
-from typing import Any, Mapping, Sequence
 import hashlib
 import json
 import os
 import stat
+import tempfile
+from collections.abc import Mapping, Sequence
+from dataclasses import dataclass
+from decimal import Decimal, InvalidOperation
+from pathlib import Path
+from typing import Any
 
+from .oracle_routing_binding_policy_v2 import (
+    CANONICAL_POLICY_SHA256,
+    CANONICAL_PRIMARY_RESOLUTION,
+    CANONICAL_REQUIRED_METHODS,
+    CANONICAL_SELECTED_METHOD,
+    CANONICAL_SENSITIVITY_RESOLUTIONS,
+    CANONICAL_TASK_ID,
+    canonical_binding_policy,
+)
 
 SCHEMA = "audio-extract/oracle-routing-preregistration/v1"
-TASK_ID = "soloist_vs_rest"
-SELECTED_METHOD = "O2_global_medoid"
-REQUIRED_METHODS = ("O2_global_medoid", "O3_certified_convex")
-PRIMARY_RESOLUTION = "1.0"
-SENSITIVITY_RESOLUTIONS = ("2.0", "0.5")
+TASK_ID = CANONICAL_TASK_ID
+SELECTED_METHOD = CANONICAL_SELECTED_METHOD
+REQUIRED_METHODS = CANONICAL_REQUIRED_METHODS
+PRIMARY_RESOLUTION = CANONICAL_PRIMARY_RESOLUTION
+SENSITIVITY_RESOLUTIONS = CANONICAL_SENSITIVITY_RESOLUTIONS
 REQUIRED_RESOLUTIONS = (PRIMARY_RESOLUTION, *SENSITIVITY_RESOLUTIONS)
 SOURCE_GROUPS = ("voiced", "no_vocal")
 
@@ -88,21 +99,22 @@ def sha256_bytes(payload: bytes) -> str:
     return "sha256:" + hashlib.sha256(payload).hexdigest()
 
 
+def _unique_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    result: dict[str, Any] = {}
+    for key, value in pairs:
+        if key in result:
+            raise PreregistrationError(f"duplicate JSON object key: {key!r}")
+        result[key] = value
+    return result
+
+
 def canonical_policy() -> dict[str, Any]:
     """The compiled policy; callers cannot substitute methods or resolutions."""
 
-    return {
-        "schema": "audio-extract/oracle-routing-binding-policy/v1",
-        "task_id": TASK_ID,
-        "selected_method": SELECTED_METHOD,
-        "required_methods": list(REQUIRED_METHODS),
-        "primary_resolution_seconds": PRIMARY_RESOLUTION,
-        "sensitivity_resolutions_seconds": list(SENSITIVITY_RESOLUTIONS),
-        "required_resolutions_seconds": list(REQUIRED_RESOLUTIONS),
-    }
+    return canonical_binding_policy().identity_dict()
 
 
-CANONICAL_POLICY_SEMANTIC_SHA256 = sha256_bytes(canonical_json(canonical_policy()))
+CANONICAL_POLICY_SEMANTIC_SHA256 = CANONICAL_POLICY_SHA256
 
 
 def canonical_resolution(value: Any) -> str:
@@ -200,6 +212,7 @@ def stable_file_record(path: Path) -> StableFileRecord:
             item.st_ino,
             item.st_size,
             item.st_mtime_ns,
+            item.st_ctime_ns,
             item.st_mode,
         )
         for item in (before_path, before_fd, after_fd, after_path)
@@ -343,28 +356,41 @@ def write_once(path: Path, document: Mapping[str, Any]) -> PreregisteredRun:
     semantic = sha256_bytes(canonical_json(document))
     container = sha256_bytes(payload)
     path.parent.mkdir(parents=True, exist_ok=True)
-    flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL
+    temporary_fd, temporary_name = tempfile.mkstemp(
+        prefix=f".{path.name}.", suffix=".tmp", dir=path.parent
+    )
+    temporary = Path(temporary_name)
     try:
-        fd = os.open(path, flags, 0o444)
-    except FileExistsError:
-        existing = path.read_bytes()
-        if existing != payload:
-            raise PreregistrationError(
-                f"refusing to replace differing preregistration: {path}"
-            )
-    else:
         try:
             written = 0
             while written < len(payload):
-                count = os.write(fd, payload[written:])
+                count = os.write(temporary_fd, payload[written:])
                 if count <= 0:
                     raise PreregistrationError(
                         f"short write creating preregistration: {path}"
                     )
                 written += count
-            os.fsync(fd)
+            os.fsync(temporary_fd)
+            os.fchmod(temporary_fd, 0o444)
         finally:
-            os.close(fd)
+            os.close(temporary_fd)
+        try:
+            # link(2) publishes the complete inode atomically and never replaces
+            # an existing witness. The private temporary name is then removed.
+            os.link(temporary, path)
+        except FileExistsError:
+            existing = path.read_bytes()
+            if existing != payload:
+                raise PreregistrationError(
+                    f"refusing to replace differing preregistration: {path}"
+                )
+        directory_fd = os.open(path.parent, os.O_RDONLY)
+        try:
+            os.fsync(directory_fd)
+        finally:
+            os.close(directory_fd)
+    finally:
+        temporary.unlink(missing_ok=True)
     loaded = load(path)
     if (
         loaded.container_sha256 != container
@@ -385,13 +411,33 @@ def load(path: Path) -> PreregisteredRun:
             "preregistration bytes changed after stable hash"
         )
     try:
-        document = json.loads(payload.decode("utf-8"))
+        document = json.loads(
+            payload.decode("utf-8"), object_pairs_hook=_unique_object
+        )
     except (UnicodeDecodeError, json.JSONDecodeError) as exc:
         raise PreregistrationError(
             f"invalid preregistration JSON: {exc}"
         ) from exc
-    if not isinstance(document, Mapping) or document.get("schema") != SCHEMA:
+    expected_fields = {
+        "schema", "experiment_id", "task_id", "source_commit", "policy",
+        "policy_semantic_sha256", "resolutions_seconds", "source_manifests",
+        "truth_manifest_sha256", "basis_audit_sha256", "routing_config_sha256",
+    }
+    if not isinstance(document, Mapping) or set(document) != expected_fields:
+        raise PreregistrationError("wrong preregistration field set")
+    if document.get("schema") != SCHEMA:
         raise PreregistrationError("wrong preregistration schema")
+    if not isinstance(document.get("experiment_id"), str) or not document[
+        "experiment_id"
+    ].strip():
+        raise PreregistrationError("preregistration experiment_id is empty")
+    source_commit = document.get("source_commit")
+    if (
+        not isinstance(source_commit, str)
+        or len(source_commit) not in (40, 64)
+        or any(character not in "0123456789abcdef" for character in source_commit)
+    ):
+        raise PreregistrationError("preregistration source_commit is invalid")
     if document.get("task_id") != TASK_ID:
         raise PreregistrationError(
             "preregistration task differs from compiled task"
@@ -418,24 +464,66 @@ def load(path: Path) -> PreregisteredRun:
             raise PreregistrationError(
                 f"preregistration source-manifest group {group!r} is empty"
             )
+        for index, row in enumerate(rows):
+            if not isinstance(row, Mapping) or set(row) != {
+                "path", "sha256", "size", "device", "inode", "mtime_ns"
+            }:
+                raise PreregistrationError(
+                    f"preregistration source-manifest row {group}[{index}] "
+                    "has the wrong field set"
+                )
+            _require_sha(row.get("sha256"), f"{group}[{index}].sha256")
+            for field in ("size", "device", "inode", "mtime_ns"):
+                if isinstance(row.get(field), bool) or not isinstance(
+                    row.get(field), int
+                ) or row[field] < 0:
+                    raise PreregistrationError(
+                        f"{group}[{index}].{field} must be a non-negative integer"
+                    )
+    for field in (
+        "truth_manifest_sha256",
+        "basis_audit_sha256",
+        "routing_config_sha256",
+    ):
+        _require_sha(document.get(field), field)
     semantic = sha256_bytes(canonical_json(document))
-    return PreregisteredRun(
+    result = PreregisteredRun(
         path=record.path,
         container_sha256=record.sha256,
         semantic_sha256=semantic,
         document=document,
     )
+    verify_source_manifests(result)
+    return result
 
 
-def bind_report(
-    report: Mapping[str, Any],
-    preregistration: PreregisteredRun,
-) -> None:
-    """Require a later result to commit to the prewritten run-input witness."""
+def verify_source_manifests(preregistration: PreregisteredRun) -> None:
+    """Re-stat and re-hash every frozen source row, including physical identity."""
 
-    if not isinstance(report, Mapping):
-        raise PreregistrationError("binding report must be an object")
-    expected = {
+    owners: dict[tuple[int, int], tuple[str, str]] = {}
+    groups = preregistration.document["source_manifests"]
+    for group in SOURCE_GROUPS:
+        for index, declared in enumerate(groups[group]):
+            current = stable_file_record(Path(declared["path"])).to_dict()
+            if current != dict(declared):
+                raise PreregistrationError(
+                    f"{group} source manifest changed since preregistration: "
+                    f"row {index} {declared['path']}"
+                )
+            physical = (current["device"], current["inode"])
+            previous = owners.get(physical)
+            if previous is not None:
+                raise PreregistrationError(
+                    "source manifest filesystem alias crosses groups or rows: "
+                    f"{previous} and {(group, current['path'])}"
+                )
+            owners[physical] = (group, current["path"])
+
+
+def binding_fields(preregistration: PreregisteredRun) -> dict[str, Any]:
+    """Return the exact witness facts every binding report/recipe must carry."""
+
+    return {
         "preregistration_path": preregistration.path,
         "preregistration_container_sha256": preregistration.container_sha256,
         "preregistration_semantic_sha256": preregistration.semantic_sha256,
@@ -446,7 +534,25 @@ def bind_report(
         "primary_resolution_seconds": PRIMARY_RESOLUTION,
         "sensitivity_resolutions_seconds": list(SENSITIVITY_RESOLUTIONS),
         "required_methods": list(REQUIRED_METHODS),
+        "truth_manifest_sha256": preregistration.document[
+            "truth_manifest_sha256"
+        ],
+        "basis_audit_sha256": preregistration.document["basis_audit_sha256"],
+        "routing_config_sha256": preregistration.document[
+            "routing_config_sha256"
+        ],
     }
+
+
+def bind_report(
+    report: Mapping[str, Any],
+    preregistration: PreregisteredRun,
+) -> None:
+    """Require a later result to commit to the prewritten run-input witness."""
+
+    if not isinstance(report, Mapping):
+        raise PreregistrationError("binding report must be an object")
+    expected = binding_fields(preregistration)
     for key, value in expected.items():
         if report.get(key) != value:
             raise PreregistrationError(

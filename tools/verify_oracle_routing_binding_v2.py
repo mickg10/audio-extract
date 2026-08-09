@@ -18,12 +18,26 @@ import hashlib
 import json
 import os
 import sys
+from collections.abc import Mapping, Sequence
 from pathlib import Path
-from typing import Any, Mapping, Sequence
+from typing import Any
 
 if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from audio_extract.oracle_binding_preregistration import (
+    PreregisteredRun,
+    PreregistrationError,
+    bind_report,
+    binding_fields,
+    canonical_json,
+    sha256_bytes,
+    stable_file_record,
+    verify_source_manifests,
+)
+from audio_extract.oracle_binding_preregistration import (
+    load as load_preregistration,
+)
 from audio_extract.oracle_routing_binding_policy_v2 import (
     CANONICAL_POLICY_SHA256,
     BindingPolicyConfig,
@@ -32,6 +46,10 @@ from audio_extract.oracle_routing_binding_policy_v2 import (
     policy_semantic_sha256,
 )
 from audio_extract.oracle_routing_decision_v2 import RoutingGateConfig
+from audio_extract.oracle_routing_run_contract_v2 import (
+    RunContractError,
+    verify_truth_manifest,
+)
 from audio_extract.oracle_routing_source_lineage_v2 import (
     LINEAGE_SCHEMA,
     _recipe_identity,
@@ -39,7 +57,6 @@ from audio_extract.oracle_routing_source_lineage_v2 import (
     _stable_json,
     expected_source_from_audio,
 )
-
 
 RUN_INPUT_SCHEMA = "audio-extract/oracle-routing-run-inputs/v2"
 VERIFICATION_SCHEMA = "audio-extract/oracle-routing-binding-verification/v2"
@@ -51,8 +68,20 @@ class BindingVerificationError(RuntimeError):
     pass
 
 
-def _signature(stat: os.stat_result) -> tuple[int, int, int, int]:
-    return stat.st_dev, stat.st_ino, stat.st_size, stat.st_mtime_ns
+def _signature(stat: os.stat_result) -> tuple[int, int, int, int, int]:
+    return (
+        stat.st_dev, stat.st_ino, stat.st_size,
+        stat.st_mtime_ns, stat.st_ctime_ns,
+    )
+
+
+def _unique_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    result: dict[str, Any] = {}
+    for key, value in pairs:
+        if key in result:
+            raise BindingVerificationError(f"duplicate JSON object key: {key!r}")
+        result[key] = value
+    return result
 
 
 def _stable_bytes(path: Path) -> tuple[bytes, str]:
@@ -81,7 +110,9 @@ def _stable_bytes(path: Path) -> tuple[bytes, str]:
 def _json(path: Path, label: str) -> tuple[Mapping[str, Any], str]:
     payload, digest = _stable_bytes(path)
     try:
-        value = json.loads(payload.decode("utf-8"))
+        value = json.loads(
+            payload.decode("utf-8"), object_pairs_hook=_unique_object
+        )
     except (UnicodeDecodeError, json.JSONDecodeError) as exc:
         raise BindingVerificationError(
             f"invalid JSON in {label}: {path}: {exc}"
@@ -157,11 +188,11 @@ def _source_records(
             )
         for index, record in enumerate(records):
             if not isinstance(record, Mapping) or set(record) != {
-                "path", "sha256"
+                "path", "sha256", "size", "device", "inode", "mtime_ns"
             }:
                 raise BindingVerificationError(
                     f"{group} source manifest record {index} must contain "
-                    "exactly path and sha256"
+                    "the exact preregistered path/hash/stat fields"
                 )
             path_text = str(record.get("path") or "")
             if not path_text:
@@ -188,8 +219,176 @@ def _source_records(
                 record.get("sha256"),
                 f"{group} source manifest SHA",
             )
+            try:
+                current = stable_file_record(path).to_dict()
+            except PreregistrationError as exc:
+                raise BindingVerificationError(str(exc)) from exc
+            if current != dict(record):
+                raise BindingVerificationError(
+                    f"{group} source manifest changed: {path}"
+                )
             result.append((group, path, expected))
     return tuple(result)
+
+
+def _verify_generated_recipe_bindings(
+    report: Mapping[str, Any], preregistration: PreregisteredRun
+) -> None:
+    expected = binding_fields(preregistration)
+    resolutions = report.get("resolutions")
+    if not isinstance(resolutions, Mapping):
+        raise BindingVerificationError("report lacks resolutions")
+    checked = 0
+    for resolution in resolutions.values():
+        works = resolution.get("works") if isinstance(resolution, Mapping) else None
+        if not isinstance(works, Mapping):
+            continue
+        for work in works.values():
+            if not isinstance(work, Mapping):
+                continue
+            method_groups = [work.get("methods"), work.get("no_vocal")]
+            for methods in method_groups:
+                if not isinstance(methods, Mapping):
+                    continue
+                for evidence in methods.values():
+                    artifact = (
+                        evidence.get("artifact")
+                        if isinstance(evidence, Mapping) else None
+                    )
+                    if not isinstance(artifact, Mapping) or not artifact.get(
+                        "recipe_id"
+                    ):
+                        continue
+                    artifact_path = Path(str(artifact.get("path") or ""))
+                    recipe_path = artifact_path.parent / "recipe.json"
+                    recipe, _ = _json(recipe_path, "generated artifact recipe")
+                    if recipe.get("preregistration") != expected:
+                        raise BindingVerificationError(
+                            "generated artifact recipe lacks the exact "
+                            f"preregistration binding: {recipe_path}"
+                        )
+                    checked += 1
+    if checked == 0:
+        raise BindingVerificationError(
+            "report contains no generated artifact recipe bindings"
+        )
+
+
+def _verify_preregistered_artifacts(
+    inputs: Mapping[str, Any], preregistration: PreregisteredRun
+) -> dict[str, Mapping[str, Any]]:
+    records = inputs.get("preregistered_artifacts")
+    expected_fields = {
+        "truth_manifest": "truth_manifest_sha256",
+        "basis_audit": "basis_audit_sha256",
+        "routing_config": "routing_config_sha256",
+    }
+    if not isinstance(records, Mapping) or set(records) != set(expected_fields):
+        raise BindingVerificationError(
+            "run inputs lack the exact preregistered artifact set"
+        )
+    values: dict[str, Mapping[str, Any]] = {}
+    for name, witness_field in expected_fields.items():
+        record = records[name]
+        if not isinstance(record, Mapping) or set(record) != {
+            "path", "semantic_sha256"
+        }:
+            raise BindingVerificationError(
+                f"invalid preregistered artifact record: {name}"
+            )
+        value, _ = _json(Path(str(record["path"])), name)
+        actual = sha256_bytes(canonical_json(value))
+        declared = _sha_identity(
+            record["semantic_sha256"], f"{name} semantic SHA"
+        )
+        expected = preregistration.document[witness_field]
+        if actual != declared or declared != expected:
+            raise BindingVerificationError(
+                f"{name} differs from preregistration"
+            )
+        values[name] = value
+    return values
+
+
+def _verify_report_truth(
+    report: Mapping[str, Any], truth_manifest: Mapping[str, Any]
+) -> None:
+    records = truth_manifest.get("records")
+    if not isinstance(records, Mapping):
+        raise BindingVerificationError("truth manifest lacks records")
+    for resolution_key, resolution in report["resolutions"].items():
+        works = resolution.get("works")
+        for work_id, work in works.items():
+            declared = records.get(work_id)
+            if not isinstance(declared, Mapping):
+                raise BindingVerificationError(
+                    f"report work is absent from truth manifest: {work_id}"
+                )
+            roles = declared.get("roles")
+            truth = work.get("truth")
+            if not isinstance(roles, Mapping) or not isinstance(truth, Mapping):
+                raise BindingVerificationError(
+                    f"invalid truth binding at {resolution_key}/{work_id}"
+                )
+            expected_pcm = {
+                role: roles[role]["artifact_pcm_sha256"]
+                for role in ("mixture", "accompaniment", "vocal")
+            }
+            grids = {
+                (
+                    role["frames"], role["sample_rate_hz"],
+                    tuple(role["channels"]), role["subtype"],
+                )
+                for role in roles.values()
+            }
+            expected_truth = {
+                "schema": "audio-extract/oracle-routing-truth/v2",
+                "frames": next(iter(grids))[0] if len(grids) == 1 else None,
+                "sample_rate_hz": next(iter(grids))[1] if len(grids) == 1 else None,
+                "channels": ["FL", "FR"],
+                "pcm_identities": expected_pcm,
+            }
+            if len(grids) != 1 or dict(truth) != expected_truth:
+                raise BindingVerificationError(
+                    f"report truth differs from frozen manifest: "
+                    f"{resolution_key}/{work_id}"
+                )
+
+
+def _verify_frozen_execution_inputs(
+    inputs: Mapping[str, Any],
+    run_inputs_path: Path,
+    frozen: Mapping[str, Mapping[str, Any]],
+) -> None:
+    routing = frozen["routing_config"]
+    expected_routing = {
+        "schema": "audio-extract/oracle-routing-config-binding/v1",
+        "works": inputs.get("works"),
+        "run_config": inputs.get("run_config"),
+        "decision_config": inputs.get("decision_config"),
+    }
+    if dict(routing) != expected_routing:
+        raise BindingVerificationError(
+            "run-input execution configuration differs from preregistration"
+        )
+
+    basis = frozen["basis_audit"]
+    components = {
+        "voiced": "basis-audit-v2.json",
+        "no_vocal": "no-vocal-basis-audit-v2.json",
+        "voiced_source_lineage": "source-lineage-audit-v2.json",
+        "no_vocal_source_lineage": "no-vocal-source-lineage-audit-v2.json",
+    }
+    if basis.get("schema") != (
+        "audio-extract/oracle-routing-basis-audit-binding/v1"
+    ):
+        raise BindingVerificationError("wrong frozen basis-audit schema")
+    for field, filename in components.items():
+        current, _ = _json(run_inputs_path.parent / filename, field)
+        if basis.get(field) != current:
+            raise BindingVerificationError(
+                f"{field} differs from preregistered combined basis audit"
+            )
 
 
 def _candidate_lineage_fields() -> set[str]:
@@ -488,18 +687,59 @@ def _verify_run_inputs(
 
 def run(
     *,
+    preregistration_path: Path,
     report_path: Path,
     run_inputs_path: Path,
     policy_path: Path,
     output_path: Path | None,
 ) -> dict[str, Any]:
+    try:
+        preregistration = load_preregistration(preregistration_path)
+        verify_source_manifests(preregistration)
+    except PreregistrationError as exc:
+        raise BindingVerificationError(
+            f"invalid preregistration: {exc}"
+        ) from exc
     report, report_sha = _json(report_path, "routing report")
+    try:
+        bind_report(report, preregistration)
+    except PreregistrationError as exc:
+        raise BindingVerificationError(str(exc)) from exc
     inputs, inputs_sha = _json(run_inputs_path, "run inputs")
+    expected_binding = binding_fields(preregistration)
+    if inputs.get("preregistration") != expected_binding:
+        raise BindingVerificationError(
+            "run-input/preregistration binding mismatch"
+        )
+    if inputs.get("source_manifest_groups") != preregistration.document[
+        "source_manifests"
+    ]:
+        raise BindingVerificationError(
+            "run-input source_manifest_groups differ from preregistration; "
+            "voiced and no_vocal must remain non-empty arrays"
+        )
+    preregistered_artifacts = _verify_preregistered_artifacts(
+        inputs, preregistration
+    )
+    try:
+        verify_truth_manifest(
+            preregistered_artifacts["truth_manifest"],
+            truth_root=Path(str(inputs.get("truth_root") or "")),
+        )
+    except RunContractError as exc:
+        raise BindingVerificationError(
+            f"frozen truth manifest failed replay: {exc}"
+        ) from exc
+    _verify_frozen_execution_inputs(
+        inputs, run_inputs_path, preregistered_artifacts
+    )
     policy_value, policy_file_sha = _json(policy_path, "binding policy")
     policy, policy_semantic_sha = _verify_policy(policy_value)
     thresholds = _verify_run_inputs(
         report, inputs, policy, run_inputs_path
     )
+    _verify_report_truth(report, preregistered_artifacts["truth_manifest"])
+    _verify_generated_recipe_bindings(report, preregistration)
     decision = evaluate_report_strict(
         report, policy=policy, metric_config=thresholds
     )
@@ -518,6 +758,7 @@ def run(
         "binding_policy_file_sha256": policy_file_sha,
         "binding_policy_semantic_sha256": policy_semantic_sha,
         "compiled_binding_policy_sha256": CANONICAL_POLICY_SHA256,
+        "preregistration": expected_binding,
         "code_commit": inputs["code_commit"],
         "decision": decision,
     }
@@ -530,6 +771,17 @@ def run(
             )
         if not output_path.exists():
             output_path.write_text(payload)
+    try:
+        final_preregistration = load_preregistration(preregistration_path)
+        verify_source_manifests(final_preregistration)
+    except PreregistrationError as exc:
+        raise BindingVerificationError(
+            f"preregistration changed during verification: {exc}"
+        ) from exc
+    if final_preregistration != preregistration:
+        raise BindingVerificationError(
+            "preregistration changed during verification"
+        )
     return result
 
 
@@ -538,6 +790,7 @@ def build_parser() -> argparse.ArgumentParser:
         "verify-oracle-routing-binding-v2"
     )
     parser.add_argument("--report", required=True, type=Path)
+    parser.add_argument("--preregistration", required=True, type=Path)
     parser.add_argument("--run-inputs", required=True, type=Path)
     parser.add_argument(
         "--policy",
@@ -555,6 +808,7 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     result = run(
+        preregistration_path=args.preregistration,
         report_path=args.report,
         run_inputs_path=args.run_inputs,
         policy_path=args.policy,

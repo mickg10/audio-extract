@@ -17,19 +17,22 @@ created or changed after the run.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from pathlib import Path
-from typing import Any, Mapping, Sequence
 import hashlib
 import json
 import math
 import os
 import stat
+import struct
+from collections.abc import Mapping, Sequence
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any
 
 import numpy as np
 import soundfile as sf
 
 from . import identity
+from .oracle_routing_binding_policy_v2 import CANONICAL_POLICY_SHA256
 
 RUN_INPUT_SCHEMA = "audio-extract/oracle-routing-run-inputs/v2"
 TRUTH_MANIFEST_SCHEMA = "audio-extract/oracle-routing-truth-manifest/v2"
@@ -93,8 +96,11 @@ def _sha_identity(value: Any, label: str) -> str:
     return result
 
 
-def _signature(value: os.stat_result) -> tuple[int, int, int, int]:
-    return value.st_dev, value.st_ino, value.st_size, value.st_mtime_ns
+def _signature(value: os.stat_result) -> tuple[int, int, int, int, int]:
+    return (
+        value.st_dev, value.st_ino, value.st_size,
+        value.st_mtime_ns, value.st_ctime_ns,
+    )
 
 
 def stable_file(path: Path) -> tuple[bytes, StableFile]:
@@ -131,8 +137,20 @@ def stable_file(path: Path) -> tuple[bytes, StableFile]:
 
 
 def _json_object(payload: bytes, label: str) -> Mapping[str, Any]:
+    def unique_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+        result: dict[str, Any] = {}
+        for key, value in pairs:
+            if key in result:
+                raise RunContractError(
+                    f"{label} contains duplicate JSON key {key!r}"
+                )
+            result[key] = value
+        return result
+
     try:
-        value = json.loads(payload.decode("utf-8"))
+        value = json.loads(
+            payload.decode("utf-8"), object_pairs_hook=unique_object
+        )
     except (UnicodeDecodeError, json.JSONDecodeError) as exc:
         raise RunContractError(f"invalid JSON in {label}: {exc}") from exc
     if not isinstance(value, Mapping):
@@ -280,6 +298,44 @@ def verify_disjoint_manifest_groups(
     return tuple(result)
 
 
+def _require_stereo_wave(handle, path: Path, info: sf.SoundFile) -> None:
+    if info.format not in {"WAV", "WAVEX"}:
+        raise RunContractError(f"truth audio is not a WAV container: {path}")
+    handle.seek(0)
+    header = handle.read(12)
+    if len(header) != 12 or header[:4] not in {b"RIFF", b"RF64"} or header[8:] != b"WAVE":
+        raise RunContractError(f"truth audio has an invalid WAV header: {path}")
+    extensible_mask = None
+    while True:
+        chunk_header = handle.read(8)
+        if len(chunk_header) != 8:
+            break
+        chunk, size = struct.unpack("<4sI", chunk_header)
+        payload = handle.read(size)
+        if len(payload) != size:
+            raise RunContractError(f"truncated WAV chunk in truth audio: {path}")
+        if size & 1:
+            handle.read(1)
+        if chunk == b"fmt ":
+            if len(payload) < 16:
+                raise RunContractError(f"invalid WAV fmt chunk: {path}")
+            format_tag, channels = struct.unpack_from("<HH", payload)
+            if channels != 2:
+                raise RunContractError(f"truth WAV is not two-channel: {path}")
+            if format_tag == 0xFFFE:
+                if len(payload) < 40:
+                    raise RunContractError(
+                        f"truncated WAVE_FORMAT_EXTENSIBLE chunk: {path}"
+                    )
+                extensible_mask = struct.unpack_from("<I", payload, 20)[0]
+            break
+    if extensible_mask is not None and extensible_mask != 0x3:
+        raise RunContractError(
+            f"truth WAV channel mask is not FL/FR stereo: {path}: "
+            f"0x{extensible_mask:x}"
+        )
+
+
 def _read_audio_record(
     path: Path,
 ) -> tuple[np.ndarray, dict[str, Any], tuple[int, int]]:
@@ -307,6 +363,7 @@ def _read_audio_record(
                 raise RunContractError(
                     f"expected 44.1-kHz stereo FLOAT truth: {path}: {info}"
                 )
+            _require_stereo_wave(handle, path, info)
             handle.seek(0)
             audio, sample_rate = sf.read(
                 handle, dtype="float32", always_2d=True
@@ -334,7 +391,7 @@ def _read_audio_record(
         "artifact_pcm_sha256": identity.artifact_pcm_sha256(
             audio, int(sample_rate), ["FL", "FR"], len(audio)
         ),
-        "frames": int(len(audio)),
+        "frames": len(audio),
         "sample_rate_hz": int(sample_rate),
         "channels": ["FL", "FR"],
         "subtype": "FLOAT",
@@ -379,6 +436,7 @@ def build_truth_manifest(
                 )
             physical.add(file_identity)
             audio[role] = value
+            record["path"] = str(Path(work) / filename)
             roles[role] = record
         grids = {
             (
@@ -435,7 +493,9 @@ def _max_fact_matches(current: float, declared: Any) -> bool:
     )
 
 
-def verify_truth_manifest(value: Mapping[str, Any]) -> str:
+def verify_truth_manifest(
+    value: Mapping[str, Any], *, truth_root: Path
+) -> str:
     """Reopen every frozen truth file and compare all declared identities."""
 
     if value.get("schema") != TRUTH_MANIFEST_SCHEMA:
@@ -493,9 +553,14 @@ def verify_truth_manifest(value: Mapping[str, Any]) -> str:
                 raise RunContractError(
                     f"truth role path is missing: {work}/{role}"
                 )
-            current_audio, current, file_identity = _read_audio_record(
-                Path(path_text)
-            )
+            logical = Path(path_text)
+            if logical.is_absolute() or ".." in logical.parts:
+                raise RunContractError(
+                    f"truth role path is not bundle-relative: {work}/{role}"
+                )
+            source_path = truth_root / logical
+            current_audio, current, file_identity = _read_audio_record(source_path)
+            current["path"] = path_text
             if file_identity in physical:
                 raise RunContractError(
                     f"truth roles reuse one physical file: {work}/{role}"
@@ -533,7 +598,7 @@ def load_run_input_anchor(
     expected_works: Sequence[str],
     expected_run_config: Mapping[str, Any],
     expected_truth_manifest_sha256: str,
-    expected_binding_policy_sha256: str | None = None,
+    expected_binding_policy_sha256: str = CANONICAL_POLICY_SHA256,
 ) -> RunInputAnchor:
     """Verify and bind a record that must exist before routing starts."""
 
@@ -564,19 +629,18 @@ def load_run_input_anchor(
         value.get("source_manifest_groups") or {}
     )
 
-    if expected_binding_policy_sha256 is not None:
-        expected_policy = _sha_identity(
-            expected_binding_policy_sha256,
-            "expected binding policy SHA",
+    expected_policy = _sha_identity(
+        expected_binding_policy_sha256,
+        "expected binding policy SHA",
+    )
+    declared_policy = _sha_identity(
+        value.get("binding_policy_sha256"),
+        "run-input binding policy SHA",
+    )
+    if declared_policy != expected_policy:
+        raise RunContractError(
+            "run-input binding-policy SHA differs from execution"
         )
-        declared_policy = _sha_identity(
-            value.get("binding_policy_sha256"),
-            "run-input binding policy SHA",
-        )
-        if declared_policy != expected_policy:
-            raise RunContractError(
-                "run-input binding-policy SHA differs from execution"
-            )
 
     truth_record = value.get("truth_manifest")
     if not isinstance(truth_record, Mapping) or set(truth_record) != {
@@ -609,7 +673,10 @@ def load_run_input_anchor(
         raise RunContractError(
             "truth-manifest work order differs from run inputs"
         )
-    verify_truth_manifest(truth_value)
+    truth_root_text = str(value.get("truth_root") or "")
+    if not truth_root_text:
+        raise RunContractError("run inputs lack a runtime truth_root")
+    verify_truth_manifest(truth_value, truth_root=Path(truth_root_text))
 
     return RunInputAnchor(
         schema=RUN_ANCHOR_SCHEMA,

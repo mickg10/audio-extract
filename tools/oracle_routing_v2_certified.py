@@ -21,13 +21,24 @@ The exploratory decision emitted by the runner is not final authority; use
 from __future__ import annotations
 
 import argparse
-from dataclasses import asdict
-from pathlib import Path
-from typing import Any, Sequence
 import hashlib
 import json
 import subprocess
+from collections.abc import Mapping, Sequence
+from dataclasses import asdict
+from pathlib import Path
+from typing import Any
 
+from audio_extract.oracle_binding_preregistration import (
+    PreregistrationError,
+    binding_fields,
+    canonical_json,
+    sha256_bytes,
+    verify_source_manifests,
+)
+from audio_extract.oracle_binding_preregistration import (
+    load as load_preregistration,
+)
 from audio_extract.oracle_routing_basis_sources_v2 import assemble_basis
 from audio_extract.oracle_routing_basis_v2 import basis_report, write_jsonl
 from audio_extract.oracle_routing_binding_policy_v2 import (
@@ -35,10 +46,11 @@ from audio_extract.oracle_routing_binding_policy_v2 import (
     canonical_binding_policy,
 )
 from audio_extract.oracle_routing_decision_v2 import RoutingGateConfig
+from audio_extract.oracle_routing_run_contract_v2 import build_truth_manifest
 from audio_extract.oracle_routing_runner_v2 import (
-    CertifiedRoutingRunConfig,
     DEFAULT_WORKS,
     REQUIRED_ALIASES,
+    CertifiedRoutingRunConfig,
     run_experiment,
 )
 from audio_extract.oracle_routing_source_lineage_v2 import (
@@ -56,21 +68,45 @@ def _sha_file(path: Path) -> str:
     return "sha256:" + digest.hexdigest()
 
 
-def _git_commit() -> str:
-    return subprocess.run(
+def _git_commit(requested: str | None = None) -> str:
+    commit = subprocess.run(
         ["git", "rev-parse", "HEAD"],
         check=True,
         text=True,
         capture_output=True,
     ).stdout.strip()
+    dirty = subprocess.run(
+        ["git", "status", "--porcelain"],
+        check=True,
+        text=True,
+        capture_output=True,
+    ).stdout
+    if dirty:
+        raise RuntimeError(
+            "binding execution requires a clean Git worktree; commit the exact "
+            "runner and dependency state first"
+        )
+    if requested is not None and requested.lower() != commit.lower():
+        raise RuntimeError(
+            f"--code-commit {requested} differs from checked-out HEAD {commit}"
+        )
+    return commit
 
 
 def _load_json(path: Path | None) -> dict[str, Any]:
     if path is None:
         return {}
-    value = json.loads(path.read_text())
+    def unique_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+        result: dict[str, Any] = {}
+        for key, item in pairs:
+            if key in result:
+                raise ValueError(f"duplicate JSON object key in {path}: {key!r}")
+            result[key] = item
+        return result
+
+    value = json.loads(path.read_text(), object_pairs_hook=unique_object)
     if not isinstance(value, dict):
-        raise ValueError(f"configuration must be a JSON object: {path}")
+        raise TypeError(f"configuration must be a JSON object: {path}")
     return value
 
 
@@ -128,6 +164,41 @@ def _manifest_records(paths: Sequence[Path]) -> list[dict[str, str]]:
     return result
 
 
+def _semantic_sha(value: Any) -> str:
+    return sha256_bytes(canonical_json(value))
+
+
+def _binding_basis_audit(
+    voiced: Mapping[str, Any],
+    no_vocal: Mapping[str, Any],
+    voiced_lineage: Mapping[str, Any],
+    no_vocal_lineage: Mapping[str, Any],
+) -> dict[str, Any]:
+    return {
+        "schema": "audio-extract/oracle-routing-basis-audit-binding/v1",
+        "voiced": dict(voiced),
+        "no_vocal": dict(no_vocal),
+        "voiced_source_lineage": dict(voiced_lineage),
+        "no_vocal_source_lineage": dict(no_vocal_lineage),
+    }
+
+
+def _routing_config_identity(
+    run_config: CertifiedRoutingRunConfig,
+    decision_config: RoutingGateConfig,
+    works: Sequence[str],
+) -> dict[str, Any]:
+    return {
+        "schema": "audio-extract/oracle-routing-config-binding/v1",
+        "works": list(works),
+        "run_config": {
+            **asdict(run_config),
+            "spectral": asdict(run_config.spectral),
+        },
+        "decision_config": asdict(decision_config),
+    }
+
+
 def _expected_sources(
     truth_root: Path,
     works: Sequence[str],
@@ -175,6 +246,10 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--truth-root", required=True, type=Path)
     parser.add_argument("--output-root", required=True, type=Path)
+    parser.add_argument(
+        "--preregistration", required=True, type=Path,
+        help="preexisting immutable binding witness",
+    )
     parser.add_argument("--work", action="append", default=[])
     parser.add_argument("--resolution", action="append", type=float)
     parser.add_argument("--run-config-json", type=Path)
@@ -185,6 +260,18 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
+    # The witness is deliberately loaded before output-root inspection/creation,
+    # candidate assembly, truth decode, or optimizer setup.
+    try:
+        preregistration = load_preregistration(args.preregistration)
+        verify_source_manifests(preregistration)
+    except PreregistrationError as exc:
+        raise SystemExit(f"invalid preregistration: {exc}") from exc
+    if args.resolution is not None:
+        raise SystemExit(
+            "--resolution is forbidden for binding runs; resolutions come "
+            "only from --preregistration"
+        )
     voiced_source_paths = (
         *args.audited_candidate_manifest,
         *args.strict_basis_manifest,
@@ -199,28 +286,38 @@ def main(argv: list[str] | None = None) -> int:
         raise SystemExit(
             "a binding run requires the complete Aalto no-vocal basis manifest"
         )
-    voiced_records = _manifest_records(voiced_source_paths)
-    no_vocal_records = _manifest_records(no_vocal_source_paths)
-    if {
-        record["path"] for record in voiced_records
-    } & {
-        record["path"] for record in no_vocal_records
-    }:
+    supplied_groups = {
+        "voiced": [str(path.resolve(strict=True)) for path in voiced_source_paths],
+        "no_vocal": [
+            str(path.resolve(strict=True)) for path in no_vocal_source_paths
+        ],
+    }
+    frozen_groups = {
+        group: [row["path"] for row in preregistration.document[
+            "source_manifests"
+        ][group]]
+        for group in ("voiced", "no_vocal")
+    }
+    if supplied_groups != frozen_groups:
         raise SystemExit(
-            "voiced and no-vocal source-manifest groups must be disjoint"
+            "CLI source manifests differ from the preregistered groups/order"
         )
 
-    resolutions = (
-        None if args.resolution is None
-        else tuple(float(value) for value in args.resolution)
+    resolutions = tuple(
+        float(value)
+        for value in preregistration.document["resolutions_seconds"]
     )
     run_config = load_run_config(
         args.run_config_json, resolutions=resolutions
     )
     decision_config = load_decision_config(args.decision_config_json)
     binding_policy = canonical_binding_policy()
-    code_commit = args.code_commit or _git_commit()
+    code_commit = _git_commit(args.code_commit)
     works = tuple(args.work) if args.work else DEFAULT_WORKS
+    if code_commit.lower() != preregistration.document["source_commit"]:
+        raise SystemExit(
+            "execution code commit differs from preregistered source_commit"
+        )
 
     verified, basis = assemble_basis(
         audited_candidate_manifests=tuple(args.audited_candidate_manifest),
@@ -256,11 +353,34 @@ def main(argv: list[str] | None = None) -> int:
         role="no_vocal_accompaniment",
     )
 
+    voiced_audit = basis_report(verified, basis)
+    no_vocal_audit = basis_report(no_vocal_verified, no_vocal_basis)
+    combined_basis_audit = _binding_basis_audit(
+        voiced_audit, no_vocal_audit, voiced_lineage, no_vocal_lineage
+    )
+    truth_manifest = build_truth_manifest(
+        args.truth_root,
+        works,
+        identity_tolerance=run_config.truth_identity_tolerance,
+    )
+    routing_config_identity = _routing_config_identity(
+        run_config, decision_config, works
+    )
+    current_hashes = {
+        "truth_manifest_sha256": _semantic_sha(truth_manifest),
+        "basis_audit_sha256": _semantic_sha(combined_basis_audit),
+        "routing_config_sha256": _semantic_sha(routing_config_identity),
+    }
+    for field, actual in current_hashes.items():
+        expected = preregistration.document[field]
+        if actual != expected:
+            raise SystemExit(
+                f"{field} differs from preregistration: {actual} != {expected}"
+            )
+
     args.output_root.mkdir(parents=True, exist_ok=True)
     write_jsonl(args.output_root / "basis-v2.jsonl", basis)
     write_jsonl(args.output_root / "no-vocal-basis-v2.jsonl", no_vocal_basis)
-    voiced_audit = basis_report(verified, basis)
-    no_vocal_audit = basis_report(no_vocal_verified, no_vocal_basis)
     _write_immutable_json(args.output_root / "basis-audit-v2.json", voiced_audit)
     _write_immutable_json(
         args.output_root / "no-vocal-basis-audit-v2.json", no_vocal_audit
@@ -277,6 +397,17 @@ def main(argv: list[str] | None = None) -> int:
         args.output_root / "binding-policy-v2.json",
         binding_policy.identity_dict(),
     )
+    _write_immutable_json(
+        args.output_root / "truth-manifest-v2.json", truth_manifest
+    )
+    _write_immutable_json(
+        args.output_root / "binding-basis-audit-v1.json",
+        combined_basis_audit,
+    )
+    _write_immutable_json(
+        args.output_root / "routing-config-binding-v1.json",
+        routing_config_identity,
+    )
     inputs = {
         "schema": "audio-extract/oracle-routing-run-inputs/v2",
         "code_commit": code_commit,
@@ -289,9 +420,27 @@ def main(argv: list[str] | None = None) -> int:
         "binding_policy": binding_policy.identity_dict(),
         "binding_policy_sha256": CANONICAL_POLICY_SHA256,
         "truth_root": str(args.truth_root.resolve(strict=True)),
-        "source_manifest_groups": {
-            "voiced": voiced_records,
-            "no_vocal": no_vocal_records,
+        "source_manifest_groups": preregistration.document[
+            "source_manifests"
+        ],
+        "preregistration": binding_fields(preregistration),
+        "preregistered_artifacts": {
+            "truth_manifest": {
+                "path": str((args.output_root / "truth-manifest-v2.json").resolve()),
+                "semantic_sha256": current_hashes["truth_manifest_sha256"],
+            },
+            "basis_audit": {
+                "path": str(
+                    (args.output_root / "binding-basis-audit-v1.json").resolve()
+                ),
+                "semantic_sha256": current_hashes["basis_audit_sha256"],
+            },
+            "routing_config": {
+                "path": str(
+                    (args.output_root / "routing-config-binding-v1.json").resolve()
+                ),
+                "semantic_sha256": current_hashes["routing_config_sha256"],
+            },
         },
         "basis_audit_sha256": _sha_file(
             args.output_root / "basis-audit-v2.json"
@@ -314,6 +463,7 @@ def main(argv: list[str] | None = None) -> int:
         truth_root=args.truth_root,
         output_root=args.output_root,
         code_commit=code_commit,
+        preregistration=preregistration,
         works=works,
         config=run_config,
         decision_config=decision_config,
@@ -324,6 +474,7 @@ def main(argv: list[str] | None = None) -> int:
         "report_schema": report["schema"],
         "exploratory_decision": exploratory_decision["decision"],
         "binding_policy_sha256": CANONICAL_POLICY_SHA256,
+        "preregistration": binding_fields(preregistration),
         "output_root": str(args.output_root.resolve()),
         "report": str(
             (args.output_root / "oracle-routing-envelope-v2.json").resolve()
