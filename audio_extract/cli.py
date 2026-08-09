@@ -580,6 +580,17 @@ def cmd_candidate_channel_map(args: argparse.Namespace) -> int:
     return _emit(_envelope("candidate.channel-map", "ok", args.run_id, candidate=rec))
 
 
+def cmd_candidate_resample(args: argparse.Namespace) -> int:
+    """Render an explicit immutable sample-rate conversion candidate."""
+    from .resample import render_resample_candidate
+
+    layout = TrackLayout(args.lib, args.run_id)
+    rec = render_resample_candidate(
+        layout, args.parent_recipe_id, target_rate_hz=args.target_rate_hz,
+        algo=args.algo, code_commit=_code_commit())
+    return _emit(_envelope("candidate.resample", "ok", args.run_id, candidate=rec))
+
+
 def cmd_finalists_render(args: argparse.Namespace) -> int:
     """Certified delivery is bound to an immutable decision (--decision-id). Direct
     candidate rendering is allowed ONLY as an explicit --uncertified-preview (§9)."""
@@ -751,6 +762,13 @@ def build_parser() -> argparse.ArgumentParser:
                     choices=["duplicate_mono_to_stereo"])
     sp.add_argument("--json", action="store_true")
     sp.set_defaults(func=cmd_candidate_channel_map)
+    sp = g_cand.add_parser("resample", help="explicit immutable sample-rate conversion")
+    sp.add_argument("--run-id", required=True)
+    sp.add_argument("--parent-recipe-id", required=True)
+    sp.add_argument("--target-rate-hz", type=int, default=48_000)
+    sp.add_argument("--algo", default="scipy_polyphase", choices=["scipy_polyphase"])
+    sp.add_argument("--json", action="store_true")
+    sp.set_defaults(func=cmd_candidate_resample)
     sp = g_cand.add_parser("render", help="render an immutable separator candidate")
     sp.add_argument("--run-id", required=True)
     sp.add_argument("--model", required=True, help="separator model filename (audio-separator registry)")
