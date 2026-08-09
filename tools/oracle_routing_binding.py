@@ -243,6 +243,26 @@ def _scaled_configs(tile_seconds: float) -> tuple[RoutingConfig, CertifiedRoutin
     return routing, certified
 
 
+def _routing_manifest() -> dict[str, Any]:
+    """Return the exact, canon-safe identity of the frozen routing experiment."""
+
+    return {
+        # Recipe-bearing physical quantities are decimal strings.  In particular,
+        # 0.5 must never enter RFC8785 canonicalization as a binary float.
+        "primary_resolution_seconds": "1",
+        "sensitivity_resolutions_seconds": ["0.5", "2"],
+        "baseline_methods": list(BASELINE_METHODS),
+        "routed_methods": ["O2", "O3"],
+        "resolutions": {
+            format(seconds, "g"): {
+                "routing": _scaled_configs(seconds)[0].identity_dict(),
+                "certified": _scaled_configs(seconds)[1].identity_dict(),
+            }
+            for seconds in RESOLUTIONS
+        },
+    }
+
+
 def _routing_view(grid, time_ranges, frequency_ranges):
     """Supply only the geometry fields used by the common FLOAT renderer."""
 
@@ -985,19 +1005,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     ).stdout.strip()
     rows = _manifest_rows(args.candidate_manifest)
     works = tuple(args.work)
-    routing_manifest = {
-        "primary_resolution_seconds": 1.0,
-        "sensitivity_resolutions_seconds": [0.5, 2.0],
-        "baseline_methods": list(BASELINE_METHODS),
-        "routed_methods": ["O2", "O3"],
-        "resolutions": {
-            format(seconds, "g"): {
-                "routing": _scaled_configs(seconds)[0].identity_dict(),
-                "certified": _scaled_configs(seconds)[1].identity_dict(),
-            }
-            for seconds in RESOLUTIONS
-        },
-    }
+    routing_manifest = _routing_manifest()
     report: dict[str, Any] = {
         "schema": SCHEMA,
         "status": "final",

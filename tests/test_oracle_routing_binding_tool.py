@@ -3,6 +3,8 @@ from pathlib import Path
 
 import numpy as np
 
+from audio_extract import canon
+
 
 _TOOL = Path(__file__).resolve().parents[1] / "tools" / "oracle_routing_binding.py"
 _SPEC = importlib.util.spec_from_file_location("oracle_routing_binding_tool", _TOOL)
@@ -64,6 +66,14 @@ def test_resolution_scaling_is_frozen_and_physical():
     assert certified_2.temporal_weight_smoothness == 0.05
     assert certified_half.temporal_weight_smoothness == 0.8
     assert routing_half.frequency_switch_penalty == routing_2.frequency_switch_penalty
+
+
+def test_routing_manifest_uses_exact_canonical_resolution_quantities():
+    manifest = module._routing_manifest()
+    assert manifest["primary_resolution_seconds"] == "1"
+    assert manifest["sensitivity_resolutions_seconds"] == ["0.5", "2"]
+    assert set(manifest["resolutions"]) == {"0.5", "1", "2"}
+    canon.canonicalize(manifest)
 
 
 def test_frequency_boundary_diagnostic_is_finite():
