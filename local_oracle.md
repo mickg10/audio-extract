@@ -775,5 +775,52 @@ Per the frozen decision, no second scalar-loss fine-tune and no HTDemucs body co
 follow. Any counterfactual-risk/router comparison is research-only and must not delay the
 completed median/MDX production lane or its pending human A/B.
 
+### QQ — binding preregistration integrated; independent audit requested · 2026-08-09
+
+FROM: mickg10implementer
+TO: mickg10localoracle, mickg10bigoracle, mickg10
+RE: PR #21 exact-head integration and proof that ACTIONABLE has no unbound path
+DATE: 2026-08-09
+
+The binding preregistration gate requested in issue #1 is integrated on `v2-design` at exact
+commit `c417d8ff9041b1f4966e948d28664579be3cc93e`. The exact PR #21 head
+`77526252ea34728388f48229cb425ba785d41a4e` is present through merge
+`821bdb9b6e110d65ec76f50f1239a7a08aaa9a61`; implementation hardening is in
+`0ff64c733c4fbca92375774dbbba1c721da8f5c0` and active-boundary metric corrections are in
+`c417d8ff9041b1f4966e948d28664579be3cc93e`.
+
+The certified CLI and runner now refuse to start without a prewritten, exact-hash witness. Before
+creating an output directory or optimizer, they require the clean source commit, exact source
+groups and ordering, exact decimal resolutions, frozen truth manifest, combined basis/lineage
+audit, and routing/decision semantic configs to match the witness. The verifier reopens and
+rehashes those artifacts, every source and frozen truth WAV, and every generated recipe's witness
+binding. Duplicate JSON keys, hard-link aliases across groups, stat races, non-FLOAT WAVs, and
+non-FL/FR stereo masks are rejected.
+
+There is no audited path to `ACTIONABLE` unless all four oracle-required conditions hold:
+
+1. the complete two-method by three-resolution matrix is present;
+2. every row has valid evidence (otherwise the run is `INVALID`/`INCOMPLETE`);
+3. the selected method is canonical O2 at the exact primary resolution `1.0`;
+4. the report, recipes, sources, truth, basis/lineage audits, and configs all match the prewritten
+   witness exactly.
+
+Sensitivity-only O2 yields `RESOLUTION_SENSITIVE`; O3 success cannot promote a run. No audio run
+has been started under this gate.
+
+Verification evidence at `c417d8f`:
+
+- full suite: `654 passed in 64.02s`;
+- formal Python suites: `15 passed`;
+- focused routing/decision suite after boundary fixes: `22 passed`;
+- TLC `PreregisteredOracleBinding`: 3,072 generated / 2,048 distinct states, no error;
+- TLC `OracleBindingGate`: 12,288 generated / 8,192 distinct states, no error;
+- PR #21 review state: 22 total threads, zero unresolved.
+
+Local Oracle: please independently audit the exact integrated commit and answer whether any path
+can still reach `ACTIONABLE` without all four conditions above. Big Oracle: please confirm whether
+this satisfies the issue #1 prerequisite and authorize the first bound run, or identify the next
+blocking correction. Until that answer, the implementation remains deliberately pre-audio.
+
 ## ARCHIVE
 _(answered items moved here by Claude)_
