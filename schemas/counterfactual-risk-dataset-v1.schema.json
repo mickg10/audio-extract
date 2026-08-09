@@ -1,0 +1,345 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mickg10.github.io/audio-extract/schemas/counterfactual-risk-dataset-v1.schema.json",
+  "title": "Audio Extract grouped counterfactual-risk dataset v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "purpose",
+    "dataset_name",
+    "source_commit",
+    "ordered_row_ids",
+    "group_family_sha256s",
+    "candidate_panel",
+    "metric_names",
+    "metric_units",
+    "metric_directions",
+    "feature_contract_sha256",
+    "metric_contract_sha256",
+    "route_policy_sha256",
+    "feature_count",
+    "dataset_sha256",
+    "rows"
+  ],
+  "properties": {
+    "schema": {
+      "const": "audio-extract/counterfactual-risk-dataset/v1"
+    },
+    "purpose": {
+      "const": "D0_R0_EQUAL_COMPUTE"
+    },
+    "dataset_name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source_commit": {
+      "$ref": "#/$defs/gitCommit"
+    },
+    "ordered_row_ids": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/sha256"
+      }
+    },
+    "group_family_sha256s": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/sha256"
+      }
+    },
+    "candidate_panel": {
+      "type": "array",
+      "minItems": 2,
+      "items": {
+        "$ref": "#/$defs/candidate"
+      }
+    },
+    "metric_names": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "metric_units": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "metric_directions": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "const": "lower_is_better"
+      }
+    },
+    "feature_contract_sha256": {
+      "$ref": "#/$defs/sha256"
+    },
+    "metric_contract_sha256": {
+      "$ref": "#/$defs/sha256"
+    },
+    "route_policy_sha256": {
+      "$ref": "#/$defs/sha256"
+    },
+    "feature_count": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "dataset_sha256": {
+      "$ref": "#/$defs/sha256"
+    },
+    "rows": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/row"
+      }
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "gitCommit": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "candidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "recipe_id",
+        "artifact_pcm_sha256"
+      ],
+      "properties": {
+        "recipe_id": {
+          "$ref": "#/$defs/sha256"
+        },
+        "artifact_pcm_sha256": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "groupFamily": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "work_id",
+        "recording_session_id",
+        "target_singer_id",
+        "source_family_sha256",
+        "query_condition_sha256"
+      ],
+      "properties": {
+        "work_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "recording_session_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "target_singer_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_family_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "query_condition_sha256": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "cell": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sample_rate_hz",
+        "resolution_ms",
+        "start_frame",
+        "end_frame",
+        "band_low_hz",
+        "band_high_hz",
+        "spectral_grid_sha256"
+      ],
+      "properties": {
+        "sample_rate_hz": {
+          "type": "integer",
+          "minimum": 2
+        },
+        "resolution_ms": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "start_frame": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "end_frame": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "band_low_hz": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "band_high_hz": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "spectral_grid_sha256": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "row": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "row_id",
+        "group_family_sha256",
+        "group_family",
+        "mixture_pcm_sha256",
+        "accompaniment_truth_pcm_sha256",
+        "vocal_truth_pcm_sha256",
+        "cell_sha256",
+        "cell",
+        "candidates",
+        "metric_names",
+        "metric_units",
+        "metric_directions",
+        "feature_contract_sha256",
+        "metric_contract_sha256",
+        "route_policy_sha256",
+        "feature_sha256",
+        "exact_risks_sha256",
+        "availability_sha256",
+        "features",
+        "exact_risks",
+        "available"
+      ],
+      "properties": {
+        "schema": {
+          "const": "audio-extract/counterfactual-risk-row/v1"
+        },
+        "row_id": {
+          "$ref": "#/$defs/sha256"
+        },
+        "group_family_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "group_family": {
+          "$ref": "#/$defs/groupFamily"
+        },
+        "mixture_pcm_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "accompaniment_truth_pcm_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "vocal_truth_pcm_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "cell_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "cell": {
+          "$ref": "#/$defs/cell"
+        },
+        "candidates": {
+          "type": "array",
+          "minItems": 2,
+          "items": {
+            "$ref": "#/$defs/candidate"
+          }
+        },
+        "metric_names": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "metric_units": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "metric_directions": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "const": "lower_is_better"
+          }
+        },
+        "feature_contract_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "metric_contract_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "route_policy_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "feature_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "exact_risks_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "availability_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "features": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "number"
+          }
+        },
+        "exact_risks": {
+          "type": "array",
+          "minItems": 2,
+          "items": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "number",
+              "minimum": 0
+            }
+          }
+        },
+        "available": {
+          "type": "array",
+          "minItems": 2,
+          "items": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "boolean"
+            }
+          }
+        }
+      }
+    }
+  }
+}
