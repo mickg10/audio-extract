@@ -1,5 +1,6 @@
 import hashlib
 import json
+from pathlib import Path
 
 import numpy as np
 import soundfile as sf
@@ -99,6 +100,14 @@ def test_load_and_audit_exact_grid_pair(tmp_path):
     ] is True
     assert result["suggested_grade"] == "strong_same_take_evidence"
     assert result["null_evidence"]["null_db_p10"] < -40
+
+
+def test_inventory_root_name_does_not_bind_staging_directory_name(tmp_path):
+    inventory, root = _inventory(tmp_path)
+    staged = tmp_path / "staged-audio"
+    root.rename(staged)
+    pairs = load_completed_pairs(inventory, staged)
+    assert Path(pairs[0]["files"]["voice"]["path"]).parent == staged
 
 
 def test_grid_mismatch_is_explicitly_invalid(tmp_path):

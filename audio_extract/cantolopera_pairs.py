@@ -72,7 +72,7 @@ def _resolved_audio_path(audio_root: Path, relative: str) -> Path:
     rel = Path(relative)
     if rel.is_absolute() or ".." in rel.parts:
         raise ValueError(f"unsafe inventory audio path: {relative!r}")
-    if rel.parts and rel.parts[0] == audio_root.name:
+    if rel.parts and rel.parts[0] in {audio_root.name, "full_48khz_f32"}:
         rel = Path(*rel.parts[1:])
     result = (audio_root / rel).resolve()
     root = audio_root.resolve()
