@@ -1,76 +1,230 @@
-"""Stage-1 train data materialization (runs on research6): stage cantoria + freidi from
-tt-quietbox2, build exact M/A/V full-length -> /home/mickg/train_data/<work>/{M,A,V}.flac +
-exact vocal-activity mask. Respects classical-v1 splits (train split only)."""
-import os, subprocess, glob, json, hashlib
-import numpy as np, soundfile as sf
-SR = 44100
-SRC = "/home/mickg/train_data_src"
-OUT = "/home/mickg/train_data"
-os.makedirs(SRC, exist_ok=True); os.makedirs(OUT, exist_ok=True)
-RS = ["rsync", "-a", "-e", "sshpass -p ttuser ssh -o StrictHostKeyChecking=no"]
+"""Materialize immutable float32 training triplets on one explicit sample grid.
+
+The source directories must already be available locally.  This module performs
+no SSH, credential handling, or download.  It refuses mismatched source grids;
+there is no minimum-length truncation, clipping, or integer PCM intermediate.
+Every accepted work records source hashes and explicit transform nodes.
+"""
+
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import os
+import shutil
+import tempfile
+from pathlib import Path
+
+import numpy as np
+import soundfile as sf
+
+from . import canon, identity
+from .resample import resample
+
+SR = 44_100
+SCHEMA = "audio-extract/classical-train-materialization/v1"
+DOMAIN = b"audio-extract-classical-train-materialization-v1\0"
 
 
-def stage():
-    os.makedirs(f"{SRC}/freidi", exist_ok=True); os.makedirs(f"{SRC}/cantoria", exist_ok=True)
-    subprocess.run(RS + ["ttuser@100.91.242.69:/home/ttuser/datasets/freidi/built/", f"{SRC}/freidi/"], check=True)
-    subprocess.run(RS + ["--include=*_Mix.wav", "--include=*_MixOrgan.wav", "--exclude=*",
-                         "ttuser@100.91.242.69:/home/ttuser/datasets/works/cantoria/CantoriaDataset_v1.0.0/Audio/",
-                         f"{SRC}/cantoria/"], check=True)
+class GridMismatch(ValueError):
+    """Sources cannot form an exact training triplet without an explicit repair."""
 
 
-def rd(p):
-    a, sr = sf.read(p, dtype="float32", always_2d=True)
-    return a, int(sr)
+def _file_sha(path: Path) -> str:
+    h = hashlib.sha256()
+    with path.open("rb") as handle:
+        for block in iter(lambda: handle.read(1024 * 1024), b""):
+            h.update(block)
+    return "sha256:" + h.hexdigest()
 
 
-def resample(a, sr):
-    if sr == SR:
-        return a
-    import librosa
-    return librosa.resample(a.T, orig_sr=sr, target_sr=SR, axis=1).T
+def _read(path: Path) -> tuple[np.ndarray, int]:
+    audio, sr = sf.read(path, dtype="float32", always_2d=True)
+    if not np.all(np.isfinite(audio)):
+        raise ValueError(f"non-finite source samples: {path}")
+    return audio, int(sr)
 
 
-def wr(p, a):
-    sf.write(p, np.clip(a, -1, 1).astype("float32"), SR, subtype="PCM_24")
+def _same_grid(named: dict[str, np.ndarray], rates: dict[str, int]) -> None:
+    shapes = {name: tuple(value.shape) for name, value in named.items()}
+    if len(set(shapes.values())) != 1 or len(set(rates.values())) != 1:
+        raise GridMismatch(f"source grid mismatch: shapes={shapes}, rates={rates}")
 
 
-def vmask(V):
-    m = np.abs(V).mean(1)
-    win = int(0.05 * SR); k = np.ones(win) / win
-    env = np.convolve(m, k, mode="same")
-    thr = 0.05 * (env.max() + 1e-9)
-    return (env > thr).astype("float32")
+def _stereo(audio: np.ndarray) -> tuple[np.ndarray, dict | None]:
+    if audio.shape[1] == 2:
+        return audio, None
+    if audio.shape[1] == 1:
+        return np.repeat(audio, 2, axis=1), {
+            "operation": "channel_construct",
+            "method": "duplicate_mono_to_FL_FR",
+            "input_channels": 1,
+            "output_channels": 2,
+        }
+    raise GridMismatch(f"only mono or stereo sources are supported, got {audio.shape[1]} channels")
 
 
-def emit(work, M, A, V):
-    n = min(len(M), len(A), len(V)); M, A, V = M[:n], A[:n], V[:n]
-    resid = float(np.sqrt(np.mean((M - A - V) ** 2)) / (np.sqrt(np.mean(M ** 2)) + 1e-12))
-    d = f"{OUT}/{work}"; os.makedirs(d, exist_ok=True)
-    wr(f"{d}/M.flac", M); wr(f"{d}/A.flac", A); wr(f"{d}/V.flac", V)
-    np.save(f"{d}/vmask.npy", vmask(V))
-    json.dump(dict(work=work, frames=n, sr=SR, channels=M.shape[1],
-                   M_eq_A_plus_V_db=round(20 * np.log10(resid + 1e-12), 1)),
-              open(f"{d}/meta.json", "w"))
-    print(f"{work} frames={n} ch={M.shape[1]} M=A+V {round(20*np.log10(resid+1e-12),1)}dB", flush=True)
+def _activity_mask(vocal: np.ndarray) -> np.ndarray:
+    env = np.mean(np.abs(vocal), axis=1)
+    window = max(1, round(0.05 * SR))
+    smooth = np.convolve(env, np.ones(window) / window, mode="same")
+    threshold = 0.05 * (float(smooth.max()) + 1e-12)
+    return (smooth > threshold).astype("float32")
+
+
+def _recipe_id(recipe: dict) -> str:
+    return "sha256:" + hashlib.sha256(DOMAIN + canon.canonicalize(recipe)).hexdigest()
+
+
+def _pcm_hash(audio: np.ndarray) -> str:
+    return identity.artifact_pcm_sha256(
+        np.asarray(audio, dtype="float32"), SR, ["FL", "FR"], int(audio.shape[0])
+    )
+
+
+def _publish(output_root: Path, work: str, mixture: np.ndarray, accompaniment: np.ndarray,
+             vocal: np.ndarray, recipe: dict) -> dict:
+    _same_grid({"M": mixture, "A": accompaniment, "V": vocal}, {"M": SR, "A": SR, "V": SR})
+    if mixture.shape[1] != 2:
+        raise GridMismatch(f"materialized work must be stereo, got {mixture.shape}")
+    residual = mixture.astype("float64") - accompaniment.astype("float64") - vocal.astype("float64")
+    relative = np.sqrt(np.mean(residual ** 2)) / (np.sqrt(np.mean(mixture.astype("float64") ** 2)) + 1e-15)
+    recipe = dict(recipe)
+    recipe.update({"schema": SCHEMA, "work_id": work, "sample_rate_hz": SR,
+                   "channel_layout": ["FL", "FR"], "frames": int(len(mixture)),
+                   "sample_format": "float32-le-interleaved"})
+    recipe["recipe_id"] = _recipe_id(recipe)
+    hashes = {role: _pcm_hash(audio) for role, audio in
+              (("M", mixture), ("A", accompaniment), ("V", vocal))}
+    final = output_root / work
+    if final.exists():
+        existing = json.loads((final / "recipe.json").read_text())
+        if existing != recipe:
+            raise RuntimeError(f"refusing to rewrite immutable materialization: {final}")
+        for role, expected in hashes.items():
+            audio, actual_sr = _read(final / f"{role}.f32.wav")
+            if actual_sr != SR or _pcm_hash(audio) != expected:
+                raise RuntimeError(f"immutable materialization verification failed: {final}/{role}")
+        return {"work_id": work, "status": "verified_existing", "recipe_id": recipe["recipe_id"]}
+
+    output_root.mkdir(parents=True, exist_ok=True)
+    temporary = Path(tempfile.mkdtemp(prefix=f".{work}.", dir=output_root))
+    try:
+        for role, audio in (("M", mixture), ("A", accompaniment), ("V", vocal)):
+            sf.write(temporary / f"{role}.f32.wav", np.asarray(audio, dtype="float32"), SR,
+                     subtype="FLOAT")
+        np.save(temporary / "vocal_activity.npy", _activity_mask(vocal))
+        (temporary / "recipe.json").write_text(json.dumps(recipe, indent=2, sort_keys=True) + "\n")
+        report = {
+            "work_id": work,
+            "recipe_id": recipe["recipe_id"],
+            "frames": int(len(mixture)),
+            "M_eq_A_plus_V_db": float(20 * np.log10(relative + 1e-15)),
+            "pcm_sha256": hashes,
+        }
+        (temporary / "report.json").write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")
+        os.replace(temporary, final)
+        return {**report, "status": "materialized"}
+    except Exception:
+        shutil.rmtree(temporary, ignore_errors=True)
+        raise
+
+
+def materialize_freidi(source_root: Path, output_root: Path, number: str) -> dict:
+    paths = {"M": source_root / number / "mix.flac",
+             "A": source_root / number / "accomp.flac",
+             "V": source_root / number / "voice.flac"}
+    arrays, rates = {}, {}
+    for role, path in paths.items():
+        arrays[role], rates[role] = _read(path)
+    _same_grid(arrays, rates)
+    operations = []
+    if rates["M"] != SR:
+        arrays = {role: resample(audio, rates[role], SR, "soxr_vhq")
+                  for role, audio in arrays.items()}
+        operations.append({"operation": "resample", "resampler": "soxr_vhq",
+                           "source_rate_hz": rates["M"], "output_rate_hz": SR})
+    _same_grid(arrays, {role: SR for role in arrays})
+    arrays = {role: np.asarray(audio, dtype="float32") for role, audio in arrays.items()}
+    stereo_nodes = []
+    for role in arrays:
+        arrays[role], node = _stereo(arrays[role])
+        if node is not None:
+            stereo_nodes.append({**node, "role": role})
+    recipe = {
+        "integrity_class": "same_performance_bleed",
+        "parents": {role: {"path": str(path), "container_sha256": _file_sha(path)}
+                    for role, path in paths.items()},
+        "operations": operations + stereo_nodes,
+    }
+    return _publish(output_root, f"freidi_no{number}", arrays["M"], arrays["A"],
+                    arrays["V"], recipe)
+
+
+def materialize_cantoria(source_root: Path, output_root: Path, code: str) -> dict:
+    mix_path = source_root / f"Cantoria_{code}_MixOrgan.wav"
+    vocal_path = source_root / f"Cantoria_{code}_Mix.wav"
+    mixture, mix_sr = _read(mix_path)
+    vocal, vocal_sr = _read(vocal_path)
+    _same_grid({"M": mixture, "V": vocal}, {"M": mix_sr, "V": vocal_sr})
+    if mix_sr != SR:
+        raise GridMismatch(f"Cantoria {code} unexpectedly has sample rate {mix_sr}")
+    accompaniment = mixture - vocal
+    arrays = {"M": mixture, "A": accompaniment, "V": vocal}
+    stereo_nodes = []
+    for role in arrays:
+        arrays[role], node = _stereo(arrays[role])
+        if node is not None:
+            stereo_nodes.append({**node, "role": role})
+    recipe = {
+        "integrity_class": "linear_exact",
+        "parents": {
+            "M": {"path": str(mix_path), "container_sha256": _file_sha(mix_path)},
+            "V": {"path": str(vocal_path), "container_sha256": _file_sha(vocal_path)},
+        },
+        "operations": [
+            {"operation": "derive_source", "role": "A", "expression": "M-V"},
+            *stereo_nodes,
+        ],
+    }
+    return _publish(output_root, f"cantoria_{code}", arrays["M"], arrays["A"],
+                    arrays["V"], recipe)
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--source-root", required=True,
+                        help="root containing freidi/ and cantoria/ source directories")
+    parser.add_argument("--output-root", required=True)
+    args = parser.parse_args(argv)
+    source = Path(args.source_root)
+    output = Path(args.output_root)
+    results = []
+    for number in ("06", "08", "09"):
+        try:
+            results.append(materialize_freidi(source / "freidi", output, number))
+        except Exception as exc:
+            results.append({"work_id": f"freidi_no{number}", "status": "excluded",
+                            "reason": f"{type(exc).__name__}: {exc}"})
+    for code in ("CEA", "EJB1", "EJB2", "HCB", "LBM1", "LBM2", "LJT1", "LJT2",
+                 "LNG", "RRC", "SSS", "THM", "VBP", "YSM"):
+        try:
+            results.append(materialize_cantoria(source / "cantoria", output, code))
+        except Exception as exc:
+            results.append({"work_id": f"cantoria_{code}", "status": "excluded",
+                            "reason": f"{type(exc).__name__}: {exc}"})
+    summary = {"schema": SCHEMA + "/report", "results": results,
+               "materialized": sum(r["status"] in {"materialized", "verified_existing"}
+                                   for r in results),
+               "excluded": sum(r["status"] == "excluded" for r in results)}
+    output.mkdir(parents=True, exist_ok=True)
+    (output / "materialization-report.json").write_text(
+        json.dumps(summary, indent=2, sort_keys=True) + "\n"
+    )
+    print(json.dumps(summary, indent=2))
+    return 0 if summary["materialized"] else 2
 
 
 if __name__ == "__main__":
-    print("[stage] rsync cantoria+freidi from tt-quietbox2 ...", flush=True)
-    stage()
-    # FreiDi (direct M/A/V)
-    for no in ("06", "08", "09"):
-        dd = f"{SRC}/freidi/{no}"
-        if not os.path.exists(f"{dd}/mix.flac"):
-            continue
-        M, s1 = rd(f"{dd}/mix.flac"); A, s2 = rd(f"{dd}/accomp.flac"); V, s3 = rd(f"{dd}/voice.flac")
-        emit(f"freidi_no{no}", resample(M, s1), resample(A, s2), resample(V, s3))
-    # Cantoria (M=MixOrgan, A=MixOrgan-Mix, V=Mix)
-    for p in ["CEA", "EJB1", "EJB2", "HCB", "LBM1", "LBM2", "LJT1", "LJT2", "LNG", "RRC", "SSS", "THM", "VBP", "YSM"]:
-        mo, mx = f"{SRC}/cantoria/Cantoria_{p}_MixOrgan.wav", f"{SRC}/cantoria/Cantoria_{p}_Mix.wav"
-        if not (os.path.exists(mo) and os.path.exists(mx)):
-            continue
-        MO, s1 = rd(mo); Voices, s2 = rd(mx)
-        MO, Voices = resample(MO, s1), resample(Voices, s2)
-        n = min(len(MO), len(Voices)); MO, Voices = MO[:n], Voices[:n]
-        emit(f"cantoria_{p}", MO, MO - Voices, Voices)
-    print("MATERIALIZE_DONE", len(glob.glob(f"{OUT}/*/M.flac")), "works")
+    raise SystemExit(main())
