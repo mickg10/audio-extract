@@ -1,9 +1,14 @@
 """Low-capacity conservative gate for frozen classical separator estimates.
 
 The gate never runs or updates a separator.  Given a mixture and two immutable
-vocal estimates, it renders only the bounded correction
+stem estimates, it renders only the bounded correction
 
-``V_hat = V_conservative + g * (V_aggressive - V_conservative)``.
+``S_hat = S_conservative + g * (S_aggressive - S_conservative)``.
+
+For an accompaniment stem this is algebraically identical to the preregistered
+vocal equation because ``V=M-A``.  Operating on accompaniment has the useful
+precision property that the delivered step-0 output is bit-identical to its
+stored conservative parent, without a subtract/add round trip.
 
 ``g`` is stereo-coherent and predicted on a deliberately low-resolution
 time/frequency grid.  A separate scalar correction amplitude is initialized to
@@ -224,16 +229,16 @@ class SmoothResidualGate:
         # (batch, feature, coarse_time, coarse_frequency)
         return torch.stack(cells, dim=1), time_ranges, self._band_ranges(frequency_bins)
 
-    def __call__(self, mixture: object, conservative_vocal: object,
-                 aggressive_vocal: object) -> tuple[object, dict[str, object]]:
+    def __call__(self, mixture: object, conservative_estimate: object,
+                 aggressive_estimate: object) -> tuple[object, dict[str, object]]:
         torch = _torch()
         batch, channels, frames = self._validate_audio({
-            "mixture": mixture, "conservative_vocal": conservative_vocal,
-            "aggressive_vocal": aggressive_vocal,
+            "mixture": mixture, "conservative_estimate": conservative_estimate,
+            "aggressive_estimate": aggressive_estimate,
         })
         mixture_spectrum, window = self._stft(mixture)
-        conservative_spectrum, _ = self._stft(conservative_vocal)
-        aggressive_spectrum, _ = self._stft(aggressive_vocal)
+        conservative_spectrum, _ = self._stft(conservative_estimate)
+        aggressive_spectrum, _ = self._stft(aggressive_estimate)
         delta = aggressive_spectrum - conservative_spectrum
         features, time_ranges, band_ranges = self._coarse_features((
             mixture_spectrum, conservative_spectrum, aggressive_spectrum, delta
@@ -256,20 +261,20 @@ class SmoothResidualGate:
             win_length=self.config.n_fft, window=window, center=True,
             normalized=True, length=frames,
         ).reshape(batch, channels, frames)
-        vocal = conservative_vocal + correction
-        return vocal, {
+        estimate = conservative_estimate + correction
+        return estimate, {
             "amplitude": amplitude, "coarse_gate": coarse_gate,
             "full_gate": full_gate, "correction": correction,
         }
 
 
-def gate_regularization(diagnostics: dict[str, object], aggressive_vocal: object,
-                        conservative_vocal: object, config: SmoothGateConfig):
+def gate_regularization(diagnostics: dict[str, object], aggressive_estimate: object,
+                        conservative_estimate: object, config: SmoothGateConfig):
     """Correction magnitude plus low-resolution time/frequency TV penalties."""
     torch = _torch()
     correction = diagnostics["correction"]
     coarse = diagnostics["coarse_gate"]
-    reference = (aggressive_vocal - conservative_vocal).square().mean().clamp_min(
+    reference = (aggressive_estimate - conservative_estimate).square().mean().clamp_min(
         config.reference_floor ** 2
     )
     correction_ratio = correction.square().mean() / reference
