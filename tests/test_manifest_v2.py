@@ -1,8 +1,10 @@
+from pathlib import Path
+
 import numpy as np
 import pytest
 import soundfile as sf
 
-from audio_extract import identity
+from audio_extract import identity, storage
 from audio_extract.manifest_v2 import ImmutableFactError, ManifestV2
 from audio_extract.storage import ImmutableWriteError, TrackLayout
 
@@ -98,3 +100,28 @@ def test_atomic_write_rejects_hash_mismatch(tmp_path):
     # failed write leaves NO final dir and no temp litter
     assert not layout.candidate_dir("sha256:c2").exists()
     assert not any(p.name.startswith(".tmp-") for p in layout.candidates_dir.iterdir())
+
+
+def test_candidate_write_uses_cross_device_safe_move(tmp_path, monkeypatch):
+    """Adapter temporaries may be on /tmp while the store is a mounted dataset."""
+    layout = TrackLayout(tmp_path / "lib", "trk").ensure()
+    wav = tmp_path / "adapter-output.wav"
+    samples = np.zeros((32, 2), dtype="float32")
+    sf.write(wav, samples, 44_100, subtype="FLOAT")
+    pcm = identity.artifact_pcm_sha256(samples, 44_100, ["FL", "FR"])
+    calls = []
+    real_move = storage.shutil.move
+
+    def recording_move(source, destination):
+        calls.append((Path(source), Path(destination)))
+        return real_move(source, destination)
+
+    monkeypatch.setattr(storage.shutil, "move", recording_move)
+    completed = layout.write_candidate("sha256:cross-device", {}, {}, wav, pcm)
+
+    assert len(calls) == 1
+    assert calls[0][0] == wav
+    assert calls[0][1].parent == layout.candidates_dir / ".tmp-sha256_cross-device"
+    assert not wav.exists()
+    assert (completed / "output.f32.wav").exists()
+    assert (completed / "COMPLETE").read_text() == ""

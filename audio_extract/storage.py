@@ -101,7 +101,13 @@ class TrackLayout:
             (tmp / "execution.json").write_text(json.dumps(execution, indent=2, sort_keys=True))
             (tmp / "output.pcm.sha256").write_text(artifact_pcm_sha256 + "\n")
             if output_f32_path is not None:
-                Path(output_f32_path).replace(tmp / "output.f32.wav")
+                # Adapters commonly stage in container /tmp while the immutable
+                # store is a mounted dataset. os.rename/Path.replace cannot cross
+                # those filesystems (EXDEV). shutil.move retains move semantics
+                # and falls back to copy+unlink. The destination is still inside
+                # our same-parent staging directory and is reopened/rehashed
+                # before COMPLETE and the final atomic directory rename.
+                shutil.move(str(output_f32_path), str(tmp / "output.f32.wav"))
                 self._verify_pcm(tmp / "output.f32.wav", artifact_pcm_sha256)
             (tmp / "COMPLETE").write_text("")
             if cdir.exists():  # raced by a concurrent writer of the same recipe
