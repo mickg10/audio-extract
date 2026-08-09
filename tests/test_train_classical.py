@@ -15,6 +15,18 @@ def test_train_classical_cli_contract_parses():
     assert args.steps is None
 
 
+def test_train_classical_cli_accepts_explicit_zero_step_parity_mode():
+    args = build_parser().parse_args([
+        "train", "classical",
+        "--manifest", "dataset.jsonl",
+        "--split-manifest", "splits.json",
+        "--config", "train.yaml",
+        "--run-dir", "run",
+        "--steps", "0",
+    ])
+    assert args.steps == 0
+
+
 def test_manifest_train_works_uses_group_manifest_without_resplitting(tmp_path):
     manifest = tmp_path / "dataset.jsonl"
     splits = tmp_path / "splits.json"

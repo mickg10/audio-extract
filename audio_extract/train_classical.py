@@ -297,9 +297,9 @@ def run_training(args: argparse.Namespace) -> dict:
     config_path = Path(args.config).resolve()
     run_dir = Path(args.run_dir).resolve()
     cfg = yaml.safe_load(config_path.read_text())
-    requested_steps = int(args.steps or cfg["optim"]["steps_first_run"])
-    if requested_steps <= 0:
-        raise ValueError("steps must be positive")
+    requested_steps = int(cfg["optim"]["steps_first_run"] if args.steps is None else args.steps)
+    if requested_steps < 0:
+        raise ValueError("steps must be non-negative")
     run_dir.mkdir(parents=True, exist_ok=True)
     resolved_path = run_dir / "resolved-config.yaml"
     if resolved_path.exists() and yaml.safe_load(resolved_path.read_text()) != cfg:
@@ -374,12 +374,14 @@ def run_training(args: argparse.Namespace) -> dict:
             evaluations.append(_evaluate(model, Path(args.truth_root), run_dir, completed,
                                          vocal_index, device))
 
-    final_export = _export_and_parity(model, run_dir, cfg, label=f"step-{requested_steps:06d}")
+    final_export = zero_export if requested_steps == 0 else _export_and_parity(
+        model, run_dir, cfg, label=f"step-{requested_steps:06d}"
+    )
     commit = subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True, text=True,
                             check=False).stdout.strip()
     report = {
         "schema": "audio-extract/classical-training-run/v1",
-        "status": "pilot_complete",
+        "status": "parity_complete" if requested_steps == 0 else "pilot_complete",
         "source_commit": commit,
         "base_checkpoint": base,
         "steps": requested_steps,
@@ -393,8 +395,8 @@ def run_training(args: argparse.Namespace) -> dict:
         "final_export": final_export,
         "evaluation_steps": [e["step"] for e in evaluations],
         "all_losses_finite": all(math.isfinite(h["total"]) for h in history),
-        "first_loss": history[0]["total"],
-        "last_loss": history[-1]["total"],
+        "first_loss": None if not history else history[0]["total"],
+        "last_loss": None if not history else history[-1]["total"],
         "elapsed_s": round(time.time() - started, 3),
         "sample_count": len(sampled),
         "repro_command": " ".join(sys.argv),
