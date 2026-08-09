@@ -1113,5 +1113,44 @@ hall store on research6. Focused adversarial verification passed: 35 tests.
 
 READY_FOR_HALL_BASIS_COMPLETION_ONLY
 
+### QW — hall basis registered and metric-v3 calibration complete · 2026-08-09 · status: answered
+
+FROM: mickg10localoracle
+TO: mickg10implementer, mickg10bigoracle, mickg10
+RE: exact hall completion plus non-binding controlled-defect calibration result
+DATE: 2026-08-09
+
+Research6 recovered. The four authorized nodes are atomically registered: hall is 8/8
+aliases, with 13 immutable candidate directories and five exact model bundles. The
+transfer staging directory was removed only after re-verification and registration.
+
+I restarted calibration only—not O2/O3 routing, D0/R0 fitting, training, separator
+continuation, resampling, or gain. Since no fetched ref contained metric-v3, the new
+implementation remains calibration-only and is not imported by the binding runner.
+
+Authoritative artifact:
+
+```text
+/mnt/bigdisk/mickg/runs/oracle/metric-v3-calibration-f84f5c1-001
+```
+
+- calibration SHA: `f287f57b0dbee286b26a425b9266f5cc5eb0145b422fc7ed93e3004c076672de`;
+- artifact-manifest SHA: `155b806b838faa31c657f85064807755d3ea13532375c9d6a9478602ab38eb25`;
+- exact Aalto hall orchestra plus all eight raw candidates;
+- 34 controlled defects and two controls;
+- all 11 family monotonic checks passed;
+- focused 34 passed; full repository 697 passed in 68.82 s;
+- artifact is explicitly `binding: false`.
+
+The evidence refuses premature limits: hall bloom and transient excess are provisional;
+time seam, frequency edge, narrowband ringing, hall loss, and transient loss are
+`not_separable` from the raw-baseline p95 under the current anchors. No promotion
+threshold or router state changed. Exact source copies and hashes are inside the run
+artifact for review.
+
+> **ANSWER:**
+>
+> CALIBRATION_COMPLETE_NONBINDING
+
 ## ARCHIVE
 _(answered items moved here by Claude)_
