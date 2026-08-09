@@ -20,6 +20,8 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[1]
 NAS_HOST = "mickg@nas642tail"
 NAS_ROOT = "/tanksmall/MICKG2/mickg/cantolopera/full_48khz_f32"
+PRODUCTION_HOST = "mickg10@10.0.27.98"
+PRODUCTION_ROOT = "/share/homes/mickg10/datasets/production-outputs/median-v2-48k-f32"
 WORKS_HOST = "ttuser@100.91.242.69"
 WORKS_ROOT = "/home/ttuser/datasets/works"
 HELD_ROOTS = {
@@ -132,6 +134,79 @@ def _remote_scan(host: str, root: str, *, wav_headers: bool) -> list[dict[str, A
         text=True,
     )
     return [json.loads(line) for line in result.stdout.splitlines() if line.strip()]
+
+
+def _remote_text(host: str, path: str) -> str:
+    result = subprocess.run(
+        ["ssh", "-o", "BatchMode=yes", host, "cat", "--", path],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return result.stdout
+
+
+def _remote_symlinks(host: str, root: str) -> list[str]:
+    command = "find {} -maxdepth 1 -type l -name '*.wav' -print".format(
+        shlex.quote(root)
+    )
+    result = subprocess.run(
+        ["ssh", "-o", "BatchMode=yes", host, command],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    prefix = root.rstrip("/") + "/"
+    return sorted(
+        line.removeprefix(prefix)
+        for line in result.stdout.splitlines()
+        if line.strip()
+    )
+
+
+def _production_instrumentals() -> dict[str, Any]:
+    catalogue_text = _remote_text(PRODUCTION_HOST, f"{PRODUCTION_ROOT}/outputs.jsonl")
+    summary_text = _remote_text(PRODUCTION_HOST, f"{PRODUCTION_ROOT}/summary.json")
+    rows = [
+        json.loads(line)
+        for line in catalogue_text.splitlines()
+        if line.strip()
+    ]
+    summary = json.loads(summary_text)
+    catalogue_sha256 = "sha256:" + hashlib.sha256(catalogue_text.encode()).hexdigest()
+    summary_sha256 = "sha256:" + hashlib.sha256(summary_text.encode()).hexdigest()
+    if summary.get("catalogue_sha256") != catalogue_sha256:
+        raise ValueError("production summary does not bind the exact output catalogue")
+    if summary.get("runs") != len(rows) or summary.get("outputs") != 2 * len(rows):
+        raise ValueError("production summary counts differ from the output catalogue")
+    if any(
+        row.get("schema") != "audio-extract/median-v2-production-output/v1"
+        or set(row.get("variants", {})) != {"median", "mdx"}
+        or not all(row.get("validation", {}).values())
+        for row in rows
+    ):
+        raise ValueError("production catalogue contains an invalid delivery row")
+    wav_links = _remote_symlinks(PRODUCTION_HOST, PRODUCTION_ROOT)
+    if len(wav_links) != summary["outputs"]:
+        raise ValueError("production output link count differs from the summary")
+    return {
+        "storage": {"host": PRODUCTION_HOST, "root": PRODUCTION_ROOT},
+        "content_hash_status": "container_and_decoded_pcm_sha256_manifest",
+        "summary": summary,
+        "catalogue": {
+            "path": "outputs.jsonl",
+            "bytes": len(catalogue_text.encode()),
+            "sha256": catalogue_sha256,
+            "records": len(rows),
+        },
+        "summary_file": {
+            "path": "summary.json",
+            "bytes": len(summary_text.encode()),
+            "sha256": summary_sha256,
+        },
+        "items": rows,
+        "delivery_links": wav_links,
+    }
 
 
 def _cantolopera(files: list[dict[str, Any]]) -> dict[str, Any]:
@@ -305,12 +380,16 @@ def build() -> dict[str, Any]:
     cantolopera = _cantolopera(nas_files)
     open_corpora = _works(works_files, works_manifest)
     held_corpora = _held_corpora()
+    production_instrumentals = _production_instrumentals()
     result: dict[str, Any] = {
         "schema": "audio-extract/audio-treasure-catalog/v1",
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "generator": "tools/build_audio_treasure_catalog.py",
         "scope": {
-            "description": "Source/reference corpora and immutable v2 candidate index",
+            "description": (
+                "Source/reference corpora, immutable v2 candidate index, and "
+                "audited production instrumentals"
+            ),
             "metadata_only": True,
             "warning": "File size and mtime prove inventory presence, not content identity; use the immutable v2 manifests where hashes are present.",
         },
@@ -325,11 +404,15 @@ def build() -> dict[str, Any]:
                 + open_corpora["summary"]["bytes"]
                 + held_corpora["summary"]["bytes"]
             ),
-            "note": "Excludes Cantolopera .rsync-partial fragments and derived candidates.",
+            "note": (
+                "Excludes Cantolopera .rsync-partial fragments, derived candidates, "
+                "and production deliveries."
+            ),
         },
         "cantolopera_full": cantolopera,
         "open_reference_corpora": open_corpora,
         "held_reference_corpora": held_corpora,
+        "production_instrumentals": production_instrumentals,
         "v2_candidates": {
             "manifest": str(candidate_manifest.relative_to(ROOT)),
             "manifest_sha256": _sha256(candidate_manifest),
