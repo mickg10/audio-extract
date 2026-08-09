@@ -25,7 +25,14 @@ from audio_extract.classical_baselines import FULL_WORKS
 from audio_extract.judge_labels import local_source_coordinate_labels
 from audio_extract.judge_train import label_targets
 from audio_extract.metrics_v2 import stereo_v2
-from audio_extract.oracle_convex import ConvexOracleConfig, solve_true_convex_oracle
+from audio_extract.oracle_convex import (
+    ConvexOracleConfig,
+    build_quadratic,
+    local_data_objective,
+    solve_independent_convex_oracle,
+    solve_independent_discrete_oracle,
+    solve_true_convex_oracle,
+)
 from audio_extract.oracle_routing import (
     RoutingConfig,
     best_whole_track,
@@ -51,6 +58,13 @@ BASIS_ORDER = (
 DEFAULT_WORKS = (
     "bologna_verdi", "bologna_donizetti", "bologna_puccini", "aalto_mozart_dry"
 )
+
+SHARED_FAILURE_THRESHOLDS = {
+    "retained_voice_coef_max": 0.12,
+    "retained_voice_db_max": -18.0,
+    "event_hole_db_max": 18.0,
+    "alpha_error_max": 0.75,
+}
 
 
 def _sha_file(path: Path) -> str:
@@ -290,6 +304,72 @@ def _worst_identifiable(labels: tuple) -> dict[str, Any]:
     }
 
 
+def _local_objective_summary(weights: np.ndarray, quadratic) -> dict[str, Any]:
+    values = local_data_objective(weights, quadratic)[quadratic.available]
+    if not len(values) or not np.all(np.isfinite(values)):
+        raise RuntimeError("corrected local objective is unavailable or non-finite")
+    return {
+        "available_cells": int(len(values)),
+        "mean": float(values.mean()),
+        "p90": float(np.percentile(values, 90)),
+        "max": float(values.max()),
+    }
+
+
+def _shared_failure_cells(stats, config: ConvexOracleConfig, quadratic) -> dict[str, Any]:
+    """Report cells where every whole-estimator member fails a release critical axis."""
+    alpha_abs = np.abs(stats.alpha)
+    beta_abs = np.abs(stats.beta)
+    epsilon = config.reference_floor_relative * np.maximum(
+        stats.accompaniment_energy + stats.vocal_energy, np.finfo(float).tiny
+    )
+    retained_ratio = (
+        beta_abs ** 2 * stats.vocal_energy[..., None]
+        / (alpha_abs ** 2 * stats.accompaniment_energy[..., None] + epsilon[..., None])
+    )
+    retained_db = 10.0 * np.log10(np.maximum(retained_ratio, np.finfo(float).tiny))
+    hole_db = np.maximum(
+        0.0, -20.0 * np.log10(np.maximum(alpha_abs, np.finfo(float).tiny))
+    )
+    alpha_error = np.abs(stats.alpha - 1.0)
+    failures = (
+        (beta_abs > SHARED_FAILURE_THRESHOLDS["retained_voice_coef_max"])
+        | (retained_db > SHARED_FAILURE_THRESHOLDS["retained_voice_db_max"])
+        | (hole_db > SHARED_FAILURE_THRESHOLDS["event_hole_db_max"])
+        | (alpha_error > SHARED_FAILURE_THRESHOLDS["alpha_error_max"])
+    )
+    shared = stats.available & np.all(failures, axis=-1)
+    vertex_cost = (
+        np.diagonal(quadratic.gram, axis1=-2, axis2=-1)
+        - 2.0 * quadratic.linear + quadratic.constant[..., None]
+    )
+    coordinates = np.argwhere(shared)
+    ordered = sorted(
+        coordinates.tolist(),
+        key=lambda item: float(np.min(vertex_cost[item[0], item[1]])),
+        reverse=True,
+    )
+    examples = []
+    for qi, bi in ordered[:20]:
+        examples.append({
+            "time_cell": qi,
+            "frequency_band": bi,
+            "stft_frame_range": list(stats.time_frame_ranges[qi]),
+            "frequency_bin_range": list(stats.frequency_bin_ranges[bi]),
+            "best_vertex_corrected_objective": float(np.min(vertex_cost[qi, bi])),
+            "member_failure_count": int(np.count_nonzero(failures[qi, bi])),
+        })
+    available = int(stats.available.sum())
+    return {
+        "definition": "all basis members fail at least one frozen exact-release critical axis",
+        "thresholds": SHARED_FAILURE_THRESHOLDS,
+        "count": int(shared.sum()),
+        "available_cells": available,
+        "fraction": float(shared.sum() / max(available, 1)),
+        "worst_examples": examples,
+    }
+
+
 def _load_no_vocal_manifest(path: Path | None) -> dict[str, dict[str, Any]] | None:
     if path is None:
         return None
@@ -343,7 +423,7 @@ def _no_vocal_metrics(
 
 def _decision(report_works: dict[str, Any]) -> dict[str, Any]:
     result = {}
-    for mode in ("O2", "O3"):
+    for mode in ("O0D", "O0C", "O2", "O3"):
         verdi_o1 = report_works["bologna_verdi"]["outputs"]["O1"]["metrics"]
         verdi = report_works["bologna_verdi"]["outputs"][mode]["metrics"]
         don_o1 = report_works["bologna_donizetti"]["outputs"]["O1"]["metrics"]
@@ -385,11 +465,34 @@ def _decision(report_works: dict[str, Any]) -> dict[str, Any]:
         elif no_vocal_ratio > 1.05:
             failures.append(f"Aalto no-vocal FP ratio {no_vocal_ratio:.4f} > 1.05")
         result[mode] = {
+            "diagnostic_only": mode.startswith("O0"),
             "actionable_oracle_gap": not failures, "critical_gains_db": gains,
             "stability_regressions": regressions,
             "no_vocal_candidate_over_o1": no_vocal_ratio,
             "failures": failures,
         }
+    o0c_gain = max(result["O0C"]["critical_gains_db"].values())
+    o3_gain = max(result["O3"]["critical_gains_db"].values())
+    shared = {
+        work: report["shared_failure_cells"]
+        for work, report in report_works.items()
+    }
+    shared_count = sum(item["count"] for item in shared.values())
+    small_o0c = o0c_gain < 1.5
+    result["interpretation"] = {
+        "small_o0c_critical_axis_envelope": small_o0c,
+        "o0c_max_critical_gain_db": o0c_gain,
+        "o3_max_critical_gain_db": o3_gain,
+        "o0c_large_o3_small": o0c_gain >= 1.5 and o3_gain < 1.5,
+        "shared_failure_cell_count": shared_count,
+        "shared_failure_cells_present": shared_count > 0,
+        "basis_insufficiency_evidence": small_o0c and shared_count > 0,
+        "guard": (
+            "basis insufficiency requires both a small O0C critical-axis envelope "
+            "and shared critical failures across every basis member"
+        ),
+        "per_work_shared_failure_cells": shared,
+    }
     return result
 
 
@@ -405,9 +508,14 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         raise ValueError(f"unknown exact work(s): {sorted(set(works) - set(FULL_WORKS))}")
     report: dict[str, Any] = {
         "schema": "audio-extract/oracle-routing-envelope/v1",
-        "status": "complete", "code_commit": code_commit,
+        "status": "final", "code_commit": code_commit,
         "candidate_basis": list(BASIS_ORDER), "works": {},
         "config": config.to_dict(),
+        "convex_o0_config": {
+            **convex_config.to_dict(),
+            "temporal_l2_weight": 0.0,
+            "frequency_l2_weight": 0.0,
+        },
         "convex_o3_config": convex_config.to_dict(),
         "candidate_manifest": str(args.candidate_manifest),
         "candidate_manifest_sha256": _sha_file(args.candidate_manifest),
@@ -448,10 +556,18 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             candidate_spectra, truth_spectra[0], truth_spectra[1], config
         )
         o1_index, o1_risks = best_whole_track(stats)
+        quadratic = build_quadratic(stats, convex_config)
+        print(json.dumps({"stage": "O0_independent", "work": work}), flush=True)
+        o0d = solve_independent_discrete_oracle(
+            stats, fallback_index=o1_index, config=convex_config
+        )
         print(json.dumps({"stage": "O2_milp", "work": work,
                           "cells": int(stats.available.size),
                           "available": int(stats.available.sum())}), flush=True)
         o2 = solve_discrete_routing(stats, config)
+        o0c, o0c_config = solve_independent_convex_oracle(
+            stats, o1_index=o1_index, o2_labels=o0d.labels, config=convex_config
+        )
         print(json.dumps({"stage": "O3_convex", "work": work}), flush=True)
         o3 = solve_true_convex_oracle(
             stats, o1_index=o1_index, o2_labels=o2.labels, config=convex_config
@@ -459,11 +575,21 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         o1_weights = np.zeros(stats.unary_risk.shape, dtype=np.float64)
         o1_weights[..., o1_index] = 1.0
         routes = {
+            "O0D": o0d.weights,
+            "O0C": o0c.weights,
             "O1": o1_weights,
             "O2": one_hot_weights(o2.labels, len(members)),
             "O3": o3.weights,
         }
         outputs = {
+            "O0D": render_spectral_route(
+                candidate_spectra, routes["O0D"], stats,
+                frames=len(mixture), config=config,
+            ),
+            "O0C": render_spectral_route(
+                candidate_spectra, routes["O0C"], stats,
+                frames=len(mixture), config=config,
+            ),
             "O1": values[o1_index].copy(),
             "O2": render_spectral_route(candidate_spectra, routes["O2"], stats,
                                          frames=len(mixture), config=config),
@@ -481,6 +607,37 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
                 "condition_number_p90": float(np.percentile(
                     stats.condition_number[stats.available], 90)),
                 "masked_cells": int((~stats.available).sum()),
+            },
+            "shared_failure_cells": _shared_failure_cells(
+                stats, convex_config, quadratic
+            ),
+            "O0D": {
+                "diagnostic_only": True,
+                "solver": "independent corrected-quadratic vertex minimum",
+                "objective": o0d.objective,
+                "local_objective": _local_objective_summary(o0d.weights, quadratic),
+                "selection_counts": {
+                    name: o0d.selection_counts[i]
+                    for i, name in enumerate(BASIS_ORDER)
+                },
+            },
+            "O0C": {
+                "diagnostic_only": True,
+                "solver": "independent corrected-quadratic convex hull",
+                "objective": o0c.objective,
+                "local_objective": _local_objective_summary(o0c.weights, quadratic),
+                "initialization": o0c.initialization,
+                "iterations": o0c.iterations,
+                "converged": o0c.converged,
+                "projected_gradient_mapping_inf": o0c.projected_gradient_mapping_inf,
+                "simplex_error": o0c.simplex_error,
+                "min_weight": o0c.min_weight,
+                "solution_objective_spread": o0c.solution_objective_spread,
+                "start_objectives": o0c.start_objectives,
+                "mean_weights": {
+                    name: float(o0c.weights[..., i].mean())
+                    for i, name in enumerate(BASIS_ORDER)
+                },
             },
             "O1": {"selected_index": o1_index, "selected_member": BASIS_ORDER[o1_index],
                    "whole_track_risk": {name: float(value)
@@ -514,11 +671,15 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             },
             "outputs": {},
         }
-        for mode in ("O1", "O2", "O3"):
+        for mode in ("O0D", "O0C", "O1", "O2", "O3"):
             print(json.dumps({"stage": "evaluate", "work": work, "mode": mode}), flush=True)
-            plan = (np.asarray([o1_index], dtype=np.int32) if mode == "O1" else
-                    o2.labels.astype(np.int32) if mode == "O2" else
-                    o3.weights.astype(np.float64))
+            plan = (
+                o0d.labels.astype(np.int32) if mode == "O0D" else
+                o0c.weights.astype(np.float64) if mode == "O0C" else
+                np.asarray([o1_index], dtype=np.int32) if mode == "O1" else
+                o2.labels.astype(np.int32) if mode == "O2" else
+                o3.weights.astype(np.float64)
+            )
             execution = {
                 "oracle_diagnostic_only": True,
                 "routing_plan": plan.tolist(),
@@ -530,7 +691,17 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
                 layout=layout, source=source, mode=mode, output=outputs[mode],
                 parents=members, plan=plan, config=config, code_commit=code_commit,
                 execution=execution, truth_pcm=truth_pcm,
-                solver_config=(convex_config.identity_dict() if mode == "O3" else None),
+                solver_config=(
+                    {**convex_config.identity_dict(),
+                     "temporal_l2_weight": "0.0",
+                     "frequency_l2_weight": "0.0",
+                     "solver": "independent_vertex_minimum/v1"}
+                    if mode == "O0D" else
+                    {**o0c_config.identity_dict(),
+                     "solver": "independent_convex_hull/v1"}
+                    if mode == "O0C" else
+                    convex_config.identity_dict() if mode == "O3" else None
+                ),
             )
             metrics, labels = _metrics(outputs[mode], accompaniment, vocal)
             work_report["outputs"][mode] = {

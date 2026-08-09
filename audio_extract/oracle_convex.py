@@ -30,7 +30,7 @@ are rejected rather than presented as an oracle envelope.
 """
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 from typing import Any
 
 import numpy as np
@@ -113,6 +113,16 @@ class ConvexOracleResult:
     start_objectives: dict[str, float]
     restart_count: int
     accelerated_steps: int
+
+
+@dataclass(frozen=True)
+class IndependentDiscreteResult:
+    labels: np.ndarray
+    weights: np.ndarray
+    objective: float
+    local_objective_p90: float
+    local_objective_max: float
+    selection_counts: tuple[int, ...]
 
 
 def project_simplex(values: np.ndarray) -> np.ndarray:
@@ -211,8 +221,9 @@ def build_quadratic(stats: CellStatistics,
     )
 
 
-def objective(weights: np.ndarray, quadratic: ConvexQuadratic,
-              config: ConvexOracleConfig) -> tuple[float, float, float, float]:
+def local_data_objective(
+    weights: np.ndarray, quadratic: ConvexQuadratic,
+) -> np.ndarray:
     w = np.asarray(weights, dtype=np.float64)
     expected = quadratic.linear.shape
     if w.shape != expected or not np.all(np.isfinite(w)):
@@ -220,17 +231,67 @@ def objective(weights: np.ndarray, quadratic: ConvexQuadratic,
     simplex_error = float(np.max(np.abs(w.sum(axis=-1) - 1.0)))
     if float(w.min()) < -1e-10 or simplex_error > 1e-8:
         raise ValueError("weights are outside the product simplex")
-    local = (
+    return (
         np.einsum("qbk,qbkl,qbl->qb", w, quadratic.gram, w)
         - 2.0 * np.einsum("qbk,qbk->qb", quadratic.linear, w)
         + quadratic.constant
     )
+
+
+def objective(weights: np.ndarray, quadratic: ConvexQuadratic,
+              config: ConvexOracleConfig) -> tuple[float, float, float, float]:
+    w = np.asarray(weights, dtype=np.float64)
+    local = local_data_objective(w, quadratic)
     data = float(local[quadratic.available].sum() / quadratic.denominator)
     temporal_raw = float(np.square(w[1:] - w[:-1]).sum())
     frequency_raw = float(np.square(w[:, 1:] - w[:, :-1]).sum())
     temporal = config.temporal_l2_weight * temporal_raw / quadratic.denominator
     frequency = config.frequency_l2_weight * frequency_raw / quadratic.denominator
     return data + temporal + frequency, data, temporal, frequency
+
+
+def solve_independent_discrete_oracle(
+    stats: CellStatistics, *, fallback_index: int,
+    config: ConvexOracleConfig | None = None,
+) -> IndependentDiscreteResult:
+    """O0D: choose the best corrected-quadratic vertex in each available cell."""
+    cfg = config or ConvexOracleConfig()
+    quadratic = build_quadratic(stats, cfg)
+    _, _, candidates = quadratic.linear.shape
+    if not 0 <= int(fallback_index) < candidates:
+        raise ValueError("fallback_index outside candidate basis")
+    vertex_cost = (
+        np.diagonal(quadratic.gram, axis1=-2, axis2=-1)
+        - 2.0 * quadratic.linear + quadratic.constant[..., None]
+    )
+    labels = np.argmin(vertex_cost, axis=-1).astype(np.int64)
+    labels[~quadratic.available] = int(fallback_index)
+    weights = _one_hot(labels, candidates)
+    local = local_data_objective(weights, quadratic)[quadratic.available]
+    return IndependentDiscreteResult(
+        labels=labels,
+        weights=weights,
+        objective=float(local.mean()),
+        local_objective_p90=float(np.percentile(local, 90)),
+        local_objective_max=float(local.max()),
+        selection_counts=tuple(int(np.count_nonzero(labels == i)) for i in range(candidates)),
+    )
+
+
+def solve_independent_convex_oracle(
+    stats: CellStatistics, *, o1_index: int, o2_labels: np.ndarray,
+    config: ConvexOracleConfig | None = None,
+) -> tuple[ConvexOracleResult, ConvexOracleConfig]:
+    """O0C: globally certify the separable no-smoothness convex-cell envelope."""
+    base = config or ConvexOracleConfig()
+    independent = replace(base, temporal_l2_weight=0.0, frequency_l2_weight=0.0)
+    result = solve_true_convex_oracle(
+        stats, o1_index=o1_index, o2_labels=o2_labels, config=independent
+    )
+    weights = result.weights.copy()
+    weights[~stats.available] = 0.0
+    weights[~stats.available, int(o1_index)] = 1.0
+    return replace(result, weights=weights), independent
 
 
 def gradient(weights: np.ndarray, quadratic: ConvexQuadratic,
