@@ -8,7 +8,11 @@ import soundfile as sf
 from audio_extract import fixtures as fx
 from audio_extract import identity
 from audio_extract.cli_autonomous import finalize_and_deliver, revalidate_finalist
-from audio_extract.separate import render_ensemble_candidate, render_residual_candidate
+from audio_extract.separate import (
+    _stft_geometric_median,
+    render_ensemble_candidate,
+    render_residual_candidate,
+)
 from audio_extract.storage import TrackLayout
 
 SR = 44100
@@ -49,7 +53,7 @@ def _run_with_vocal_members(tmp_path):
     return layout, mix, vocal, orch, members
 
 
-def test_median_ensemble_rejects_corruption_and_aligns(tmp_path):
+def test_median_ensemble_rejects_corruption_and_aligns(tmp_path, monkeypatch):
     layout, mix, vocal, orch, members = _run_with_vocal_members(tmp_path)
     src = json.loads((layout.source_dir / "source.json").read_text())
     rec = render_ensemble_candidate(layout, src,
@@ -68,6 +72,16 @@ def test_median_ensemble_rejects_corruption_and_aligns(tmp_path):
     assert rec["parents"] == sorted(members.values())
     delays = {a["recipe_id"]: a["delay"] for a in rec["alignments"]}
     assert abs(delays[members["v_delayed"]]) >= 20      # the delay was detected
+    from audio_extract import alignment
+    monkeypatch.setattr(
+        alignment, "estimate_alignment",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError("cache realigned")),
+    )
+    cached = render_ensemble_candidate(
+        layout, src, member_recipe_ids=list(reversed(list(members.values()))),
+        algo="median", code_commit="t",
+    )
+    assert cached["recipe_id"] == rec["recipe_id"] and cached["cached"] is True
 
 
 def test_ensemble_refuses_non_vocal_members(tmp_path):
@@ -111,6 +125,34 @@ def test_single_vocal_residual_is_exact_parented_and_cached(tmp_path):
     assert identity.artifact_pcm_sha256(reopened, SR, ["FL", "FR"], len(reopened)) == (
         cdir / "output.pcm.sha256"
     ).read_text().strip()
+
+
+def test_mean_canonicalizes_member_weight_pairs(tmp_path):
+    layout, _mix, _vocal, _orch, members = _run_with_vocal_members(tmp_path)
+    src = json.loads((layout.source_dir / "source.json").read_text())
+    ids = [members["v_good"], members["v_delayed"]]
+    first = render_ensemble_candidate(
+        layout, src, member_recipe_ids=ids, weights=[0.25, 0.75],
+        algo="mean", code_commit="t",
+    )
+    second = render_ensemble_candidate(
+        layout, src, member_recipe_ids=list(reversed(ids)), weights=[0.75, 0.25],
+        algo="mean", code_commit="t",
+    )
+    assert first["recipe_id"] == second["recipe_id"]
+    assert second["cached"] is True
+
+
+def test_stft_geometric_median_is_lr_ms_equivariant():
+    rng = np.random.default_rng(9)
+    stack = rng.normal(0, 0.05, size=(3, 4096, 2)).astype("float32")
+    stack[2, 1200:1600] += np.array([0.8, -0.3], dtype="float32")
+    lr = _stft_geometric_median(stack, n_fft=256, hop=64, max_iter=20, tol=1e-5)
+    basis = np.array([[1, 1], [1, -1]], dtype="float64") / np.sqrt(2)
+    ms = np.einsum("knc,cd->knd", stack, basis)
+    ms_result = _stft_geometric_median(ms, n_fft=256, hop=64, max_iter=20, tol=1e-5)
+    roundtrip = np.einsum("nd,dc->nc", ms_result, basis.T)
+    assert np.max(np.abs(lr - roundtrip)) < 2e-4
 
 
 def _passages_for(layout, n):

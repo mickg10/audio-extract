@@ -721,7 +721,8 @@ def build_parser() -> argparse.ArgumentParser:
     sp = g_cand.add_parser("ensemble", help="vocal-ensemble residual candidate (median/mean of vocal estimates)")
     sp.add_argument("--run-id", required=True)
     sp.add_argument("--members", required=True, help="comma-separated VOCAL candidate recipe_ids")
-    sp.add_argument("--algo", default="median", choices=["median", "mean"])
+    sp.add_argument("--algo", default="median",
+                    choices=["median", "mean", "stft_geometric_median"])
     sp.add_argument("--weights", help="comma-separated weights (mean only)")
     sp.add_argument("--json", action="store_true")
     sp.set_defaults(func=cmd_candidate_ensemble)

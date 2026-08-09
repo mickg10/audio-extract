@@ -1,6 +1,26 @@
 schema: audio-extract/classical-baselines/v2
 alignment: gcc_phat+fractional/v1
 overlap: 8
+recipes:
+  residual_mdx23c:
+    kind: single_residual
+    parent: mdx23c
+  median_mdx_mel_bs:
+    kind: ensemble_residual
+    algo: median
+    parents: [mdx23c, melband, bs_roformer]
+  geomedian_mdx_mel_bs:
+    kind: ensemble_residual
+    algo: stft_geometric_median
+    parents: [mdx23c, melband, bs_roformer]
+    stft: {n_fft: 2048, hop_length: 512, window: hann, center: true, pad_mode: constant}
+    whitening: identity
+    solver: {name: weiszfeld, max_iter: 40, tolerance: 0.0001}
+  convex_fusion_uniform:
+    kind: ensemble_residual
+    algo: mean
+    parents: [mdx23c, melband, bs_roformer]
+    weights: [0.3333333333333333, 0.3333333333333333, 0.3333333333333333]
 models:
   mdx23c:
     logical_id: mdx23c_hq_ckpt

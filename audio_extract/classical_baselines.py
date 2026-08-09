@@ -245,6 +245,115 @@ def run_pilot(*, config_path: Path, truth_root: Path, lib_root: Path,
     }
 
 
+FULL_WORKS = (
+    "bologna_verdi",
+    "bologna_puccini",
+    "bologna_donizetti",
+    "aalto_mozart_dry",
+    "aalto_mozart_hall",
+)
+FULL_RECIPES = (
+    "residual_mdx23c",
+    "median_mdx_mel_bs",
+    "geomedian_mdx_mel_bs",
+    "convex_fusion_uniform",
+)
+
+
+def _render_full_work(*, config: dict, truth_root: Path, lib_root: Path,
+                      model_dir: Path, work_id: str, code_commit: str) -> list[dict]:
+    layout = TrackLayout(lib_root, work_id)
+    source = _ensure_exact_source(layout, truth_root / work_id / "mix_with_voice.wav")
+    bundles = _pinned_bundles(config, model_dir, layout.root / "model-lock.json")
+    vocal_parents = {}
+    for name in ("mdx23c", "melband", "bs_roformer"):
+        spec, bundle = config["models"][name], bundles[name]
+        vocal_parents[name] = render_candidate(
+            layout, source, model_filename=spec["registry_alias"], target="vocals",
+            construction="native_primary", overlap=int(config["overlap"]),
+            code_commit=code_commit, model_dir=model_dir,
+            executed_bundle_id=bundle["bundle_sha256"],
+            expected_sha256=spec["weights"]["sha256"],
+        )
+
+    rendered = {}
+    for name in FULL_RECIPES:
+        spec = config["recipes"][name]
+        if spec["kind"] == "single_residual":
+            rendered[name] = render_residual_candidate(
+                layout, source,
+                vocal_recipe_id=vocal_parents[spec["parent"]]["recipe_id"],
+                code_commit=code_commit,
+            )
+        else:
+            parent_ids = [vocal_parents[parent]["recipe_id"] for parent in spec["parents"]]
+            rendered[name] = render_ensemble_candidate(
+                layout, source, member_recipe_ids=parent_ids, algo=spec["algo"],
+                weights=spec.get("weights"), code_commit=code_commit,
+            )
+
+    mtimes = {
+        name: (layout.candidate_dir(record["recipe_id"]) / "output.f32.wav").stat().st_mtime_ns
+        for name, record in rendered.items()
+    }
+    for name, first in rendered.items():
+        spec = config["recipes"][name]
+        if spec["kind"] == "single_residual":
+            repeat = render_residual_candidate(
+                layout, source,
+                vocal_recipe_id=vocal_parents[spec["parent"]]["recipe_id"],
+                code_commit=code_commit,
+            )
+        else:
+            repeat = render_ensemble_candidate(
+                layout, source,
+                member_recipe_ids=[vocal_parents[parent]["recipe_id"]
+                                   for parent in spec["parents"]],
+                algo=spec["algo"], weights=spec.get("weights"), code_commit=code_commit,
+            )
+        wav = layout.candidate_dir(first["recipe_id"]) / "output.f32.wav"
+        if (repeat["recipe_id"] != first["recipe_id"] or not repeat["cached"]
+                or wav.stat().st_mtime_ns != mtimes[name]):
+            raise RuntimeError(f"repeat invocation rerendered {work_id}/{name}")
+    return [
+        _verified_row(layout, work_id, name, rendered[name], bundles, code_commit)
+        for name in FULL_RECIPES
+    ]
+
+
+def run_all(*, config_path: Path, truth_root: Path, lib_root: Path,
+            model_dir: Path, manifest_out: Path) -> dict:
+    config = yaml.safe_load(config_path.read_text())
+    if config.get("schema") != "audio-extract/classical-baselines/v2":
+        raise ValueError("wrong classical baseline configuration schema")
+    if tuple(config.get("recipes", {})) != FULL_RECIPES:
+        raise ValueError("full baseline recipe order/configuration is incomplete")
+    code_commit = _git_commit()
+    rows = []
+    for work_id in FULL_WORKS:
+        rows.extend(_render_full_work(
+            config=config, truth_root=truth_root, lib_root=lib_root,
+            model_dir=model_dir, work_id=work_id, code_commit=code_commit,
+        ))
+    text = "".join(json.dumps(row, sort_keys=True) + "\n" for row in rows)
+    if manifest_out.exists() and manifest_out.read_text() != text:
+        raise RuntimeError(f"refusing to rewrite differing v2 manifest: {manifest_out}")
+    manifest_out.parent.mkdir(parents=True, exist_ok=True)
+    if not manifest_out.exists():
+        manifest_out.write_text(text)
+    return {
+        "status": "complete",
+        "works": list(FULL_WORKS),
+        "recipes": list(FULL_RECIPES),
+        "rows": len(rows),
+        "all_float_exact_reopen_hash_verified": True,
+        "repeat_cache_verified": True,
+        "manifest": str(manifest_out),
+        "code_commit": code_commit,
+        "command": " ".join(__import__("sys").argv),
+    }
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser("python -m audio_extract.classical_baselines")
     parser.add_argument("--config", required=True, type=Path)
@@ -253,15 +362,18 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--model-dir", required=True, type=Path)
     parser.add_argument("--manifest-out", required=True, type=Path)
     parser.add_argument("--work-id", default="bologna_verdi")
+    parser.add_argument("--all", action="store_true",
+                        help="expand the passed pilot path to five works x four recipes")
     return parser
 
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
-    report = run_pilot(
+    common = dict(
         config_path=args.config, truth_root=args.truth_root, lib_root=args.lib_root,
-        model_dir=args.model_dir, manifest_out=args.manifest_out, work_id=args.work_id,
+        model_dir=args.model_dir, manifest_out=args.manifest_out,
     )
+    report = run_all(**common) if args.all else run_pilot(**common, work_id=args.work_id)
     print(json.dumps(report, indent=2, sort_keys=True))
     return 0
 

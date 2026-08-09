@@ -158,14 +158,68 @@ def build_separate_recipe(source_record: dict, *, model_filename: str, model_sha
     }
 
 
+def _stft_geometric_median(stack, *, n_fft: int = 2048, hop: int = 512,
+                           max_iter: int = 40, tol: float = 1e-4):
+    """Stereo-coherent geometric median in complex STFT coordinates.
+
+    Each time-frequency observation is the real vector
+    ``[Re(L), Re(R), Im(L), Im(R)]``.  The joint vector makes the construction
+    invariant (within numerical tolerance) to an orthonormal L/R↔M/S change of
+    basis, unlike independently taking component medians.
+    """
+    import librosa
+    import numpy as np
+
+    values = np.asarray(stack, dtype="float32")
+    if values.ndim != 3 or values.shape[0] < 3:
+        raise ValueError("STFT geometric median needs (members>=3, frames, channels)")
+    if not np.all(np.isfinite(values)):
+        raise ValueError("STFT geometric median input contains non-finite samples")
+    specs = np.stack([
+        np.stack([
+            librosa.stft(member[:, channel], n_fft=n_fft, hop_length=hop,
+                         win_length=n_fft, window="hann", center=True,
+                         pad_mode="constant")
+            for channel in range(values.shape[2])
+        ], axis=0)
+        for member in values
+    ], axis=0)  # (K, C, F, T)
+    spectral = specs.transpose(0, 2, 3, 1)
+    points = np.concatenate((spectral.real, spectral.imag), axis=-1).astype("float64")
+    median = points.mean(axis=0)
+    eps = 1e-12
+    for _ in range(max_iter):
+        delta = points - median[None]
+        distance = np.sqrt(np.sum(delta * delta, axis=-1)).clip(min=eps)
+        weight = 1.0 / distance
+        updated = np.einsum("kft,kftd->ftd", weight, points, optimize=True)
+        updated /= weight.sum(axis=0)[..., None]
+        relative = np.sqrt(np.sum((updated - median) ** 2, axis=-1))
+        scale = np.sqrt(np.sum(median ** 2, axis=-1)).clip(min=eps)
+        median = updated
+        if float(np.max(relative / scale)) <= tol:
+            break
+    channels = values.shape[2]
+    combined = median[..., :channels] + 1j * median[..., channels:]
+    output = np.stack([
+        librosa.istft(combined[..., channel], hop_length=hop, win_length=n_fft,
+                      window="hann", center=True, length=values.shape[1])
+        for channel in range(channels)
+    ], axis=1)
+    if output.shape != values.shape[1:] or not np.all(np.isfinite(output)):
+        raise RuntimeError(f"invalid STFT geometric-median output: {output.shape}")
+    return output.astype("float64")
+
+
 def render_ensemble_candidate(layout, source_record: dict, *, member_recipe_ids: list[str],
                               algo: str = "median", weights: list[float] | None = None,
                               code_commit: str = "") -> dict:
-    """ε-minimization route (oracle §5): combine MEMBER VOCAL estimates (aligned
-    first — WP0 hard rule) into V̂_ens, then the accompaniment is the residual
-    ``M − V̂_ens``. ``algo``: 'median' (robust, ≥3 members) or 'mean' (weighted,
-    ≥2). The ensemble is a first-class content-addressed candidate whose parents
-    are the member recipe ids."""
+    """Combine explicitly parented vocal estimates and render ``M - V_hat``.
+
+    Algorithms are component median, global convex mean, or stereo-coherent
+    complex-STFT geometric median.  Recipe identity canonicalizes member/weight
+    pairs together.  Completed candidates take a metadata-only cache fast path.
+    """
     import tempfile
     from datetime import datetime, timezone
 
@@ -177,10 +231,14 @@ def render_ensemble_candidate(layout, source_record: dict, *, member_recipe_ids:
     from .manifest import Manifest
     from .storage import ImmutableWriteError
 
-    if algo == "median" and len(member_recipe_ids) < 3:
-        raise ValueError("median ensemble needs >=3 members")
+    if algo not in {"median", "mean", "stft_geometric_median"}:
+        raise ValueError(f"unknown ensemble algorithm: {algo}")
+    if algo in {"median", "stft_geometric_median"} and len(member_recipe_ids) < 3:
+        raise ValueError(f"{algo} ensemble needs >=3 members")
     if algo == "mean" and len(member_recipe_ids) < 2:
         raise ValueError("mean ensemble needs >=2 members")
+    if len(set(member_recipe_ids)) != len(member_recipe_ids):
+        raise ValueError("ensemble member recipe IDs must be unique")
     if weights is not None:
         if len(weights) != len(member_recipe_ids):
             raise ValueError("weights length must match members")
@@ -191,39 +249,46 @@ def render_ensemble_candidate(layout, source_record: dict, *, member_recipe_ids:
     else:
         w = np.full(len(member_recipe_ids), 1.0 / len(member_recipe_ids))
 
+    pairs = sorted(zip(member_recipe_ids, w.tolist()), key=lambda pair: pair[0])
+    member_recipe_ids = [pair[0] for pair in pairs]
+    w = np.asarray([pair[1] for pair in pairs], dtype=np.float64)
+    weights_ppm = [int(round(value * 1_000_000)) for value in w]
+
     canonical = Path(layout.source_dir) / "canonical.f32.wav"
     mix, sr = sf.read(str(canonical), dtype="float64", always_2d=True)
     sr = int(sr)
+    expected_grid = (
+        int(source_record["frames"]), int(source_record["sample_rate_hz"]),
+        len(source_record["channel_layout"]),
+    )
+    if (len(mix), sr, mix.shape[1]) != expected_grid:
+        raise ValueError(
+            f"canonical/source-record grid mismatch: {(len(mix), sr, mix.shape[1])} "
+            f"!= {expected_grid}"
+        )
 
-    # load member VOCAL stems; refuse non-vocal members (role discipline)
-    members, alignments = [], []
-    for rid in member_recipe_ids:
-        cdir = layout.candidate_dir(rid)
-        rj = cdir / "recipe.json"
-        if not rj.exists() or not (cdir / "output.f32.wav").exists():
-            raise ValueError(f"ensemble member {rid} not in the store")
-        recipe = json.loads(rj.read_text())
-        op = recipe.get("operation", {})
-        if not (op.get("type") == "separate" and op.get("construction") == "native_primary"
-                and op.get("target") == "vocals"):
-            raise ValueError(f"ensemble member {rid} is not a native vocal estimate "
-                             f"({op.get('construction')}/{op.get('target')})")
-        arr, msr = sf.read(str(cdir / "output.f32.wav"), dtype="float64", always_2d=True)
-        if int(msr) != sr:
-            raise ValueError(f"member {rid} sample rate {msr} != canonical {sr} "
-                             "(resample explicitly before ensembling)")
-        al = estimate_alignment(mix, arr)     # align each member to the mixture grid
-        members.append(apply_alignment(arr, al, target_len=mix.shape[0]))
-        alignments.append({"recipe_id": rid, "delay": al.delay_samples,
-                           "polarity": al.polarity, "confidence": round(al.confidence, 4)})
-
-    stack = np.stack(members, axis=0)
-    if algo == "median":
-        v_ens = np.median(stack, axis=0)
-    else:
-        v_ens = np.tensordot(w, stack, axes=(0, 0))
-    accomp = mix - v_ens
-
+    effective_config = {"model_sample_rate_hz": sr,
+                        "alignment": "gcc_phat+fractional/v1"}
+    construction = "waveform_ensemble"
+    if algo == "stft_geometric_median":
+        construction = "spectral_ensemble"
+        effective_config.update({
+            "domain": "complex_stft_stereo_vector",
+            "n_fft": 2048,
+            "hop_length": 512,
+            "window": "hann",
+            "center": True,
+            "pad_mode": "constant",
+            "whitening": "identity",
+            "solver": "weiszfeld",
+            "solver_max_iter": 40,
+            "solver_tolerance": 0.0001,
+        })
+    identity_payload = json.dumps({
+        "algo": algo,
+        "member_weight_pairs": list(zip(member_recipe_ids, weights_ppm)),
+        "effective_config": effective_config,
+    }, sort_keys=True, separators=(",", ":"))
     recipe = {
         "schema": recipe_mod.SCHEMA,
         "canon": recipe_mod.CANON,
@@ -235,42 +300,97 @@ def render_ensemble_candidate(layout, source_record: dict, *, member_recipe_ids:
             "sample_format": "float32-le-interleaved",
         },
         "operation": {"type": "mixture_minus_source", "target": "instrumental",
-                      "construction": "waveform_ensemble"},
+                      "construction": construction},
         "model": {"model_id": f"vocal-ensemble-{algo}",
-                  "weights_sha256": hashlib.sha256(
-                      ("|".join(sorted(member_recipe_ids))).encode()).hexdigest(),
+                  "weights_sha256": hashlib.sha256(identity_payload.encode()).hexdigest(),
                   "adapter": "audio-extract-ensemble",
-                  "adapter_revision": "ensemble-v1",
-                  "members": sorted(member_recipe_ids),
+                  "adapter_revision": "ensemble-exact-grid-v2",
+                  "members": member_recipe_ids,
                   "algo": algo,
-                  "member_weights_ppm": [int(round(x * 1e6)) for x in w]},
-        "effective_config": {"model_sample_rate_hz": sr,
-                             "alignment": "gcc_phat+fractional/v1"},
+                  "member_weights_ppm": weights_ppm},
+        "effective_config": effective_config,
         "software": {"audio_extract_commit": code_commit},
     }
     rid = identity.recipe_id(recipe)
+
+    # Validate parent roles even for a cache hit, but do not reload/alignment-process
+    # their full audio unless this recipe must actually be rendered.
+    for parent_id in member_recipe_ids:
+        parent_dir = layout.candidate_dir(parent_id)
+        parent_recipe_path = parent_dir / "recipe.json"
+        if not parent_recipe_path.exists() or not (parent_dir / "output.f32.wav").exists():
+            raise ValueError(f"ensemble member {parent_id} not in the store")
+        parent_op = json.loads(parent_recipe_path.read_text()).get("operation", {})
+        if not (parent_op.get("type") == "separate"
+                and parent_op.get("construction") == "native_primary"
+                and parent_op.get("target") == "vocals"):
+            raise ValueError(f"ensemble member {parent_id} is not a native vocal estimate")
+
+    completed = layout.candidate_dir(rid)
+    if (completed / "output.f32.wav").exists():
+        info = sf.info(completed / "output.f32.wav")
+        if (info.frames, info.samplerate, info.channels, info.subtype) != (*expected_grid, "FLOAT"):
+            raise ValueError(f"cached ensemble grid mismatch: {info}")
+        artifact = (completed / "output.pcm.sha256").read_text().strip()
+        execution = json.loads((completed / "execution.json").read_text())
+        record = {
+            "recipe_id": rid, "operation": "mixture_minus_source",
+            "parents": member_recipe_ids, "artifact_pcm_sha256": artifact,
+            "sample_rate_hz": sr, "channels": source_record["channel_layout"],
+            "frames": info.frames, "sample_format": "float32", "status": "complete",
+            "created_at": datetime.now(timezone.utc).isoformat(), "cached": True,
+            "alignments": execution.get("alignments", []),
+        }
+        with Manifest(layout.manifest_sqlite) as man:
+            man.upsert_candidate(record)
+        return record
+
+    # load member VOCAL stems; refuse non-vocal members (role discipline)
+    members, alignments = [], []
+    for parent_id in member_recipe_ids:
+        cdir = layout.candidate_dir(parent_id)
+        rj = cdir / "recipe.json"
+        arr, msr = sf.read(str(cdir / "output.f32.wav"), dtype="float64", always_2d=True)
+        if (len(arr), int(msr), arr.shape[1]) != expected_grid:
+            raise ValueError(
+                f"member {parent_id} grid {(len(arr), int(msr), arr.shape[1])} != {expected_grid}"
+            )
+        al = estimate_alignment(mix, arr)     # align each member to the mixture grid
+        members.append(apply_alignment(arr, al, target_len=mix.shape[0]))
+        alignments.append({"recipe_id": parent_id, "delay": al.delay_samples,
+                           "polarity": al.polarity, "confidence": round(al.confidence, 4)})
+
+    stack = np.stack(members, axis=0)
+    if algo == "median":
+        v_ens = np.median(stack, axis=0)
+    elif algo == "stft_geometric_median":
+        v_ens = _stft_geometric_median(stack)
+    else:
+        v_ens = np.tensordot(w, stack, axes=(0, 0))
+    accomp = mix - v_ens
+    if accomp.shape != mix.shape or not np.all(np.isfinite(accomp)):
+        raise RuntimeError(f"invalid ensemble output grid/content: {accomp.shape}")
     frames, channels = int(accomp.shape[0]), int(accomp.shape[1])
     ch_layout = (source_record["channel_layout"]
                  if channels == len(source_record["channel_layout"])
                  else [f"CH{i}" for i in range(channels)])
     artifact = identity.artifact_pcm_sha256(accomp.astype("float32"), sr, ch_layout, frames)
 
-    cached = (layout.candidate_dir(rid) / "output.f32.wav").exists()
-    if not cached:
-        fd, tmp = tempfile.mkstemp(suffix=".f32.wav")
-        import os
-        os.close(fd)
-        sf.write(tmp, accomp.astype("float32"), sr, subtype="FLOAT")
-        try:
-            layout.write_candidate(rid, recipe,
-                                   {**identity.execution_fingerprint(),
-                                    "alignments": alignments}, Path(tmp), artifact)
-        except ImmutableWriteError:
-            cached = True
+    cached = False
+    fd, tmp = tempfile.mkstemp(suffix=".f32.wav")
+    import os
+    os.close(fd)
+    sf.write(tmp, accomp.astype("float32"), sr, subtype="FLOAT")
+    try:
+        layout.write_candidate(rid, recipe,
+                               {**identity.execution_fingerprint(),
+                                "alignments": alignments}, Path(tmp), artifact)
+    except ImmutableWriteError:
+        cached = True
 
     record = {
         "recipe_id": rid, "operation": "mixture_minus_source",
-        "parents": sorted(member_recipe_ids),
+        "parents": member_recipe_ids,
         "artifact_pcm_sha256": artifact, "sample_rate_hz": sr,
         "channels": ch_layout, "frames": frames, "sample_format": "float32",
         "status": "complete",
