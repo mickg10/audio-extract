@@ -448,6 +448,24 @@ def route_objective(
     frequency_smoothness: float = 0.0,
 ) -> tuple[float, float, float, float]:
     t, b, k = grid.validate()
+    return _route_objective_on_validated_grid(
+        weights, grid, (t, b, k),
+        temporal_smoothness=temporal_smoothness,
+        frequency_smoothness=frequency_smoothness,
+    )
+
+
+def _route_objective_on_validated_grid(
+    weights: np.ndarray,
+    grid: QuadraticGrid,
+    shape: tuple[int, int, int],
+    *,
+    temporal_smoothness: float = 0.0,
+    frequency_smoothness: float = 0.0,
+) -> tuple[float, float, float, float]:
+    """Evaluate after the caller has certified the immutable grid once."""
+
+    t, b, k = shape
     w = np.asarray(weights, dtype=np.float64)
     if w.shape != (t, b, k):
         raise ValueError("weight grid does not match quadratics")
@@ -589,8 +607,9 @@ def solve_discrete_global(
 
 
 def _gradient(weights: np.ndarray, grid: QuadraticGrid,
-              config: CertifiedRoutingConfig) -> np.ndarray:
-    t, b, _ = grid.validate()
+              config: CertifiedRoutingConfig,
+              shape: tuple[int, int, int]) -> np.ndarray:
+    t, b, _ = shape
     count = float(t * b)
     gradient = (
         2.0 * np.einsum("tbkl,tbl->tbk", grid.Q, weights) - 2.0 * grid.c
@@ -650,6 +669,7 @@ def solve_convex_certified(
 
     cfg = config or CertifiedRoutingConfig()
     cfg.validate()
+    shape = grid.validate()
     if o1_index is None:
         o1_index, _ = best_whole_track(grid)
     step = 1.0 / _lipschitz_bound(grid, cfg)
@@ -659,8 +679,8 @@ def solve_convex_certified(
         if name == "O2" and o2_labels is None:
             continue
         weights = _initial_weights(name, grid, o1_index, o2_labels)
-        current = route_objective(
-            weights, grid,
+        current = _route_objective_on_validated_grid(
+            weights, grid, shape,
             temporal_smoothness=cfg.temporal_weight_smoothness,
             frequency_smoothness=cfg.frequency_weight_smoothness,
         )[0]
@@ -668,11 +688,11 @@ def solve_convex_certified(
         converged = False
         projected_norm = math.inf
         for iteration in range(1, cfg.max_projected_gradient_iterations + 1):
-            gradient = _gradient(weights, grid, cfg)
+            gradient = _gradient(weights, grid, cfg, shape)
             proposal = project_simplex(weights - step * gradient)
             projected_norm = float(np.linalg.norm((weights - proposal) / step))
-            proposal_value = route_objective(
-                proposal, grid,
+            proposal_value = _route_objective_on_validated_grid(
+                proposal, grid, shape,
                 temporal_smoothness=cfg.temporal_weight_smoothness,
                 frequency_smoothness=cfg.frequency_weight_smoothness,
             )[0]
@@ -709,8 +729,8 @@ def solve_convex_certified(
     value, name, weights, iterations, norm, converged = min(
         certified, key=lambda solution: solution[0]
     )
-    total, data, temporal, frequency = route_objective(
-        weights, grid,
+    total, data, temporal, frequency = _route_objective_on_validated_grid(
+        weights, grid, shape,
         temporal_smoothness=cfg.temporal_weight_smoothness,
         frequency_smoothness=cfg.frequency_weight_smoothness,
     )

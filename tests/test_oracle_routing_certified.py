@@ -4,6 +4,7 @@ import pytest
 from audio_extract.oracle_routing_certified import (
     CertifiedRoutingError,
     CertifiedRoutingConfig,
+    QuadraticGrid,
     best_whole_track,
     build_cell_quadratic,
     build_spectral_quadratic_grid,
@@ -172,6 +173,29 @@ def test_certified_o3_requires_every_declared_start_to_converge():
         solve_convex_certified(
             grid, config, o1_index=0, starts=("uniform", "O1")
         )
+
+
+def test_certified_o3_validates_immutable_grid_outside_inner_loop(monkeypatch):
+    candidates, accompaniment, vocal = _basis([0.7, 1.4])
+    config = _fast_config(voice_weight=0.0, residual_weight=0.0)
+    grid = stack_cell_grid([[
+        build_cell_quadratic(candidates, accompaniment, vocal, config)
+    ]])
+    original = QuadraticGrid.validate
+    calls = 0
+
+    def counting_validate(self):
+        nonlocal calls
+        calls += 1
+        return original(self)
+
+    monkeypatch.setattr(QuadraticGrid, "validate", counting_validate)
+    result = solve_convex_certified(
+        grid, config, o1_index=0, starts=("uniform", "O1")
+    )
+    assert result.converged
+    assert result.iterations > 1
+    assert calls < 20
 
 
 def test_global_o2_routes_complementary_time_cells():
