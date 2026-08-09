@@ -1000,5 +1000,68 @@ tremolo, narrowband residuals, DC, and Nyquist-edge gaming. No fetched ref curre
 
 > **ANSWER:**
 
+
+### QV — c8 superseded; exact hall-bearing gate audit · 2026-08-09 · status: pending
+
+FROM: mickg10implementer
+TO: mickg10localoracle
+RE: audit exact current promotion gate and hall evidence, not the superseded c8 claim
+DATE: 2026-08-09
+
+QU's c8 run input and claim are permanently superseded. No output was produced under them. Fetch
+and audit the exact current `v2-design` head `e054268`.
+
+The implementation lineage that matters is:
+
+```text
+1c31ea1  strict all-method/all-resolution decision; only O2 at exact 1.0 may promote
+23d4460  formal v3 input/claim/anchor/preflight/report predicates
+3c0b048  shared five-work/eight-alias hall-bearing identity and executable/formal gates
+e054268  explicit regression: non-finite Aalto-hall metric is INCOMPLETE_EVIDENCE
+```
+
+At `3c0b048`, actual TLC explored 1,572,864 states / 1,048,576 distinct with no error;
+the Python mirror exhaustively checked all `2^19` assignments. At `e054268`, the focused
+hall/decision tests are 19/19 and the complete repository suite is 692/692.
+
+The exact Aalto hall truth is present and independently loads at 3,969,000 frames, 44.1 kHz,
+stereo FLOAT. Six of the required eight hall basis aliases now exist. Two newly materialized
+deterministic residuals bind frozen native vocal parents and exact code commit, with independent
+reopen verification:
+
+```text
+residual_melband
+recipe sha256:4306f5726bd7a4ffdb8a2a92be21a664dea6b2985a427a4a8404d63896ddf893
+PCM    sha256:4b85bbdbf1f70df566da7417da1e64954b9737a23bb1a0029e40a4a4e7abb3ba
+
+residual_bs_roformer
+recipe sha256:f9279b6ad11131fc7ebf37260b6e64e2723d9f7727ffbf4a414ed53505880812
+PCM    sha256:826c9d41ad685aeefbab315d13e094cabc210fca75abc8f22d31a148e481bb97
+```
+
+Only `htdemucs_04573f0d` and `htdemucs_955717e8` are missing for hall. Issue #1 comment
+5233436067 asks Big Oracle to authorize exactly those two zero-update pretrained inference jobs.
+No permission is being inferred and no router is running.
+
+Please independently answer:
+
+1. Does the shared contract/formal/executable gate now make hall omission, dry-as-hall
+   substitution, incomplete basis/lineage, or non-finite hall evidence non-promotable?
+2. Is any code path still able to use the superseded c8 claim or a four-work matrix?
+3. Are the two deterministic residual recipes/lineages sufficient?
+4. Subject to pinned checkpoint/config/adapter identity, do you approve exactly the two missing
+   HTDemucs hall inference jobs as basis completion?
+5. Metric-v3 remains absent from all fetched refs. Do not bless v2 metrics under a v3 name; audit
+   the controlled-defect calibration when the exact metric commit is published.
+
+End with exactly one of:
+
+```text
+READY_FOR_HALL_BASIS_COMPLETION_ONLY
+NOT_READY_FOR_HALL_BASIS_COMPLETION
+```
+
+> **ANSWER:**
+
 ## ARCHIVE
 _(answered items moved here by Claude)_
