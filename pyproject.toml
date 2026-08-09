@@ -14,6 +14,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+train = ["demucs", "omegaconf"]   # HTDemucs student training (research6 GPU)
 dev = ["pytest"]
 
 [project.scripts]

@@ -1,42 +1,33 @@
 schema: audio-extract/train/classical-student-v1
 base_arch: HTDemucs
-base_arch_fact: trainable torch nn.Module (verified fwd+bwd, no dora); exports via
-  audio_separator.demucs_separator
-sources:
-- accompaniment
-- vocals
+base_arch_fact: trainable torch nn.Module (verified fwd+bwd, no dora); exports via demucs.states + audio_separator.demucs_separator
+sources: [accompaniment, vocals]
 audio_channels: 2
 samplerate: 44100
 model:
   channels: 48
   depth: 4
-  segment_s: 7.8
 data:
   manifest: datasets/classical-v1.jsonl
   splits: datasets/classical-v1-splits.json
-  train_splits:
-  - train
-  val_splits:
-  - val
-  holdout: test-v1 (CONTAMINATED - not for acceptance)
+  train_splits: [train]          # cantoria(14)+freidi(3); respects the frozen leak-audited splits
+  holdout: test-v1 (Bologna/Aalto — CONTAMINATED legacy; held out from THIS run, not for final acceptance)
 optim:
   name: adam
   lr: 0.0003
-  steps: 200000
+  steps_first_run: 1500          # convergence + first held-out eval; full run is multi-hundred-k
   batch: 4
-  crop_s: 7.8
-loss:
-  multi_res_stft_mag: 1.0
-  waveform_l1: 1.0
-  mixture_consistency: 0.1
-  TODO_bigoracle:
-  - complex_stft_phase
-  - no_vocal_false_positive
-  - vocal_false_negative
-  - source_coord_alpha_beta_R
-  - stereo_coherence
-  - event_tail_weighting
+  crop_s: 6
+loss:                            # asymmetric family (orchestral theft expensive); NOT one SDR objective
+  wav: 1.0                       # waveform L1 per source, event-weighted
+  stft: 0.5                      # multi-res complex STFT (magnitude + real/imag => phase)
+  mix: 0.1                       # mixture-consistency A_hat+V_hat=M
+  theft: 0.5                     # no-vocal FALSE-POSITIVE: voice-in-accompaniment (beta^2) — makes theft expensive
+  fn: 0.3                        # vocal-only FALSE-NEGATIVE: voice missing where V active
+  alpha: 0.2                     # local source-coordinate alpha (accompaniment scale ->1)
+  stereo: 0.2                    # stereo/side coherence
+  event_vocal: 2.0               # event-tail weight on active-vocal frames (exact activity mask)
+  event_tutti: 1.5               # event-tail weight on extreme-tutti frames
 export:
-  to: audio_separator demucs_separator (production inference adapter)
-note: 'Do NOT optimize the SHADOW judge (gpt56 H4). SMOKE (100 steps/2 works/eval
-  3rd) PASSED: see calibration/train_classical_smoke_report.json'
+  to: demucs.states .th -> demucs.apply_model (== audio-separator demucs_separator inference); registry packaging is final step
+note: Do NOT optimize the SHADOW judge (gpt56 H4). Stage-1 = dry exact linear stems only.
