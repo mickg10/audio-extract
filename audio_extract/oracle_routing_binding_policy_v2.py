@@ -1,19 +1,23 @@
-"""Strict binding policy over the concrete certified-routing evidence rows.
+"""Strict, preregistered binding policy for certified oracle routing.
 
 The concrete validator in :mod:`oracle_routing_decision_v2` determines whether
-one method/resolution row is complete and whether it passes all audio/artifact
-thresholds. This module performs the *cross-row* decision without post-hoc
-method or resolution selection.
+one method/resolution row is complete and whether it passes every metric,
+artifact, transform, and optimizer threshold.  This module performs the
+cross-row decision without post-hoc method or resolution selection.
 
-Exactly one method and one primary resolution are preregistered. Every declared
-required method/resolution row must be valid before any binding conclusion. A
-pass at a sensitivity resolution is reported explicitly and cannot be promoted
-to ``ACTIONABLE_ROUTING_GAP``.
+The binding policy is intentionally *not* configurable at verification time.
+Its task, selected method, primary resolution, sensitivity resolutions, and
+required method panel are frozen in this source revision and protected by a
+hard-coded semantic SHA-256.  A policy JSON file is only a human-readable copy
+of that authority; changing whitespace or object-key order is harmless, while
+changing any semantic field is refused.
 """
 
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
+import hashlib
+import json
 from typing import Any, Mapping, Sequence
 
 from .oracle_binding_gate_abstract import (
@@ -37,29 +41,57 @@ from .oracle_routing_decision_v2 import (
 
 POLICY_SCHEMA = "audio-extract/oracle-routing-binding-policy/v2"
 DECISION_SCHEMA = "audio-extract/oracle-routing-binding-decision/v3"
-DEFAULT_PRIMARY_RESOLUTION = "1.0"
-DEFAULT_SENSITIVITY_RESOLUTIONS = ("2.0", "0.5")
+CANONICAL_TASK_ID = "soloist_vs_rest"
+CANONICAL_SELECTED_METHOD = "O2_global_medoid"
+CANONICAL_PRIMARY_RESOLUTION = "1.0"
+CANONICAL_SENSITIVITY_RESOLUTIONS = ("2.0", "0.5")
+CANONICAL_REQUIRED_METHODS = tuple(ROUTED_METHODS)
+# SHA-256 of sorted, compact, UTF-8 JSON for BindingPolicyConfig.identity_dict().
+CANONICAL_POLICY_SHA256 = (
+    "sha256:fa5c4246b858ede0eae4fcab98114abb86d91d36d67428edf78628299c679d65"
+)
+
+
+def _semantic_json(value: Mapping[str, Any]) -> bytes:
+    return json.dumps(
+        dict(value),
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=False,
+        allow_nan=False,
+    ).encode("utf-8")
+
+
+def policy_semantic_sha256(value: Mapping[str, Any]) -> str:
+    """Hash policy meaning independently of JSON whitespace/key ordering."""
+
+    return "sha256:" + hashlib.sha256(_semantic_json(value)).hexdigest()
 
 
 @dataclass(frozen=True)
 class BindingPolicyConfig:
     schema: str = POLICY_SCHEMA
-    task_id: str = "soloist_vs_rest"
-    selected_method: str = "O2_global_medoid"
-    primary_resolution: str = DEFAULT_PRIMARY_RESOLUTION
+    task_id: str = CANONICAL_TASK_ID
+    selected_method: str = CANONICAL_SELECTED_METHOD
+    primary_resolution: str = CANONICAL_PRIMARY_RESOLUTION
     sensitivity_resolutions: tuple[str, ...] = (
-        DEFAULT_SENSITIVITY_RESOLUTIONS
+        CANONICAL_SENSITIVITY_RESOLUTIONS
     )
-    required_methods: tuple[str, ...] = ROUTED_METHODS
+    required_methods: tuple[str, ...] = CANONICAL_REQUIRED_METHODS
 
     @classmethod
     def from_mapping(cls, value: Mapping[str, Any]) -> "BindingPolicyConfig":
         data = dict(value)
         for name in ("sensitivity_resolutions", "required_methods"):
             if name in data:
-                data[name] = tuple(str(item) for item in data[name])
+                raw = data[name]
+                if not isinstance(raw, (list, tuple)):
+                    raise ValueError(f"{name} must be an array")
+                data[name] = tuple(str(item) for item in raw)
         result = cls(**data)
         result.validate()
+        if policy_semantic_sha256(result.identity_dict()) != CANONICAL_POLICY_SHA256:
+            raise ValueError("binding policy semantic hash is not canonical")
         return result
 
     @property
@@ -67,39 +99,54 @@ class BindingPolicyConfig:
         return (self.primary_resolution, *self.sensitivity_resolutions)
 
     def validate(self) -> None:
-        if self.schema != POLICY_SCHEMA:
-            raise ValueError(f"wrong binding policy schema: {self.schema!r}")
-        if not self.task_id:
-            raise ValueError("binding policy task_id must be non-empty")
-        if self.selected_method not in self.required_methods:
-            raise ValueError("selected method must be required")
-        if tuple(self.required_methods) != tuple(ROUTED_METHODS):
+        expected = {
+            "schema": POLICY_SCHEMA,
+            "task_id": CANONICAL_TASK_ID,
+            "selected_method": CANONICAL_SELECTED_METHOD,
+            "primary_resolution": CANONICAL_PRIMARY_RESOLUTION,
+            "sensitivity_resolutions": CANONICAL_SENSITIVITY_RESOLUTIONS,
+            "required_methods": CANONICAL_REQUIRED_METHODS,
+        }
+        actual = {
+            "schema": self.schema,
+            "task_id": self.task_id,
+            "selected_method": self.selected_method,
+            "primary_resolution": self.primary_resolution,
+            "sensitivity_resolutions": tuple(self.sensitivity_resolutions),
+            "required_methods": tuple(self.required_methods),
+        }
+        differences = {
+            name: {"actual": actual[name], "expected": expected[name]}
+            for name in expected
+            if actual[name] != expected[name]
+        }
+        if differences:
             raise ValueError(
-                f"required methods must equal the frozen set {ROUTED_METHODS}"
+                f"binding policy differs from preregistration: {differences}"
             )
+        if len(set(self.required_resolutions)) != len(self.required_resolutions):
+            raise ValueError("primary/sensitivity resolutions must be unique")
         if len(set(self.required_methods)) != len(self.required_methods):
             raise ValueError("required methods must be unique")
-        if not self.primary_resolution:
-            raise ValueError("primary resolution must be non-empty")
-        if not self.sensitivity_resolutions:
-            raise ValueError("at least one sensitivity resolution is required")
-        if len(set(self.required_resolutions)) != len(
-            self.required_resolutions
-        ):
-            raise ValueError("primary/sensitivity resolutions must be unique")
-        if len(self.sensitivity_resolutions) != 2:
-            raise ValueError(
-                "the v2 finite model requires exactly two sensitivities"
-            )
 
     def identity_dict(self) -> dict[str, Any]:
         self.validate()
         result = asdict(self)
-        result["sensitivity_resolutions"] = list(
-            self.sensitivity_resolutions
-        )
+        result["sensitivity_resolutions"] = list(self.sensitivity_resolutions)
         result["required_methods"] = list(self.required_methods)
         return result
+
+
+def canonical_binding_policy() -> BindingPolicyConfig:
+    result = BindingPolicyConfig()
+    result.validate()
+    digest = policy_semantic_sha256(result.identity_dict())
+    if digest != CANONICAL_POLICY_SHA256:
+        raise RuntimeError(
+            f"compiled binding policy hash drifted: {digest} != "
+            f"{CANONICAL_POLICY_SHA256}"
+        )
+    return result
 
 
 def _abstract_method(method: str) -> str:
@@ -143,6 +190,8 @@ def reduce_method_decisions(
     """Reduce complete concrete row results through the verified abstraction."""
 
     policy.validate()
+    if policy_semantic_sha256(policy.identity_dict()) != CANONICAL_POLICY_SHA256:
+        raise ValueError("noncanonical policy reached decision reduction")
     by_key: dict[tuple[str, str], MethodDecision] = {}
     for row in decisions:
         key = (row.method, row.resolution_seconds)
@@ -220,6 +269,7 @@ def reduce_method_decisions(
         "recommendation": recommendation,
         "reason": reason,
         "policy": policy.identity_dict(),
+        "policy_semantic_sha256": CANONICAL_POLICY_SHA256,
         "selected": selected_payload,
         "sensitivity_hits": sensitivity_hits,
         "method_decisions": [
@@ -238,8 +288,12 @@ def evaluate_report_strict(
 ) -> dict[str, Any]:
     """Validate all frozen rows, then apply the non-cherry-picking policy."""
 
-    selected_policy = policy or BindingPolicyConfig()
+    selected_policy = policy or canonical_binding_policy()
     selected_policy.validate()
+    if policy_semantic_sha256(selected_policy.identity_dict()) != (
+        CANONICAL_POLICY_SHA256
+    ):
+        raise ValueError("strict evaluation received a noncanonical policy")
     thresholds = metric_config or RoutingGateConfig()
     thresholds.validate()
 
@@ -250,6 +304,7 @@ def evaluate_report_strict(
             "recommendation": "COMPLETE_CERTIFICATES_AND_CONTROLS",
             "reason": f"wrong report schema: {report.get('schema')!r}",
             "policy": selected_policy.identity_dict(),
+            "policy_semantic_sha256": CANONICAL_POLICY_SHA256,
             "selected": None,
             "sensitivity_hits": [],
             "method_decisions": [],
@@ -262,6 +317,7 @@ def evaluate_report_strict(
             "recommendation": "COMPLETE_CERTIFICATES_AND_CONTROLS",
             "reason": "report lacks a resolution mapping",
             "policy": selected_policy.identity_dict(),
+            "policy_semantic_sha256": CANONICAL_POLICY_SHA256,
             "selected": None,
             "sensitivity_hits": [],
             "method_decisions": [],
