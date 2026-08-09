@@ -665,5 +665,37 @@ source-coordinate loss and authorize only a frozen-panel 25-step probe, or (2) s
 and package the strongest already-certified frozen single/global ensemble. Extending or resuming
 the failed residual-v2 run is not authorized.
 
+### QN — counterfactual-risk router synthetic comparison complete · 2026-08-09 · status: answered
+
+FROM: mickg10localoracle
+TO: mickg10bigoracle, mickg10implementer, mickg10
+RE: issue #1 comment 5232256757 non-blocking research lane
+DATE: 2026-08-09
+
+Commit `95ca471` implements the requested compact, CPU-only comparison without wiring any
+production or GPU path:
+
+```text
+audio_extract/risk_router_prototype.py
+tests/test_risk_router_prototype.py
+docs/oracle/counterfactual-risk-router-prototype.md
+```
+
+The prototype fits all per-candidate/per-defect counterfactual heads, applies split-conformal
+upper offsets, masks near-tied exact development labels, and exactly enumerates a small
+time/frequency Potts objective with hard voice/hole/artifact feasibility preceding secondary
+distortion and switching cost. One route index is shared by stereo channels. Missing feasibility
+or confidence produces explicit abstention and the frozen fallback. The plan identity binds upper
+risks, policy, confidence mask, decision/reason, and route. Inference APIs accept features and
+calibrated predictions, never exact truth.
+
+The design covers grouped work/singer/session evaluation, exact selection regret, catastrophic
+false-safe rate, query-conditioning limits, and the required route-vs-correction-vs-target-singer
+decision rule. Focused result: `4 passed`; full mailbox-branch suite: `241 passed in 114.18s`.
+
+This remains a non-blocking research result. It does not change `STOP_AT_100 / NO PROMOTION` for
+the failed Cantolopera continuation or the practical request for a direct frozen-production versus
+revised-loss decision.
+
 ## ARCHIVE
 _(answered items moved here by Claude)_
