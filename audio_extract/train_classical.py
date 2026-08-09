@@ -1,241 +1,432 @@
-"""audio-extract train classical — deterministic HTDemucs student trainer on the frozen
-classical-v1 manifest+splits. Stage-1 curriculum (dry exact linear stems), full asymmetric
-loss family, held-out exact-reference eval vs frozen baselines, on-disk export bridge, and the
-bigoracle run-artifact contract. Invoke: ./run.sh python -m audio_extract.train_classical ...
+"""Pretrained HTDemucs continuation for classical/operatic vocal removal.
 
-Success/abort: finite losses, exact frame/channel/rate parity, resumable checkpoints, held-out
-eval vs MDX23C-residual/median baselines on the CONSTRAINED objective (retained voice below
-ceiling AND orchestral hole/theft no worse AND stereo no worse). ABORT on NaN/divergence.
-Does NOT optimize the SHADOW judge (gpt56 H4)."""
+The first production pilot preserves the released four-source topology.  Only
+the vocal output is task-facing: ``V_hat = output[vocals]`` and the delivered
+accompaniment is the mixture-consistent residual ``A_hat = M - V_hat``.
+"""
+
 from __future__ import annotations
-import argparse, hashlib, json, os, time, subprocess
-import numpy as np, soundfile as sf, torch
+
+import argparse
+import hashlib
+import json
+import math
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+import numpy as np
+import soundfile as sf
 import yaml
-from demucs.htdemucs import HTDemucs
-from demucs.apply import apply_model
 
-SR = 44100
-TRAIN_DATA = "/home/mickg/train_data"           # materialized cantoria+freidi M/A/V + vmask
-TP = "/home/mickg/truth_pairs"                   # held-out Bologna/Aalto (exact, on research6)
-CAND = "/home/mickg/classical_candidates"        # frozen baselines (Job 3): <work>__<recipe>.flac
-DEV = "cuda" if torch.cuda.is_available() else "cpu"
+from .classical_loss import ClassicalLossConfig, classical_separation_loss
+
+SR = 44_100
+EVAL_WORKS = ("bologna_verdi", "bologna_puccini", "bologna_donizetti", "aalto_mozart_dry")
 
 
-def sha_arr(a):
-    return "sha256:" + hashlib.sha256(np.ascontiguousarray(np.asarray(a, "float32")).tobytes()).hexdigest()
+def _torch():
+    try:
+        import torch
+    except ImportError as exc:  # pragma: no cover - exercised on the GPU host
+        raise RuntimeError("install the 'train' extra to run classical training") from exc
+    return torch
 
 
-def sha_file(p):
-    return "sha256:" + hashlib.sha256(open(p, "rb").read()).hexdigest()
+def _sha_file(path: Path) -> str:
+    h = hashlib.sha256()
+    with path.open("rb") as handle:
+        for block in iter(lambda: handle.read(1024 * 1024), b""):
+            h.update(block)
+    return "sha256:" + h.hexdigest()
 
 
-def readf(p, start=None, stop=None):
-    a, sr = sf.read(p, dtype="float32", always_2d=True, start=start or 0, stop=stop)
-    assert sr == SR, f"ABORT hidden resample {p} sr={sr}"
-    return torch.from_numpy(a.T)                  # (ch, frames)
+def _read_exact(path: Path, *, start: int = 0, frames: int | None = None):
+    torch = _torch()
+    info = sf.info(path)
+    if info.samplerate != SR or info.channels != 2 or info.subtype != "FLOAT":
+        raise ValueError(
+            f"training audio must be 44.1 kHz stereo float32 WAV: {path} ({info})"
+        )
+    stop = None if frames is None else start + frames
+    audio, sr = sf.read(path, dtype="float32", always_2d=True, start=start, stop=stop)
+    if sr != SR or (frames is not None and len(audio) != frames):
+        raise ValueError(f"short or off-grid read: {path}, wanted {frames}, got {len(audio)}")
+    if not np.all(np.isfinite(audio)):
+        raise ValueError(f"non-finite audio: {path}")
+    return torch.from_numpy(audio.T.copy())
 
 
-# ---------------- loss family (asymmetric; theft expensive) ----------------
-def mrstft(x, y):
-    loss = 0.0
-    for nfft in (512, 1024, 2048):
-        win = torch.hann_window(nfft, device=x.device)
-        X = torch.stft(x.reshape(-1, x.shape[-1]), nfft, nfft // 4, window=win, return_complex=True)
-        Y = torch.stft(y.reshape(-1, y.shape[-1]), nfft, nfft // 4, window=win, return_complex=True)
-        loss = loss + (X.abs() - Y.abs()).abs().mean() + (X.real - Y.real).abs().mean() + (X.imag - Y.imag).abs().mean()
-    return loss / 3.0
+class ClassicalDataset:
+    """Random exact-grid crops from immutable materializations."""
 
-
-def loss_family(out, M, A, V, vmask, w):
-    A_hat, V_hat = out[:, 0], out[:, 1]            # (B,ch,L)
-    tutti = (M.abs().mean(1) > (M.abs().mean(1).amax(-1, keepdim=True) * 0.5)).float()
-    ew = (1.0 + w["event_vocal"] * vmask + w["event_tutti"] * tutti).unsqueeze(1)   # (B,1,L)
-    l_wav = (ew * ((A_hat - A).abs() + (V_hat - V).abs())).mean()
-    l_stft = mrstft(A_hat, A) + mrstft(V_hat, V)
-    l_mix = (A_hat + V_hat - M).abs().mean()
-    beta = (A_hat * V).sum(-1) / (V * V).sum(-1).clamp_min(1e-6)      # voice-in-accompaniment (theft)
-    l_theft = (beta ** 2).mean()
-    l_fn = (vmask.unsqueeze(1) * (V_hat - V).abs()).mean()            # vocal false-negative
-    alpha = (A_hat * A).sum(-1) / (A * A).sum(-1).clamp_min(1e-6)     # accompaniment scale (source-coord)
-    l_alpha = ((alpha - 1.0) ** 2).mean()
-    l_stereo = ((A_hat[:, 0] - A_hat[:, 1]) - (A[:, 0] - A[:, 1])).abs().mean()   # side coherence
-    total = (w["wav"] * l_wav + w["stft"] * l_stft + w["mix"] * l_mix + w["theft"] * l_theft
-             + w["fn"] * l_fn + w["alpha"] * l_alpha + w["stereo"] * l_stereo)
-    return total, dict(wav=float(l_wav), stft=float(l_stft), mix=float(l_mix), theft=float(l_theft),
-                       fn=float(l_fn), alpha=float(l_alpha), stereo=float(l_stereo))
-
-
-# ---------------- exact-reference eval (uses the judge label math, not the judge model) ----------------
-def exact_metrics(Y, A, V):
-    from audio_extract import judge_train as jt, judge_labels as jl, challenges as ch
-    import numpy as _np
-    Y2 = Y.T.numpy() if isinstance(Y, torch.Tensor) else Y
-    A2 = A.T.numpy() if isinstance(A, torch.Tensor) else A
-    V2 = V.T.numpy() if isinstance(V, torch.Tensor) else V
-    n = min(len(Y2), len(A2), len(V2))
-    labs = jl.local_source_coordinate_labels(Y2[:n], A2[:n], V2[:n], tile_frames=int(0.5 * SR), hop_frames=int(0.25 * SR))
-    tg = jt.label_targets(labs)
-    holes = [l.to_dict()["accompaniment_hole_db"] for l in labs if getattr(l, "available", False)]
-    holes = _np.array([h for h in holes if h is not None])
-    cvar = float(_np.mean(_np.sort(holes)[-max(1, len(holes) // 10):])) if holes.size else 0.0
-    return dict(retained_voice_db_p90=round(tg["retained_voice_db_p90"], 2),
-                retained_voice_coef_p90=round(tg["retained_voice_coef_p90"], 3),
-                event_hole_db_p90=round(tg["event_hole_db_p90"], 2), event_hole_db_max=round(tg["event_hole_db_max"], 2),
-                event_hole_cvar90=round(cvar, 2), alpha_error_p90=round(tg["alpha_error_p90"], 3),
-                si_sdr_db=round(ch.si_sdr_db(Y2[:n], A2[:n]), 2), avail_tiles=tg["_available_tiles"])
-
-
-def eval_work(model, work, run):
-    M = readf(f"{TP}/{work}/mix_with_voice.wav")
-    A = readf(f"{TP}/{work}/orchestra_only.wav")
-    V = readf(f"{TP}/{work}/voice_ref.wav")
-    with torch.no_grad():
-        est = apply_model(model, M.unsqueeze(0).to(DEV), device=DEV, split=True, overlap=0.25)[0].cpu()
-    A_hat = est[0]
-    n = min(A_hat.shape[1], M.shape[1])
-    parity = bool(A_hat.shape[1] == M.shape[1] and A_hat.shape[0] == M.shape[0])
-    res = {"parity": parity, "student": exact_metrics(A_hat[:, :n], A[:, :n], V[:, :n])}
-    for recipe in ("residual_mdx23c", "median_mdx_mel_bs"):
-        p = f"{CAND}/{work}__{recipe}.flac"
-        if os.path.exists(p):
-            Yb = readf(p)
-            nb = min(Yb.shape[1], A.shape[1], V.shape[1])
-            res[recipe] = exact_metrics(Yb[:, :nb], A[:, :nb], V[:, :nb])
-    return res
-
-
-# ---------------- streaming dataset (train split only) ----------------
-class ClassicalDS:
-    def __init__(self, works, crop):
-        self.crop = crop
+    def __init__(self, root: Path, works: list[str], crop_frames: int):
+        self.root = root
+        self.crop_frames = crop_frames
         self.items = []
-        for w in works:
-            d = f"{TRAIN_DATA}/{w}"
-            if os.path.exists(f"{d}/M.flac"):
-                info = sf.info(f"{d}/M.flac")
-                self.items.append((w, d, info.frames))
-        assert self.items, "no materialized train works found"
+        for work in works:
+            directory = root / work
+            if not directory.is_dir():
+                continue
+            reports = json.loads((directory / "report.json").read_text())
+            infos = {role: sf.info(directory / f"{role}.f32.wav") for role in "MAV"}
+            grids = {(i.frames, i.samplerate, i.channels, i.subtype) for i in infos.values()}
+            if len(grids) != 1:
+                raise ValueError(f"materialized grid mismatch for {work}: {infos}")
+            frames, sr, channels, subtype = next(iter(grids))
+            if sr != SR or channels != 2 or subtype != "FLOAT":
+                raise ValueError(f"invalid materialized grid for {work}: {next(iter(grids))}")
+            if frames < crop_frames:
+                raise ValueError(f"work {work} is shorter than one training crop")
+            self.items.append((work, directory, frames, reports["recipe_id"]))
+        if not self.items:
+            raise ValueError("no eligible immutable training works were materialized")
 
-    def sample(self, rng):
-        w, d, fr = self.items[rng.integers(len(self.items))]
-        st = int(rng.integers(0, max(1, fr - self.crop)))
-        M = readf(f"{d}/M.flac", st, st + self.crop)
-        A = readf(f"{d}/A.flac", st, st + self.crop)
-        V = readf(f"{d}/V.flac", st, st + self.crop)
-        vm = torch.from_numpy(np.load(f"{d}/vmask.npy")[st:st + self.crop].astype("float32"))
-        M, A, V = (x if x.shape[0] == 2 else x.repeat(2, 1) for x in (M, A, V))   # mono->stereo (cantoria)
-        L = min(M.shape[1], A.shape[1], V.shape[1], len(vm))
-        if L < self.crop:
-            pad = self.crop - L
-            M = torch.nn.functional.pad(M[:, :L], (0, pad)); A = torch.nn.functional.pad(A[:, :L], (0, pad))
-            V = torch.nn.functional.pad(V[:, :L], (0, pad)); vm = torch.nn.functional.pad(vm[:L], (0, pad))
-        return M[:, :self.crop], A[:, :self.crop], V[:, :self.crop], vm[:self.crop]
+    def sample(self, rng: np.random.Generator):
+        work, directory, total_frames, recipe_id = self.items[int(rng.integers(len(self.items)))]
+        start = int(rng.integers(0, total_frames - self.crop_frames + 1))
+        audio = {role: _read_exact(directory / f"{role}.f32.wav", start=start,
+                                   frames=self.crop_frames) for role in "MAV"}
+        mask = np.load(directory / "vocal_activity.npy", mmap_mode="r")
+        event = np.asarray(mask[start:start + self.crop_frames], dtype="float32")
+        if len(event) != self.crop_frames:
+            raise ValueError(f"short activity mask for {work}")
+        return audio["M"], audio["A"], audio["V"], _torch().from_numpy(event.copy()), {
+            "work_id": work, "recipe_id": recipe_id, "start_frame": start
+        }
 
 
-def export_bridge(model, cfg, run):
-    """Prove a HTDemucs checkpoint round-trips through demucs' inference (== audio-separator's
-    demucs_separator math): serialize -> save .th -> reload -> apply_model on a probe."""
+def _manifest_train_works(manifest_path: Path, splits_path: Path, train_splits: set[str]) -> list[str]:
+    split_doc = json.loads(splits_path.read_text())
+    works = []
+    for line in manifest_path.read_text().splitlines():
+        if not line.strip():
+            continue
+        row = json.loads(line)
+        declared = split_doc["group_split"].get(row["group_id"])
+        if declared != row["split"]:
+            raise ValueError(f"manifest/split disagreement for {row['work_id']}")
+        if declared in train_splits:
+            works.append(row["work_id"])
+    return sorted(set(works))
+
+
+def _load_pretrained(cfg: dict, device: str):
+    torch = _torch()
+    from demucs.pretrained import get_model
+
+    checkpoint = cfg["base_checkpoint"]
+    signature = checkpoint["signature"]
+    model = get_model(signature)
+    if hasattr(model, "models"):
+        raise ValueError(f"{signature} resolved to a model bag; an individual model is required")
+    if list(model.sources) != list(cfg["sources"]):
+        raise ValueError(f"pretrained source topology mismatch: {model.sources} != {cfg['sources']}")
+    candidates = list((Path.home() / ".cache/torch/hub/checkpoints").glob(f"{signature}-*.th"))
+    if len(candidates) != 1:
+        raise ValueError(f"cannot uniquely identify cached checkpoint for {signature}: {candidates}")
+    actual = _sha_file(candidates[0])
+    expected = "sha256:" + checkpoint["sha256"].removeprefix("sha256:")
+    if actual != expected:
+        raise ValueError(f"pretrained checkpoint hash mismatch: {actual} != {expected}")
+    model.to(device)
+    if not all(torch.isfinite(p).all() for p in model.parameters()):
+        raise ValueError("pretrained model contains non-finite parameters")
+    return model, {"signature": signature, "path": str(candidates[0]), "sha256": actual}
+
+
+def _parameter_groups(model, schedule: list[dict]):
+    """Freeze lower encoder initially and assign the preregistered low learning rates."""
+    first = schedule[0]
+    groups = {"lower_encoder": [], "upper_decoder": [], "transformer_decoder": []}
+    for name, parameter in model.named_parameters():
+        lower = False
+        if name.startswith("encoder."):
+            fields = name.split(".")
+            lower = len(fields) > 1 and fields[1].isdigit() and int(fields[1]) < 3
+        if lower:
+            parameter.requires_grad_(False)
+            groups["lower_encoder"].append(parameter)
+        elif name.startswith("decoder."):
+            groups["upper_decoder"].append(parameter)
+        else:
+            groups["transformer_decoder"].append(parameter)
+    return [
+        {"params": groups["lower_encoder"], "lr": float(first["lower_encoder_lr"]),
+         "group_name": "lower_encoder"},
+        {"params": groups["upper_decoder"], "lr": float(first["upper_decoder_lr"]),
+         "group_name": "upper_decoder"},
+        {"params": groups["transformer_decoder"], "lr": float(first["transformer_decoder_lr"]),
+         "group_name": "transformer_decoder"},
+    ]
+
+
+def _set_learning_rates(model, optimizer, cfg: dict, step: int) -> None:
+    schedule = cfg["optim"]["schedule"]
+    second_start, end = schedule[1]["steps"]
+    if step < second_start:
+        return
+    for parameter in model.parameters():
+        parameter.requires_grad_(True)
+    initial = float(schedule[1]["full_network_lr"])
+    progress = min(1.0, max(0.0, (step - second_start) / max(1, end - second_start)))
+    lr = initial * 0.5 * (1.0 + math.cos(math.pi * progress))
+    for group in optimizer.param_groups:
+        group["lr"] = lr
+
+
+def _loss_config(cfg: dict) -> ClassicalLossConfig:
+    weights = cfg["loss"]
+    return ClassicalLossConfig(
+        waveform_l1=float(weights["waveform_l1"]),
+        complex_stft=float(weights["complex_stft"]),
+        mixture_consistency=float(weights["mixture_consistency"]),
+        no_vocal_false_positive=float(weights["no_vocal_false_positive"]),
+        vocal_only_false_negative=float(weights["vocal_only_false_negative"]),
+        source_coordinate=float(weights["source_coordinate_alpha_beta_R"]),
+        stereo_coherence=float(weights["stereo_coherence"]),
+        event_weighted=float(weights["exact_event_weighting"]),
+    )
+
+
+def _separate_controls(model, mixture, accompaniment, vocals, vocal_index: int):
+    torch = _torch()
+    outputs = model(torch.cat((mixture, accompaniment, vocals), dim=0))
+    batch = mixture.shape[0]
+    vocal_estimates = outputs[:, vocal_index]
+    mix_v = vocal_estimates[:batch]
+    a_v = vocal_estimates[batch:2 * batch]
+    v_v = vocal_estimates[2 * batch:]
+    return {
+        "A_hat": mixture - mix_v,
+        "V_hat": mix_v,
+        "A_only_A_hat": accompaniment - a_v,
+        "A_only_V_hat": a_v,
+        "V_only_A_hat": vocals - v_v,
+        "V_only_V_hat": v_v,
+    }
+
+
+def _export_and_parity(model, run_dir: Path, cfg: dict, *, label: str) -> dict:
+    torch = _torch()
     from demucs import states
+    from demucs.apply import apply_model
     from omegaconf import OmegaConf
-    th = f"{run}/htdemucs_export.th"
-    pkg = states.serialize_model(model, OmegaConf.create({"sources": cfg["sources"], "samplerate": SR}), half=False)
-    torch.save(pkg, th)
-    loaded = states.load_model(th).to(DEV).eval()
-    probe = torch.randn(1, 2, SR).to(DEV)
+
+    destination = run_dir / f"model-{label}.th"
+    if destination.exists():
+        raise RuntimeError(f"refusing to rewrite immutable export: {destination}")
+    package = states.serialize_model(model, OmegaConf.create({"audio_extract": cfg}), half=False)
+    torch.save(package, destination)
+    reloaded = states.load_model(destination, strict=True).to(next(model.parameters()).device).eval()
+    generator = torch.Generator(device="cpu").manual_seed(8128)
+    probe = torch.randn(1, 2, SR, generator=generator).to(next(model.parameters()).device)
+    model.eval()
     with torch.no_grad():
-        y = apply_model(loaded, probe, device=DEV, split=False)
-    ok = bool(torch.isfinite(y).all() and y.shape[1] == len(cfg["sources"]))
-    return dict(export_path=f"research6:{th}", export_sha256=sha_file(th), roundtrip_infer_ok=ok,
-                note="reloaded via demucs.states.load_model + apply_model (audio-separator demucs_separator uses the same demucs inference); audio-separator model-registry packaging is the final step")
+        original = apply_model(model, probe, shifts=0, split=False)
+        restored = apply_model(reloaded, probe, shifts=0, split=False)
+    difference = float((original - restored).abs().max().cpu())
+    if difference != 0.0 or not torch.equal(original, restored):
+        raise RuntimeError(f"export/reload parity failed: max_abs={difference}")
+    return {"path": str(destination), "sha256": _sha_file(destination),
+            "zero_step_or_checkpoint_parity": True, "max_abs_difference": difference,
+            "shifts": 0, "split": False}
 
 
-def main():
-    ap = argparse.ArgumentParser("audio-extract train classical")
-    ap.add_argument("--manifest", required=True)
-    ap.add_argument("--split-manifest", required=True)
-    ap.add_argument("--config", required=True)
-    ap.add_argument("--run-dir", required=True)
-    ap.add_argument("--steps", type=int, default=None)
-    a = ap.parse_args()
-    os.makedirs(a.run_dir, exist_ok=True)
-    cfg = yaml.safe_load(open(a.config))
-    splits = json.load(open(a.split_manifest))
-    manifest = [json.loads(l) for l in open(a.manifest) if l.strip()]
-    torch.manual_seed(0); np.random.seed(0); rng = np.random.default_rng(0)
+def _source_metrics(candidate, accompaniment, vocals) -> dict:
+    from .judge_labels import local_source_coordinate_labels
+    from .judge_train import label_targets
 
-    train_splits = set(cfg["data"].get("train_splits", ["train"]))
-    train_works = sorted({r["work_id"] for r in manifest
-                          if splits["group_split"].get(r["group_id"]) in train_splits
-                          and os.path.exists(f"{TRAIN_DATA}/{r['work_id']}/M.flac")})
-    print(f"[data] train works ({len(train_works)}): {train_works}", flush=True)
-    eval_works = ["bologna_verdi", "bologna_puccini", "bologna_donizetti", "aalto_mozart_dry"]
+    y = candidate.T.detach().cpu().numpy()
+    a = accompaniment.T.detach().cpu().numpy()
+    v = vocals.T.detach().cpu().numpy()
+    if y.shape != a.shape or y.shape != v.shape:
+        raise ValueError(f"exact evaluation grid mismatch: {y.shape}, {a.shape}, {v.shape}")
+    labels = local_source_coordinate_labels(
+        y, a, v, tile_frames=round(0.5 * SR), hop_frames=round(0.25 * SR)
+    )
+    return label_targets(labels)
 
-    m = cfg["model"]; o = cfg["optim"]
-    crop = int(o.get("crop_s", 6) * SR)
-    model = HTDemucs(sources=cfg["sources"], audio_channels=cfg["audio_channels"], samplerate=SR,
-                     channels=m["channels"], depth=m["depth"]).to(DEV)
-    crop = model.valid_length(crop)
-    opt = torch.optim.Adam(model.parameters(), lr=o["lr"])
-    ds = ClassicalDS(train_works, crop)
-    W = cfg["loss"]
-    steps = a.steps or o.get("steps_first_run", 1500)
-    ckpt = f"{a.run_dir}/checkpoint.pt"
-    if os.path.exists(ckpt):
-        s = torch.load(ckpt, map_location=DEV); model.load_state_dict(s["model"]); opt.load_state_dict(s["optimizer"]); start = s["step"]
-        print(f"[resume] from step {start}", flush=True)
-    else:
-        start = 0
-    commit = subprocess.run(["git", "-C", "/home/mickg/audio-extract", "rev-parse", "--short", "HEAD"], capture_output=True, text=True).stdout.strip()
 
-    batch = o.get("batch", 4)
-    hist = []
-    evals = []
-    t0 = time.time()
-    for step in range(start, steps):
-        Ms, As, Vs, VMs = [], [], [], []
-        for _ in range(batch):
-            M, A, V, vm = ds.sample(rng)
-            Ms.append(M); As.append(A); Vs.append(V); VMs.append(vm)
-        M = torch.stack(Ms).to(DEV); A = torch.stack(As).to(DEV); V = torch.stack(Vs).to(DEV); vm = torch.stack(VMs).to(DEV)
-        out = model(M)
-        loss, parts = loss_family(out, M, A, V, vm, W)
-        if not torch.isfinite(loss):
-            json.dump({"ABORT": "non-finite loss", "step": step, "parts": parts}, open(f"{a.run_dir}/ABORT.json", "w"))
-            raise SystemExit(f"ABORT non-finite loss at step {step}")
-        opt.zero_grad(); loss.backward()
-        torch.nn.utils.clip_grad_norm_(model.parameters(), 5.0)
-        opt.step()
-        hist.append(float(loss))
-        if step % 50 == 0 or step == steps - 1:
-            print(f"step {step} loss={loss:.4f} " + " ".join(f"{k}={v:.3f}" for k, v in parts.items()), flush=True)
-        if step > 0 and (step % max(1, steps // 3) == 0 or step == steps - 1):
-            torch.save({"model": model.state_dict(), "optimizer": opt.state_dict(), "step": step + 1, "cfg": cfg}, ckpt)
-            model.eval()
-            ev = {"step": step, "works": {w: eval_work(model, w, a.run_dir) for w in eval_works}}
-            evals.append(ev)
-            model.train()
-            for w, r in ev["works"].items():
-                s = r["student"]; b = r.get("residual_mdx23c", {})
-                print(f"  [eval {w}] student rv_db={s['retained_voice_db_p90']} hole_p90={s['event_hole_db_p90']} "
-                      f"sisdr={s['si_sdr_db']} | baseline(mdx) rv_db={b.get('retained_voice_db_p90')} hole_p90={b.get('event_hole_db_p90')} sisdr={b.get('si_sdr_db')}", flush=True)
+def _evaluate(model, truth_root: Path, run_dir: Path, step: int, vocal_index: int,
+              device: str) -> dict:
+    torch = _torch()
+    from demucs.apply import apply_model
 
-    export = export_bridge(model, cfg, a.run_dir)
-    # convergence signal: mean of first vs last 100 steps
-    conv = dict(first100=round(float(np.mean(hist[:100])), 4), last100=round(float(np.mean(hist[-100:])), 4),
-                decreasing=bool(np.mean(hist[-100:]) < np.mean(hist[:100])), all_finite=bool(all(np.isfinite(hist))))
-    report = dict(cli="audio-extract train classical", arch="HTDemucs", source_commit=commit, device=DEV,
-                  resolved_config=cfg, steps=steps, batch=batch, crop_frames=crop, n_params=sum(p.numel() for p in model.parameters()),
-                  train_works=train_works, train_work_M_sha={w: sha_file(f"{TRAIN_DATA}/{w}/M.flac") for w in train_works},
-                  splits_used={s: [g for g, sp in splits["group_split"].items() if sp == s] for s in train_splits},
-                  loss_family=list(W.keys()), convergence=conv, evals=evals,
-                  checkpoint={"path": f"research6:{ckpt}", "sha256": sha_file(ckpt), "resumable": True},
-                  export_bridge=export, train_time_s=round(time.time() - t0, 1),
-                  repro_cmd=f"./run.sh python -m audio_extract.train_classical --manifest {a.manifest} --split-manifest {a.split_manifest} --config {a.config} --run-dir {a.run_dir}",
-                  do_not_optimize_shadow_judge=True)
-    json.dump(report, open(f"{a.run_dir}/run_report.json", "w"), indent=1)
-    print("RUN_REPORT", json.dumps({"convergence": conv, "export_ok": export["roundtrip_infer_ok"]}))
-    print("TRAIN_CLASSICAL_DONE")
+    step_dir = run_dir / "evaluation" / f"step-{step:06d}"
+    if step_dir.exists():
+        raise RuntimeError(f"refusing to rewrite immutable evaluation: {step_dir}")
+    step_dir.mkdir(parents=True)
+    result = {"step": step, "works": {}}
+    model.eval()
+    for work in EVAL_WORKS:
+        directory = truth_root / work
+        mixture = _read_exact(directory / "mix_with_voice.wav")
+        accompaniment = _read_exact(directory / "orchestra_only.wav")
+        vocals = _read_exact(directory / "voice_ref.wav")
+        if mixture.shape != accompaniment.shape or mixture.shape != vocals.shape:
+            raise ValueError(f"truth grid mismatch for {work}")
+        with torch.no_grad():
+            output = apply_model(model, mixture.unsqueeze(0), device=device, shifts=0,
+                                 split=True, overlap=0.25)[0].cpu()
+        if output.shape[-1] != mixture.shape[-1]:
+            raise ValueError(f"inference frame mismatch for {work}: {output.shape}, {mixture.shape}")
+        vocal_hat = output[vocal_index]
+        accompaniment_hat = mixture - vocal_hat
+        work_path = step_dir / work
+        work_path.mkdir()
+        sf.write(work_path / "accompaniment.f32.wav", accompaniment_hat.T.numpy(), SR,
+                 subtype="FLOAT")
+        sf.write(work_path / "removed-vocal.f32.wav", vocal_hat.T.numpy(), SR, subtype="FLOAT")
+        result["works"][work] = {
+            "frames": int(mixture.shape[-1]),
+            "metrics": _source_metrics(accompaniment_hat, accompaniment, vocals),
+            "accompaniment_pcm_sha256": hashlib.sha256(
+                np.ascontiguousarray(accompaniment_hat.T.numpy(), dtype="float32").tobytes()
+            ).hexdigest(),
+        }
+    (step_dir / "report.json").write_text(json.dumps(result, indent=2, sort_keys=True) + "\n")
+    return result
+
+
+def run_training(args: argparse.Namespace) -> dict:
+    torch = _torch()
+    manifest = Path(args.manifest).resolve()
+    splits = Path(args.split_manifest).resolve()
+    config_path = Path(args.config).resolve()
+    run_dir = Path(args.run_dir).resolve()
+    cfg = yaml.safe_load(config_path.read_text())
+    requested_steps = int(args.steps or cfg["optim"]["steps_first_run"])
+    if requested_steps <= 0:
+        raise ValueError("steps must be positive")
+    run_dir.mkdir(parents=True, exist_ok=True)
+    resolved_path = run_dir / "resolved-config.yaml"
+    if resolved_path.exists() and yaml.safe_load(resolved_path.read_text()) != cfg:
+        raise RuntimeError("run directory belongs to a different resolved config")
+    if not resolved_path.exists():
+        resolved_path.write_text(yaml.safe_dump(cfg, sort_keys=True))
+
+    device = args.device or ("cuda" if torch.cuda.is_available() else "cpu")
+    torch.manual_seed(int(args.seed)); np.random.seed(int(args.seed))
+    rng = np.random.default_rng(int(args.seed))
+    train_works = _manifest_train_works(manifest, splits, set(cfg["data"]["train_splits"]))
+    model, base = _load_pretrained(cfg, device)
+    requested_crop = round(float(cfg["optim"]["crop_s"]) * SR)
+    crop_frames = int(model.valid_length(requested_crop))
+    dataset = ClassicalDataset(Path(cfg["data"]["materialized_root"]), train_works, crop_frames)
+    optimizer = torch.optim.AdamW(_parameter_groups(model, cfg["optim"]["schedule"]))
+    loss_cfg = _loss_config(cfg)
+    vocal_index = int(cfg["vocal_source_index"])
+    eval_steps = {int(s) for s in cfg["optim"]["evaluation_steps"] if int(s) <= requested_steps}
+
+    zero_export = _export_and_parity(model, run_dir, cfg, label="step-000000")
+    evaluations = []
+    if 0 in eval_steps:
+        evaluations.append(_evaluate(model, Path(args.truth_root), run_dir, 0, vocal_index, device))
+
+    history = []
+    sampled = []
+    started = time.time()
+    for step in range(requested_steps):
+        _set_learning_rates(model, optimizer, cfg, step)
+        samples = [dataset.sample(rng) for _ in range(int(cfg["optim"]["batch"]))]
+        mixture = torch.stack([s[0] for s in samples]).to(device)
+        accompaniment = torch.stack([s[1] for s in samples]).to(device)
+        vocals = torch.stack([s[2] for s in samples]).to(device)
+        activity = torch.stack([s[3] for s in samples]).to(device).unsqueeze(1)
+        event_weights = 1.0 + 2.0 * activity
+        sampled.extend(s[4] for s in samples)
+
+        model.train()
+        estimates = _separate_controls(model, mixture, accompaniment, vocals, vocal_index)
+        loss, components = classical_separation_loss(
+            estimates["A_hat"], estimates["V_hat"], mixture, accompaniment, vocals,
+            no_vocal_accompaniment_estimate=estimates["A_only_A_hat"],
+            no_vocal_vocal_estimate=estimates["A_only_V_hat"],
+            vocal_only_accompaniment_estimate=estimates["V_only_A_hat"],
+            vocal_only_vocal_estimate=estimates["V_only_V_hat"],
+            event_weights=event_weights,
+            config=loss_cfg,
+        )
+        optimizer.zero_grad(set_to_none=True)
+        loss.backward()
+        gradient = torch.nn.utils.clip_grad_norm_(
+            model.parameters(), float(cfg["optim"]["gradient_clip"])
+        )
+        if not torch.isfinite(gradient):
+            raise RuntimeError(f"non-finite gradient at step {step + 1}")
+        optimizer.step()
+        values = {name: (None if value is None else float(value.detach().cpu()))
+                  for name, value in components.items()}
+        values.update({"step": step + 1, "total": float(loss.detach().cpu()),
+                       "gradient_norm": float(gradient.detach().cpu()),
+                       "learning_rates": {g["group_name"]: g["lr"] for g in optimizer.param_groups}})
+        history.append(values)
+        if (step + 1) % 20 == 0 or step == 0:
+            print(json.dumps(values), file=sys.stderr, flush=True)
+
+        completed = step + 1
+        if completed in eval_steps:
+            checkpoint = run_dir / f"checkpoint-step-{completed:06d}.pt"
+            torch.save({"model": model.state_dict(), "optimizer": optimizer.state_dict(),
+                        "step": completed, "config": cfg, "base_checkpoint": base}, checkpoint)
+            evaluations.append(_evaluate(model, Path(args.truth_root), run_dir, completed,
+                                         vocal_index, device))
+
+    final_export = _export_and_parity(model, run_dir, cfg, label=f"step-{requested_steps:06d}")
+    commit = subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True, text=True,
+                            check=False).stdout.strip()
+    report = {
+        "schema": "audio-extract/classical-training-run/v1",
+        "status": "pilot_complete",
+        "source_commit": commit,
+        "base_checkpoint": base,
+        "steps": requested_steps,
+        "device": device,
+        "train_works": [item[0] for item in dataset.items],
+        "materialization_recipes": {item[0]: item[3] for item in dataset.items},
+        "manifest_sha256": _sha_file(manifest),
+        "split_manifest_sha256": _sha_file(splits),
+        "config_sha256": _sha_file(config_path),
+        "zero_step_export": zero_export,
+        "final_export": final_export,
+        "evaluation_steps": [e["step"] for e in evaluations],
+        "all_losses_finite": all(math.isfinite(h["total"]) for h in history),
+        "first_loss": history[0]["total"],
+        "last_loss": history[-1]["total"],
+        "elapsed_s": round(time.time() - started, 3),
+        "sample_count": len(sampled),
+        "repro_command": " ".join(sys.argv),
+    }
+    (run_dir / "training-log.jsonl").write_text(
+        "".join(json.dumps(row, sort_keys=True) + "\n" for row in history)
+    )
+    (run_dir / "sample-log.jsonl").write_text(
+        "".join(json.dumps(row, sort_keys=True) + "\n" for row in sampled)
+    )
+    (run_dir / "run-report.json").write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")
+    return report
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser("audio-extract train classical")
+    parser.add_argument("--manifest", required=True)
+    parser.add_argument("--split-manifest", required=True)
+    parser.add_argument("--config", required=True)
+    parser.add_argument("--run-dir", required=True)
+    parser.add_argument("--truth-root", default="/home/mickg/truth_pairs")
+    parser.add_argument("--steps", type=int)
+    parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument("--device")
+    return parser
+
+
+def main(argv: list[str] | None = None) -> int:
+    report = run_training(build_parser().parse_args(argv))
+    print(json.dumps(report, sort_keys=True))
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
