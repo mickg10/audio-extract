@@ -714,6 +714,7 @@ def run_work_resolution(
             frequency_bin_ranges=cell_report["frequency_bin_ranges"],
             n_fft=spectral_config.n_fft,
             hop_length=spectral_config.hop_length,
+            plan=plan,
         )
         methods[name] = evidence
 

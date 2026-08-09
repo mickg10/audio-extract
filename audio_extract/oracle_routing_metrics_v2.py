@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import math
 from collections.abc import Sequence
+from itertools import pairwise
 from typing import Any
 
 import numpy as np
@@ -196,6 +197,8 @@ def hall_tail_metric(
         raise ValueError("insufficient active accompaniment for hall-tail metric")
     low = float(np.percentile(nonzero, 40))
     high = float(np.percentile(nonzero, 75))
+    if high <= low * 1.05:
+        raise ValueError("insufficient measurable post-phrase decay-tail evidence")
     active_floor = max(float(np.percentile(nonzero, 5)), _EPS)
     mask = np.zeros_like(reference, dtype=bool)
     for index in range(len(reference)):
@@ -206,11 +209,7 @@ def hall_tail_metric(
             and float(prior.max()) >= high
         )
     if np.count_nonzero(mask) < 2:
-        # Fail closed to a reproducible low-active fallback rather than silently
-        # reporting a clean zero.
-        mask = (reference >= active_floor) & (reference <= low)
-    if not np.any(mask):
-        raise ValueError("no hall-tail/low-active frames")
+        raise ValueError("insufficient measurable post-phrase decay-tail evidence")
     deviation = np.abs(10.0 * np.log10(
         (estimate[mask] + _EPS) / (reference[mask] + _EPS)
     ))
@@ -307,6 +306,7 @@ def route_boundary_metrics(
     frequency_bin_ranges: Sequence[Sequence[int]],
     n_fft: int,
     hop_length: int,
+    plan: np.ndarray,
 ) -> dict[str, float | int]:
     """Measure time jumps and residual-spectrum discontinuities at route borders."""
 
@@ -316,25 +316,52 @@ def route_boundary_metrics(
     accompaniment = _audio(accompaniment, "accompaniment")
     if candidate.shape != accompaniment.shape:
         raise ValueError("route-boundary grids differ")
-    derivative = np.max(np.abs(np.diff(candidate, axis=0)), axis=1)
-    derivative_reference = max(_percentile(derivative, 99), _EPS)
-    boundaries = sorted({
-        min(len(candidate) - 1, int(stop) * int(hop_length))
-        for _, stop in time_frame_ranges[:-1]
-        if 0 < int(stop) * int(hop_length) < len(candidate)
-    })
-    # STFT cell boundaries identify a hop-sized sample neighborhood rather than
-    # one exact waveform sample (centred windows overlap both sides). Measure the
-    # worst derivative in that neighborhood so a discontinuity between adjacent
-    # frame centres cannot hide in the integer frame-to-sample quantization.
-    jumps = np.asarray([
-        derivative[
-            max(0, index - int(hop_length)):
-            min(len(derivative), index + int(hop_length))
-        ].max(initial=0.0)
-        for index in boundaries
-    ], dtype=np.float64)
-    time_ratio = float(jumps.max(initial=0.0) / derivative_reference)
+    times = tuple((int(start), int(stop)) for start, stop in time_frame_ranges)
+    bands = tuple((int(start), int(stop)) for start, stop in frequency_bin_ranges)
+    route = np.asarray(plan, dtype=np.float64)
+    if route.ndim == 2:
+        route = route[..., None]
+    if route.ndim != 3 or route.shape[:2] != (len(times), len(bands)):
+        raise ValueError("route plan does not match the complete partition grid")
+    if (
+        not times or not bands or times[0][0] != 0 or bands[0][0] != 0
+        or any(left[1] != right[0] for left, right in pairwise(times))
+        or any(left[1] != right[0] for left, right in pairwise(bands))
+        or bands[-1][1] != n_fft // 2 + 1
+    ):
+        raise ValueError("route partitions are not contiguous and complete")
+    if not np.all(np.isfinite(route)):
+        raise ValueError("route plan contains non-finite values")
+
+    active_time = [
+        index for index in range(1, len(times))
+        if np.max(np.abs(route[index] - route[index - 1]), initial=0.0) > 1e-12
+    ]
+    active_frequency = [
+        index for index in range(1, len(bands))
+        if np.max(
+            np.abs(route[:, index] - route[:, index - 1]), initial=0.0
+        ) > 1e-12
+    ]
+    boundaries = [
+        min(len(candidate) - 1, times[index - 1][1] * int(hop_length))
+        for index in active_time
+        if 0 < times[index - 1][1] * int(hop_length) < len(candidate)
+    ]
+    error_derivative = np.max(
+        np.abs(np.diff(candidate - accompaniment, axis=0)), axis=1
+    )
+    radius = max(1, int(n_fft) // 2)
+    guard = np.zeros(len(error_derivative), dtype=bool)
+    influence = []
+    for boundary in boundaries:
+        start = max(0, boundary - radius)
+        stop = min(len(error_derivative), boundary + radius)
+        guard[start:stop] = True
+        influence.append(_percentile(error_derivative[start:stop], 99))
+    control = error_derivative[~guard]
+    derivative_reference = max(_percentile(control, 99), _EPS)
+    time_ratio = float(max(influence, default=0.0) / derivative_reference)
 
     def spectrum(value: np.ndarray) -> np.ndarray:
         return np.stack([
@@ -347,23 +374,32 @@ def route_boundary_metrics(
         ])
 
     residual = spectrum(candidate) - spectrum(accompaniment)
-    frequency_boundaries = sorted({
-        int(stop) for _, stop in frequency_bin_ranges[:-1]
-        if 0 < int(stop) < residual.shape[1]
-    })
+    frequency_boundaries = [
+        bands[index][0] for index in active_frequency
+        if 0 < bands[index][0] < residual.shape[1]
+    ]
+    spectral_difference = np.abs(np.diff(residual, axis=1))
+    excluded = {boundary - 1 for boundary in frequency_boundaries}
     ratios = []
     for boundary in frequency_boundaries:
         jump = np.abs(residual[:, boundary] - residual[:, boundary - 1])
-        lo = max(1, boundary - 4)
-        hi = min(residual.shape[1], boundary + 4)
-        local_differences = np.abs(np.diff(residual[:, lo:hi], axis=1))
-        reference = max(_percentile(local_differences, 95), _EPS)
+        indices = [
+            index for index in range(
+                max(0, boundary - 4),
+                min(spectral_difference.shape[1], boundary + 4),
+            )
+            if index not in excluded
+        ]
+        local = spectral_difference[:, indices] if indices else np.empty(0)
+        reference = max(_percentile(local, 95), _EPS)
         ratios.append(float(_percentile(jump, 99) / reference))
     frequency_ratio = max(ratios, default=0.0)
     return {
         "time_boundary_count": len(boundaries),
+        "time_partition_boundary_count": max(0, len(times) - 1),
         "max_time_boundary_jump_over_p99_derivative": time_ratio,
         "frequency_boundary_count": len(frequency_boundaries),
+        "frequency_partition_boundary_count": max(0, len(bands) - 1),
         "max_frequency_ringing_ratio": float(frequency_ratio),
     }
 
