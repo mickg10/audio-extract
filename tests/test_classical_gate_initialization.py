@@ -5,10 +5,14 @@ torch = pytest.importorskip("torch")
 from audio_extract.classical_gate import SmoothGateConfig, SmoothResidualGate
 from audio_extract.classical_gate_initialization import prepare_gate_for_teacher_
 from audio_extract.classical_gate_training import (
+    build_teacher_geometry,
     gate_teacher_logits,
     pairwise_o2_targets,
     pairwise_o2_teacher_loss,
 )
+
+
+BASIS = ("parent", "aggressive")
 
 
 def _config():
@@ -29,6 +33,20 @@ def _audio(frames=4096):
     return mixture, parent, aggressive
 
 
+def _targets(gate, mixture, parent, aggressive, labels):
+    _, details = gate_teacher_logits(gate, mixture, parent, aggressive)
+    geometry = build_teacher_geometry(
+        gate.config,
+        time_ranges=details["time_ranges"],
+        frequency_ranges=details["frequency_ranges"],
+    )
+    return pairwise_o2_targets(
+        labels, torch.ones_like(labels, dtype=torch.bool),
+        geometry=geometry, basis_ids=BASIS,
+        parent_index=0, aggressive_index=1,
+    )
+
+
 def test_unprepared_all_zero_network_is_spatially_gradient_blocked():
     gate = SmoothResidualGate(_config())
     mixture, parent, aggressive = _audio()
@@ -36,14 +54,14 @@ def test_unprepared_all_zero_network_is_spatially_gradient_blocked():
     labels = torch.ones(
         logits.shape[0], logits.shape[2], logits.shape[3], dtype=torch.int64
     )
-    targets = pairwise_o2_targets(labels, parent_index=0, aggressive_index=1)
+    targets = _targets(gate, mixture, parent, aggressive, labels)
     loss, _ = pairwise_o2_teacher_loss(
         gate, mixture, parent, aggressive, targets
     )
     loss.backward()
     gradients = [parameter.grad for parameter in gate.network.parameters()]
     # Only the final bias can move when both convolutions and hidden activation
-    # are exactly zero.  This regression fixture proves why preparation is needed.
+    # are exactly zero. This proves why explicit preparation is required.
     nonzero = [
         gradient is not None and float(gradient.abs().sum()) > 0
         for gradient in gradients
@@ -66,7 +84,7 @@ def test_prepared_network_has_first_backward_gradient_for_every_parameter():
         logits.shape[0], logits.shape[2], logits.shape[3], dtype=torch.int64
     )
     labels[:, ::2] = 1
-    targets = pairwise_o2_targets(labels, parent_index=0, aggressive_index=1)
+    targets = _targets(gate, mixture, parent, aggressive, labels)
     loss, _ = pairwise_o2_teacher_loss(
         gate, mixture, parent, aggressive, targets
     )
