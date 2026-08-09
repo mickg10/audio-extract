@@ -1,33 +1,37 @@
-schema: audio-extract/train/classical-student-v1
+# audio-extract train classical — §2 first CONTINUATION run (NOT from-scratch).
+# Base = RELEASED vocal-specialized HTDemucs 04573f0d, loaded via demucs (arch NOT reconstructed),
+# FULL fine-tune (§13: full FT is the first pilot, not LoRA/zero-init). Product (§2):
+# V_hat = outputs["vocals"];  A_hat = mixture - V_hat  (other 3 stems ignored).
+schema: classical-student-continuation/v1
 base_arch: HTDemucs
-base_arch_fact: trainable torch nn.Module (verified fwd+bwd, no dora); exports via demucs.states + audio_separator.demucs_separator
-sources: [accompaniment, vocals]
-audio_channels: 2
-samplerate: 44100
-model:
-  channels: 48
-  depth: 4
-data:
-  manifest: datasets/classical-v1.jsonl
-  splits: datasets/classical-v1-splits.json
-  train_splits: [train]          # cantoria(14)+freidi(3); respects the frozen leak-audited splits
-  holdout: test-v1 (Bologna/Aalto — CONTAMINATED legacy; held out from THIS run, not for final acceptance)
+base_sig: 04573f0d              # vocal-specialized HTDemucs-ft; 2nd baseline 955717e8
+finetune: full
+product:
+  V_hat: outputs["vocals"]
+  A_hat: mixture - V_hat
+curriculum_phase: A            # §7 Phase A: preserve broad boundary; Cantolopera/broad-replay deferred to B/C
+sampler:                       # §7 hierarchical Gate-2 Phase-A proportions
+  exact_opera_MAV: 0.60        # orchestra-weighted (donor + freidi + cantoria)
+  no_vocal_hard_negative: 0.25 # M=A, V=0  (teach: orchestra is not solo voice)
+  vocal_only_control: 0.15     # M=V, A=0
 optim:
-  name: adam
   lr: 0.0003
-  steps_first_run: 1500          # convergence + first held-out eval; full run is multi-hundred-k
-  batch: 4
+  batch: 2
   crop_s: 6
-loss:                            # asymmetric family (orchestral theft expensive); NOT one SDR objective
-  wav: 1.0                       # waveform L1 per source, event-weighted
-  stft: 0.5                      # multi-res complex STFT (magnitude + real/imag => phase)
-  mix: 0.1                       # mixture-consistency A_hat+V_hat=M
-  theft: 0.5                     # no-vocal FALSE-POSITIVE: voice-in-accompaniment (beta^2) — makes theft expensive
-  fn: 0.3                        # vocal-only FALSE-NEGATIVE: voice missing where V active
-  alpha: 0.2                     # local source-coordinate alpha (accompaniment scale ->1)
-  stereo: 0.2                    # stereo/side coherence
-  event_vocal: 2.0               # event-tail weight on active-vocal frames (exact activity mask)
-  event_tutti: 1.5               # event-tail weight on extreme-tutti frames
-export:
-  to: demucs.states .th -> demucs.apply_model (== audio-separator demucs_separator inference); registry packaging is final step
-note: Do NOT optimize the SHADOW judge (gpt56 H4). Stage-1 = dry exact linear stems only.
+  steps_first_run: 2000
+loss:                          # §10 exact family + §11 source-coordinate penalties + controls + §13.2 anti-forgetting
+  vc: 1.0                      # complex-MRSTFT(V_hat, V)
+  ac: 1.0                      # complex-MRSTFT(A_hat, A)
+  aw: 1.0                      # event-weighted |A_hat - A|_1
+  alpha: 0.2                   # §11 |alpha-1|^2  (orchestral transfer gain)
+  beta: 0.5                    # §11 |beta|^2     (retained solo voice)
+  beta_aud: 0.2                # §11 ||beta V||^2 / ||alpha A||^2 (audibility)
+  R: 0.3                       # §11 ||R||^2 / ||A||^2 (unexplained artifact)
+  stereo: 0.2                  # side-channel consistency
+  no_vocal: 2.0                # §10 no-vocal control D(V_hat, 0), high weight
+  parent_reg: 30.0             # §13.2 parent-weight anchor (mean squared deviation from 04573f0d)
+gate:                          # §2 champion/challenger
+  steps: [0, 100, 500, 2000]
+  held_out: [bologna_verdi, bologna_puccini, bologna_donizetti, aalto_mozart_dry, aalto_mozart_hall]
+  baselines: [untouched_04573f0d, untouched_955717e8, mdx23c_residual, median_ensemble]
+  parity: step0 == untouched_04573f0d

@@ -1,0 +1,1010 @@
+{
+ "0": {
+  "bologna_verdi": {
+   "parity": true,
+   "student": {
+    "retained_voice_db_p90": -7.12,
+    "retained_voice_coef_p90": 1.0,
+    "event_hole_db_p90": 2.39,
+    "event_hole_db_max": 6.71,
+    "event_hole_cvar90": 4.07,
+    "alpha_error_p90": 0.24,
+    "si_sdr_db": 11.36
+   },
+   "baselines": {
+    "untouched_04573f0d": {
+     "retained_voice_db_p90": -7.37,
+     "retained_voice_coef_p90": 1.0,
+     "event_hole_db_p90": 2.02,
+     "event_hole_db_max": 6.54,
+     "event_hole_cvar90": 3.73,
+     "alpha_error_p90": 0.207,
+     "si_sdr_db": 11.07
+    },
+    "untouched_955717e8": {
+     "retained_voice_db_p90": -11.38,
+     "retained_voice_coef_p90": 0.998,
+     "event_hole_db_p90": 3.87,
+     "event_hole_db_max": 14.3,
+     "event_hole_cvar90": 6.14,
+     "alpha_error_p90": 0.359,
+     "si_sdr_db": 12.34
+    },
+    "mdx23c_residual": {
+     "retained_voice_db_p90": -18.35,
+     "retained_voice_coef_p90": 0.636,
+     "event_hole_db_p90": 1.19,
+     "event_hole_db_max": 4.9,
+     "event_hole_cvar90": 2.47,
+     "alpha_error_p90": 0.128,
+     "si_sdr_db": 18.72
+    },
+    "median_ensemble": {
+     "retained_voice_db_p90": -21.87,
+     "retained_voice_coef_p90": 0.584,
+     "event_hole_db_p90": 0.51,
+     "event_hole_db_max": 3.4,
+     "event_hole_cvar90": 1.15,
+     "alpha_error_p90": 0.057,
+     "si_sdr_db": 21.78
+    }
+   }
+  },
+  "bologna_puccini": {
+   "parity": true,
+   "student": {
+    "retained_voice_db_p90": -16.65,
+    "retained_voice_coef_p90": 1.0,
+    "event_hole_db_p90": 2.73,
+    "event_hole_db_max": 10.76,
+    "event_hole_cvar90": 4.93,
+    "alpha_error_p90": 0.27,
+    "si_sdr_db": 12.36
+   },
+   "baselines": {
+    "untouched_04573f0d": {
+     "retained_voice_db_p90": -15.42,
+     "retained_voice_coef_p90": 1.0,
+     "event_hole_db_p90": 2.32,
+     "event_hole_db_max": 11.02,
+     "event_hole_cvar90": 4.76,
+     "alpha_error_p90": 0.234,
+     "si_sdr_db": 12.53
+    },
+    "untouched_955717e8": {
+     "retained_voice_db_p90": -20.96,
+     "retained_voice_coef_p90": 0.886,
+     "event_hole_db_p90": 4.6,
+     "event_hole_db_max": 17.11,
+     "event_hole_cvar90": 7.73,
+     "alpha_error_p90": 0.411,
+     "si_sdr_db": 9.56
+    },
+    "mdx23c_residual": {
+     "retained_voice_db_p90": -22.86,
+     "retained_voice_coef_p90": 0.87,
+     "event_hole_db_p90": 0.29,
+     "event_hole_db_max": 7.19,
+     "event_hole_cvar90": 1.56,
+     "alpha_error_p90": 0.033,
+     "si_sdr_db": 24.61
+    },
+    "median_ensemble": {
+     "retained_voice_db_p90": -26.0,
+     "retained_voice_coef_p90": 0.822,
+     "event_hole_db_p90": 0.09,
+     "event_hole_db_max": 0.53,
+     "event_hole_cvar90": 0.19,
+     "alpha_error_p90": 0.011,
+     "si_sdr_db": 25.97
+    }
+   }
+  },
+  "bologna_donizetti": {
+   "parity": true,
+   "student": {
+    "retained_voice_db_p90": -18.99,
+    "retained_voice_coef_p90": 0.386,
+    "event_hole_db_p90": 19.18,
+    "event_hole_db_max": 38.17,
+    "event_hole_cvar90": 24.3,
+    "alpha_error_p90": 0.89,
+    "si_sdr_db": 16.37
+   },
+   "baselines": {
+    "untouched_04573f0d": {
+     "retained_voice_db_p90": -18.82,
+     "retained_voice_coef_p90": 0.386,
+     "event_hole_db_p90": 18.58,
+     "event_hole_db_max": 42.63,
+     "event_hole_cvar90": 24.08,
+     "alpha_error_p90": 0.882,
+     "si_sdr_db": 16.2
+    },
+    "untouched_955717e8": {
+     "retained_voice_db_p90": -20.37,
+     "retained_voice_coef_p90": 0.356,
+     "event_hole_db_p90": 20.08,
+     "event_hole_db_max": 53.47,
+     "event_hole_cvar90": 29.12,
+     "alpha_error_p90": 0.901,
+     "si_sdr_db": 16.05
+    },
+    "mdx23c_residual": {
+     "retained_voice_db_p90": -29.81,
+     "retained_voice_coef_p90": 0.143,
+     "event_hole_db_p90": 2.54,
+     "event_hole_db_max": 10.06,
+     "event_hole_cvar90": 4.72,
+     "alpha_error_p90": 0.254,
+     "si_sdr_db": 25.66
+    },
+    "median_ensemble": {
+     "retained_voice_db_p90": -32.85,
+     "retained_voice_coef_p90": 0.121,
+     "event_hole_db_p90": 0.31,
+     "event_hole_db_max": 4.05,
+     "event_hole_cvar90": 1.73,
+     "alpha_error_p90": 0.036,
+     "si_sdr_db": 27.77
+    }
+   }
+  },
+  "aalto_mozart_dry": {
+   "parity": true,
+   "student": {
+    "retained_voice_db_p90": -21.4,
+    "retained_voice_coef_p90": 0.892,
+    "event_hole_db_p90": 2.03,
+    "event_hole_db_max": 6.8,
+    "event_hole_cvar90": 3.76,
+    "alpha_error_p90": 0.208,
+    "si_sdr_db": 11.44
+   },
+   "baselines": {
+    "untouched_04573f0d": {
+     "retained_voice_db_p90": -21.26,
+     "retained_voice_coef_p90": 0.888,
+     "event_hole_db_p90": 2.13,
+     "event_hole_db_max": 6.46,
+     "event_hole_cvar90": 3.74,
+     "alpha_error_p90": 0.217,
+     "si_sdr_db": 11.42
+    },
+    "untouched_955717e8": {
+     "retained_voice_db_p90": -22.07,
+     "retained_voice_coef_p90": 0.828,
+     "event_hole_db_p90": 2.39,
+     "event_hole_db_max": 6.78,
+     "event_hole_cvar90": 3.99,
+     "alpha_error_p90": 0.241,
+     "si_sdr_db": 11.33
+    },
+    "mdx23c_residual": {
+     "retained_voice_db_p90": -31.81,
+     "retained_voice_coef_p90": 0.655,
+     "event_hole_db_p90": 0.28,
+     "event_hole_db_max": 2.97,
+     "event_hole_cvar90": 0.71,
+     "alpha_error_p90": 0.031,
+     "si_sdr_db": 21.46
+    },
+    "median_ensemble": {
+     "retained_voice_db_p90": -34.9,
+     "retained_voice_coef_p90": 0.429,
+     "event_hole_db_p90": 0.19,
+     "event_hole_db_max": 2.94,
+     "event_hole_cvar90": 0.49,
+     "alpha_error_p90": 0.022,
+     "si_sdr_db": 23.67
+    }
+   }
+  },
+  "aalto_mozart_hall": {
+   "parity": true,
+   "student": {
+    "retained_voice_db_p90": -6.52,
+    "retained_voice_coef_p90": 0.784,
+    "event_hole_db_p90": 3.07,
+    "event_hole_db_max": 12.75,
+    "event_hole_cvar90": 5.63,
+    "alpha_error_p90": 0.298,
+    "si_sdr_db": 8.28
+   },
+   "baselines": {
+    "untouched_04573f0d": {
+     "retained_voice_db_p90": -5.23,
+     "retained_voice_coef_p90": 0.76,
+     "event_hole_db_p90": 2.83,
+     "event_hole_db_max": 12.4,
+     "event_hole_cvar90": 5.38,
+     "alpha_error_p90": 0.278,
+     "si_sdr_db": 8.13
+    },
+    "untouched_955717e8": {
+     "retained_voice_db_p90": -13.57,
+     "retained_voice_coef_p90": 0.447,
+     "event_hole_db_p90": 7.84,
+     "event_hole_db_max": 20.04,
+     "event_hole_cvar90": 11.4,
+     "alpha_error_p90": 0.595,
+     "si_sdr_db": 5.85
+    },
+    "mdx23c_residual": {
+     "retained_voice_db_p90": -14.66,
+     "retained_voice_coef_p90": 0.554,
+     "event_hole_db_p90": 2.39,
+     "event_hole_db_max": 6.72,
+     "event_hole_cvar90": 3.73,
+     "alpha_error_p90": 0.24,
+     "si_sdr_db": 12.03
+    },
+    "median_ensemble": {
+     "retained_voice_db_p90": -15.32,
+     "retained_voice_coef_p90": 0.526,
+     "event_hole_db_p90": 2.08,
+     "event_hole_db_max": 7.04,
+     "event_hole_cvar90": 3.47,
+     "alpha_error_p90": 0.213,
+     "si_sdr_db": 12.48
+    }
+   }
+  }
+ },
+ "100": {
+  "bologna_verdi": {
+   "parity": true,
+   "student": {
+    "retained_voice_db_p90": -7.71,
+    "retained_voice_coef_p90": 0.999,
+    "event_hole_db_p90": 2.54,
+    "event_hole_db_max": 9.92,
+    "event_hole_cvar90": 4.42,
+    "alpha_error_p90": 0.254,
+    "si_sdr_db": 11.87
+   },
+   "baselines": {
+    "untouched_04573f0d": {
+     "retained_voice_db_p90": -7.37,
+     "retained_voice_coef_p90": 1.0,
+     "event_hole_db_p90": 2.02,
+     "event_hole_db_max": 6.54,
+     "event_hole_cvar90": 3.73,
+     "alpha_error_p90": 0.207,
+     "si_sdr_db": 11.07
+    },
+    "untouched_955717e8": {
+     "retained_voice_db_p90": -11.38,
+     "retained_voice_coef_p90": 0.998,
+     "event_hole_db_p90": 3.87,
+     "event_hole_db_max": 14.3,
+     "event_hole_cvar90": 6.14,
+     "alpha_error_p90": 0.359,
+     "si_sdr_db": 12.34
+    },
+    "mdx23c_residual": {
+     "retained_voice_db_p90": -18.35,
+     "retained_voice_coef_p90": 0.636,
+     "event_hole_db_p90": 1.19,
+     "event_hole_db_max": 4.9,
+     "event_hole_cvar90": 2.47,
+     "alpha_error_p90": 0.128,
+     "si_sdr_db": 18.72
+    },
+    "median_ensemble": {
+     "retained_voice_db_p90": -21.87,
+     "retained_voice_coef_p90": 0.584,
+     "event_hole_db_p90": 0.51,
+     "event_hole_db_max": 3.4,
+     "event_hole_cvar90": 1.15,
+     "alpha_error_p90": 0.057,
+     "si_sdr_db": 21.78
+    }
+   }
+  },
+  "bologna_puccini": {
+   "parity": true,
+   "student": {
+    "retained_voice_db_p90": -15.16,
+    "retained_voice_coef_p90": 0.998,
+    "event_hole_db_p90": 1.2,
+    "event_hole_db_max": 5.91,
+    "event_hole_cvar90": 2.62,
+    "alpha_error_p90": 0.129,
+    "si_sdr_db": 12.95
+   },
+   "baselines": {
+    "untouched_04573f0d": {
+     "retained_voice_db_p90": -15.42,
+     "retained_voice_coef_p90": 1.0,
+     "event_hole_db_p90": 2.32,
+     "event_hole_db_max": 11.02,
+     "event_hole_cvar90": 4.76,
+     "alpha_error_p90": 0.234,
+     "si_sdr_db": 12.53
+    },
+    "untouched_955717e8": {
+     "retained_voice_db_p90": -20.96,
+     "retained_voice_coef_p90": 0.886,
+     "event_hole_db_p90": 4.6,
+     "event_hole_db_max": 17.11,
+     "event_hole_cvar90": 7.73,
+     "alpha_error_p90": 0.411,
+     "si_sdr_db": 9.56
+    },
+    "mdx23c_residual": {
+     "retained_voice_db_p90": -22.86,
+     "retained_voice_coef_p90": 0.87,
+     "event_hole_db_p90": 0.29,
+     "event_hole_db_max": 7.19,
+     "event_hole_cvar90": 1.56,
+     "alpha_error_p90": 0.033,
+     "si_sdr_db": 24.61
+    },
+    "median_ensemble": {
+     "retained_voice_db_p90": -26.0,
+     "retained_voice_coef_p90": 0.822,
+     "event_hole_db_p90": 0.09,
+     "event_hole_db_max": 0.53,
+     "event_hole_cvar90": 0.19,
+     "alpha_error_p90": 0.011,
+     "si_sdr_db": 25.97
+    }
+   }
+  },
+  "bologna_donizetti": {
+   "parity": true,
+   "student": {
+    "retained_voice_db_p90": -18.06,
+    "retained_voice_coef_p90": 0.594,
+    "event_hole_db_p90": 2.82,
+    "event_hole_db_max": 15.16,
+    "event_hole_cvar90": 4.95,
+    "alpha_error_p90": 0.277,
+    "si_sdr_db": 13.19
+   },
+   "baselines": {
+    "untouched_04573f0d": {
+     "retained_voice_db_p90": -18.82,
+     "retained_voice_coef_p90": 0.386,
+     "event_hole_db_p90": 18.58,
+     "event_hole_db_max": 42.63,
+     "event_hole_cvar90": 24.08,
+     "alpha_error_p90": 0.882,
+     "si_sdr_db": 16.2
+    },
+    "untouched_955717e8": {
+     "retained_voice_db_p90": -20.37,
+     "retained_voice_coef_p90": 0.356,
+     "event_hole_db_p90": 20.08,
+     "event_hole_db_max": 53.47,
+     "event_hole_cvar90": 29.12,
+     "alpha_error_p90": 0.901,
+     "si_sdr_db": 16.05
+    },
+    "mdx23c_residual": {
+     "retained_voice_db_p90": -29.81,
+     "retained_voice_coef_p90": 0.143,
+     "event_hole_db_p90": 2.54,
+     "event_hole_db_max": 10.06,
+     "event_hole_cvar90": 4.72,
+     "alpha_error_p90": 0.254,
+     "si_sdr_db": 25.66
+    },
+    "median_ensemble": {
+     "retained_voice_db_p90": -32.85,
+     "retained_voice_coef_p90": 0.121,
+     "event_hole_db_p90": 0.31,
+     "event_hole_db_max": 4.05,
+     "event_hole_cvar90": 1.73,
+     "alpha_error_p90": 0.036,
+     "si_sdr_db": 27.77
+    }
+   }
+  },
+  "aalto_mozart_dry": {
+   "parity": true,
+   "student": {
+    "retained_voice_db_p90": -21.24,
+    "retained_voice_coef_p90": 0.92,
+    "event_hole_db_p90": 3.68,
+    "event_hole_db_max": 10.25,
+    "event_hole_cvar90": 5.76,
+    "alpha_error_p90": 0.346,
+    "si_sdr_db": 9.3
+   },
+   "baselines": {
+    "untouched_04573f0d": {
+     "retained_voice_db_p90": -21.26,
+     "retained_voice_coef_p90": 0.888,
+     "event_hole_db_p90": 2.13,
+     "event_hole_db_max": 6.46,
+     "event_hole_cvar90": 3.74,
+     "alpha_error_p90": 0.217,
+     "si_sdr_db": 11.42
+    },
+    "untouched_955717e8": {
+     "retained_voice_db_p90": -22.07,
+     "retained_voice_coef_p90": 0.828,
+     "event_hole_db_p90": 2.39,
+     "event_hole_db_max": 6.78,
+     "event_hole_cvar90": 3.99,
+     "alpha_error_p90": 0.241,
+     "si_sdr_db": 11.33
+    },
+    "mdx23c_residual": {
+     "retained_voice_db_p90": -31.81,
+     "retained_voice_coef_p90": 0.655,
+     "event_hole_db_p90": 0.28,
+     "event_hole_db_max": 2.97,
+     "event_hole_cvar90": 0.71,
+     "alpha_error_p90": 0.031,
+     "si_sdr_db": 21.46
+    },
+    "median_ensemble": {
+     "retained_voice_db_p90": -34.9,
+     "retained_voice_coef_p90": 0.429,
+     "event_hole_db_p90": 0.19,
+     "event_hole_db_max": 2.94,
+     "event_hole_cvar90": 0.49,
+     "alpha_error_p90": 0.022,
+     "si_sdr_db": 23.67
+    }
+   }
+  },
+  "aalto_mozart_hall": {
+   "parity": true,
+   "student": {
+    "retained_voice_db_p90": -3.41,
+    "retained_voice_coef_p90": 0.806,
+    "event_hole_db_p90": 2.98,
+    "event_hole_db_max": 11.07,
+    "event_hole_cvar90": 4.29,
+    "alpha_error_p90": 0.29,
+    "si_sdr_db": 7.39
+   },
+   "baselines": {
+    "untouched_04573f0d": {
+     "retained_voice_db_p90": -5.23,
+     "retained_voice_coef_p90": 0.76,
+     "event_hole_db_p90": 2.83,
+     "event_hole_db_max": 12.4,
+     "event_hole_cvar90": 5.38,
+     "alpha_error_p90": 0.278,
+     "si_sdr_db": 8.13
+    },
+    "untouched_955717e8": {
+     "retained_voice_db_p90": -13.57,
+     "retained_voice_coef_p90": 0.447,
+     "event_hole_db_p90": 7.84,
+     "event_hole_db_max": 20.04,
+     "event_hole_cvar90": 11.4,
+     "alpha_error_p90": 0.595,
+     "si_sdr_db": 5.85
+    },
+    "mdx23c_residual": {
+     "retained_voice_db_p90": -14.66,
+     "retained_voice_coef_p90": 0.554,
+     "event_hole_db_p90": 2.39,
+     "event_hole_db_max": 6.72,
+     "event_hole_cvar90": 3.73,
+     "alpha_error_p90": 0.24,
+     "si_sdr_db": 12.03
+    },
+    "median_ensemble": {
+     "retained_voice_db_p90": -15.32,
+     "retained_voice_coef_p90": 0.526,
+     "event_hole_db_p90": 2.08,
+     "event_hole_db_max": 7.04,
+     "event_hole_cvar90": 3.47,
+     "alpha_error_p90": 0.213,
+     "si_sdr_db": 12.48
+    }
+   }
+  }
+ },
+ "500": {
+  "bologna_verdi": {
+   "parity": true,
+   "student": {
+    "retained_voice_db_p90": -10.6,
+    "retained_voice_coef_p90": 0.996,
+    "event_hole_db_p90": 4.21,
+    "event_hole_db_max": 30.68,
+    "event_hole_cvar90": 10.65,
+    "alpha_error_p90": 0.384,
+    "si_sdr_db": 11.8
+   },
+   "baselines": {
+    "untouched_04573f0d": {
+     "retained_voice_db_p90": -7.37,
+     "retained_voice_coef_p90": 1.0,
+     "event_hole_db_p90": 2.02,
+     "event_hole_db_max": 6.54,
+     "event_hole_cvar90": 3.73,
+     "alpha_error_p90": 0.207,
+     "si_sdr_db": 11.07
+    },
+    "untouched_955717e8": {
+     "retained_voice_db_p90": -11.38,
+     "retained_voice_coef_p90": 0.998,
+     "event_hole_db_p90": 3.87,
+     "event_hole_db_max": 14.3,
+     "event_hole_cvar90": 6.14,
+     "alpha_error_p90": 0.359,
+     "si_sdr_db": 12.34
+    },
+    "mdx23c_residual": {
+     "retained_voice_db_p90": -18.35,
+     "retained_voice_coef_p90": 0.636,
+     "event_hole_db_p90": 1.19,
+     "event_hole_db_max": 4.9,
+     "event_hole_cvar90": 2.47,
+     "alpha_error_p90": 0.128,
+     "si_sdr_db": 18.72
+    },
+    "median_ensemble": {
+     "retained_voice_db_p90": -21.87,
+     "retained_voice_coef_p90": 0.584,
+     "event_hole_db_p90": 0.51,
+     "event_hole_db_max": 3.4,
+     "event_hole_cvar90": 1.15,
+     "alpha_error_p90": 0.057,
+     "si_sdr_db": 21.78
+    }
+   }
+  },
+  "bologna_puccini": {
+   "parity": true,
+   "student": {
+    "retained_voice_db_p90": -15.99,
+    "retained_voice_coef_p90": 0.96,
+    "event_hole_db_p90": 6.44,
+    "event_hole_db_max": 17.82,
+    "event_hole_cvar90": 10.48,
+    "alpha_error_p90": 0.523,
+    "si_sdr_db": 10.22
+   },
+   "baselines": {
+    "untouched_04573f0d": {
+     "retained_voice_db_p90": -15.42,
+     "retained_voice_coef_p90": 1.0,
+     "event_hole_db_p90": 2.32,
+     "event_hole_db_max": 11.02,
+     "event_hole_cvar90": 4.76,
+     "alpha_error_p90": 0.234,
+     "si_sdr_db": 12.53
+    },
+    "untouched_955717e8": {
+     "retained_voice_db_p90": -20.96,
+     "retained_voice_coef_p90": 0.886,
+     "event_hole_db_p90": 4.6,
+     "event_hole_db_max": 17.11,
+     "event_hole_cvar90": 7.73,
+     "alpha_error_p90": 0.411,
+     "si_sdr_db": 9.56
+    },
+    "mdx23c_residual": {
+     "retained_voice_db_p90": -22.86,
+     "retained_voice_coef_p90": 0.87,
+     "event_hole_db_p90": 0.29,
+     "event_hole_db_max": 7.19,
+     "event_hole_cvar90": 1.56,
+     "alpha_error_p90": 0.033,
+     "si_sdr_db": 24.61
+    },
+    "median_ensemble": {
+     "retained_voice_db_p90": -26.0,
+     "retained_voice_coef_p90": 0.822,
+     "event_hole_db_p90": 0.09,
+     "event_hole_db_max": 0.53,
+     "event_hole_cvar90": 0.19,
+     "alpha_error_p90": 0.011,
+     "si_sdr_db": 25.97
+    }
+   }
+  },
+  "bologna_donizetti": {
+   "parity": true,
+   "student": {
+    "retained_voice_db_p90": -10.04,
+    "retained_voice_coef_p90": 0.631,
+    "event_hole_db_p90": 15.3,
+    "event_hole_db_max": 28.38,
+    "event_hole_cvar90": 18.45,
+    "alpha_error_p90": 0.828,
+    "si_sdr_db": 4.93
+   },
+   "baselines": {
+    "untouched_04573f0d": {
+     "retained_voice_db_p90": -18.82,
+     "retained_voice_coef_p90": 0.386,
+     "event_hole_db_p90": 18.58,
+     "event_hole_db_max": 42.63,
+     "event_hole_cvar90": 24.08,
+     "alpha_error_p90": 0.882,
+     "si_sdr_db": 16.2
+    },
+    "untouched_955717e8": {
+     "retained_voice_db_p90": -20.37,
+     "retained_voice_coef_p90": 0.356,
+     "event_hole_db_p90": 20.08,
+     "event_hole_db_max": 53.47,
+     "event_hole_cvar90": 29.12,
+     "alpha_error_p90": 0.901,
+     "si_sdr_db": 16.05
+    },
+    "mdx23c_residual": {
+     "retained_voice_db_p90": -29.81,
+     "retained_voice_coef_p90": 0.143,
+     "event_hole_db_p90": 2.54,
+     "event_hole_db_max": 10.06,
+     "event_hole_cvar90": 4.72,
+     "alpha_error_p90": 0.254,
+     "si_sdr_db": 25.66
+    },
+    "median_ensemble": {
+     "retained_voice_db_p90": -32.85,
+     "retained_voice_coef_p90": 0.121,
+     "event_hole_db_p90": 0.31,
+     "event_hole_db_max": 4.05,
+     "event_hole_cvar90": 1.73,
+     "alpha_error_p90": 0.036,
+     "si_sdr_db": 27.77
+    }
+   }
+  },
+  "aalto_mozart_dry": {
+   "parity": true,
+   "student": {
+    "retained_voice_db_p90": -16.56,
+    "retained_voice_coef_p90": 0.712,
+    "event_hole_db_p90": 5.75,
+    "event_hole_db_max": 24.08,
+    "event_hole_cvar90": 11.47,
+    "alpha_error_p90": 0.484,
+    "si_sdr_db": 5.58
+   },
+   "baselines": {
+    "untouched_04573f0d": {
+     "retained_voice_db_p90": -21.26,
+     "retained_voice_coef_p90": 0.888,
+     "event_hole_db_p90": 2.13,
+     "event_hole_db_max": 6.46,
+     "event_hole_cvar90": 3.74,
+     "alpha_error_p90": 0.217,
+     "si_sdr_db": 11.42
+    },
+    "untouched_955717e8": {
+     "retained_voice_db_p90": -22.07,
+     "retained_voice_coef_p90": 0.828,
+     "event_hole_db_p90": 2.39,
+     "event_hole_db_max": 6.78,
+     "event_hole_cvar90": 3.99,
+     "alpha_error_p90": 0.241,
+     "si_sdr_db": 11.33
+    },
+    "mdx23c_residual": {
+     "retained_voice_db_p90": -31.81,
+     "retained_voice_coef_p90": 0.655,
+     "event_hole_db_p90": 0.28,
+     "event_hole_db_max": 2.97,
+     "event_hole_cvar90": 0.71,
+     "alpha_error_p90": 0.031,
+     "si_sdr_db": 21.46
+    },
+    "median_ensemble": {
+     "retained_voice_db_p90": -34.9,
+     "retained_voice_coef_p90": 0.429,
+     "event_hole_db_p90": 0.19,
+     "event_hole_db_max": 2.94,
+     "event_hole_cvar90": 0.49,
+     "alpha_error_p90": 0.022,
+     "si_sdr_db": 23.67
+    }
+   }
+  },
+  "aalto_mozart_hall": {
+   "parity": true,
+   "student": {
+    "retained_voice_db_p90": -2.89,
+    "retained_voice_coef_p90": 0.661,
+    "event_hole_db_p90": 6.16,
+    "event_hole_db_max": 19.35,
+    "event_hole_cvar90": 9.54,
+    "alpha_error_p90": 0.508,
+    "si_sdr_db": 3.9
+   },
+   "baselines": {
+    "untouched_04573f0d": {
+     "retained_voice_db_p90": -5.23,
+     "retained_voice_coef_p90": 0.76,
+     "event_hole_db_p90": 2.83,
+     "event_hole_db_max": 12.4,
+     "event_hole_cvar90": 5.38,
+     "alpha_error_p90": 0.278,
+     "si_sdr_db": 8.13
+    },
+    "untouched_955717e8": {
+     "retained_voice_db_p90": -13.57,
+     "retained_voice_coef_p90": 0.447,
+     "event_hole_db_p90": 7.84,
+     "event_hole_db_max": 20.04,
+     "event_hole_cvar90": 11.4,
+     "alpha_error_p90": 0.595,
+     "si_sdr_db": 5.85
+    },
+    "mdx23c_residual": {
+     "retained_voice_db_p90": -14.66,
+     "retained_voice_coef_p90": 0.554,
+     "event_hole_db_p90": 2.39,
+     "event_hole_db_max": 6.72,
+     "event_hole_cvar90": 3.73,
+     "alpha_error_p90": 0.24,
+     "si_sdr_db": 12.03
+    },
+    "median_ensemble": {
+     "retained_voice_db_p90": -15.32,
+     "retained_voice_coef_p90": 0.526,
+     "event_hole_db_p90": 2.08,
+     "event_hole_db_max": 7.04,
+     "event_hole_cvar90": 3.47,
+     "alpha_error_p90": 0.213,
+     "si_sdr_db": 12.48
+    }
+   }
+  }
+ },
+ "2000": {
+  "bologna_verdi": {
+   "parity": true,
+   "student": {
+    "retained_voice_db_p90": -12.5,
+    "retained_voice_coef_p90": 0.859,
+    "event_hole_db_p90": 4.0,
+    "event_hole_db_max": 20.1,
+    "event_hole_cvar90": 9.08,
+    "alpha_error_p90": 0.369,
+    "si_sdr_db": 10.7
+   },
+   "baselines": {
+    "untouched_04573f0d": {
+     "retained_voice_db_p90": -7.37,
+     "retained_voice_coef_p90": 1.0,
+     "event_hole_db_p90": 2.02,
+     "event_hole_db_max": 6.54,
+     "event_hole_cvar90": 3.73,
+     "alpha_error_p90": 0.207,
+     "si_sdr_db": 11.07
+    },
+    "untouched_955717e8": {
+     "retained_voice_db_p90": -11.38,
+     "retained_voice_coef_p90": 0.998,
+     "event_hole_db_p90": 3.87,
+     "event_hole_db_max": 14.3,
+     "event_hole_cvar90": 6.14,
+     "alpha_error_p90": 0.359,
+     "si_sdr_db": 12.34
+    },
+    "mdx23c_residual": {
+     "retained_voice_db_p90": -18.35,
+     "retained_voice_coef_p90": 0.636,
+     "event_hole_db_p90": 1.19,
+     "event_hole_db_max": 4.9,
+     "event_hole_cvar90": 2.47,
+     "alpha_error_p90": 0.128,
+     "si_sdr_db": 18.72
+    },
+    "median_ensemble": {
+     "retained_voice_db_p90": -21.87,
+     "retained_voice_coef_p90": 0.584,
+     "event_hole_db_p90": 0.51,
+     "event_hole_db_max": 3.4,
+     "event_hole_cvar90": 1.15,
+     "alpha_error_p90": 0.057,
+     "si_sdr_db": 21.78
+    }
+   }
+  },
+  "bologna_puccini": {
+   "parity": true,
+   "student": {
+    "retained_voice_db_p90": -12.62,
+    "retained_voice_coef_p90": 0.971,
+    "event_hole_db_p90": 3.95,
+    "event_hole_db_max": 34.37,
+    "event_hole_cvar90": 9.38,
+    "alpha_error_p90": 0.366,
+    "si_sdr_db": 12.14
+   },
+   "baselines": {
+    "untouched_04573f0d": {
+     "retained_voice_db_p90": -15.42,
+     "retained_voice_coef_p90": 1.0,
+     "event_hole_db_p90": 2.32,
+     "event_hole_db_max": 11.02,
+     "event_hole_cvar90": 4.76,
+     "alpha_error_p90": 0.234,
+     "si_sdr_db": 12.53
+    },
+    "untouched_955717e8": {
+     "retained_voice_db_p90": -20.96,
+     "retained_voice_coef_p90": 0.886,
+     "event_hole_db_p90": 4.6,
+     "event_hole_db_max": 17.11,
+     "event_hole_cvar90": 7.73,
+     "alpha_error_p90": 0.411,
+     "si_sdr_db": 9.56
+    },
+    "mdx23c_residual": {
+     "retained_voice_db_p90": -22.86,
+     "retained_voice_coef_p90": 0.87,
+     "event_hole_db_p90": 0.29,
+     "event_hole_db_max": 7.19,
+     "event_hole_cvar90": 1.56,
+     "alpha_error_p90": 0.033,
+     "si_sdr_db": 24.61
+    },
+    "median_ensemble": {
+     "retained_voice_db_p90": -26.0,
+     "retained_voice_coef_p90": 0.822,
+     "event_hole_db_p90": 0.09,
+     "event_hole_db_max": 0.53,
+     "event_hole_cvar90": 0.19,
+     "alpha_error_p90": 0.011,
+     "si_sdr_db": 25.97
+    }
+   }
+  },
+  "bologna_donizetti": {
+   "parity": true,
+   "student": {
+    "retained_voice_db_p90": -8.86,
+    "retained_voice_coef_p90": 0.419,
+    "event_hole_db_p90": 32.46,
+    "event_hole_db_max": 75.47,
+    "event_hole_cvar90": 43.1,
+    "alpha_error_p90": 0.976,
+    "si_sdr_db": 2.49
+   },
+   "baselines": {
+    "untouched_04573f0d": {
+     "retained_voice_db_p90": -18.82,
+     "retained_voice_coef_p90": 0.386,
+     "event_hole_db_p90": 18.58,
+     "event_hole_db_max": 42.63,
+     "event_hole_cvar90": 24.08,
+     "alpha_error_p90": 0.882,
+     "si_sdr_db": 16.2
+    },
+    "untouched_955717e8": {
+     "retained_voice_db_p90": -20.37,
+     "retained_voice_coef_p90": 0.356,
+     "event_hole_db_p90": 20.08,
+     "event_hole_db_max": 53.47,
+     "event_hole_cvar90": 29.12,
+     "alpha_error_p90": 0.901,
+     "si_sdr_db": 16.05
+    },
+    "mdx23c_residual": {
+     "retained_voice_db_p90": -29.81,
+     "retained_voice_coef_p90": 0.143,
+     "event_hole_db_p90": 2.54,
+     "event_hole_db_max": 10.06,
+     "event_hole_cvar90": 4.72,
+     "alpha_error_p90": 0.254,
+     "si_sdr_db": 25.66
+    },
+    "median_ensemble": {
+     "retained_voice_db_p90": -32.85,
+     "retained_voice_coef_p90": 0.121,
+     "event_hole_db_p90": 0.31,
+     "event_hole_db_max": 4.05,
+     "event_hole_cvar90": 1.73,
+     "alpha_error_p90": 0.036,
+     "si_sdr_db": 27.77
+    }
+   }
+  },
+  "aalto_mozart_dry": {
+   "parity": true,
+   "student": {
+    "retained_voice_db_p90": -11.33,
+    "retained_voice_coef_p90": 0.571,
+    "event_hole_db_p90": 3.82,
+    "event_hole_db_max": 12.79,
+    "event_hole_cvar90": 6.07,
+    "alpha_error_p90": 0.356,
+    "si_sdr_db": 7.33
+   },
+   "baselines": {
+    "untouched_04573f0d": {
+     "retained_voice_db_p90": -21.26,
+     "retained_voice_coef_p90": 0.888,
+     "event_hole_db_p90": 2.13,
+     "event_hole_db_max": 6.46,
+     "event_hole_cvar90": 3.74,
+     "alpha_error_p90": 0.217,
+     "si_sdr_db": 11.42
+    },
+    "untouched_955717e8": {
+     "retained_voice_db_p90": -22.07,
+     "retained_voice_coef_p90": 0.828,
+     "event_hole_db_p90": 2.39,
+     "event_hole_db_max": 6.78,
+     "event_hole_cvar90": 3.99,
+     "alpha_error_p90": 0.241,
+     "si_sdr_db": 11.33
+    },
+    "mdx23c_residual": {
+     "retained_voice_db_p90": -31.81,
+     "retained_voice_coef_p90": 0.655,
+     "event_hole_db_p90": 0.28,
+     "event_hole_db_max": 2.97,
+     "event_hole_cvar90": 0.71,
+     "alpha_error_p90": 0.031,
+     "si_sdr_db": 21.46
+    },
+    "median_ensemble": {
+     "retained_voice_db_p90": -34.9,
+     "retained_voice_coef_p90": 0.429,
+     "event_hole_db_p90": 0.19,
+     "event_hole_db_max": 2.94,
+     "event_hole_cvar90": 0.49,
+     "alpha_error_p90": 0.022,
+     "si_sdr_db": 23.67
+    }
+   }
+  },
+  "aalto_mozart_hall": {
+   "parity": true,
+   "student": {
+    "retained_voice_db_p90": 2.93,
+    "retained_voice_coef_p90": 0.737,
+    "event_hole_db_p90": 3.5,
+    "event_hole_db_max": 10.26,
+    "event_hole_cvar90": 6.13,
+    "alpha_error_p90": 0.332,
+    "si_sdr_db": 3.2
+   },
+   "baselines": {
+    "untouched_04573f0d": {
+     "retained_voice_db_p90": -5.23,
+     "retained_voice_coef_p90": 0.76,
+     "event_hole_db_p90": 2.83,
+     "event_hole_db_max": 12.4,
+     "event_hole_cvar90": 5.38,
+     "alpha_error_p90": 0.278,
+     "si_sdr_db": 8.13
+    },
+    "untouched_955717e8": {
+     "retained_voice_db_p90": -13.57,
+     "retained_voice_coef_p90": 0.447,
+     "event_hole_db_p90": 7.84,
+     "event_hole_db_max": 20.04,
+     "event_hole_cvar90": 11.4,
+     "alpha_error_p90": 0.595,
+     "si_sdr_db": 5.85
+    },
+    "mdx23c_residual": {
+     "retained_voice_db_p90": -14.66,
+     "retained_voice_coef_p90": 0.554,
+     "event_hole_db_p90": 2.39,
+     "event_hole_db_max": 6.72,
+     "event_hole_cvar90": 3.73,
+     "alpha_error_p90": 0.24,
+     "si_sdr_db": 12.03
+    },
+    "median_ensemble": {
+     "retained_voice_db_p90": -15.32,
+     "retained_voice_coef_p90": 0.526,
+     "event_hole_db_p90": 2.08,
+     "event_hole_db_max": 7.04,
+     "event_hole_cvar90": 3.47,
+     "alpha_error_p90": 0.213,
+     "si_sdr_db": 12.48
+    }
+   }
+  }
+ }
+}
