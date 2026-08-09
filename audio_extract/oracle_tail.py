@@ -1,25 +1,30 @@
 """Unsmoothed exact routing envelopes and shared discrete costs.
 
 A smooth mean-optimal route can conceal the product's rare worst-event failures.
-This module supplies two diagnostic upper bounds on the fixed candidate basis:
+This module supplies two diagnostic upper bounds on a fixed candidate basis:
 
 ``O0D``
     Independent best real candidate in each identifiable time/frequency cell.
 
 ``O0C``
     Independent exact convex-hull optimum in each identifiable cell, solved by
-    exhaustive active-set KKT enumeration.  With the preregistered five-member
+    exhaustive active-set KKT enumeration. With the preregistered five-member
     basis this is only 31 supports per cell and avoids iterative/convergence
     ambiguity.
 
 Unavailable cells are filled with the exact O1 label for deterministic audio
-reconstruction but are excluded from the data objective.  O0 outputs are
+reconstruction but are excluded from the data objective. O0 outputs are
 ``diagnostic_only`` and are never production candidates.
 
-The same PSD quadratic also defines the corrected whole-candidate unary used by
-O1 and the exact O2 Potts MILP:
+The same PSD quadratic defines the corrected whole-candidate unary used by O1
+and the exact O2 Potts MILP:
 
     vertex_unary = diag(G) - 2*c + constant.
+
+The cell solver is invariant to a positive rescaling of ``G`` and ``c``. Every
+cell is equilibrated before KKT certification, and the equality constraint is
+handled through a sum-zero nullspace rather than an ill-conditioned augmented
+KKT matrix.
 """
 from __future__ import annotations
 
@@ -39,9 +44,10 @@ class TailOracleError(RuntimeError):
 
 @dataclass(frozen=True)
 class ActiveSetConfig:
-    feasibility_tolerance: float = 1e-9
-    kkt_tolerance: float = 1e-8
+    feasibility_tolerance: float = 1e-10
+    kkt_tolerance: float = 1e-9
     objective_tolerance: float = 1e-12
+    strict_support_tolerance: float = 1e-10
 
     def validate(self) -> None:
         for name, value in asdict(self).items():
@@ -69,10 +75,12 @@ class IndependentConvexResult:
     interpolated_cells: int
     interpolated_fraction: float
     max_simplex_error: float
-    max_stationarity_residual: float
-    min_inactive_reduced_gradient: float
+    max_normalized_stationarity_residual: float
+    min_normalized_inactive_reduced_gradient: float
     mean_weights: tuple[float, ...]
     support_masks: np.ndarray
+    cell_normalization_scale_min: float
+    cell_normalization_scale_max: float
 
 
 def corrected_vertex_unary(quadratic: ConvexQuadratic) -> np.ndarray:
@@ -143,52 +151,89 @@ def _cell_value(weight: np.ndarray, gram: np.ndarray,
     return float(weight @ gram @ weight - 2.0 * linear @ weight + constant)
 
 
+def _cell_variable_value(weight: np.ndarray, gram: np.ndarray,
+                         linear: np.ndarray) -> float:
+    return float(weight @ gram @ weight - 2.0 * linear @ weight)
+
+
+def _nullspace_basis(size: int) -> np.ndarray:
+    """Orthonormal basis for vectors whose coordinates sum to zero."""
+    if size <= 1:
+        return np.zeros((size, 0), dtype=np.float64)
+    raw = np.zeros((size, size - 1), dtype=np.float64)
+    raw[np.arange(size - 1), np.arange(size - 1)] = 1.0
+    raw[-1, :] = -1.0
+    basis, _ = np.linalg.qr(raw, mode="reduced")
+    if np.max(np.abs(np.ones(size) @ basis)) > 1e-12:
+        raise TailOracleError("failed to construct sum-zero nullspace")
+    return basis
+
+
+def _cell_scale(gram: np.ndarray, linear: np.ndarray) -> float:
+    raw = max(
+        float(np.max(np.abs(gram), initial=0.0)),
+        float(np.max(np.abs(linear), initial=0.0)),
+    )
+    return raw if raw > 0.0 else 1.0
+
+
 def _solve_support(
-    gram: np.ndarray,
-    linear: np.ndarray,
+    normalized_gram: np.ndarray,
+    normalized_linear: np.ndarray,
     support: tuple[int, ...],
     config: ActiveSetConfig,
 ) -> tuple[np.ndarray, float, float, float] | None:
-    """Return a KKT-certified simplex solution on one support, or ``None``."""
-    k = len(linear)
+    """Return a scale-normalized KKT-certified support solution, or ``None``.
+
+    The equality constraint is built into ``w = 1/m + Zz``, avoiding the severe
+    conditioning imbalance of an augmented ``[G,1;1',0]`` system.
+    """
+    k = len(normalized_linear)
     indices = np.asarray(support, dtype=np.int64)
-    gs = gram[np.ix_(indices, indices)]
-    cs = linear[indices]
-    ones = np.ones(len(indices), dtype=np.float64)
-    system = np.block([
-        [gs, ones[:, None]],
-        [ones[None, :], np.zeros((1, 1), dtype=np.float64)],
-    ])
-    rhs = np.concatenate((cs, np.array([1.0], dtype=np.float64)))
-    solution, _, _, _ = np.linalg.lstsq(system, rhs, rcond=None)
-    residual = system @ solution - rhs
-    if float(np.max(np.abs(residual))) > config.kkt_tolerance:
+    gs = normalized_gram[np.ix_(indices, indices)]
+    cs = normalized_linear[indices]
+    m = len(indices)
+    base = np.full(m, 1.0 / m, dtype=np.float64)
+    basis = _nullspace_basis(m)
+    if basis.shape[1]:
+        reduced_gram = basis.T @ gs @ basis
+        reduced_rhs = basis.T @ (cs - gs @ base)
+        rcond = np.finfo(np.float64).eps * max(reduced_gram.shape) * 16.0
+        coordinate, _, _, _ = np.linalg.lstsq(
+            reduced_gram, reduced_rhs, rcond=rcond
+        )
+        reduced_residual = reduced_gram @ coordinate - reduced_rhs
+        residual_scale = max(1.0, float(np.max(np.abs(reduced_rhs), initial=0.0)))
+        if float(np.max(np.abs(reduced_residual), initial=0.0)) > (
+            config.kkt_tolerance * residual_scale
+        ):
+            return None
+        active = base + basis @ coordinate
+    else:
+        active = base
+
+    simplex_error = abs(float(active.sum()) - 1.0)
+    if simplex_error > config.feasibility_tolerance:
         return None
-    active = solution[:-1]
-    multiplier = float(solution[-1])
-    if float(active.min(initial=0.0)) < -config.feasibility_tolerance:
+    if m > 1 and float(active.min()) <= config.strict_support_tolerance:
+        # Boundary solutions are represented and certified on a smaller support.
         return None
-    active = np.maximum(active, 0.0)
-    total = float(active.sum())
-    if total <= 0:
+    if float(active.min()) < -config.feasibility_tolerance:
         return None
-    active /= total
+
     weight = np.zeros(k, dtype=np.float64)
     weight[indices] = active
-
-    reduced = gram @ weight - linear + multiplier
-    stationarity = float(np.max(np.abs(reduced[indices])))
+    multiplier = float(np.mean(cs - gs @ active))
+    reduced = normalized_gram @ weight - normalized_linear + multiplier
+    stationarity = float(np.max(np.abs(reduced[indices]), initial=0.0))
     inactive = np.ones(k, dtype=bool)
     inactive[indices] = False
     minimum_inactive = (
         float(reduced[inactive].min()) if np.any(inactive) else float("inf")
     )
-    simplex_error = abs(float(weight.sum()) - 1.0)
     if stationarity > config.kkt_tolerance:
         return None
     if minimum_inactive < -config.kkt_tolerance:
-        return None
-    if simplex_error > config.feasibility_tolerance:
         return None
     return weight, stationarity, minimum_inactive, simplex_error
 
@@ -199,7 +244,7 @@ def solve_cell_active_set(
     constant: float,
     config: ActiveSetConfig | None = None,
 ) -> tuple[np.ndarray, dict[str, Any]]:
-    """Globally solve one PSD simplex QP by active-set enumeration."""
+    """Globally solve one PSD simplex QP by scale-invariant support enumeration."""
     cfg = config or ActiveSetConfig()
     cfg.validate()
     g = np.asarray(gram, dtype=np.float64)
@@ -209,31 +254,37 @@ def solve_cell_active_set(
     if not np.all(np.isfinite(g)) or not np.all(np.isfinite(c)) or not np.isfinite(constant):
         raise ValueError("cell quadratic must be finite")
     g = 0.5 * (g + g.T)
-    eigenvalues = np.linalg.eigvalsh(g)
-    scale = max(1.0, float(np.max(np.abs(eigenvalues))))
-    if eigenvalues[0] < -cfg.kkt_tolerance * scale:
-        raise TailOracleError(f"cell Gram is not PSD: {eigenvalues[0]}")
+    scale = _cell_scale(g, c)
+    gn = g / scale
+    cn = c / scale
+    eigenvalues = np.linalg.eigvalsh(gn)
+    if eigenvalues[0] < -cfg.kkt_tolerance:
+        raise TailOracleError(f"cell Gram is not PSD after equilibration: {eigenvalues[0]}")
+    if eigenvalues[0] < 0:
+        gn += np.eye(len(c)) * (-float(eigenvalues[0]) + 1e-15)
 
     best: tuple[float, tuple[int, ...], np.ndarray, dict[str, float]] | None = None
     for support in _supports(len(c)):
-        solved = _solve_support(g, c, support, cfg)
+        solved = _solve_support(gn, cn, support, cfg)
         if solved is None:
             continue
         weight, stationarity, minimum_inactive, simplex_error = solved
-        value = _cell_value(weight, g, c, float(constant))
+        normalized_value = _cell_variable_value(weight, gn, cn)
+        original_value = _cell_value(weight, g, c, float(constant))
         facts = {
-            "stationarity_residual": stationarity,
-            "minimum_inactive_reduced_gradient": minimum_inactive,
+            "objective": original_value,
+            "normalized_variable_objective": normalized_value,
+            "normalization_scale": scale,
+            "normalized_stationarity_residual": stationarity,
+            "normalized_minimum_inactive_reduced_gradient": minimum_inactive,
             "simplex_error": simplex_error,
         }
-        candidate = (value, support, weight, facts)
+        candidate = (normalized_value, support, weight, facts)
         if best is None:
             best = candidate
-        elif value < best[0] - cfg.objective_tolerance:
+        elif normalized_value < best[0] - cfg.objective_tolerance:
             best = candidate
-        elif abs(value - best[0]) <= cfg.objective_tolerance:
-            # Deterministic tie-break: smaller support, then lexicographic support,
-            # then lexicographic rounded weight vector.
+        elif abs(normalized_value - best[0]) <= cfg.objective_tolerance:
             left = (len(support), support, tuple(np.round(weight, 15)))
             right = (len(best[1]), best[1], tuple(np.round(best[2], 15)))
             if left < right:
@@ -241,15 +292,14 @@ def solve_cell_active_set(
     if best is None:
         raise TailOracleError("no KKT-feasible simplex active set found")
 
-    value, support, weight, facts = best
+    normalized_value, support, weight, facts = best
     vertices = np.eye(len(c), dtype=np.float64)
     vertex_values = np.asarray([
-        _cell_value(vertex, g, c, float(constant)) for vertex in vertices
+        _cell_variable_value(vertex, gn, cn) for vertex in vertices
     ])
-    if value > float(vertex_values.min()) + cfg.objective_tolerance:
+    if normalized_value > float(vertex_values.min()) + cfg.objective_tolerance:
         raise TailOracleError("active-set optimum is worse than a simplex vertex")
     return weight, {
-        "objective": value,
         "support": list(support),
         "support_size": len(support),
         "interpolated": int(np.count_nonzero(weight > cfg.feasibility_tolerance)) > 1,
@@ -276,6 +326,7 @@ def solve_independent_convex(
     max_simplex = 0.0
     max_stationarity = 0.0
     min_inactive = float("inf")
+    scales: list[float] = []
     for qi in range(q):
         for bi in range(b):
             if not quadratic.available[qi, bi]:
@@ -293,11 +344,13 @@ def solve_independent_convex(
             histogram[len(support)] = histogram.get(len(support), 0) + 1
             interpolated += int(bool(facts["interpolated"]))
             value_sum += float(facts["objective"])
+            scales.append(float(facts["normalization_scale"]))
             max_simplex = max(max_simplex, float(facts["simplex_error"]))
             max_stationarity = max(
-                max_stationarity, float(facts["stationarity_residual"])
+                max_stationarity,
+                float(facts["normalized_stationarity_residual"]),
             )
-            reduced = float(facts["minimum_inactive_reduced_gradient"])
+            reduced = float(facts["normalized_minimum_inactive_reduced_gradient"])
             if np.isfinite(reduced):
                 min_inactive = min(min_inactive, reduced)
     data = value_sum / quadratic.denominator
@@ -310,8 +363,10 @@ def solve_independent_convex(
         interpolated_cells=interpolated,
         interpolated_fraction=interpolated / quadratic.denominator,
         max_simplex_error=max_simplex,
-        max_stationarity_residual=max_stationarity,
-        min_inactive_reduced_gradient=min_inactive,
+        max_normalized_stationarity_residual=max_stationarity,
+        min_normalized_inactive_reduced_gradient=min_inactive,
         mean_weights=tuple(float(value) for value in weights.mean(axis=(0, 1))),
         support_masks=support_masks,
+        cell_normalization_scale_min=float(min(scales)),
+        cell_normalization_scale_max=float(max(scales)),
     )
