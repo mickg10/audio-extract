@@ -15,8 +15,8 @@ from typing import Any, Mapping, Sequence
 import math
 
 
-REPORT_SCHEMA = "audio-extract/oracle-routing-binding-report/v1"
-DECISION_SCHEMA = "audio-extract/oracle-routing-binding-decision/v1"
+REPORT_SCHEMA = "audio-extract/oracle-routing-binding-report/v2"
+DECISION_SCHEMA = "audio-extract/oracle-routing-binding-decision/v2"
 
 LOWER_IS_BETTER = "lower"
 HIGHER_IS_BETTER = "higher"
@@ -24,7 +24,6 @@ ABSOLUTE_REGRESSION = "absolute"
 RELATIVE_REGRESSION = "relative"
 
 _REQUIRED_REPORT_HASHES = (
-    "code_commit",
     "candidate_manifest_sha256",
     "truth_manifest_sha256",
     "routing_config_sha256",
@@ -335,6 +334,24 @@ def _sha(value: Any, label: str) -> str:
     return value.lower()
 
 
+def _git_commit(value: Any, label: str = "code_commit") -> str:
+    if not isinstance(value, str) or len(value) != 40:
+        raise BindingGateError(f"{label} is not a full Git commit identity")
+    try:
+        int(value, 16)
+    except ValueError as exc:
+        raise BindingGateError(
+            f"{label} is not a full Git commit identity"
+        ) from exc
+    return value.lower()
+
+
+def _positive_int(value: Any, label: str) -> int:
+    if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
+        raise BindingGateError(f"{label} is not a positive integer")
+    return value
+
+
 def _resolution_key(value: float) -> str:
     return f"{float(value):g}"
 
@@ -370,9 +387,9 @@ def _artifact(
     _sha(artifact.get("container_sha256"), f"{label}.container_sha256")
     if artifact.get("subtype") != "FLOAT":
         raise BindingGateError(f"{label} artifact is not FLOAT")
-    frames = int(_finite(artifact.get("frames"), f"{label}.frames"))
-    sample_rate = int(
-        _finite(artifact.get("sample_rate_hz"), f"{label}.sample_rate_hz")
+    frames = _positive_int(artifact.get("frames"), f"{label}.frames")
+    sample_rate = _positive_int(
+        artifact.get("sample_rate_hz"), f"{label}.sample_rate_hz"
     )
     channels = artifact.get("channels")
     if not isinstance(channels, Sequence) or isinstance(
@@ -380,7 +397,7 @@ def _artifact(
     ):
         raise BindingGateError(f"{label}.channels is invalid")
     channel_tuple = tuple(str(value) for value in channels)
-    if frames <= 0 or sample_rate <= 0 or not channel_tuple:
+    if not channel_tuple or any(not channel for channel in channel_tuple):
         raise BindingGateError(f"{label} has an invalid sample grid")
     if routed:
         recipe_id = output.get("recipe_id")
@@ -510,36 +527,77 @@ def _regression(
     return deterioration / max(abs(frontier), rule.relative_floor)
 
 
-def _basis(report: Mapping[str, Any], config: BindingGateConfig) -> dict:
+def _basis(
+    report: Mapping[str, Any],
+    config: BindingGateConfig,
+    work_ids: Sequence[str],
+) -> dict:
     rows = report.get("basis")
     if not isinstance(rows, Sequence) or isinstance(rows, (str, bytes)):
         raise BindingGateError("report lacks basis rows")
-    pcm_to_canonical: dict[str, str] = {}
-    aliases: dict[str, str] = {}
+    panels: dict[tuple[str, str], list[Mapping[str, Any]]] = {}
     for index, row in enumerate(rows):
         if not isinstance(row, Mapping):
             raise BindingGateError(f"basis[{index}] is not an object")
         role = row.get("role")
-        candidate_id = row.get("candidate_id")
+        work_id = row.get("work_id")
+        scope = row.get("scope")
         if not isinstance(role, str) or not role:
             raise BindingGateError(f"basis[{index}] lacks role")
-        if role in aliases:
-            raise BindingGateError(f"basis repeats role {role}")
-        if not isinstance(candidate_id, str) or not candidate_id:
-            raise BindingGateError(f"basis[{index}] lacks candidate_id")
+        if work_id not in work_ids:
+            raise BindingGateError(f"basis[{index}] has unknown work_id")
+        if scope not in ("full", "no_vocal"):
+            raise BindingGateError(f"basis[{index}] has invalid scope")
+        candidate_id = _sha(
+            row.get("candidate_id"), f"basis[{index}].candidate_id"
+        )
         pcm = _sha(
             row.get("artifact_pcm_sha256"),
             f"basis[{index}].artifact_pcm_sha256",
         )
-        aliases[role] = pcm_to_canonical.setdefault(pcm, candidate_id)
-    missing = sorted(set(config.required_basis_roles) - set(aliases))
-    if missing:
-        raise BindingGateError(f"basis lacks required roles {missing}")
-    unique = len(set(aliases.values()))
+        panels.setdefault((str(work_id), str(scope)), []).append(
+            {"role": role, "candidate_id": candidate_id, "pcm": pcm}
+        )
+
+    required = set(config.required_basis_roles)
+    summaries = {}
+    total_roles = 0
+    total_unique = 0
+    for work_id in work_ids:
+        for scope in ("full", "no_vocal"):
+            key = (work_id, scope)
+            panel_rows = panels.get(key, [])
+            roles = [str(row["role"]) for row in panel_rows]
+            if len(roles) != len(set(roles)):
+                raise BindingGateError(
+                    f"basis repeats a role in {work_id}/{scope}"
+                )
+            missing = sorted(required - set(roles))
+            extra = sorted(set(roles) - required)
+            if missing or extra:
+                raise BindingGateError(
+                    f"basis roles differ in {work_id}/{scope}: "
+                    f"missing={missing}, extra={extra}"
+                )
+            pcm_to_canonical: dict[str, str] = {}
+            aliases = {
+                str(row["role"]): pcm_to_canonical.setdefault(
+                    str(row["pcm"]), str(row["candidate_id"])
+                )
+                for row in panel_rows
+            }
+            unique = len(pcm_to_canonical)
+            total_roles += len(aliases)
+            total_unique += unique
+            summaries[f"{work_id}/{scope}"] = {
+                "role_aliases": aliases,
+                "unique_pcm_candidates": unique,
+                "deduplicated_roles": len(aliases) - unique,
+            }
     return {
-        "role_aliases": aliases,
-        "unique_pcm_candidates": unique,
-        "deduplicated_roles": len(aliases) - unique,
+        "panels": summaries,
+        "unique_pcm_candidates": total_unique,
+        "deduplicated_roles": total_roles - total_unique,
     }
 
 
@@ -547,42 +605,52 @@ def _transform_controls(
     resolution: Mapping[str, Any],
     config: BindingGateConfig,
 ) -> dict[str, Any]:
-    controls = resolution.get("transform_controls")
-    if not isinstance(controls, Mapping):
-        raise BindingGateError("primary resolution lacks transform controls")
     tolerance = config.transform_tolerance
     result = {}
-    for name in ("O1", "median_mdx_mel_bs"):
-        facts = controls.get(name)
-        if not isinstance(facts, Mapping):
-            raise BindingGateError(f"missing transform control {name}")
-        _sha(
-            facts.get("raw_artifact_pcm_sha256"),
-            f"{name}.raw_artifact_pcm_sha256",
-        )
-        _sha(
-            facts.get("stft_artifact_pcm_sha256"),
-            f"{name}.stft_artifact_pcm_sha256",
-        )
-        values = {
-            metric: _finite(facts.get(metric), f"{name}.{metric}")
-            for metric in (
-                "max_abs",
-                "rms",
-                "spectral_error",
-                "stereo_error",
-            )
-        }
-        failures = [
-            metric
-            for metric, value in values.items()
-            if value > float(getattr(tolerance, metric))
-        ]
-        if failures:
+    for work_id, work in _works(resolution).items():
+        controls = work.get("transform_controls") if isinstance(work, Mapping) else None
+        if not isinstance(controls, Mapping):
             raise BindingGateError(
-                f"transform control {name} exceeds tolerance: {failures}"
+                f"primary resolution work {work_id} lacks transform controls"
             )
-        result[name] = {"values": values, "failures": []}
+        work_result = {}
+        for name in ("O1", "median_mdx_mel_bs"):
+            facts = controls.get(name)
+            if not isinstance(facts, Mapping):
+                raise BindingGateError(
+                    f"missing transform control {work_id}/{name}"
+                )
+            _sha(
+                facts.get("raw_artifact_pcm_sha256"),
+                f"{work_id}/{name}.raw_artifact_pcm_sha256",
+            )
+            _sha(
+                facts.get("stft_artifact_pcm_sha256"),
+                f"{work_id}/{name}.stft_artifact_pcm_sha256",
+            )
+            values = {
+                metric: _finite(
+                    facts.get(metric), f"{work_id}/{name}.{metric}"
+                )
+                for metric in (
+                    "max_abs",
+                    "rms",
+                    "spectral_error",
+                    "stereo_error",
+                )
+            }
+            failures = [
+                metric
+                for metric, value in values.items()
+                if value > float(getattr(tolerance, metric))
+            ]
+            if failures:
+                raise BindingGateError(
+                    f"transform control {work_id}/{name} exceeds tolerance: "
+                    f"{failures}"
+                )
+            work_result[name] = {"values": values, "failures": []}
+        result[str(work_id)] = work_result
     return result
 
 
@@ -616,6 +684,71 @@ def _no_vocal_entry(
         f"no_vocal/{method}.false_positive_energy_ratio",
     )
     return entry
+
+
+def _validate_no_vocal_panels(
+    resolution: Mapping[str, Any],
+    config: BindingGateConfig,
+) -> dict[str, Any]:
+    """Validate complete no-vocal artifacts and exact route-plan reuse."""
+
+    methods = tuple(config.baseline_methods) + tuple(config.routed_methods)
+    result = {}
+    for work_id in _works(resolution):
+        full_grid = _artifact(
+            _output(
+                resolution,
+                work_id,
+                methods[0],
+                config.routed_methods,
+            ),
+            label=f"{work_id}/{methods[0]}",
+            routed=methods[0] in config.routed_methods,
+        )
+        grids = {}
+        plans = {}
+        for method in methods:
+            entry = _no_vocal_entry(
+                resolution, work_id, method, config.routed_methods
+            )
+            grid = _artifact(
+                {"artifact": entry.get("artifact")},
+                label=f"no_vocal/{work_id}/{method}",
+                routed=False,
+            )
+            if grid != full_grid:
+                raise BindingGateError(
+                    f"{work_id}/{method} full and no-vocal grids differ"
+                )
+            grids[method] = grid
+            if method in config.routed_methods:
+                full_plan = _sha(
+                    _output(
+                        resolution,
+                        work_id,
+                        method,
+                        config.routed_methods,
+                    ).get("routing_plan_sha256"),
+                    f"{work_id}/{method}.routing_plan_sha256",
+                )
+                control_plan = _sha(
+                    entry.get("routing_plan_sha256"),
+                    f"no_vocal/{work_id}/{method}.routing_plan_sha256",
+                )
+                if control_plan != full_plan:
+                    raise BindingGateError(
+                        f"{work_id}/{method} full and no-vocal route plans differ"
+                    )
+                plans[method] = full_plan
+        result[str(work_id)] = {
+            "sample_grid": {
+                "frames": full_grid[0],
+                "sample_rate_hz": full_grid[1],
+                "channels": list(full_grid[2]),
+            },
+            "routing_plan_sha256": plans,
+        }
+    return result
 
 
 def _no_vocal_ratio(
@@ -791,6 +924,7 @@ def _evaluate_resolution(
     grids = _validate_work_grids(
         resolution, methods, config.routed_methods
     )
+    no_vocal = _validate_no_vocal_panels(resolution, config)
     transform = (
         _transform_controls(resolution, config)
         if require_transform_controls
@@ -803,6 +937,7 @@ def _evaluate_resolution(
     return {
         "valid": True,
         "sample_grids": grids,
+        "no_vocal_panels": no_vocal,
         "transform_controls": transform,
         "methods": results,
         "actionable_methods": [
@@ -834,11 +969,16 @@ def evaluate_binding_report(
             ],
         }
     try:
-        provenance = {
+        provenance = {"code_commit": _git_commit(report.get("code_commit"))}
+        provenance.update({
             field: _sha(report.get(field), field)
             for field in _REQUIRED_REPORT_HASHES
-        }
-        basis = _basis(report, config)
+        })
+        primary_resolution = _resolution(
+            report, config.primary_resolution_seconds
+        )
+        work_ids = tuple(str(work_id) for work_id in _works(primary_resolution))
+        basis = _basis(report, config, work_ids)
         primary = _evaluate_resolution(
             report,
             config.primary_resolution_seconds,
@@ -848,19 +988,12 @@ def evaluate_binding_report(
         sensitivity = {}
         for seconds in config.sensitivity_resolutions_seconds:
             key = _resolution_key(seconds)
-            try:
-                sensitivity[key] = _evaluate_resolution(
-                    report,
-                    seconds,
-                    config,
-                    require_transform_controls=False,
-                )
-            except BindingGateError as exc:
-                sensitivity[key] = {
-                    "valid": False,
-                    "error": str(exc),
-                    "actionable_methods": [],
-                }
+            sensitivity[key] = _evaluate_resolution(
+                report,
+                seconds,
+                config,
+                require_transform_controls=False,
+            )
     except BindingGateError as exc:
         return {
             "schema": DECISION_SCHEMA,

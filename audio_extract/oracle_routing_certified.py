@@ -470,7 +470,9 @@ def _route_objective_on_validated_grid(
     if w.shape != (t, b, k):
         raise ValueError("weight grid does not match quadratics")
     if np.any(w < -1e-10) or not np.allclose(
-        w.sum(axis=-1), 1.0, atol=1e-8, rtol=0
+        # Independent constrained solvers probe O(sqrt(eps)) away from the
+        # equality manifold while estimating finite-difference gradients.
+        w.sum(axis=-1), 1.0, atol=5e-8, rtol=0
     ):
         raise ValueError("weights must be a per-cell simplex")
     if temporal_smoothness < 0 or frequency_smoothness < 0:

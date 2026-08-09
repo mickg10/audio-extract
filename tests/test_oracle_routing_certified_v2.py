@@ -237,6 +237,36 @@ def test_certified_o3_finds_exact_interpolation():
     assert result.objective < unary_costs(grid).min() - 1e-5
 
 
+def test_o3_rejects_when_only_a_subset_of_requested_starts_certifies():
+    matrix = np.diag([1.0, 3.0, 5.0])
+    optimum = np.full(3, 1.0 / 3.0)
+    cell = CellQuadratic(
+        Q=matrix,
+        c=matrix @ optimum,
+        constant=0.0,
+        mode="synthetic",
+        accompaniment_energy=1.0,
+        vocal_energy=1.0,
+        condition_number=1.0,
+        psd_relative_tolerance=1e-10,
+    )
+    grid = stack_cell_grid([[cell]])
+    config = _config(
+        projected_gradient_tolerance=1e-12,
+        max_projected_gradient_iterations=1,
+    )
+    with pytest.raises(
+        CertifiedRoutingError,
+        match="every requested start",
+    ):
+        solve_convex_certified(
+            grid,
+            config,
+            o1_index=0,
+            starts=("uniform", "O1"),
+        )
+
+
 def test_global_o2_routes_complementary_time_cells():
     estimates_a, accompaniment_a, vocal_a = _basis([1.0, 0.5])
     estimates_b, accompaniment_b, vocal_b = _basis([0.5, 1.0])

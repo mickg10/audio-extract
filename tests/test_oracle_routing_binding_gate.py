@@ -94,13 +94,13 @@ def _work(seed, *, route_voice=-12.0, route_hole=1.8):
     return {"outputs": outputs}
 
 
-def _no_vocal_entry(seed, ratio, *, routed=False):
+def _no_vocal_entry(seed, ratio, *, routing_plan_sha256=None):
     result = {
         "artifact": _artifact(seed),
         "false_positive_energy_ratio": ratio,
     }
-    if routed:
-        result["routing_plan_sha256"] = _sha(seed + 3000)
+    if routing_plan_sha256 is not None:
+        result["routing_plan_sha256"] = routing_plan_sha256
     return result
 
 
@@ -117,36 +117,48 @@ def _resolution(seed):
             seed + 60, route_voice=-10.0, route_hole=1.8
         ),
     }
-    works["aalto_mozart_dry"]["no_vocal"] = {
-        "median_mdx_mel_bs": _no_vocal_entry(seed + 100, 0.0100),
-        "mdx23c": _no_vocal_entry(seed + 101, 0.0120),
-        "best_whole_track_single": _no_vocal_entry(
-            seed + 102, 0.0110
-        ),
-        "O2": _no_vocal_entry(seed + 103, 0.0104, routed=True),
-        "O3": _no_vocal_entry(seed + 104, 0.0103, routed=True),
-    }
-    return {
-        "works": works,
-        "transform_controls": {
+    for work_index, (work_id, work) in enumerate(works.items()):
+        control_seed = seed + 100 + 20 * work_index
+        work["no_vocal"] = {
+            "median_mdx_mel_bs": _no_vocal_entry(control_seed, 0.0100),
+            "mdx23c": _no_vocal_entry(control_seed + 1, 0.0120),
+            "best_whole_track_single": _no_vocal_entry(
+                control_seed + 2, 0.0110
+            ),
+            "O2": _no_vocal_entry(
+                control_seed + 3,
+                0.0104,
+                routing_plan_sha256=work["outputs"]["O2"][
+                    "routing_plan_sha256"
+                ],
+            ),
+            "O3": _no_vocal_entry(
+                control_seed + 4,
+                0.0103,
+                routing_plan_sha256=work["outputs"]["O3"][
+                    "routing_plan_sha256"
+                ],
+            ),
+        }
+        work["transform_controls"] = {
             "O1": {
-                "raw_artifact_pcm_sha256": _sha(seed + 200),
-                "stft_artifact_pcm_sha256": _sha(seed + 201),
+                "raw_artifact_pcm_sha256": _sha(control_seed + 200),
+                "stft_artifact_pcm_sha256": _sha(control_seed + 201),
                 "max_abs": 1e-6,
                 "rms": 1e-7,
                 "spectral_error": 1e-7,
                 "stereo_error": 1e-7,
             },
             "median_mdx_mel_bs": {
-                "raw_artifact_pcm_sha256": _sha(seed + 202),
-                "stft_artifact_pcm_sha256": _sha(seed + 203),
+                "raw_artifact_pcm_sha256": _sha(control_seed + 202),
+                "stft_artifact_pcm_sha256": _sha(control_seed + 203),
                 "max_abs": 1e-6,
                 "rms": 1e-7,
                 "spectral_error": 1e-7,
                 "stereo_error": 1e-7,
             },
-        },
-    }
+        }
+    return {"works": works}
 
 
 def _report():
@@ -162,16 +174,28 @@ def _report():
     )
     return {
         "schema": REPORT_SCHEMA,
-        "code_commit": _sha(4001),
+        "code_commit": f"{4001:040x}",
         "candidate_manifest_sha256": _sha(4002),
         "truth_manifest_sha256": _sha(4003),
         "routing_config_sha256": _sha(4004),
         "basis": [
             {
+                "work_id": work_id,
+                "scope": scope,
                 "role": role,
-                "candidate_id": f"candidate-{index}",
-                "artifact_pcm_sha256": _sha(index + 5000),
+                "candidate_id": _sha(6000 + panel * 100 + index),
+                "artifact_pcm_sha256": _sha(5000 + panel * 100 + index),
             }
+            for panel, (work_id, scope) in enumerate(
+                (work_id, scope)
+                for work_id in (
+                    "bologna_verdi",
+                    "bologna_donizetti",
+                    "bologna_puccini",
+                    "aalto_mozart_dry",
+                )
+                for scope in ("full", "no_vocal")
+            )
             for index, role in enumerate(roles)
         ],
         "resolutions": {
@@ -234,9 +258,9 @@ def test_missing_or_nonfinite_metric_is_invalid_evidence():
 
 def test_transform_roundtrip_failure_invalidates_entire_gate():
     report = _report()
-    report["resolutions"]["1"]["transform_controls"]["O1"][
-        "max_abs"
-    ] = 0.01
+    report["resolutions"]["1"]["works"]["bologna_verdi"][
+        "transform_controls"
+    ]["O1"]["max_abs"] = 0.01
     decision = evaluate_binding_report(report, _config())
     assert decision["status"] == "INVALID_EVIDENCE"
     assert "transform control" in decision["failures"][0]
@@ -352,3 +376,54 @@ def test_missing_provenance_hash_is_invalid():
     del report["truth_manifest_sha256"]
     decision = evaluate_binding_report(report, _config())
     assert decision["status"] == "INVALID_EVIDENCE"
+
+
+def test_git_revision_is_not_accepted_as_a_content_hash_or_vice_versa():
+    report = _report()
+    report["code_commit"] = _sha(4001)
+    assert evaluate_binding_report(report, _config())["status"] == "INVALID_EVIDENCE"
+    report = _report()
+    report["candidate_manifest_sha256"] = f"{4002:040x}"
+    assert evaluate_binding_report(report, _config())["status"] == "INVALID_EVIDENCE"
+
+
+def test_full_and_no_vocal_routes_must_reuse_the_exact_plan():
+    report = _report()
+    report["resolutions"]["1"]["works"]["bologna_verdi"][
+        "no_vocal"
+    ]["O2"]["routing_plan_sha256"] = _sha(999999)
+    decision = evaluate_binding_report(report, _config())
+    assert decision["status"] == "INVALID_EVIDENCE"
+    assert "route plans differ" in decision["failures"][0]
+
+
+def test_every_work_and_scope_requires_the_frozen_basis():
+    report = _report()
+    report["basis"] = [
+        row
+        for row in report["basis"]
+        if not (
+            row["work_id"] == "bologna_puccini"
+            and row["scope"] == "no_vocal"
+            and row["role"] == "melband"
+        )
+    ]
+    decision = evaluate_binding_report(report, _config())
+    assert decision["status"] == "INVALID_EVIDENCE"
+    assert "bologna_puccini/no_vocal" in decision["failures"][0]
+
+
+def test_incomplete_sensitivity_evidence_invalidates_the_gate():
+    report = _report()
+    del report["resolutions"]["0.5"]["works"]["bologna_verdi"][
+        "outputs"
+    ]["O2"]
+    assert evaluate_binding_report(report, _config())["status"] == "INVALID_EVIDENCE"
+
+
+def test_fractional_sample_grid_facts_are_invalid():
+    report = _report()
+    report["resolutions"]["1"]["works"]["bologna_verdi"][
+        "outputs"
+    ]["O2"]["artifact"]["frames"] = 441000.5
+    assert evaluate_binding_report(report, _config())["status"] == "INVALID_EVIDENCE"

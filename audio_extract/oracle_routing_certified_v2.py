@@ -468,17 +468,40 @@ def route_objective(
     if route.shape != (time, bands, candidates):
         raise ValueError("weight grid does not match quadratics")
     if np.any(route < -1e-10) or not np.allclose(
-        route.sum(axis=-1), 1.0, atol=1e-8, rtol=0.0
+        # SLSQP and other independent constrained solvers evaluate finite-
+        # difference probes just outside the equality manifold.  Accept their
+        # O(sqrt(eps)) probes while still rejecting materially non-simplex
+        # routes.
+        route.sum(axis=-1), 1.0, atol=5e-8, rtol=0.0
     ):
         raise ValueError("weights must be a per-cell simplex")
     if temporal_smoothness < 0.0 or frequency_smoothness < 0.0:
         raise ValueError("smoothness weights must be non-negative")
+    return _route_objective_validated(
+        route,
+        grid,
+        temporal_smoothness=float(temporal_smoothness),
+        frequency_smoothness=float(frequency_smoothness),
+        total_weight=float(np.sum(grid.cell_weights)),
+    )
+
+
+def _route_objective_validated(
+    route: np.ndarray,
+    grid: QuadraticGrid,
+    *,
+    temporal_smoothness: float,
+    frequency_smoothness: float,
+    total_weight: float,
+) -> tuple[float, float, float, float]:
+    """Evaluate an already validated route/grid pair inside a solver loop."""
+
+    time, bands = route.shape[:2]
     cell_cost = (
         np.einsum("tbk,tbkl,tbl->tb", route, grid.Q, route)
         - 2.0 * np.einsum("tbk,tbk->tb", grid.c, route)
         + grid.constant
     )
-    total_weight = grid.total_cell_weight
     data = float(np.sum(grid.cell_weights * cell_cost) / total_weight)
     temporal = 0.0
     if time > 1:
@@ -635,8 +658,7 @@ def solve_discrete_global(
     )
 
 
-def _gradient(route, grid, config):
-    total_weight = grid.total_cell_weight
+def _gradient(route, grid, config, total_weight):
     gradient = (
         2.0 * grid.cell_weights[..., None]
         * (np.einsum("tbkl,tbl->tbk", grid.Q, route) - grid.c)
@@ -661,9 +683,8 @@ def _gradient(route, grid, config):
     return gradient
 
 
-def _lipschitz_bound(grid, config):
-    time, bands, _ = grid.validate()
-    total_weight = grid.total_cell_weight
+def _lipschitz_bound(grid, config, total_weight):
+    time, bands = grid.Q.shape[:2]
     data_bound = max(
         2.0 * float(grid.cell_weights[t, b])
         * float(np.linalg.eigvalsh(grid.Q[t, b]).max(initial=0.0))
@@ -702,32 +723,36 @@ def solve_convex_certified(
     """O3: solve the convex weighted simplex problem with a KKT certificate."""
     cfg = config or CertifiedRoutingConfig()
     cfg.validate()
+    grid.validate()
+    total_weight = float(np.sum(grid.cell_weights))
     if o1_index is None:
         o1_index, _ = best_whole_track(grid)
-    step = 1.0 / _lipschitz_bound(grid, cfg)
+    step = 1.0 / _lipschitz_bound(grid, cfg, total_weight)
     solutions = []
     start_objectives = {}
     for name in starts:
         if name == "O2" and o2_labels is None:
             continue
         route = _initial_weights(name, grid, o1_index, o2_labels)
-        current = route_objective(
+        current = _route_objective_validated(
             route, grid,
             temporal_smoothness=cfg.temporal_weight_smoothness,
             frequency_smoothness=cfg.frequency_weight_smoothness,
+            total_weight=total_weight,
         )[0]
         start_objectives[name] = current
         converged = False
         projected_norm = math.inf
         iteration = 0
         for iteration in range(1, cfg.max_projected_gradient_iterations + 1):
-            gradient = _gradient(route, grid, cfg)
+            gradient = _gradient(route, grid, cfg, total_weight)
             proposal = project_simplex(route - step * gradient)
             projected_norm = float(np.linalg.norm((route - proposal) / step))
-            proposal_value = route_objective(
+            proposal_value = _route_objective_validated(
                 proposal, grid,
                 temporal_smoothness=cfg.temporal_weight_smoothness,
                 frequency_smoothness=cfg.frequency_weight_smoothness,
+                total_weight=total_weight,
             )[0]
             tolerance = 1e-12 * max(1.0, abs(current), abs(proposal_value))
             if proposal_value > current + tolerance:
@@ -740,14 +765,20 @@ def solve_convex_certified(
                 break
         solutions.append((current, name, route.copy(), iteration,
                           projected_norm, converged))
-    certified = [solution for solution in solutions if solution[-1]]
-    if not certified:
+    rejected = [solution for solution in solutions if not solution[-1]]
+    if rejected:
         details = {
             name: {"objective": value, "iterations": iterations,
                    "projected_gradient_norm": norm}
             for value, name, _, iterations, norm, _ in solutions
         }
-        raise CertifiedRoutingError(f"O3 did not converge: {details}")
+        raise CertifiedRoutingError(
+            "O3 did not converge from every requested start: "
+            f"{details}"
+        )
+    certified = solutions
+    if not certified:
+        raise CertifiedRoutingError("O3 has no available initialization")
     values = [solution[0] for solution in certified]
     agreement = max(1e-8, 10.0 * cfg.projected_gradient_tolerance)
     if max(values) - min(values) > agreement:
@@ -757,10 +788,11 @@ def solve_convex_certified(
     _, selected_start, route, iterations, norm, converged = min(
         certified, key=lambda solution: solution[0]
     )
-    total, data, temporal, frequency = route_objective(
+    total, data, temporal, frequency = _route_objective_validated(
         route, grid,
         temporal_smoothness=cfg.temporal_weight_smoothness,
         frequency_smoothness=cfg.frequency_weight_smoothness,
+        total_weight=total_weight,
     )
     return ConvexRoutingResult(
         weights=route, objective=total, data_objective=data,
