@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Assemble, audit, run, and decide the certified oracle-routing v2 experiment.
+"""Assemble, audit, and run the certified oracle-routing v2 diagnostic.
 
 Example:
 
@@ -11,9 +11,10 @@ Example:
       --truth-root /home/mickg/classical_training/exact \
       --output-root /home/mickg/runs/oracle-routing-v2-certified
 
-The command is fail-closed. It refuses missing required aliases, changed hashes,
-non-FLOAT grids, absent Aalto no-vocal controls, uncertified O2/O3 results, and
-attempts to rewrite a differing completed report.
+The command writes the exact compiled binding policy and separate voiced and
+no-vocal source-manifest groups into ``run-inputs-v2.json`` before rendering.
+The exploratory decision emitted by the runner is not final authority; use
+``tools/verify_oracle_routing_binding_v2.py`` on the completed report.
 """
 
 from __future__ import annotations
@@ -21,13 +22,17 @@ from __future__ import annotations
 import argparse
 from dataclasses import asdict
 from pathlib import Path
-from typing import Any
+from typing import Any, Sequence
 import hashlib
 import json
 import subprocess
 
 from audio_extract.oracle_routing_basis_sources_v2 import assemble_basis
 from audio_extract.oracle_routing_basis_v2 import basis_report, write_jsonl
+from audio_extract.oracle_routing_binding_policy_v2 import (
+    CANONICAL_POLICY_SHA256,
+    canonical_binding_policy,
+)
 from audio_extract.oracle_routing_decision_v2 import RoutingGateConfig
 from audio_extract.oracle_routing_runner_v2 import (
     CertifiedRoutingRunConfig,
@@ -102,6 +107,20 @@ def _write_immutable_json(path: Path, value: Any) -> None:
         path.write_text(payload)
 
 
+def _manifest_records(paths: Sequence[Path]) -> list[dict[str, str]]:
+    if not paths:
+        raise ValueError("source manifest group must not be empty")
+    result = []
+    seen: set[Path] = set()
+    for raw_path in paths:
+        path = raw_path.resolve(strict=True)
+        if path in seen:
+            raise ValueError(f"duplicate source manifest: {path}")
+        seen.add(path)
+        result.append({"path": str(path), "sha256": _sha_file(path)})
+    return result
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Run certified exact O1/O2/O3 opera routing"
@@ -138,15 +157,31 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
-    if not (args.audited_candidate_manifest or args.strict_basis_manifest):
+    voiced_source_paths = (
+        *args.audited_candidate_manifest,
+        *args.strict_basis_manifest,
+    )
+    no_vocal_source_paths = (
+        *args.no_vocal_audited_candidate_manifest,
+        *args.no_vocal_strict_basis_manifest,
+    )
+    if not voiced_source_paths:
         raise SystemExit("at least one voiced candidate manifest is required")
-    if not (
-        args.no_vocal_audited_candidate_manifest
-        or args.no_vocal_strict_basis_manifest
-    ):
+    if not no_vocal_source_paths:
         raise SystemExit(
             "a binding run requires the complete Aalto no-vocal basis manifest"
         )
+    voiced_records = _manifest_records(voiced_source_paths)
+    no_vocal_records = _manifest_records(no_vocal_source_paths)
+    if {
+        record["path"] for record in voiced_records
+    } & {
+        record["path"] for record in no_vocal_records
+    }:
+        raise SystemExit(
+            "voiced and no-vocal source-manifest groups must be disjoint"
+        )
+
     resolutions = (
         None if args.resolution is None
         else tuple(float(value) for value in args.resolution)
@@ -155,6 +190,7 @@ def main(argv: list[str] | None = None) -> int:
         args.run_config_json, resolutions=resolutions
     )
     decision_config = load_decision_config(args.decision_config_json)
+    binding_policy = canonical_binding_policy()
     code_commit = args.code_commit or _git_commit()
     works = tuple(args.work) if args.work else DEFAULT_WORKS
 
@@ -182,12 +218,10 @@ def main(argv: list[str] | None = None) -> int:
     _write_immutable_json(
         args.output_root / "no-vocal-basis-audit-v2.json", no_vocal_audit
     )
-    source_manifests = [
-        *args.audited_candidate_manifest,
-        *args.strict_basis_manifest,
-        *args.no_vocal_audited_candidate_manifest,
-        *args.no_vocal_strict_basis_manifest,
-    ]
+    _write_immutable_json(
+        args.output_root / "binding-policy-v2.json",
+        binding_policy.identity_dict(),
+    )
     inputs = {
         "schema": "audio-extract/oracle-routing-run-inputs/v2",
         "code_commit": code_commit,
@@ -197,11 +231,13 @@ def main(argv: list[str] | None = None) -> int:
             "spectral": asdict(run_config.spectral),
         },
         "decision_config": asdict(decision_config),
-        "truth_root": str(args.truth_root.resolve()),
-        "source_manifests": [
-            {"path": str(path.resolve()), "sha256": _sha_file(path)}
-            for path in source_manifests
-        ],
+        "binding_policy": binding_policy.identity_dict(),
+        "binding_policy_sha256": CANONICAL_POLICY_SHA256,
+        "truth_root": str(args.truth_root.resolve(strict=True)),
+        "source_manifest_groups": {
+            "voiced": voiced_records,
+            "no_vocal": no_vocal_records,
+        },
         "basis_audit_sha256": _sha_file(
             args.output_root / "basis-audit-v2.json"
         ),
@@ -211,7 +247,7 @@ def main(argv: list[str] | None = None) -> int:
     }
     _write_immutable_json(args.output_root / "run-inputs-v2.json", inputs)
 
-    report, decision = run_experiment(
+    report, exploratory_decision = run_experiment(
         basis_rows=basis,
         no_vocal_basis_rows=no_vocal_basis,
         truth_root=args.truth_root,
@@ -223,18 +259,21 @@ def main(argv: list[str] | None = None) -> int:
     )
     summary = {
         "schema": "audio-extract/oracle-routing-command-result/v2",
-        "status": "complete",
+        "status": "diagnostic_complete__strict_verification_required",
         "report_schema": report["schema"],
-        "decision": decision["decision"],
-        "recommendation": decision["recommendation"],
-        "selected": decision.get("selected"),
+        "exploratory_decision": exploratory_decision["decision"],
+        "binding_policy_sha256": CANONICAL_POLICY_SHA256,
         "output_root": str(args.output_root.resolve()),
         "report": str(
             (args.output_root / "oracle-routing-envelope-v2.json").resolve()
         ),
-        "decision_report": str(
-            (args.output_root / "binding-decision-v2.json").resolve()
+        "run_inputs": str(
+            (args.output_root / "run-inputs-v2.json").resolve()
         ),
+        "binding_policy": str(
+            (args.output_root / "binding-policy-v2.json").resolve()
+        ),
+        "strict_verifier": "tools/verify_oracle_routing_binding_v2.py",
     }
     print(json.dumps(summary, sort_keys=True))
     return 0
