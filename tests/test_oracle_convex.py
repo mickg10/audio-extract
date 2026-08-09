@@ -85,7 +85,7 @@ def test_quadratic_penalizes_phase_and_overgain_not_only_holes():
     )
     quadratic = build_quadratic(source, config)
     candidates = np.eye(3, dtype=np.float64).reshape(3, 1, 1, 3)
-    values = [objective(candidate[0], quadratic, config)[0] for candidate in candidates]
+    values = [objective(candidate, quadratic, config)[0] for candidate in candidates]
     assert values[0] == pytest.approx(0.0, abs=1e-10)
     assert values[1] == pytest.approx(4.0, abs=1e-10)
     assert values[2] == pytest.approx(1.0, abs=1e-10)
@@ -111,9 +111,10 @@ def test_voice_term_uses_fixed_true_accompaniment_denominator():
 
 
 def test_smoothness_couples_neighboring_cells():
+    # Each cell has a different exact vertex; strong smoothing pulls the routes together.
     source = stats(np.array([
-        [[0.0, 2.0]],
-        [[2.0, 0.0]],
+        [[1.0, 2.0]],
+        [[2.0, 1.0]],
     ]))
     weak = ConvexOracleConfig(
         transfer_weight=1.0, retained_voice_weight=0.0,
