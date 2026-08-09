@@ -86,6 +86,22 @@ def _local_path(value: str) -> Path:
     return Path(value.removeprefix("research6:"))
 
 
+def _identity_values(value: Any) -> Any:
+    """Materialize exact decimal strings for recipe-bearing float facts."""
+
+    if isinstance(value, dict):
+        return {str(key): _identity_values(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_identity_values(item) for item in value]
+    if isinstance(value, (float, np.floating)):
+        if not math.isfinite(float(value)):
+            raise ValueError("non-finite solver fact cannot enter recipe identity")
+        return format(float(value), ".17g")
+    if isinstance(value, np.integer):
+        return int(value)
+    return value
+
+
 def _manifest_rows(path: Path) -> dict[tuple[str, str], dict[str, Any]]:
     rows = {}
     for line in path.read_text().splitlines():
@@ -597,6 +613,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
                          "start_objectives": o3.start_objectives}
                     ),
                 }
+                solver_identity = _identity_values(solver)
                 artifact = None
                 removed = None
                 if tile_seconds == 2.0:
@@ -612,7 +629,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
                             "solver": solver,
                         },
                         truth_pcm={"accompaniment": _pcm(accompaniment), "vocal": _pcm(vocal)},
-                        solver_config=solver,
+                        solver_config=solver_identity,
                         adapter_revision="certified-exact-fallback-route/v2",
                     )
                     removed = _write_removed_vocal(

@@ -63,3 +63,13 @@ def test_parser_accepts_single_work_fragment(tmp_path):
         "--output", str(tmp_path / "report.json"),
     ])
     assert args.work == ["bologna_verdi"]
+
+
+def test_solver_recipe_identity_materializes_decimal_strings():
+    value = module._identity_values({
+        "objective": np.float64(0.125),
+        "nested": [1, 0.25, None],
+    })
+    assert value == {
+        "objective": "0.125", "nested": [1, "0.25", None]
+    }
