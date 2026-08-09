@@ -228,7 +228,9 @@ def _build_optimizer(model, cfg: dict):
     if cfg["base_checkpoint"].get("mode") == "random_two_source_control":
         if cfg["optim"]["name"] != "adam":
             raise ValueError("random A2 control optimizer must be Adam")
-        return torch.optim.Adam(model.parameters(), lr=float(cfg["optim"]["lr"]))
+        optimizer = torch.optim.Adam(model.parameters(), lr=float(cfg["optim"]["lr"]))
+        optimizer.param_groups[0]["group_name"] = "all_parameters"
+        return optimizer
     return torch.optim.AdamW(_parameter_groups(model, cfg["optim"]["schedule"]))
 
 

@@ -1,5 +1,6 @@
 from audio_extract.cli import build_parser
 from audio_extract.train_classical import (
+    _build_optimizer,
     _exact_fold_works,
     _manifest_train_works,
     _separate_controls,
@@ -111,3 +112,13 @@ def test_two_source_control_uses_direct_accompaniment_not_residual():
     assert torch.equal(direct["A_hat"], mixture * 2)
     assert torch.equal(direct["V_hat"], mixture * 3)
     assert torch.equal(residual["A_hat"], mixture - mixture * 3)
+
+
+def test_random_control_optimizer_has_provenance_group_name():
+    import torch
+
+    optimizer = _build_optimizer(torch.nn.Linear(2, 1), {
+        "base_checkpoint": {"mode": "random_two_source_control"},
+        "optim": {"name": "adam", "lr": 0.0003},
+    })
+    assert optimizer.param_groups[0]["group_name"] == "all_parameters"
