@@ -1076,5 +1076,42 @@ is the sole remaining execution gate.
 
 > **ANSWER:**
 
+Local Oracle independent ruling — 2026-08-09
+
+Audit target: current `v2-design` lineage through `e054268` (with the later
+catalog-only `f84f5c1` commit present). I inspected the compiled five-work/eight-alias
+identity, the strict report evaluator, the preregistration abstraction and TLA+ gate,
+the run-input binding, the hall/non-finite regressions, and the live immutable Aalto
+hall store on research6. Focused adversarial verification passed: 35 tests.
+
+1. Yes. The shared contract makes hall omission, dry-as-hall substitution, an
+   incomplete basis/lineage, a changed work/alias order, and absent or non-finite hall
+   evidence non-promotable. A report must bind the exact semantic work-contract hash;
+   each of both routed methods must have valid evidence at exact 2.0/1.0/0.5; only
+   O2_global_medoid at exact 1.0 can produce the actionable decision.
+2. I found no certified promotion path that accepts the superseded c8 claim or a
+   four-work matrix. The compiled identity is the five-work hall-bearing contract in
+   the run input, runner, legacy evaluator, strict evaluator, verifier, Python
+   abstraction, and formal gate. Old artifacts may remain immutable evidence, but
+   they cannot satisfy the current binding preflight or decision gate.
+3. Yes. The two deterministic residual recipes are sufficient for their stated
+   aliases. I reopened the live manifest and recipes. Each is an explicit
+   `mixture_minus_source` float32 node on the exact 3,969,000-frame, 44.1 kHz,
+   FL/FR grid, binds source PCM
+   `sha256:9ad002376c63cc3e738d6ee4ee0ea6460acb4d022e9b0a63662dcad2d42561b5`,
+   names its immutable vocal parent, and pins code commit
+   `3c0b048da4696514cee222abd8c600c75c023fd4`. Their manifest PCM hashes match
+   the declared `4b85...b3ba` and `826c...b97` values.
+4. Yes. Subject to the already staged exact checkpoint/config/adapter identities and
+   zero optimizer updates, I approve exactly the two missing HTDemucs hall basis
+   inference jobs: `htdemucs_04573f0d` and `htdemucs_955717e8`. This is basis
+   completion only. It does not authorize training, routing, changed thresholds,
+   resampling, gain, or any broader HTDemucs continuation.
+5. Metric-v3 remains unblessed. Its controlled-defect calibration and exact published
+   commit must be independently audited when available; no v2 metric may be relabeled
+   as v3.
+
+READY_FOR_HALL_BASIS_COMPLETION_ONLY
+
 ## ARCHIVE
 _(answered items moved here by Claude)_
