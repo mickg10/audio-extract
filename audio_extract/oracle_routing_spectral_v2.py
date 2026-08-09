@@ -1,8 +1,9 @@
 """Exact spectral adapter for the certified oracle-routing v2 mathematics.
 
 This module owns the common stereo STFT grid, complete time/band coverage,
-source-coordinate/direct-fallback cell construction, and shared-stereo route
-reconstruction. Storage and experiment orchestration remain in the runner.
+source-coordinate/direct-fallback cell construction, identity-bearing cell
+measure, and shared-stereo route reconstruction. Storage and orchestration
+remain in the runner.
 """
 
 from __future__ import annotations
@@ -17,6 +18,9 @@ from .oracle_routing_math_v2 import (
     build_exact_cell_quadratic,
     stack_cells,
 )
+
+
+CELL_MEASURE_REVISION = "rfft-real-degrees-of-freedom/v1"
 
 
 @dataclass(frozen=True)
@@ -108,13 +112,6 @@ def stft_stack(
     frames = len(values[0])
     if any(len(value) != frames for value in values):
         raise ValueError("signal frame counts differ")
-    result = np.empty(
-        (len(values), 2, config.n_fft // 2 + 1,
-         1 + frames // config.hop_length),
-        dtype=np.complex64,
-    )
-    # Librosa's centered frame count can differ at exact boundaries; build one
-    # member first and allocate from the observed shape instead.
     first = np.stack([
         librosa.stft(
             values[0][:, channel], n_fft=config.n_fft,
@@ -185,6 +182,51 @@ def frequency_bin_ranges(
     return ranges
 
 
+def frequency_bin_multiplicity(
+    frequency_bins: int, config: RoutingSpectralConfig
+) -> np.ndarray:
+    """Real-signal multiplicity of each one-sided rFFT frequency bin."""
+
+    config.validate()
+    expected = config.n_fft // 2 + 1
+    if frequency_bins != expected:
+        raise ValueError("frequency grid does not match configured rFFT")
+    result = np.full(frequency_bins, 2.0, dtype=np.float64)
+    result[0] = 1.0
+    if config.n_fft % 2 == 0:
+        result[-1] = 1.0
+    return result
+
+
+def cell_measure_grid(
+    time_ranges: tuple[tuple[int, int], ...],
+    frequency_ranges: tuple[tuple[int, int], ...],
+    *,
+    channels: int,
+    frequency_bins: int,
+    config: RoutingSpectralConfig,
+) -> np.ndarray:
+    """Exact positive cell measure in real-signal spectral degrees of freedom."""
+
+    if channels < 1:
+        raise ValueError("channels must be positive")
+    multiplicity = frequency_bin_multiplicity(frequency_bins, config)
+    result = np.empty((len(time_ranges), len(frequency_ranges)), dtype=np.float64)
+    for time_index, (time_start, time_end) in enumerate(time_ranges):
+        time_count = time_end - time_start
+        if time_count <= 0:
+            raise ValueError("time range is empty")
+        for band_index, (frequency_start, frequency_end) in enumerate(
+            frequency_ranges
+        ):
+            band_dof = float(multiplicity[frequency_start:frequency_end].sum())
+            measure = float(channels * time_count) * band_dof
+            if not math.isfinite(measure) or measure <= 0.0:
+                raise ValueError("derived cell measure is not positive and finite")
+            result[time_index, band_index] = measure
+    return result
+
+
 def build_quadratic_grid(
     candidate_spectra: np.ndarray,
     accompaniment_spectrum: np.ndarray,
@@ -212,6 +254,13 @@ def build_quadratic_grid(
 
     times = time_frame_ranges(candidates.shape[-1], config)
     bands = frequency_bin_ranges(candidates.shape[-2], config)
+    measure = cell_measure_grid(
+        times,
+        bands,
+        channels=candidates.shape[1],
+        frequency_bins=candidates.shape[-2],
+        config=config,
+    )
     global_a_power = float(np.mean(np.abs(accompaniment) ** 2))
     global_v_power = float(np.mean(np.abs(vocal) ** 2))
     global_power = max(global_a_power + global_v_power, np.finfo(float).tiny)
@@ -254,10 +303,14 @@ def build_quadratic_grid(
             energy = cell.accompaniment_energy + cell.vocal_energy
             mode_energy[cell.mode] = mode_energy.get(cell.mode, 0.0) + energy
         cells.append(row)
-    grid = stack_cells(cells)
+    grid = stack_cells(cells, measure=measure)
     report = {
         "time_frame_ranges": [list(value) for value in times],
         "frequency_bin_ranges": [list(value) for value in bands],
+        "cell_measure_revision": CELL_MEASURE_REVISION,
+        "cell_measure": measure.tolist(),
+        "normalized_cell_measure": grid.normalized_measure().tolist(),
+        "cell_measure_sum": float(measure.sum()),
         "mode_counts": mode_counts,
         "mode_energy": mode_energy,
         "total_cells": len(times) * len(bands),
