@@ -46,20 +46,28 @@ def cmrstft(x, y):
     return loss / 3.0
 
 
-def srccoord(A_hat, A, V):
-    # per (B,ch): Y=A_hat; X=[A V]; c=(X^T X + lamI)^-1 X^T Y ; R=Y-aA-bV  (real waveform proxy of §11)
+def srccoord(A_hat, A, V, sample_mask):
+    # per (B,ch): Y=A_hat; X=[A V]; c=(X^T X + lamI)^-1 X^T Y ; R=Y-aA-bV  (real waveform proxy of §11).
+    # §11 kappa masking: only well-conditioned tiles from EXACT crops (both A,V active); controls
+    # (V=0 no-vocal, A=0 vocal-only) give a singular Gram -> alpha/beta explode -> EXCLUDED.
     B, C, L = A_hat.shape
     Y = A_hat.reshape(B * C, L, 1); a = A.reshape(B * C, L, 1); v = V.reshape(B * C, L, 1)
     X = torch.cat([a, v], -1)                       # (BC, L, 2)
-    G = X.transpose(1, 2) @ X + 1e-3 * torch.eye(2, device=A.device)   # (BC,2,2)
-    rhs = X.transpose(1, 2) @ Y
-    c = torch.linalg.solve(G, rhs)                  # (BC,2,1)
+    G = X.transpose(1, 2) @ X + 1e-3 * torch.eye(2, device=A.device)   # (BC,2,2) always PD
+    c = torch.linalg.solve(G, X.transpose(1, 2) @ Y)                   # (BC,2,1)
     alpha, beta = c[:, 0, 0], c[:, 1, 0]
     R = Y - X @ c
-    l_alpha = ((alpha - 1.0) ** 2).mean()
-    l_beta = (beta ** 2).mean()
-    l_baud = ((beta[:, None, None] * v).pow(2).mean(1) / ((alpha[:, None, None] * a).pow(2).mean(1) + 1e-6)).mean()
-    l_R = (R.pow(2).mean(1) / (a.pow(2).mean(1) + 1e-6)).mean()
+    ea = a.pow(2).mean(1).squeeze(-1); ev = v.pow(2).mean(1).squeeze(-1)
+    with torch.no_grad():
+        smask = sample_mask.view(B, 1).repeat(1, C).reshape(B * C).bool()
+        kappa = torch.linalg.cond(G)
+        vm = (smask & (kappa < 1e6) & (ea > 1e-8) & (ev > 1e-8)).float()   # invalid rows get weight 0 (no grad)
+    den = vm.sum() + 1e-8
+    wmean = lambda x: (x * vm).sum() / den
+    l_alpha = wmean((alpha - 1.0) ** 2)
+    l_beta = wmean(beta ** 2)
+    l_baud = wmean((beta ** 2 * ev) / (alpha ** 2 * ea + 1e-6))
+    l_R = wmean(R.pow(2).mean(1).squeeze(-1) / (ea + 1e-6))
     return l_alpha, l_beta, l_baud, l_R
 
 
@@ -197,7 +205,8 @@ def main():
         out = model(M); V_hat = out[:, vidx]; A_hat = M - V_hat
         ew = event_weight(M, vm)
         l_exact = W["vc"] * cmrstft(V_hat, V) + W["ac"] * cmrstft(A_hat, A) + W["aw"] * (ew * (A_hat - A).abs()).mean()
-        la, lb, lbaud, lR = srccoord(A_hat, A, V)
+        exact_mask = torch.tensor([1.0 if k == "exact" else 0.0 for k in kinds], device=DEV)
+        la, lb, lbaud, lR = srccoord(A_hat, A, V, exact_mask)
         l_src = W["alpha"] * la + W["beta"] * lb + W["beta_aud"] * lbaud + W["R"] * lR
         l_stereo = W["stereo"] * ((A_hat[:, 0] - A_hat[:, 1]) - (A[:, 0] - A[:, 1])).abs().mean()
         nv = torch.tensor([1.0 if k == "no_vocal" else 0.0 for k in kinds], device=DEV).view(-1, 1, 1)
@@ -206,7 +215,7 @@ def main():
         loss = l_exact + l_src + l_stereo + l_ctrl + l_parent
         if not torch.isfinite(loss):
             json.dump({"ABORT": "non-finite", "step": step}, open(f"{a.run_dir}/ABORT.json", "w")); raise SystemExit("ABORT non-finite")
-        opt.zero_grad(); loss.backward(); torch.nn.utils.clip_grad_norm_(model.parameters(), 5.0); opt.step()
+        opt.zero_grad(); loss.backward(); torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0); opt.step()
         hist.append(float(loss.detach()))
         if step % 50 == 0:
             print(f"step {step} loss={loss:.4f} exact={float(l_exact):.3f} src={float(l_src):.3f} ctrl={float(l_ctrl):.3f} parent={float(l_parent):.4f}", flush=True)

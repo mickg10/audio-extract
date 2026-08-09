@@ -1,0 +1,10 @@
+SUPERSEDED / OUT OF SCOPE - committed for the record only, do NOT build on this.
+
+Ruling: bigoracle, GitHub issue #1 comment 5233536825 -
+  no second scalar-loss fine-tune; no HTDemucs-body continuation;
+  no student run before independent-group simultaneous calibration.
+
+Run2 = stabilized HTDemucs-04573f0d full-FT continuation (guarded source-coord + kappa
+mask, lr 1e-4, L2-SP parent anchor 2000, grad-clip 1.0). Exactly the HTDemucs-body
+continuation now out of scope. Training STOPPED by operator directive after gate-500;
+gate-2000 never reached. Gates reached: 0, 100, 500. Run1 (commit 3669677) likewise superseded.

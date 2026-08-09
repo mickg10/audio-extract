@@ -15,7 +15,7 @@ sampler:                       # §7 hierarchical Gate-2 Phase-A proportions
   no_vocal_hard_negative: 0.25 # M=A, V=0  (teach: orchestra is not solo voice)
   vocal_only_control: 0.15     # M=V, A=0
 optim:
-  lr: 0.0003
+  lr: 0.0001                   # run2: lowered from 3e-4 (full-FT of pretrained model drifted)
   batch: 2
   crop_s: 6
   steps_first_run: 2000
@@ -29,7 +29,7 @@ loss:                          # §10 exact family + §11 source-coordinate pena
   R: 0.3                       # §11 ||R||^2 / ||A||^2 (unexplained artifact)
   stereo: 0.2                  # side-channel consistency
   no_vocal: 2.0                # §10 no-vocal control D(V_hat, 0), high weight
-  parent_reg: 30.0             # §13.2 parent-weight anchor (mean squared deviation from 04573f0d)
+  parent_reg: 2000.0           # §13.2 L2-SP anchor; run2 raised from 30 (was ~0.002, too weak to prevent drift)
 gate:                          # §2 champion/challenger
   steps: [0, 100, 500, 2000]
   held_out: [bologna_verdi, bologna_puccini, bologna_donizetti, aalto_mozart_dry, aalto_mozart_hall]
