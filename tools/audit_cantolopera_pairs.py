@@ -18,7 +18,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--output-summary", type=Path, required=True)
     parser.add_argument("--probe-seconds", type=float, default=4.0)
     parser.add_argument("--probe-count", type=int, default=5)
-    parser.add_argument("--max-shift-samples", type=int, default=2048)
+    parser.add_argument("--max-shift-samples", type=int, default=8192)
     parser.add_argument("--null-block-seconds", type=float, default=0.5)
     parser.add_argument("--skip-container-hashes", action="store_true")
     args = parser.parse_args(argv)

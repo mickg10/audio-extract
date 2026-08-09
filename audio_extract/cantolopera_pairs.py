@@ -197,7 +197,7 @@ def audit_pair(
     verify_container_hashes: bool = True,
     probe_seconds: float = 4.0,
     probe_count: int = 5,
-    max_shift_samples: int = 2048,
+    max_shift_samples: int = 8192,
     null_block_seconds: float = 0.5,
 ) -> dict[str, Any]:
     """Return objective grid, alignment, and low-residual evidence for one pair."""
@@ -378,7 +378,7 @@ def audit_inventory(
     verify_container_hashes: bool = True,
     probe_seconds: float = 4.0,
     probe_count: int = 5,
-    max_shift_samples: int = 2048,
+    max_shift_samples: int = 8192,
     null_block_seconds: float = 0.5,
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     pairs = load_completed_pairs(inventory_path, audio_root)
