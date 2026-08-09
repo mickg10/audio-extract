@@ -1,0 +1,37 @@
+schema: audio-extract/classical-baselines/v2
+alignment: gcc_phat+fractional/v1
+overlap: 8
+models:
+  mdx23c:
+    logical_id: mdx23c_hq_ckpt
+    family: mdx23c
+    target: vocals
+    registry_alias: MDX23C-8KFFT-InstVoc_HQ.ckpt
+    weights:
+      filename: MDX23C-8KFFT-InstVoc_HQ.ckpt
+      sha256: 49d51472769e34a2501cd1da782346a3212555c3a5619fc2c53507445528d816
+    config:
+      filename: model_2_stem_full_band_8k.yaml
+      sha256: 451765e869b78dcb9ca9188a74da31f581b7254ff0e8b532aa76b974148de947
+  melband:
+    logical_id: vocals_mel_band_roformer_ckpt
+    family: mel_band_roformer
+    target: vocals
+    registry_alias: vocals_mel_band_roformer.ckpt
+    weights:
+      filename: vocals_mel_band_roformer.ckpt
+      sha256: 87201f4d31afb5bc79993230fc49446918425574db48c01c405e44f365c7559e
+    config:
+      filename: vocals_mel_band_roformer.yaml
+      sha256: b958b29c8f7195f0d86bee6759a33980db675c4ecaf2fcaa80fa125828e6cd38
+  bs_roformer:
+    logical_id: viperx_1297_ckpt
+    family: bs_roformer
+    target: vocals
+    registry_alias: model_bs_roformer_ep_317_sdr_12.9755.ckpt
+    weights:
+      filename: model_bs_roformer_ep_317_sdr_12.9755.ckpt
+      sha256: 5b84f37e8d444c8cb30c79d77f613a41c05868ff9c9ac6c7049c00aefae115aa
+    config:
+      filename: model_bs_roformer_ep_317_sdr_12.9755.yaml
+      sha256: 2bfdd16c656bd9519aba757cc4f8834b7ede675eb1e00ec4772d74ae1c41af7f

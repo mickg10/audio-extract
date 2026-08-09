@@ -282,6 +282,135 @@ def render_ensemble_candidate(layout, source_record: dict, *, member_recipe_ids:
     return record
 
 
+def render_residual_candidate(layout, source_record: dict, *, vocal_recipe_id: str,
+                              code_commit: str = "") -> dict:
+    """Render the exact-grid ``M - V_hat`` child of one immutable vocal candidate.
+
+    The vocal candidate is an explicit recipe parent.  Alignment is therefore a
+    recorded part of this child recipe rather than hidden inside a second model
+    execution.  Repeated calls return the completed immutable artifact.
+    """
+    import os
+    import tempfile
+    from datetime import datetime, timezone
+
+    import soundfile as sf
+
+    from . import identity
+    from .alignment import apply_alignment, estimate_alignment
+    from .manifest import Manifest
+    from .storage import ImmutableWriteError
+
+    canonical = Path(layout.source_dir) / "canonical.f32.wav"
+    mix, sr = sf.read(str(canonical), dtype="float64", always_2d=True)
+    sr = int(sr)
+    expected_grid = (
+        int(source_record["frames"]), int(source_record["sample_rate_hz"]),
+        len(source_record["channel_layout"]),
+    )
+    if (len(mix), sr, mix.shape[1]) != expected_grid:
+        raise ValueError(
+            f"canonical/source-record grid mismatch: {(len(mix), sr, mix.shape[1])} "
+            f"!= {expected_grid}"
+        )
+
+    parent_dir = layout.candidate_dir(vocal_recipe_id)
+    parent_recipe_path = parent_dir / "recipe.json"
+    parent_output = parent_dir / "output.f32.wav"
+    if not parent_recipe_path.exists() or not parent_output.exists():
+        raise ValueError(f"vocal parent {vocal_recipe_id} is not complete")
+    parent_recipe = json.loads(parent_recipe_path.read_text())
+    parent_op = parent_recipe.get("operation", {})
+    if not (
+        parent_op.get("type") == "separate"
+        and parent_op.get("construction") == "native_primary"
+        and parent_op.get("target") == "vocals"
+    ):
+        raise ValueError(f"candidate {vocal_recipe_id} is not a native vocal parent")
+    vocal, vocal_sr = sf.read(str(parent_output), dtype="float64", always_2d=True)
+    if (len(vocal), int(vocal_sr), vocal.shape[1]) != expected_grid:
+        raise ValueError(
+            f"vocal parent grid mismatch: {(len(vocal), int(vocal_sr), vocal.shape[1])} "
+            f"!= {expected_grid}"
+        )
+    alignment = estimate_alignment(mix, vocal)
+    aligned = apply_alignment(vocal, alignment, target_len=len(mix))
+
+    recipe = {
+        "schema": recipe_mod.SCHEMA,
+        "canon": recipe_mod.CANON,
+        "input_pcm": {
+            "sha256": source_record["input_pcm_sha256"],
+            "sample_rate_hz": sr,
+            "channel_layout": source_record["channel_layout"],
+            "frames": len(mix),
+            "sample_format": "float32-le-interleaved",
+        },
+        "operation": {"type": "mixture_minus_source", "target": "instrumental",
+                      "construction": "mixture_minus_source"},
+        "model": {
+            "model_id": "single-vocal-residual",
+            "weights_sha256": hashlib.sha256(vocal_recipe_id.encode()).hexdigest(),
+            "adapter": "audio-extract-residual",
+            "adapter_revision": "residual-exact-grid-v1",
+            "members": [vocal_recipe_id],
+        },
+        "effective_config": {
+            "model_sample_rate_hz": sr,
+            "alignment": "gcc_phat+fractional/v1",
+        },
+        "software": {"audio_extract_commit": code_commit},
+    }
+    rid = identity.recipe_id(recipe)
+    cdir = layout.candidate_dir(rid)
+    cached = (cdir / "output.f32.wav").exists()
+    if cached:
+        output_info = sf.info(cdir / "output.f32.wav")
+        artifact = (cdir / "output.pcm.sha256").read_text().strip()
+        if (output_info.frames, output_info.samplerate, output_info.channels,
+                output_info.subtype) != (*expected_grid, "FLOAT"):
+            raise ValueError(f"cached residual grid mismatch: {output_info}")
+    else:
+        accompaniment = (mix - aligned).astype("float32")
+        artifact = identity.artifact_pcm_sha256(
+            accompaniment, sr, source_record["channel_layout"], len(accompaniment)
+        )
+        fd, tmp_name = tempfile.mkstemp(suffix=".f32.wav")
+        os.close(fd)
+        sf.write(tmp_name, accompaniment, sr, subtype="FLOAT")
+        try:
+            layout.write_candidate(
+                rid, recipe,
+                {**identity.execution_fingerprint(), "alignment": {
+                    "recipe_id": vocal_recipe_id,
+                    "delay": alignment.delay_samples,
+                    "polarity": alignment.polarity,
+                    "confidence": round(alignment.confidence, 4),
+                    "implementation": "gcc_phat+fractional/v1",
+                }},
+                Path(tmp_name), artifact,
+            )
+        except ImmutableWriteError:
+            cached = True
+
+    record = {
+        "recipe_id": rid,
+        "operation": "mixture_minus_source",
+        "parents": [vocal_recipe_id],
+        "artifact_pcm_sha256": artifact,
+        "sample_rate_hz": sr,
+        "channels": source_record["channel_layout"],
+        "frames": len(mix),
+        "sample_format": "float32",
+        "status": "complete",
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "cached": cached,
+    }
+    with Manifest(layout.manifest_sqlite) as man:
+        man.upsert_candidate(record)
+    return record
+
+
 def render_candidate(layout, source_record: dict, *, model_filename: str, target: str,
                      construction: str, overlap: int, code_commit: str,
                      model_dir: str | Path = DEFAULT_MODEL_DIR,
@@ -352,6 +481,15 @@ def render_candidate(layout, source_record: dict, *, model_filename: str, target
                            f"expected {expected_sha256[:16]}, got {out.model_sha256[:16]}")
     sr = out.sr
     mix, _ = sf.read(str(canonical), dtype="float64", always_2d=True)
+    expected_grid = (
+        int(source_record["frames"]), int(source_record["sample_rate_hz"]),
+        len(source_record["channel_layout"]),
+    )
+    if (len(mix), int(sr), mix.shape[1]) != expected_grid:
+        raise ValueError(
+            f"separator/source grid mismatch: {(len(mix), int(sr), mix.shape[1])} "
+            f"!= {expected_grid}"
+        )
 
     def _stem(name: str):
         return out.stems.get(name)
@@ -363,8 +501,9 @@ def render_candidate(layout, source_record: dict, *, model_filename: str, target
     elif construction in ("mixture_minus_primary", "mixture_minus_source"):
         prim = _stem(target)
         if prim is not None:
-            n = min(len(mix), len(prim))
-            arr = mix[:n] - prim[:n]
+            if prim.shape != mix.shape:
+                raise ValueError(f"separator stem grid mismatch: {prim.shape} != {mix.shape}")
+            arr = mix - prim
         else:
             arr = None
     else:
@@ -374,8 +513,12 @@ def render_candidate(layout, source_record: dict, *, model_filename: str, target
         prim = _residual_primary(out.stems)
         if prim is None:
             raise RuntimeError("separator produced no usable stem")
-        n = min(len(mix), len(prim))
-        arr = mix[:n] - prim[:n]
+        if prim.shape != mix.shape:
+            raise ValueError(f"separator fallback stem grid mismatch: {prim.shape} != {mix.shape}")
+        arr = mix - prim
+
+    if arr.shape != mix.shape:
+        raise ValueError(f"separator output grid mismatch: {arr.shape} != {mix.shape}")
 
     recipe = build_separate_recipe(
         source_record, model_filename=model_filename, model_sha256=out.model_sha256,

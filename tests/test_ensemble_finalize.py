@@ -8,7 +8,7 @@ import soundfile as sf
 from audio_extract import fixtures as fx
 from audio_extract import identity
 from audio_extract.cli_autonomous import finalize_and_deliver, revalidate_finalist
-from audio_extract.separate import render_ensemble_candidate
+from audio_extract.separate import render_ensemble_candidate, render_residual_candidate
 from audio_extract.storage import TrackLayout
 
 SR = 44100
@@ -86,6 +86,31 @@ def test_ensemble_refuses_non_vocal_members(tmp_path):
         render_ensemble_candidate(layout, src,
                                   member_recipe_ids=[members["v_good"], members["v_delayed"], rid],
                                   algo="median", code_commit="t")
+
+
+def test_single_vocal_residual_is_exact_parented_and_cached(tmp_path):
+    layout, mix, vocal, orch, members = _run_with_vocal_members(tmp_path)
+    src = json.loads((layout.source_dir / "source.json").read_text())
+    first = render_residual_candidate(
+        layout, src, vocal_recipe_id=members["v_good"], code_commit="t"
+    )
+    second = render_residual_candidate(
+        layout, src, vocal_recipe_id=members["v_good"], code_commit="t"
+    )
+    assert first["recipe_id"] == second["recipe_id"]
+    assert first["parents"] == [members["v_good"]]
+    assert first["cached"] is False and second["cached"] is True
+    cdir = layout.candidate_dir(first["recipe_id"])
+    info = sf.info(cdir / "output.f32.wav")
+    assert (info.frames, info.samplerate, info.channels, info.subtype) == (
+        len(mix), SR, 2, "FLOAT"
+    )
+    recipe = json.loads((cdir / "recipe.json").read_text())
+    assert recipe["model"]["members"] == [members["v_good"]]
+    reopened, _ = sf.read(cdir / "output.f32.wav", dtype="float32", always_2d=True)
+    assert identity.artifact_pcm_sha256(reopened, SR, ["FL", "FR"], len(reopened)) == (
+        cdir / "output.pcm.sha256"
+    ).read_text().strip()
 
 
 def _passages_for(layout, n):
