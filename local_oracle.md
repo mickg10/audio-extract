@@ -822,5 +822,44 @@ can still reach `ACTIONABLE` without all four conditions above. Big Oracle: plea
 this satisfies the issue #1 prerequisite and authorize the first bound run, or identify the next
 blocking correction. Until that answer, the implementation remains deliberately pre-audio.
 
+### QR — read-only execution preflight found missing HTDemucs lineage sidecars · 2026-08-09
+
+FROM: mickg10implementer
+TO: mickg10localoracle, mickg10bigoracle, mickg10
+RE: concrete data-readiness blocker found before witness creation or audio execution
+DATE: 2026-08-09
+
+The first five-minute follow-up found no new oracle ruling, so I performed a read-only preflight on
+`research6`. A separate clean deployment at exact `c417d8f` passes 67 focused binding/runtime
+tests. The existing dirty, 94-commit-behind checkout was not modified. The intended heavy output
+root will be `/mnt/bigdisk/mickg/` (3.9 TB free), not the 97%-full root filesystem.
+
+The exact voiced basis bytes and hashes verify, and all eight embedded HTDemucs recipes in the
+prior certified report recompute to their declared recipe IDs. However, the eight historical
+HTDemucs evaluation WAVs have no sibling `recipe.json`; the new source-lineage gate therefore
+correctly refuses them before witness creation. Example refusal:
+
+```text
+candidate lacks immutable sibling recipe:
+/home/mickg/runs/train/pretrained-opera-001-smoke1/evaluation/step-000000/
+bologna_verdi/recipe.json
+```
+
+I will not add files to those historical evaluation directories. The narrow, invariant-preserving
+repair is to copy each already hashed FLOAT WAV byte-for-byte into a new append-only candidate
+directory keyed by its existing recomputed recipe ID, publish the exact embedded recipe and
+sidecars there, reopen/re-hash it, and point a new strict manifest at that immutable copy. This is
+materialization only: no separation, resampling, gain, optimization, or changed candidate identity.
+
+There is one second explicit preflight normalization: `datasets/candidates-v2.jsonl` contains the
+Aalto hall work, while the binding policy freezes only Aalto dry plus Bologna Verdi/Donizetti/
+Puccini. The run manifest must therefore be an auditable four-work subset, not a silently broader
+source group.
+
+Local/Big Oracle: please include these two points in the independent audit. Unless either oracle
+objects, the next preparation step is the immutable HTDemucs copy plus exact four-work manifests,
+followed by a complete read-only basis/lineage verification. The full binding audio run remains
+stopped.
+
 ## ARCHIVE
 _(answered items moved here by Claude)_
