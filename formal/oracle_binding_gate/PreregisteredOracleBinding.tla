@@ -8,6 +8,13 @@ VARIABLES policyPinned,
           manifestsPhysicallyDistinct,
           witnessPreexists,
           reportBindsWitness,
+          runInputPreexists,
+          claimPreexists,
+          externalAnchorValid,
+          digestBindingsValid,
+          outputAbsentThroughPreflight,
+          preflightValid,
+          reportBindsRunInputClaim,
           allEvidenceValid,
           primaryPass,
           sensitivityPass,
@@ -16,6 +23,9 @@ VARIABLES policyPinned,
 vars ==
     <<policyPinned, exactResolutions, voicedNonempty, noVocalNonempty,
       manifestsPhysicallyDistinct, witnessPreexists, reportBindsWitness,
+      runInputPreexists, claimPreexists, externalAnchorValid,
+      digestBindingsValid, outputAbsentThroughPreflight, preflightValid,
+      reportBindsRunInputClaim,
       allEvidenceValid, primaryPass, sensitivityPass, decision>>
 
 Decisions ==
@@ -30,10 +40,26 @@ TypeOK ==
     /\ manifestsPhysicallyDistinct \in BOOLEAN
     /\ witnessPreexists \in BOOLEAN
     /\ reportBindsWitness \in BOOLEAN
+    /\ runInputPreexists \in BOOLEAN
+    /\ claimPreexists \in BOOLEAN
+    /\ externalAnchorValid \in BOOLEAN
+    /\ digestBindingsValid \in BOOLEAN
+    /\ outputAbsentThroughPreflight \in BOOLEAN
+    /\ preflightValid \in BOOLEAN
+    /\ reportBindsRunInputClaim \in BOOLEAN
     /\ allEvidenceValid \in BOOLEAN
     /\ primaryPass \in BOOLEAN
     /\ sensitivityPass \in BOOLEAN
     /\ decision \in Decisions
+
+RunContractValid ==
+    /\ runInputPreexists
+    /\ claimPreexists
+    /\ externalAnchorValid
+    /\ digestBindingsValid
+    /\ outputAbsentThroughPreflight
+    /\ preflightValid
+    /\ reportBindsRunInputClaim
 
 PreregistrationValid ==
     /\ policyPinned
@@ -43,6 +69,7 @@ PreregistrationValid ==
     /\ manifestsPhysicallyDistinct
     /\ witnessPreexists
     /\ reportBindsWitness
+    /\ RunContractValid
 
 Complete == PreregistrationValid /\ allEvidenceValid
 
@@ -60,6 +87,13 @@ Init ==
     /\ manifestsPhysicallyDistinct \in BOOLEAN
     /\ witnessPreexists \in BOOLEAN
     /\ reportBindsWitness \in BOOLEAN
+    /\ runInputPreexists \in BOOLEAN
+    /\ claimPreexists \in BOOLEAN
+    /\ externalAnchorValid \in BOOLEAN
+    /\ digestBindingsValid \in BOOLEAN
+    /\ outputAbsentThroughPreflight \in BOOLEAN
+    /\ preflightValid \in BOOLEAN
+    /\ reportBindsRunInputClaim \in BOOLEAN
     /\ allEvidenceValid \in BOOLEAN
     /\ primaryPass \in BOOLEAN
     /\ sensitivityPass \in BOOLEAN
@@ -71,6 +105,9 @@ Decide ==
     /\ UNCHANGED
         <<policyPinned, exactResolutions, voicedNonempty, noVocalNonempty,
           manifestsPhysicallyDistinct, witnessPreexists, reportBindsWitness,
+          runInputPreexists, claimPreexists, externalAnchorValid,
+          digestBindingsValid, outputAbsentThroughPreflight, preflightValid,
+          reportBindsRunInputClaim,
           allEvidenceValid, primaryPass, sensitivityPass>>
 
 Done ==
@@ -94,6 +131,17 @@ NoAliasedManifestPromotion ==
 
 NoPosthocWitnessPromotion ==
     (~witnessPreexists \/ ~reportBindsWitness) => decision # "ACTIONABLE"
+
+NoUnclaimedV3Promotion ==
+    (~runInputPreexists \/ ~claimPreexists \/ ~externalAnchorValid) =>
+        decision # "ACTIONABLE"
+
+NoInvalidV3BindingPromotion ==
+    (~digestBindingsValid \/ ~preflightValid \/ ~reportBindsRunInputClaim) =>
+        decision # "ACTIONABLE"
+
+NoPostOutputClaimPromotion ==
+    ~outputAbsentThroughPreflight => decision # "ACTIONABLE"
 
 SensitivityDoesNotPromote ==
     (~primaryPass /\ sensitivityPass) => decision # "ACTIONABLE"

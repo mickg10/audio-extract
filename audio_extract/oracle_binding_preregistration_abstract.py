@@ -2,16 +2,17 @@
 
 The concrete runner/verifier contains hashes, files, metrics, and solvers. This
 module abstracts only the safety-relevant booleans and exhaustively proves that
-no result becomes actionable when the policy, resolutions, source manifests, or
-pre-execution witness are invalid.
+no result becomes actionable when the policy, resolutions, source manifests,
+legacy witness, v3 prewritten input, externally anchored claim, preflight, or
+report binding is invalid.
 """
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass
 from enum import Enum
 from itertools import product
-from typing import Iterable
 
 
 class Decision(str, Enum):
@@ -30,6 +31,13 @@ class State:
     manifests_physically_distinct: bool
     witness_preexists: bool
     report_binds_witness: bool
+    run_input_preexists: bool
+    claim_preexists: bool
+    external_anchor_valid: bool
+    digest_bindings_valid: bool
+    output_absent_through_preflight: bool
+    preflight_valid: bool
+    report_binds_run_input_claim: bool
     all_method_resolution_evidence_valid: bool
     selected_primary_passes: bool
     selected_sensitivity_passes: bool
@@ -48,14 +56,26 @@ class State:
             and self.manifests_physically_distinct
             and self.witness_preexists
             and self.report_binds_witness
+            and self.run_contract_valid
+        )
+
+    @property
+    def run_contract_valid(self) -> bool:
+        """Mirror the mandatory v3 publication/claim/preflight boundary."""
+
+        return (
+            self.run_input_preexists
+            and self.claim_preexists
+            and self.external_anchor_valid
+            and self.digest_bindings_valid
+            and self.output_absent_through_preflight
+            and self.preflight_valid
+            and self.report_binds_run_input_claim
         )
 
     @property
     def complete(self) -> bool:
-        return (
-            self.preregistration_valid
-            and self.all_method_resolution_evidence_valid
-        )
+        return self.preregistration_valid and self.all_method_resolution_evidence_valid
 
 
 def decide(state: State) -> Decision:
@@ -69,5 +89,5 @@ def decide(state: State) -> Decision:
 
 
 def exhaustive_states() -> Iterable[State]:
-    for values in product((False, True), repeat=10):
+    for values in product((False, True), repeat=17):
         yield State(*values)

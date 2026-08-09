@@ -7,7 +7,11 @@ plan. The abstract state then contains one closed Boolean assignment for every
 required `(method, resolution)` pair.
 
 The promotion method and primary resolution are constants, not values selected
-from the observed results. The state machine permits four terminal outcomes:
+from the observed results. Promotion also requires the concrete v3 chronology:
+a prewritten run input, valid semantic/container/sidecar dependency bindings, an
+exact public issue-comment claim while the output root is absent, a successful
+runner preflight, and an exact input/claim binding in the final report. The
+state machine permits four terminal outcomes:
 
 - `INVALID_EVIDENCE`: at least one required cell is invalid;
 - `ACTIONABLE`: all evidence is valid and the preregistered method passes at the
@@ -17,8 +21,9 @@ from the observed results. The state machine permits four terminal outcomes:
 - `NO_ACTIONABLE_GAP`: all evidence is valid and the selected method passes
   neither primary nor sensitivities.
 
-The invariants prove that missing evidence, another method's success, and
-sensitivity-only success cannot become `ACTIONABLE`.
+The invariants prove that missing evidence, another method's success,
+sensitivity-only success, a post-output claim, a missing public anchor, or an
+unbound v3 input/claim cannot become `ACTIONABLE`.
 
 ## TLC
 
@@ -30,11 +35,13 @@ java -XX:+UseParallelGC -cp tla2tools.jar tlc2.TLC \
   formal/oracle_binding_gate/OracleBindingGate.tla
 ```
 
-The committed Python mirror exhaustively enumerates all `2^12 = 4096` complete
-assignments for each selected method (`8192` states total) in ordinary CI:
+The committed preregistration Python mirror exhaustively enumerates all
+`2^17 = 131072` publication/evidence assignments in ordinary CI. The separate
+closed method-resolution gate still enumerates its complete cell matrix:
 
 ```bash
 python -m pytest -q tests/test_oracle_binding_gate_abstract.py
+python -m pytest -q tests/test_oracle_binding_preregistration_abstract.py
 ```
 
 The model does not prove that an audio metric is perceptually valid or correctly

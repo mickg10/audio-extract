@@ -6,7 +6,7 @@ from audio_extract.oracle_binding_preregistration_abstract import (
 )
 
 
-def test_all_1024_preregistration_states_satisfy_promotion_invariants():
+def test_all_131072_preregistration_states_satisfy_promotion_invariants():
     count = 0
     decisions = set()
     for state in exhaustive_states():
@@ -34,23 +34,30 @@ def test_all_1024_preregistration_states_satisfy_promotion_invariants():
         if not state.complete:
             assert decision is Decision.INVALID_EVIDENCE
 
-    assert count == 1024
+    assert count == 131_072
     assert decisions == set(Decision)
 
 
 def _valid(**changes):
-    values = dict(
-        policy_pinned=True,
-        exact_resolutions=True,
-        voiced_nonempty=True,
-        no_vocal_nonempty=True,
-        manifests_physically_distinct=True,
-        witness_preexists=True,
-        report_binds_witness=True,
-        all_method_resolution_evidence_valid=True,
-        selected_primary_passes=True,
-        selected_sensitivity_passes=False,
-    )
+    values = {
+        "policy_pinned": True,
+        "exact_resolutions": True,
+        "voiced_nonempty": True,
+        "no_vocal_nonempty": True,
+        "manifests_physically_distinct": True,
+        "witness_preexists": True,
+        "report_binds_witness": True,
+        "run_input_preexists": True,
+        "claim_preexists": True,
+        "external_anchor_valid": True,
+        "digest_bindings_valid": True,
+        "output_absent_through_preflight": True,
+        "preflight_valid": True,
+        "report_binds_run_input_claim": True,
+        "all_method_resolution_evidence_valid": True,
+        "selected_primary_passes": True,
+        "selected_sensitivity_passes": False,
+    }
     values.update(changes)
     return State(**values)
 
@@ -60,14 +67,35 @@ def test_rounded_resolution_cannot_promote():
 
 
 def test_hardlink_alias_cannot_promote():
-    assert decide(
-        _valid(manifests_physically_distinct=False)
-    ) is Decision.INVALID_EVIDENCE
+    assert (
+        decide(_valid(manifests_physically_distinct=False)) is Decision.INVALID_EVIDENCE
+    )
 
 
 def test_posthoc_or_unbound_witness_cannot_promote():
     assert decide(_valid(witness_preexists=False)) is Decision.INVALID_EVIDENCE
     assert decide(_valid(report_binds_witness=False)) is Decision.INVALID_EVIDENCE
+
+
+def test_missing_v3_input_or_external_claim_cannot_promote():
+    assert decide(_valid(run_input_preexists=False)) is Decision.INVALID_EVIDENCE
+    assert decide(_valid(claim_preexists=False)) is Decision.INVALID_EVIDENCE
+    assert decide(_valid(external_anchor_valid=False)) is Decision.INVALID_EVIDENCE
+
+
+def test_invalid_sidecars_dependencies_or_chronology_cannot_promote():
+    assert decide(_valid(digest_bindings_valid=False)) is Decision.INVALID_EVIDENCE
+    assert (
+        decide(_valid(output_absent_through_preflight=False))
+        is Decision.INVALID_EVIDENCE
+    )
+
+
+def test_missing_preflight_or_report_v3_binding_cannot_promote():
+    assert decide(_valid(preflight_valid=False)) is Decision.INVALID_EVIDENCE
+    assert (
+        decide(_valid(report_binds_run_input_claim=False)) is Decision.INVALID_EVIDENCE
+    )
 
 
 def test_sensitivity_only_success_is_nonpromoting():
