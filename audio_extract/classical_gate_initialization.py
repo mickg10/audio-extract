@@ -1,16 +1,10 @@
 """Deterministic trainable initialization for the bounded classical gate.
 
-`SmoothResidualGate` deliberately uses a separate scalar amplitude to guarantee
-that the decoded route is exactly the conservative parent at step zero.  That
-means the spatial network itself does not need every convolution initialized to
-zero.  In fact, zeroing both convolutions makes the network permanently spatially
-constant: the hidden activation is zero, the final weight receives no gradient,
-and the first layer is disconnected.
-
-This module initializes the spatial network deterministically while resetting the
-route amplitude to exact zero.  The decoded step-zero output therefore remains
-sample-identical to the parent, but teacher loss reaches every network parameter
-on the first backward pass.
+`SmoothResidualGate` uses a separate scalar amplitude to guarantee that decoded
+step-zero audio is exactly the conservative parent. The spatial network itself
+therefore need not be all-zero; all-zero convolutions permanently block spatial
+gradients. This module initializes a trainable spatial path while resetting the
+route amplitude to exact zero.
 """
 
 from __future__ import annotations
@@ -40,9 +34,21 @@ def _torch():
 def _generator(tensor: object, seed: int):
     torch = _torch()
     device = tensor.device
+    if device.type not in {"cpu", "cuda"}:
+        raise ValueError(
+            f"deterministic teacher initialization supports cpu/cuda, got {device}"
+        )
     generator = torch.Generator(device=device if device.type == "cuda" else "cpu")
     generator.manual_seed(int(seed))
     return generator
+
+
+def _fan_in(weight: object) -> int:
+    shape = tuple(int(value) for value in weight.shape)
+    if len(shape) < 2:
+        raise ValueError(f"convolution weight has invalid shape: {shape}")
+    receptive = math.prod(shape[2:]) if len(shape) > 2 else 1
+    return shape[1] * receptive
 
 
 def _reset_hidden_conv(layer: object, seed: int) -> None:
@@ -52,7 +58,7 @@ def _reset_hidden_conv(layer: object, seed: int) -> None:
         layer.weight, a=math.sqrt(5.0), generator=generator
     )
     if layer.bias is not None:
-        fan_in, _ = torch.nn.init._calculate_fan_in_and_fan_out(layer.weight)
+        fan_in = _fan_in(layer.weight)
         bound = 1.0 / math.sqrt(fan_in) if fan_in > 0 else 0.0
         torch.nn.init.uniform_(
             layer.bias, -bound, bound, generator=generator
@@ -65,14 +71,12 @@ def prepare_gate_for_teacher_(
     seed: int = 0,
     final_weight_scale: float = 1e-3,
 ) -> GateInitializationReport:
-    """Initialize a gate for teacher training without changing step-zero audio.
+    """Initialize a gate before optimizer construction without changing audio.
 
-    The operation is deterministic for a fixed `(gate architecture, seed,
-    final_weight_scale)` and is intended to run before optimizer construction.
-    Every hidden convolution receives Kaiming initialization.  The final
-    convolution receives small nonzero weights and zero bias, allowing gradient
-    flow through the full network immediately without saturating initial logits.
-    The scalar route amplitude is reset to exactly zero last.
+    Every hidden convolution receives deterministic Kaiming initialization. The
+    final convolution receives small nonzero weights and zero bias, so teacher
+    loss reaches the full network immediately without saturating initial logits.
+    The independent route amplitude is reset to exact zero last.
     """
 
     torch = _torch()
