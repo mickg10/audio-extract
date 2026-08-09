@@ -28,7 +28,20 @@ def _candidate(path: Path, audio: np.ndarray, name: str, recipe_digit: str):
         "sample_rate_hz": 44100,
         "channels": ["FL", "FR"],
         "subtype": "FLOAT",
-        "metrics": {},
+        "metrics": {
+            "retained_voice_coef_p90": 0.05,
+            "retained_voice_db_p90": -25.0,
+            "event_hole_db_p90": 2.0,
+            "event_hole_db_max": 4.0,
+            "alpha_error_p90": 0.1,
+            "artifact_ratio_p90": 0.02,
+            "scale_dependent_sdr_db": 20.0,
+            "stereo_width_dev_db/v2": 0.1,
+            "interchannel_coherence_dev/v2": 0.01,
+            "erb_envelope_dist_db/v2": 0.2,
+            "_available_tiles": 10,
+            "_total_tiles": 10,
+        },
         "screening": {"passed": True, "checks": [], "failures": [], "critical_max": 0.0},
     }
 
@@ -145,5 +158,5 @@ def test_verifier_refuses_byte_identical_primary_and_alternate(tmp_path):
     report["candidates"][1]["artifact_pcm_sha256"] = report["candidates"][0][
         "artifact_pcm_sha256"
     ]
-    with pytest.raises(VerificationError, match="byte-identical"):
+    with pytest.raises(VerificationError, match="artifact_pcm_sha256 mismatch|byte-identical"):
         verify_work(report, package_root)

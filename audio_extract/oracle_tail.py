@@ -54,6 +54,12 @@ class ActiveSetConfig:
             if not np.isfinite(float(value)) or float(value) <= 0:
                 raise ValueError(f"{name} must be positive and finite")
 
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+    def identity_dict(self) -> dict[str, Any]:
+        return {name: str(value) for name, value in asdict(self).items()}
+
 
 @dataclass(frozen=True)
 class IndependentDiscreteResult:
@@ -76,7 +82,7 @@ class IndependentConvexResult:
     interpolated_fraction: float
     max_simplex_error: float
     max_normalized_stationarity_residual: float
-    min_normalized_inactive_reduced_gradient: float
+    min_normalized_inactive_reduced_gradient: float | None
     mean_weights: tuple[float, ...]
     support_masks: np.ndarray
     cell_normalization_scale_min: float
@@ -364,7 +370,9 @@ def solve_independent_convex(
         interpolated_fraction=interpolated / quadratic.denominator,
         max_simplex_error=max_simplex,
         max_normalized_stationarity_residual=max_stationarity,
-        min_normalized_inactive_reduced_gradient=min_inactive,
+        min_normalized_inactive_reduced_gradient=(
+            min_inactive if np.isfinite(min_inactive) else None
+        ),
         mean_weights=tuple(float(value) for value in weights.mean(axis=(0, 1))),
         support_masks=support_masks,
         cell_normalization_scale_min=float(min(scales)),

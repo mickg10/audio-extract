@@ -95,6 +95,14 @@ def test_o0c_equilibrates_high_scale_kkt_and_finds_uniform_optimum():
     assert facts["objective"] == pytest.approx(1e8 / 3, rel=1e-10)
 
 
+def test_full_support_aggregate_has_json_safe_vacuous_inactive_certificate():
+    gram = np.eye(3, dtype=np.float64).reshape(1, 1, 3, 3)
+    linear = np.zeros((1, 1, 3), dtype=np.float64)
+    result = solve_independent_convex(quadratic(gram, linear), fallback_index=0)
+    assert result.active_set_size_histogram == {3: 1}
+    assert result.min_normalized_inactive_reduced_gradient is None
+
+
 def test_constant_shift_does_not_change_the_optimizer_or_tie_scale():
     gram = np.array([[0.0, 0.0], [0.0, 4.0]])
     linear = np.array([0.0, 2.0])

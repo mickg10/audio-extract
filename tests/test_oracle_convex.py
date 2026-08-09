@@ -7,8 +7,6 @@ from audio_extract.oracle_convex import (
     build_quadratic,
     objective,
     project_simplex,
-    solve_independent_convex_oracle,
-    solve_independent_discrete_oracle,
     solve_true_convex_oracle,
 )
 from audio_extract.oracle_routing import CellStatistics
@@ -74,46 +72,6 @@ def test_true_convex_oracle_finds_interior_interpolation():
     assert result.weights[0, 0, 1] == pytest.approx(0.5, abs=1e-5)
     assert result.objective < result.best_vertex_objective - 0.9
     assert result.projected_gradient_mapping_inf <= config.gradient_mapping_tolerance
-
-
-def test_independent_discrete_and_convex_envelopes_use_corrected_quadratic():
-    source = stats(np.array([
-        [[0.0, 2.0]],
-        [[1.0, 3.0]],
-    ]))
-    config = ConvexOracleConfig(
-        transfer_weight=1.0, retained_voice_weight=0.0,
-        orthogonal_artifact_weight=0.0,
-        temporal_l2_weight=9.0, frequency_l2_weight=7.0,
-        max_iterations=5000, gradient_mapping_tolerance=1e-8,
-        objective_tolerance=1e-12, solution_agreement_tolerance=1e-8,
-    )
-    discrete = solve_independent_discrete_oracle(
-        source, fallback_index=0, config=config
-    )
-    assert np.array_equal(discrete.labels, np.array([[0], [0]]))
-    assert discrete.objective == pytest.approx(0.5)
-    convex, effective = solve_independent_convex_oracle(
-        source, o1_index=0, o2_labels=discrete.labels, config=config
-    )
-    assert effective.temporal_l2_weight == 0.0
-    assert effective.frequency_l2_weight == 0.0
-    assert convex.weights[0, 0, 0] == pytest.approx(0.5, abs=1e-5)
-    assert convex.weights[1, 0, 0] == pytest.approx(1.0, abs=1e-5)
-    assert convex.objective < discrete.objective
-
-
-def test_independent_envelopes_use_fallback_in_unavailable_cells():
-    source = stats(
-        np.array([[[1.0, 2.0]], [[0.0, 2.0]]]),
-        available=np.array([[True], [False]]),
-    )
-    discrete = solve_independent_discrete_oracle(source, fallback_index=1)
-    assert discrete.labels[1, 0] == 1
-    convex, _ = solve_independent_convex_oracle(
-        source, o1_index=1, o2_labels=discrete.labels
-    )
-    assert np.array_equal(convex.weights[1, 0], np.array([0.0, 1.0]))
 
 
 def test_quadratic_penalizes_phase_and_overgain_not_only_holes():

@@ -14,6 +14,7 @@ import json
 import os
 import subprocess
 import tempfile
+from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
@@ -27,11 +28,14 @@ from audio_extract.judge_train import label_targets
 from audio_extract.metrics_v2 import stereo_v2
 from audio_extract.oracle_convex import (
     ConvexOracleConfig,
-    build_quadratic,
     local_data_objective,
-    solve_independent_convex_oracle,
-    solve_independent_discrete_oracle,
     solve_true_convex_oracle,
+)
+from audio_extract.oracle_tail import (
+    ActiveSetConfig,
+    corrected_quadratic,
+    solve_independent_convex,
+    solve_independent_discrete,
 )
 from audio_extract.oracle_routing import (
     RoutingConfig,
@@ -499,6 +503,7 @@ def _decision(report_works: dict[str, Any]) -> dict[str, Any]:
 def run(args: argparse.Namespace) -> dict[str, Any]:
     config = RoutingConfig()
     convex_config = ConvexOracleConfig()
+    active_set_config = ActiveSetConfig()
     code_commit = _git_commit()
     rows = [json.loads(line) for line in args.candidate_manifest.read_text().splitlines()]
     manifest_rows = {(row["work_id"], row["candidate"]): row for row in rows}
@@ -512,11 +517,11 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         "candidate_basis": list(BASIS_ORDER), "works": {},
         "config": config.to_dict(),
         "convex_o0_config": {
-            **convex_config.to_dict(),
-            "temporal_l2_weight": 0.0,
-            "frequency_l2_weight": 0.0,
+            "quadratic": convex_config.to_dict(),
+            "active_set": active_set_config.to_dict(),
         },
         "convex_o3_config": convex_config.to_dict(),
+        "shared_quadratic": "audio_extract.oracle_tail.corrected_quadratic/v1",
         "candidate_manifest": str(args.candidate_manifest),
         "candidate_manifest_sha256": _sha_file(args.candidate_manifest),
     }
@@ -555,18 +560,19 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         stats = source_coordinate_statistics(
             candidate_spectra, truth_spectra[0], truth_spectra[1], config
         )
+        quadratic, corrected_unary = corrected_quadratic(stats, convex_config)
+        stats = replace(stats, unary_risk=corrected_unary)
         o1_index, o1_risks = best_whole_track(stats)
-        quadratic = build_quadratic(stats, convex_config)
         print(json.dumps({"stage": "O0_independent", "work": work}), flush=True)
-        o0d = solve_independent_discrete_oracle(
-            stats, fallback_index=o1_index, config=convex_config
+        o0d = solve_independent_discrete(
+            quadratic, fallback_index=o1_index
         )
         print(json.dumps({"stage": "O2_milp", "work": work,
                           "cells": int(stats.available.size),
                           "available": int(stats.available.sum())}), flush=True)
         o2 = solve_discrete_routing(stats, config)
-        o0c, o0c_config = solve_independent_convex_oracle(
-            stats, o1_index=o1_index, o2_labels=o0d.labels, config=convex_config
+        o0c = solve_independent_convex(
+            quadratic, fallback_index=o1_index, config=active_set_config
         )
         print(json.dumps({"stage": "O3_convex", "work": work}), flush=True)
         o3 = solve_true_convex_oracle(
@@ -614,35 +620,42 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             "O0D": {
                 "diagnostic_only": True,
                 "solver": "independent corrected-quadratic vertex minimum",
-                "objective": o0d.objective,
+                "objective": o0d.data_objective,
                 "local_objective": _local_objective_summary(o0d.weights, quadratic),
                 "selection_counts": {
-                    name: o0d.selection_counts[i]
+                    name: o0d.occupancy[i]
                     for i, name in enumerate(BASIS_ORDER)
                 },
             },
             "O0C": {
                 "diagnostic_only": True,
                 "solver": "independent corrected-quadratic convex hull",
-                "objective": o0c.objective,
+                "objective": o0c.data_objective,
                 "local_objective": _local_objective_summary(o0c.weights, quadratic),
-                "initialization": o0c.initialization,
-                "iterations": o0c.iterations,
-                "converged": o0c.converged,
-                "projected_gradient_mapping_inf": o0c.projected_gradient_mapping_inf,
-                "simplex_error": o0c.simplex_error,
-                "min_weight": o0c.min_weight,
-                "solution_objective_spread": o0c.solution_objective_spread,
-                "start_objectives": o0c.start_objectives,
+                "global_certificate": "all-support KKT enumeration",
+                "active_set_size_histogram": o0c.active_set_size_histogram,
+                "interpolated_cells": o0c.interpolated_cells,
+                "interpolated_fraction": o0c.interpolated_fraction,
+                "max_simplex_error": o0c.max_simplex_error,
+                "max_normalized_stationarity_residual": (
+                    o0c.max_normalized_stationarity_residual
+                ),
+                "min_normalized_inactive_reduced_gradient": (
+                    o0c.min_normalized_inactive_reduced_gradient
+                ),
+                "cell_normalization_scale_min": o0c.cell_normalization_scale_min,
+                "cell_normalization_scale_max": o0c.cell_normalization_scale_max,
                 "mean_weights": {
-                    name: float(o0c.weights[..., i].mean())
+                    name: o0c.mean_weights[i]
                     for i, name in enumerate(BASIS_ORDER)
                 },
             },
             "O1": {"selected_index": o1_index, "selected_member": BASIS_ORDER[o1_index],
+                   "objective_definition": "shared corrected PSD quadratic vertex unary",
                    "whole_track_risk": {name: float(value)
                                         for name, value in zip(BASIS_ORDER, o1_risks)}},
             "O2": {
+                "objective_definition": "shared corrected PSD quadratic vertex unary + Potts switches",
                 "objective": o2.objective, "data_objective": o2.data_objective,
                 "temporal_switches": o2.temporal_switches,
                 "frequency_switches": o2.frequency_switches,
@@ -697,10 +710,17 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
                      "frequency_l2_weight": "0.0",
                      "solver": "independent_vertex_minimum/v1"}
                     if mode == "O0D" else
-                    {**o0c_config.identity_dict(),
-                     "solver": "independent_convex_hull/v1"}
+                    {"quadratic": convex_config.identity_dict(),
+                     "active_set": active_set_config.identity_dict(),
+                     "solver": "all_support_kkt_convex_hull/v1"}
                     if mode == "O0C" else
-                    convex_config.identity_dict() if mode == "O3" else None
+                    {"quadratic": convex_config.identity_dict(),
+                     "solver": "corrected_whole_candidate_mean/v1"}
+                    if mode == "O1" else
+                    {"quadratic": convex_config.identity_dict(),
+                     "solver": "corrected_potts_milp/v1"}
+                    if mode == "O2" else
+                    convex_config.identity_dict()
                 ),
             )
             metrics, labels = _metrics(outputs[mode], accompaniment, vocal)

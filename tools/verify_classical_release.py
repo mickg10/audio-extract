@@ -189,7 +189,7 @@ def _verify_removed_lineage(
         )
     if recipe["operation"].get("type") != "mixture_minus_source":
         raise VerificationError("removed-vocal recipe operation is not mixture_minus_source")
-    if recipe["input_pcm"].get("input_pcm_sha256") != mixture_record["artifact_pcm_sha256"]:
+    if recipe["input_pcm"].get("sha256") != mixture_record["artifact_pcm_sha256"]:
         raise VerificationError("removed-vocal recipe mixture parent mismatch")
     members = recipe.get("model", {}).get("members")
     if members != [primary["recipe_id"]]:
