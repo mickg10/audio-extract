@@ -29,8 +29,16 @@ def base_data(calibration_groups: int = 9):
     # Two candidates x three defects, with a simple nonnegative linear relation.
     train_y = np.empty((len(train_x), 2, 3), dtype=np.float64)
     for row, (first, second) in enumerate(train_x):
-        train_y[row, 0] = (0.2 + 0.3 * first, 0.1 + 0.2 * second, 0.05)
-        train_y[row, 1] = (0.4 + 0.1 * second, 0.3 + 0.1 * first, 0.08)
+        train_y[row, 0] = (
+            0.2 + 0.3 * first,
+            0.1 + 0.2 * second,
+            0.05,
+        )
+        train_y[row, 1] = (
+            0.4 + 0.1 * second,
+            0.3 + 0.1 * first,
+            0.08,
+        )
 
     calibration_x = np.column_stack((
         np.linspace(0.1, 1.8, calibration_groups),
@@ -53,10 +61,16 @@ def base_data(calibration_groups: int = 9):
     return (
         train_x,
         train_y,
-        np.asarray([f"train-{index // 2}" for index in range(len(train_x))]),
+        np.asarray(
+            [f"train-{index // 2}" for index in range(len(train_x))],
+            dtype=object,
+        ),
         calibration_x,
         calibration_y,
-        np.asarray([f"cal-{index}" for index in range(calibration_groups)]),
+        np.asarray(
+            [f"cal-{index}" for index in range(calibration_groups)],
+            dtype=object,
+        ),
     )
 
 
@@ -102,6 +116,7 @@ def test_train_and_calibration_group_overlap_is_refused():
     values = list(base_data())
     values[5] = values[5].copy()
     values[5][0] = values[2][0]
+    assert values[5][0] == values[2][0] == "train-0"
     with pytest.raises(GroupConformalRiskError, match="groups overlap"):
         fit(tuple(values))
 
