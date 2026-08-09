@@ -4,6 +4,8 @@ torch = pytest.importorskip("torch")
 
 from audio_extract.classical_loss_v2 import (
     ClassicalResidualLossConfig,
+    _complex_stft_log_ratio,
+    _require_residual_construction,
     classical_residual_loss_v2,
 )
 
@@ -111,6 +113,28 @@ def test_exact_silence_uses_absolute_floor_and_stays_finite():
     assert float(loss.detach()) < 10.0
     assert bool(torch.isfinite(vh.grad).all())
     assert float(vh.grad.abs().max()) < 10.0
+
+
+def test_low_precision_residual_roundoff_is_accepted_but_real_mismatch_is_not():
+    mixture = torch.tensor([[[1.0, -0.75, 0.125, 4.0]]], dtype=torch.float16)
+    vocal = torch.tensor([[[0.8, -0.3, 0.75, -3.0]]], dtype=torch.float16)
+    accompaniment = mixture - vocal
+    _require_residual_construction(
+        accompaniment, vocal, mixture,
+        relative_tolerance=1e-6, roundoff_ulps=8.0,
+    )
+    with pytest.raises(ValueError, match="mixture-residual identity"):
+        _require_residual_construction(
+            accompaniment + torch.tensor(0.25, dtype=torch.float16),
+            vocal, mixture,
+            relative_tolerance=1e-6, roundoff_ulps=8.0,
+        )
+
+
+def test_stft_sizes_that_would_produce_zero_hop_are_rejected():
+    signal = torch.zeros(1, 1, 16)
+    with pytest.raises(ValueError, match="positive hop"):
+        _complex_stft_log_ratio(signal, signal, (2, 3), 1e-3)
 
 
 def test_residual_identity_mismatch_is_refused():
