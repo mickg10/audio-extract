@@ -105,6 +105,14 @@ def cmd_fingerprint(_args: argparse.Namespace) -> int:
     return _emit(_envelope("fingerprint", "ok", fingerprint=identity.execution_fingerprint()))
 
 
+def cmd_train_classical(args: argparse.Namespace) -> int:
+    """Run the deterministic pretrained classical-separator training contract."""
+    from .train_classical import run_training
+
+    report = run_training(args)
+    return _emit(_envelope("train.classical", "ok", report=report))
+
+
 def _resolve_locked_model(lock_path: str, name: str, model_dir: str):
     """If a model lock exists, resolve+verify ``name`` through it (v2.1 §6.5/§6.7).
     Returns (registry_filename, executed_bundle_id, expected_sha256). Without a lock
@@ -784,6 +792,22 @@ def build_parser() -> argparse.ArgumentParser:
     sp.set_defaults(func=cmd_ingest)
     sp = sub.add_parser("fingerprint", help="print the execution fingerprint")
     sp.set_defaults(func=cmd_fingerprint)
+
+    # train — deterministic model training; the conductor never manipulates tensors
+    g_train = sub.add_parser("train", help="deterministic separator training").add_subparsers(
+        dest="cmd", required=True
+    )
+    sp = g_train.add_parser("classical", help="pretrained HTDemucs opera continuation")
+    sp.add_argument("--manifest", required=True)
+    sp.add_argument("--split-manifest", required=True)
+    sp.add_argument("--config", required=True)
+    sp.add_argument("--run-dir", required=True)
+    sp.add_argument("--truth-root", default="/home/mickg/truth_pairs")
+    sp.add_argument("--steps", type=int)
+    sp.add_argument("--seed", type=int, default=0)
+    sp.add_argument("--device")
+    sp.add_argument("--json", action="store_true")
+    sp.set_defaults(func=cmd_train_classical)
 
     # models — executed model lock
     g_models = sub.add_parser("models", help="executed model lock").add_subparsers(dest="cmd", required=True)
