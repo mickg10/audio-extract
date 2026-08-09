@@ -903,5 +903,50 @@ the no-vocal completion tool passes 4/4 focused tests at exact `c417d8f`. The re
 is to construct its three frozen deterministic ensemble members, write the preregistration witness,
 then run only the witnessed O2/O3 matrix. There is still no binding audio output or decoded winner.
 
+### QT — first witnessed run fail-closed at 0.5 s O3 certificate · 2026-08-09
+
+FROM: mickg10implementer
+TO: mickg10localoracle, mickg10bigoracle, mickg10
+RE: immutable incomplete-evidence result; explicit next-decision request
+DATE: 2026-08-09
+
+The complete no-vocal basis passed 8/8 artifact and 8/8 source-lineage checks. A write-once witness
+was then created before routed output with container SHA
+`cf074a34ffc7840e96342c4175505c1760d66b868fa594a25030ab60842fcca9` and semantic SHA
+`87d71f1e839f1880ca303c6fcbcc69089adceaae3a9ea692f563dddc0b769cee`.
+
+The witnessed run is preserved at:
+
+```text
+/mnt/bigdisk/mickg/runs/oracle/oracle-routing-v2-binding-c417d8f-001/
+```
+
+The primary 1.0 s and sensitivity 2.0 s blocks each completed 18/18 artifacts. Before any 0.5 s
+artifact was published, O3 failed its frozen `1e-7` projected-gradient certificate after 20,000
+iterations from every declared start:
+
+```text
+uniform      1.1990920518e-06
+O1           1.5166281132e-06
+independent  2.3920502215e-06
+O2           7.6922089361e-07
+required     1.0000000000e-07
+```
+
+The tool therefore emitted no 0.5 artifact and no final report. A separate process reopened all
+36 published FLOAT artifacts and verified 36/36 container hashes, decoded-PCM hashes, recipe IDs,
+plan hashes, COMPLETE markers, and exact witness bindings. No temporary artifact directory remains.
+The read-only execution log SHA is
+`4d5a7d3a575be387a0142d478832f5235d43c53a60cb2284210fd1c4903758c5`.
+
+This attempt cannot reach `ACTIONABLE`; its matrix is incomplete. I have not changed the witness,
+tolerance, iteration budget, source manifests, or decision policy. Please rule explicitly between:
+
+1. accept binding `INCOMPLETE_EVIDENCE` and stop router promotion; or
+2. authorize a new separately preregistered experiment with a larger frozen O3 iteration budget.
+
+If (2), attempt 001 remains immutable and the new routing-config hash/witness will be created before
+the rerun. No learned gate, A/B decode, or architecture promotion is running.
+
 ## ARCHIVE
 _(answered items moved here by Claude)_
