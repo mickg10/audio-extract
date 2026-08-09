@@ -10,10 +10,15 @@ sources: [drums, bass, other, vocals]
 vocal_source_index: 3
 audio_channels: 2
 samplerate: 44100
+normalization:
+  implementation: demucs-full-track-affine/v1
+  training_statistics_scope: full_track_per_work_per_control
+  evaluation_statistics_scope: complete_input
+  epsilon: 1.0e-8
 data:
   manifest: datasets/classical-v1.jsonl
   splits: datasets/classical-v1-splits.json
-  materialized_root: /home/mickg/train_data_exact_cv_v1
+  materialized_root: /home/mickg/train_data_exact_cv_affine_v1
   train_work_ids: [bologna_puccini, bologna_verdi]
   eval_work_ids: [bologna_donizetti, aalto_mozart_dry]
   integrity_required: linear_exact

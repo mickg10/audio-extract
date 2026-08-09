@@ -83,6 +83,26 @@ def _pcm_hash(audio: np.ndarray) -> str:
     )
 
 
+def _demucs_full_track_affine(audio: np.ndarray) -> dict:
+    """Compute the released Demucs affine with its exact torch reduction semantics."""
+    try:
+        import torch
+    except ImportError as exc:  # pragma: no cover - exact training uses the train extra
+        raise RuntimeError("Demucs-affine materialization requires the train extra") from exc
+    from .demucs_affine import demucs_affine_from_audio
+
+    tensor = torch.from_numpy(np.ascontiguousarray(audio.T, dtype="float32")).unsqueeze(0)
+    affine = demucs_affine_from_audio(tensor)
+    return {
+        "implementation": "demucs-full-track-affine/v1",
+        "epsilon": "0.00000001",
+        # Canonical recipes forbid inexact JSON numbers. Nine significant decimal
+        # digits round-trip every float32 statistic exactly.
+        "mean": format(float(affine.mean[0, 0]), ".9g"),
+        "scale": format(float(affine.scale[0, 0]), ".9g"),
+    }
+
+
 def _publish(output_root: Path, work: str, mixture: np.ndarray, accompaniment: np.ndarray,
              vocal: np.ndarray, recipe: dict) -> dict:
     _same_grid({"M": mixture, "A": accompaniment, "V": vocal}, {"M": SR, "A": SR, "V": SR})
@@ -94,6 +114,9 @@ def _publish(output_root: Path, work: str, mixture: np.ndarray, accompaniment: n
     recipe.update({"schema": SCHEMA, "work_id": work, "sample_rate_hz": SR,
                    "channel_layout": ["FL", "FR"], "frames": int(len(mixture)),
                    "sample_format": "float32-le-interleaved"})
+    affines = {role: _demucs_full_track_affine(audio) for role, audio in
+               (("M", mixture), ("A", accompaniment), ("V", vocal))}
+    recipe["demucs_full_track_affine"] = affines
     recipe["recipe_id"] = _recipe_id(recipe)
     hashes = {role: _pcm_hash(audio) for role, audio in
               (("M", mixture), ("A", accompaniment), ("V", vocal))}
@@ -122,6 +145,7 @@ def _publish(output_root: Path, work: str, mixture: np.ndarray, accompaniment: n
             "frames": int(len(mixture)),
             "M_eq_A_plus_V_db": float(20 * np.log10(relative + 1e-15)),
             "pcm_sha256": hashes,
+            "demucs_full_track_affine": affines,
         }
         (temporary / "report.json").write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")
         os.replace(temporary, final)

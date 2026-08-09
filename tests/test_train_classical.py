@@ -1,8 +1,10 @@
 from audio_extract.cli import build_parser
+from audio_extract.demucs_affine import DemucsAffine
 from audio_extract.train_classical import (
     _build_optimizer,
     _exact_fold_works,
     _manifest_train_works,
+    _require_production_normalization,
     _separate_controls,
     _state_dict_sha256,
 )
@@ -103,11 +105,13 @@ def test_two_source_control_uses_direct_accompaniment_not_residual():
     mixture = torch.ones(1, 2, 8)
     accompaniment = mixture * 4
     vocals = mixture * 5
+    affine = DemucsAffine(mean=torch.zeros(1, 1), scale=torch.ones(1, 1))
+    affines = {role: affine for role in ("M", "A", "V")}
     direct = _separate_controls(
-        ToyModel(), mixture, accompaniment, vocals, 1, "direct_source", 0
+        ToyModel(), mixture, accompaniment, vocals, 1, "direct_source", 0, affines
     )
     residual = _separate_controls(
-        ToyModel(), mixture, accompaniment, vocals, 1, "mixture_residual", None
+        ToyModel(), mixture, accompaniment, vocals, 1, "mixture_residual", None, affines
     )
     assert torch.equal(direct["A_hat"], mixture * 2)
     assert torch.equal(direct["V_hat"], mixture * 3)
@@ -122,3 +126,43 @@ def test_random_control_optimizer_has_provenance_group_name():
         "optim": {"name": "adam", "lr": 0.0003},
     })
     assert optimizer.param_groups[0]["group_name"] == "all_parameters"
+
+
+def test_training_controls_use_persisted_full_track_affines_independently():
+    import torch
+
+    class CaptureModel:
+        def __call__(self, audio):
+            self.seen = audio.detach().clone()
+            return torch.stack((audio, audio), dim=1)
+
+    model = CaptureModel()
+    mixture = torch.full((1, 2, 8), 3.0)
+    accompaniment = torch.full((1, 2, 8), 10.0)
+    vocals = torch.full((1, 2, 8), -2.0)
+    affines = {
+        "M": DemucsAffine(torch.tensor([[1.0]]), torch.tensor([[2.0]])),
+        "A": DemucsAffine(torch.tensor([[4.0]]), torch.tensor([[3.0]])),
+        "V": DemucsAffine(torch.tensor([[-4.0]]), torch.tensor([[0.5]])),
+    }
+    _separate_controls(
+        model, mixture, accompaniment, vocals, 1, "mixture_residual", None, affines
+    )
+    torch.testing.assert_close(model.seen[0], (mixture[0] - 1.0) / 2.0)
+    torch.testing.assert_close(model.seen[1], (accompaniment[0] - 4.0) / 3.0)
+    torch.testing.assert_close(model.seen[2], (vocals[0] + 4.0) / 0.5)
+
+
+def test_trainer_refuses_raw_input_normalization_contract():
+    try:
+        _require_production_normalization({})
+    except ValueError as exc:
+        assert "non-production Demucs normalization" in str(exc)
+    else:  # pragma: no cover
+        raise AssertionError("raw-input training was accepted")
+
+    _require_production_normalization({"normalization": {
+        "implementation": "demucs-full-track-affine/v1",
+        "training_statistics_scope": "full_track_per_work_per_control",
+        "evaluation_statistics_scope": "complete_input",
+    }})

@@ -79,3 +79,8 @@ def test_exact_truth_materialization_preserves_roles_without_transform(tmp_path)
     assert recipe["operations"] == [{"operation": "role_map", "mapping": {
         "mix_with_voice": "M", "orchestra_only": "A", "voice_ref": "V"
     }}]
+    assert set(recipe["demucs_full_track_affine"]) == {"M", "A", "V"}
+    for role, affine in recipe["demucs_full_track_affine"].items():
+        assert affine["implementation"] == "demucs-full-track-affine/v1"
+        assert np.isfinite(float(affine["mean"]))
+        assert np.isfinite(float(affine["scale"])) and float(affine["scale"]) > 0

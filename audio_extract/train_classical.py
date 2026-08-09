@@ -25,6 +25,12 @@ import soundfile as sf
 import yaml
 
 from .classical_loss import ClassicalLossConfig, classical_separation_loss
+from .demucs_affine import (
+    DemucsAffine,
+    forward_demucs_production_affine,
+    normalize_demucs_batch,
+    restore_demucs_sources,
+)
 
 SR = 44_100
 DEFAULT_EVAL_WORKS = ("bologna_verdi", "bologna_puccini", "bologna_donizetti", "aalto_mozart_dry")
@@ -91,6 +97,16 @@ class ClassicalDataset:
             if not directory.is_dir():
                 continue
             reports = json.loads((directory / "report.json").read_text())
+            recipe = json.loads((directory / "recipe.json").read_text())
+            affines = recipe.get("demucs_full_track_affine")
+            if not isinstance(affines, dict) or set(affines) != {"M", "A", "V"}:
+                raise ValueError(f"materialization lacks pinned full-track M/A/V affines: {work}")
+            for role, affine in affines.items():
+                if (affine.get("implementation") != "demucs-full-track-affine/v1"
+                        or not math.isfinite(float(affine.get("mean", math.nan)))
+                        or not math.isfinite(float(affine.get("scale", math.nan)))
+                        or float(affine["scale"]) <= 0):
+                    raise ValueError(f"invalid full-track affine for {work}/{role}: {affine}")
             infos = {role: sf.info(directory / f"{role}.f32.wav") for role in "MAV"}
             grids = {(i.frames, i.samplerate, i.channels, i.subtype) for i in infos.values()}
             if len(grids) != 1:
@@ -100,12 +116,14 @@ class ClassicalDataset:
                 raise ValueError(f"invalid materialized grid for {work}: {next(iter(grids))}")
             if frames < crop_frames:
                 raise ValueError(f"work {work} is shorter than one training crop")
-            self.items.append((work, directory, frames, reports["recipe_id"]))
+            self.items.append((work, directory, frames, reports["recipe_id"], affines))
         if not self.items:
             raise ValueError("no eligible immutable training works were materialized")
 
     def sample(self, rng: np.random.Generator):
-        work, directory, total_frames, recipe_id = self.items[int(rng.integers(len(self.items)))]
+        work, directory, total_frames, recipe_id, affines = self.items[
+            int(rng.integers(len(self.items)))
+        ]
         start = int(rng.integers(0, total_frames - self.crop_frames + 1))
         audio = {role: _read_exact(directory / f"{role}.f32.wav", start=start,
                                    frames=self.crop_frames) for role in "MAV"}
@@ -115,7 +133,7 @@ class ClassicalDataset:
             raise ValueError(f"short activity mask for {work}")
         return audio["M"], audio["A"], audio["V"], _torch().from_numpy(event.copy()), {
             "work_id": work, "recipe_id": recipe_id, "start_frame": start
-        }
+        }, affines
 
 
 def _manifest_train_works(manifest_path: Path, splits_path: Path, train_splits: set[str]) -> list[str]:
@@ -290,10 +308,31 @@ def _loss_config(cfg: dict) -> ClassicalLossConfig:
     )
 
 
+def _require_production_normalization(cfg: dict) -> None:
+    normalization = cfg.get("normalization", {})
+    expected = {
+        "implementation": "demucs-full-track-affine/v1",
+        "training_statistics_scope": "full_track_per_work_per_control",
+        "evaluation_statistics_scope": "complete_input",
+    }
+    mismatches = {
+        key: (normalization.get(key), value)
+        for key, value in expected.items() if normalization.get(key) != value
+    }
+    if mismatches:
+        raise ValueError(f"trainer refuses non-production Demucs normalization: {mismatches}")
+
+
 def _separate_controls(model, mixture, accompaniment, vocals, vocal_index: int,
-                       construction: str, accompaniment_index: int | None):
+                       construction: str, accompaniment_index: int | None,
+                       full_track_affines: dict[str, DemucsAffine]):
     torch = _torch()
-    outputs = model(torch.cat((mixture, accompaniment, vocals), dim=0))
+    inputs = torch.cat((mixture, accompaniment, vocals), dim=0)
+    combined_affine = DemucsAffine(
+        mean=torch.cat([full_track_affines[role].mean for role in ("M", "A", "V")]),
+        scale=torch.cat([full_track_affines[role].scale for role in ("M", "A", "V")]),
+    )
+    outputs = forward_demucs_production_affine(model, inputs, combined_affine)
     batch = mixture.shape[0]
     vocal_estimates = outputs[:, vocal_index]
     mix_v = vocal_estimates[:batch]
@@ -336,10 +375,15 @@ def _export_and_parity(model, run_dir: Path, cfg: dict, *, label: str,
     reloaded = states.load_model(destination, strict=True).to(next(model.parameters()).device).eval()
     generator = torch.Generator(device="cpu").manual_seed(8128)
     probe = torch.randn(1, 2, SR, generator=generator).to(next(model.parameters()).device)
+    normalized, affine = normalize_demucs_batch(probe)
     model.eval()
     with torch.no_grad():
-        original = apply_model(model, probe, shifts=0, split=False)
-        restored = apply_model(reloaded, probe, shifts=0, split=False)
+        original = restore_demucs_sources(
+            apply_model(model, normalized, shifts=0, split=False), affine
+        )
+        restored = restore_demucs_sources(
+            apply_model(reloaded, normalized, shifts=0, split=False), affine
+        )
     difference = float((original - restored).abs().max().cpu())
     if difference != 0.0 or not torch.equal(original, restored):
         raise RuntimeError(f"export/reload parity failed: max_abs={difference}")
@@ -369,12 +413,22 @@ def _source_metrics(candidate, accompaniment, vocals) -> dict:
     return metrics
 
 
+def _apply_model_production(model, audio, *, device: str, split: bool,
+                            overlap: float = 0.25):
+    """Complete-input Demucs affine + overlap inference + source restoration."""
+    from demucs.apply import apply_model
+
+    normalized, affine = normalize_demucs_batch(audio)
+    estimates = apply_model(
+        model, normalized, device=device, shifts=0, split=split, overlap=overlap
+    )
+    return restore_demucs_sources(estimates, affine)
+
+
 def _evaluate(model, truth_root: Path, run_dir: Path, step: int, vocal_index: int,
               device: str, eval_works: list[str], construction: str,
               accompaniment_index: int | None) -> dict:
     torch = _torch()
-    from demucs.apply import apply_model
-
     step_dir = run_dir / "evaluation" / f"step-{step:06d}"
     if step_dir.exists():
         raise RuntimeError(f"refusing to rewrite immutable evaluation: {step_dir}")
@@ -389,10 +443,12 @@ def _evaluate(model, truth_root: Path, run_dir: Path, step: int, vocal_index: in
         if mixture.shape != accompaniment.shape or mixture.shape != vocals.shape:
             raise ValueError(f"truth grid mismatch for {work}")
         with torch.no_grad():
-            output = apply_model(model, mixture.unsqueeze(0), device=device, shifts=0,
-                                 split=True, overlap=0.25)[0].cpu()
-            no_vocal_output = apply_model(model, accompaniment.unsqueeze(0), device=device,
-                                          shifts=0, split=True, overlap=0.25)[0].cpu()
+            output = _apply_model_production(
+                model, mixture.unsqueeze(0), device=device, split=True
+            )[0].cpu()
+            no_vocal_output = _apply_model_production(
+                model, accompaniment.unsqueeze(0), device=device, split=True
+            )[0].cpu()
         if output.shape[-1] != mixture.shape[-1]:
             raise ValueError(f"inference frame mismatch for {work}: {output.shape}, {mixture.shape}")
         vocal_hat = output[vocal_index]
@@ -449,6 +505,7 @@ def run_training(args: argparse.Namespace) -> dict:
     config_path = Path(args.config).resolve()
     run_dir = Path(args.run_dir).resolve()
     cfg = yaml.safe_load(config_path.read_text())
+    _require_production_normalization(cfg)
     requested_steps = int(cfg["optim"]["steps_first_run"] if args.steps is None else args.steps)
     if requested_steps < 0:
         raise ValueError("steps must be non-negative")
@@ -530,11 +587,23 @@ def run_training(args: argparse.Namespace) -> dict:
         activity = torch.stack([s[3] for s in samples]).to(device).unsqueeze(1)
         event_weights = 1.0 + 2.0 * activity
         sampled.extend(s[4] for s in samples)
+        full_track_affines = {}
+        for role in ("M", "A", "V"):
+            full_track_affines[role] = DemucsAffine(
+                mean=torch.tensor(
+                    [[float(s[5][role]["mean"])] for s in samples],
+                    device=device, dtype=mixture.dtype,
+                ),
+                scale=torch.tensor(
+                    [[float(s[5][role]["scale"])] for s in samples],
+                    device=device, dtype=mixture.dtype,
+                ),
+            )
 
         model.train()
         estimates = _separate_controls(
             model, mixture, accompaniment, vocals, vocal_index,
-            construction, accompaniment_index
+            construction, accompaniment_index, full_track_affines
         )
         loss, components = classical_separation_loss(
             estimates["A_hat"], estimates["V_hat"], mixture, accompaniment, vocals,
@@ -595,6 +664,7 @@ def run_training(args: argparse.Namespace) -> dict:
         "eval_works": eval_works,
         "accompaniment_construction": construction,
         "materialization_recipes": {item[0]: item[3] for item in dataset.items},
+        "demucs_full_track_affines": {item[0]: item[4] for item in dataset.items},
         "manifest_sha256": _sha_file(manifest),
         "split_manifest_sha256": _sha_file(splits),
         "config_sha256": _sha_file(config_path),
