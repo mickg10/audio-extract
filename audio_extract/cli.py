@@ -560,8 +560,24 @@ def cmd_candidate_ensemble(args: argparse.Namespace) -> int:
     weights = ([float(x) for x in args.weights.split(",")] if args.weights else None)
     rec = render_ensemble_candidate(
         layout, json.loads(src_json.read_text()), member_recipe_ids=members,
-        algo=args.algo, weights=weights, code_commit=_code_commit())
+        algo=args.algo, weights=weights, code_commit=_code_commit(),
+        mixture_recipe_id=args.mixture_recipe_id)
     return _emit(_envelope("candidate.ensemble", "ok", args.run_id, candidate=rec))
+
+
+def cmd_candidate_channel_map(args: argparse.Namespace) -> int:
+    """Render an explicit immutable channel-map candidate."""
+    from .separate import render_channel_map_candidate
+
+    layout = TrackLayout(args.lib, args.run_id)
+    src_json = layout.source_dir / "source.json"
+    if not src_json.exists():
+        return _emit(_envelope("candidate.channel-map", "error", args.run_id,
+                               message=f"run {args.run_id!r} not ingested"), code=2)
+    rec = render_channel_map_candidate(
+        layout, json.loads(src_json.read_text()), mode=args.mode,
+        code_commit=_code_commit())
+    return _emit(_envelope("candidate.channel-map", "ok", args.run_id, candidate=rec))
 
 
 def cmd_finalists_render(args: argparse.Namespace) -> int:
@@ -657,6 +673,7 @@ def cmd_candidate_render(args: argparse.Namespace) -> int:
         layout, source_record, model_filename=filename, target=args.target,
         construction=args.construction, overlap=args.overlap, code_commit=_code_commit(),
         model_dir=args.model_dir, executed_bundle_id=bundle_id, expected_sha256=expected,
+        input_recipe_id=args.input_recipe_id,
     )
     return _emit(_envelope("candidate.render", "ok", args.run_id, candidate=rec,
                            locked=bundle_id is not None))
@@ -724,8 +741,16 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--algo", default="median",
                     choices=["median", "mean", "stft_geometric_median"])
     sp.add_argument("--weights", help="comma-separated weights (mean only)")
+    sp.add_argument("--mixture-recipe-id",
+                    help="explicit channel-map candidate used as the mixture/input")
     sp.add_argument("--json", action="store_true")
     sp.set_defaults(func=cmd_candidate_ensemble)
+    sp = g_cand.add_parser("channel-map", help="explicit immutable mono-to-stereo transform")
+    sp.add_argument("--run-id", required=True)
+    sp.add_argument("--mode", default="duplicate_mono_to_stereo",
+                    choices=["duplicate_mono_to_stereo"])
+    sp.add_argument("--json", action="store_true")
+    sp.set_defaults(func=cmd_candidate_channel_map)
     sp = g_cand.add_parser("render", help="render an immutable separator candidate")
     sp.add_argument("--run-id", required=True)
     sp.add_argument("--model", required=True, help="separator model filename (audio-separator registry)")
@@ -735,6 +760,8 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--overlap", type=int, default=8)
     sp.add_argument("--model-dir", default=str(Path.home() / "audio-extract" / "models"))
     sp.add_argument("--lock", default="configs/model-lock.json")
+    sp.add_argument("--input-recipe-id",
+                    help="explicit channel-map candidate to feed to the separator")
     sp.add_argument("--json", action="store_true")
     sp.set_defaults(func=cmd_candidate_render)
 

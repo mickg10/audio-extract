@@ -134,21 +134,25 @@ def provisional_vocal(canonical_wav: str | Path, model_filename: str = "Kim_Voca
 
 def build_separate_recipe(source_record: dict, *, model_filename: str, model_sha256: str,
                           overlap: int, construction: str, target: str, code_commit: str,
-                          executed_bundle_id: str | None = None) -> dict:
+                          executed_bundle_id: str | None = None,
+                          input_parent_recipe_ids: list[str] | None = None) -> dict:
     """Assemble a v2 recipe object for a separation candidate (docs/v2 §1.3).
     When the model lock resolved this execution, ``executed_bundle_id`` pins the
     exact bundle (weights+config+adapter) into the identity (v2.1 §6)."""
     model_block_extra = {"executed_bundle_id": executed_bundle_id} if executed_bundle_id else {}
+    input_pcm = {
+        "sha256": source_record["input_pcm_sha256"],
+        "sample_rate_hz": source_record["sample_rate_hz"],
+        "channel_layout": source_record["channel_layout"],
+        "frames": source_record["frames"],
+        "sample_format": "float32-le-interleaved",
+    }
+    if input_parent_recipe_ids:
+        input_pcm["parent_recipe_ids"] = list(input_parent_recipe_ids)
     return {
         "schema": recipe_mod.SCHEMA,
         "canon": recipe_mod.CANON,
-        "input_pcm": {
-            "sha256": source_record["input_pcm_sha256"],
-            "sample_rate_hz": source_record["sample_rate_hz"],
-            "channel_layout": source_record["channel_layout"],
-            "frames": source_record["frames"],
-            "sample_format": "float32-le-interleaved",
-        },
+        "input_pcm": input_pcm,
         "operation": {"type": "separate", "target": target, "construction": construction},
         "model": {
             "model_id": model_filename,
@@ -164,6 +168,154 @@ def build_separate_recipe(source_record: dict, *, model_filename: str, model_sha
         },
         "software": {"audio_extract_commit": code_commit},
     }
+
+
+def render_channel_map_candidate(layout, source_record: dict, *,
+                                 mode: str = "duplicate_mono_to_stereo",
+                                 code_commit: str = "") -> dict:
+    """Materialize an explicit immutable mono-to-stereo channel-map node.
+
+    Separator models in the production panel emit stereo.  A mono source must
+    therefore become stereo *before* separation, with the conversion represented
+    in the recipe DAG rather than hidden in a model wrapper.  The only currently
+    supported mapping duplicates the mono sample into FL and FR at unity gain.
+    """
+    import os
+    import tempfile
+    from datetime import datetime, timezone
+
+    import soundfile as sf
+
+    from . import identity
+    from .manifest import Manifest
+    from .storage import ImmutableWriteError
+
+    if mode != "duplicate_mono_to_stereo":
+        raise ValueError(f"unsupported channel-map mode: {mode!r}")
+    if source_record.get("channel_layout") != ["FC"]:
+        raise ValueError(
+            "duplicate_mono_to_stereo requires source channel_layout ['FC']"
+        )
+    canonical = Path(layout.source_dir) / "canonical.f32.wav"
+    mono, sr = sf.read(str(canonical), dtype="float32", always_2d=True)
+    expected = (int(source_record["frames"]), int(source_record["sample_rate_hz"]), 1)
+    if (len(mono), int(sr), mono.shape[1]) != expected:
+        raise ValueError(
+            f"canonical/source-record grid mismatch: "
+            f"{(len(mono), int(sr), mono.shape[1])} != {expected}"
+        )
+
+    config = {
+        "mode": mode,
+        "input_channel_layout": ["FC"],
+        "output_channel_layout": ["FL", "FR"],
+        "matrix_ppm": [[1_000_000], [1_000_000]],
+    }
+    transform_hash = hashlib.sha256(
+        json.dumps(config, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
+    recipe = {
+        "schema": recipe_mod.SCHEMA,
+        "canon": recipe_mod.CANON,
+        "input_pcm": {
+            "sha256": source_record["input_pcm_sha256"],
+            "sample_rate_hz": int(sr),
+            "channel_layout": ["FC"],
+            "frames": len(mono),
+            "sample_format": "float32-le-interleaved",
+        },
+        "operation": {"type": "channel_map", "target": "stereo"},
+        "model": {
+            "model_id": "duplicate-mono-to-stereo/v1",
+            "weights_sha256": transform_hash,
+            "adapter": "audio-extract-channel-map",
+            "adapter_revision": "channel-map-matrix-v1",
+        },
+        "effective_config": config,
+        "software": {"audio_extract_commit": code_commit},
+    }
+    rid = identity.recipe_id(recipe)
+    cdir = layout.candidate_dir(rid)
+    output = cdir / "output.f32.wav"
+    cached = output.exists()
+    if cached:
+        info = sf.info(output)
+        if (info.frames, info.samplerate, info.channels, info.subtype) != (
+            len(mono), int(sr), 2, "FLOAT"
+        ):
+            raise ValueError(f"cached channel-map grid mismatch: {info}")
+        artifact = (cdir / "output.pcm.sha256").read_text().strip()
+    else:
+        stereo = np.repeat(mono, 2, axis=1).astype("float32", copy=False)
+        artifact = identity.artifact_pcm_sha256(
+            stereo, int(sr), ["FL", "FR"], len(stereo)
+        )
+        fd, tmp = tempfile.mkstemp(suffix=".f32.wav")
+        os.close(fd)
+        sf.write(tmp, stereo, int(sr), subtype="FLOAT")
+        try:
+            layout.write_candidate(
+                rid, recipe, identity.execution_fingerprint(), Path(tmp), artifact
+            )
+        except ImmutableWriteError:
+            cached = True
+
+    record = {
+        "recipe_id": rid,
+        "operation": "channel_map",
+        "parents": [source_record["input_pcm_sha256"]],
+        "artifact_pcm_sha256": artifact,
+        "sample_rate_hz": int(sr),
+        "channels": ["FL", "FR"],
+        "frames": len(mono),
+        "sample_format": "float32",
+        "status": "complete",
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "cached": cached,
+    }
+    with Manifest(layout.manifest_sqlite) as manifest:
+        manifest.upsert_candidate(record)
+    return record
+
+
+def _resolve_model_input(layout, source_record: dict,
+                         input_recipe_id: str | None):
+    """Return ``(wav, grid record, explicit recipe parents)`` for a model input."""
+    import soundfile as sf
+
+    from . import identity
+
+    if input_recipe_id is None:
+        return Path(layout.source_dir) / "canonical.f32.wav", dict(source_record), []
+
+    parent_dir = layout.candidate_dir(input_recipe_id)
+    parent_wav = parent_dir / "output.f32.wav"
+    parent_recipe_path = parent_dir / "recipe.json"
+    if not (parent_dir / "COMPLETE").is_file() or not parent_wav.is_file() or not parent_recipe_path.is_file():
+        raise ValueError(f"model-input candidate {input_recipe_id} is not complete")
+    parent_recipe = json.loads(parent_recipe_path.read_text())
+    if parent_recipe.get("operation", {}).get("type") != "channel_map":
+        raise ValueError(f"model-input candidate {input_recipe_id} is not a channel_map node")
+    info = sf.info(parent_wav)
+    if info.subtype != "FLOAT":
+        raise ValueError(f"model-input candidate is not FLOAT: {info.subtype}")
+    samples, sr = sf.read(parent_wav, dtype="float32", always_2d=True)
+    output_layout = parent_recipe.get("effective_config", {}).get("output_channel_layout")
+    if not isinstance(output_layout, list) or len(output_layout) != samples.shape[1]:
+        raise ValueError("channel-map recipe has invalid output_channel_layout")
+    artifact = identity.artifact_pcm_sha256(samples, int(sr), output_layout, len(samples))
+    declared = (parent_dir / "output.pcm.sha256").read_text().strip()
+    if artifact != declared:
+        raise ValueError(f"model-input candidate PCM hash mismatch: {artifact} != {declared}")
+    derived = dict(source_record)
+    derived.update({
+        "input_pcm_sha256": artifact,
+        "sample_rate_hz": int(sr),
+        "channel_layout": output_layout,
+        "frames": len(samples),
+        "sample_format": "float32-le-interleaved",
+    })
+    return parent_wav, derived, [input_recipe_id]
 
 
 def _stft_geometric_median(stack, *, n_fft: int = 2048, hop: int = 512,
@@ -221,7 +373,8 @@ def _stft_geometric_median(stack, *, n_fft: int = 2048, hop: int = 512,
 
 def render_ensemble_candidate(layout, source_record: dict, *, member_recipe_ids: list[str],
                               algo: str = "median", weights: list[float] | None = None,
-                              code_commit: str = "") -> dict:
+                              code_commit: str = "",
+                              mixture_recipe_id: str | None = None) -> dict:
     """Combine explicitly parented vocal estimates and render ``M - V_hat``.
 
     Algorithms are component median, global convex mean, or stereo-coherent
@@ -262,12 +415,14 @@ def render_ensemble_candidate(layout, source_record: dict, *, member_recipe_ids:
     w = np.asarray([pair[1] for pair in pairs], dtype=np.float64)
     weights_ppm = [int(round(value * 1_000_000)) for value in w]
 
-    canonical = Path(layout.source_dir) / "canonical.f32.wav"
+    canonical, mixture_record, mixture_parents = _resolve_model_input(
+        layout, source_record, mixture_recipe_id
+    )
     mix, sr = sf.read(str(canonical), dtype="float64", always_2d=True)
     sr = int(sr)
     expected_grid = (
-        int(source_record["frames"]), int(source_record["sample_rate_hz"]),
-        len(source_record["channel_layout"]),
+        int(mixture_record["frames"]), int(mixture_record["sample_rate_hz"]),
+        len(mixture_record["channel_layout"]),
     )
     if (len(mix), sr, mix.shape[1]) != expected_grid:
         raise ValueError(
@@ -297,16 +452,19 @@ def render_ensemble_candidate(layout, source_record: dict, *, member_recipe_ids:
         "member_weight_pairs": list(zip(member_recipe_ids, weights_ppm)),
         "effective_config": effective_config,
     }, sort_keys=True, separators=(",", ":"))
+    input_pcm = {
+        "sha256": mixture_record["input_pcm_sha256"],
+        "sample_rate_hz": mixture_record["sample_rate_hz"],
+        "channel_layout": mixture_record["channel_layout"],
+        "frames": mixture_record["frames"],
+        "sample_format": "float32-le-interleaved",
+    }
+    if mixture_parents:
+        input_pcm["parent_recipe_ids"] = mixture_parents
     recipe = {
         "schema": recipe_mod.SCHEMA,
         "canon": recipe_mod.CANON,
-        "input_pcm": {
-            "sha256": source_record["input_pcm_sha256"],
-            "sample_rate_hz": source_record["sample_rate_hz"],
-            "channel_layout": source_record["channel_layout"],
-            "frames": source_record["frames"],
-            "sample_format": "float32-le-interleaved",
-        },
+        "input_pcm": input_pcm,
         "operation": {"type": "mixture_minus_source", "target": "instrumental",
                       "construction": construction},
         "model": {"model_id": f"vocal-ensemble-{algo}",
@@ -333,6 +491,12 @@ def render_ensemble_candidate(layout, source_record: dict, *, member_recipe_ids:
                 and parent_op.get("construction") == "native_primary"
                 and parent_op.get("target") == "vocals"):
             raise ValueError(f"ensemble member {parent_id} is not a native vocal estimate")
+        if mixture_parents:
+            parent_input = json.loads(parent_recipe_path.read_text()).get("input_pcm", {})
+            if parent_input.get("sha256") != mixture_record["input_pcm_sha256"]:
+                raise ValueError(
+                    f"ensemble member {parent_id} was not rendered from the selected mixture"
+                )
 
     completed = layout.candidate_dir(rid)
     if (completed / "output.f32.wav").exists():
@@ -343,8 +507,9 @@ def render_ensemble_candidate(layout, source_record: dict, *, member_recipe_ids:
         execution = json.loads((completed / "execution.json").read_text())
         record = {
             "recipe_id": rid, "operation": "mixture_minus_source",
-            "parents": member_recipe_ids, "artifact_pcm_sha256": artifact,
-            "sample_rate_hz": sr, "channels": source_record["channel_layout"],
+            "parents": mixture_parents + member_recipe_ids,
+            "artifact_pcm_sha256": artifact,
+            "sample_rate_hz": sr, "channels": mixture_record["channel_layout"],
             "frames": info.frames, "sample_format": "float32", "status": "complete",
             "created_at": datetime.now(timezone.utc).isoformat(), "cached": True,
             "alignments": execution.get("alignments", []),
@@ -379,8 +544,8 @@ def render_ensemble_candidate(layout, source_record: dict, *, member_recipe_ids:
     if accomp.shape != mix.shape or not np.all(np.isfinite(accomp)):
         raise RuntimeError(f"invalid ensemble output grid/content: {accomp.shape}")
     frames, channels = int(accomp.shape[0]), int(accomp.shape[1])
-    ch_layout = (source_record["channel_layout"]
-                 if channels == len(source_record["channel_layout"])
+    ch_layout = (mixture_record["channel_layout"]
+                 if channels == len(mixture_record["channel_layout"])
                  else [f"CH{i}" for i in range(channels)])
     artifact = identity.artifact_pcm_sha256(accomp.astype("float32"), sr, ch_layout, frames)
 
@@ -398,7 +563,7 @@ def render_ensemble_candidate(layout, source_record: dict, *, member_recipe_ids:
 
     record = {
         "recipe_id": rid, "operation": "mixture_minus_source",
-        "parents": member_recipe_ids,
+        "parents": mixture_parents + member_recipe_ids,
         "artifact_pcm_sha256": artifact, "sample_rate_hz": sr,
         "channels": ch_layout, "frames": frames, "sample_format": "float32",
         "status": "complete",
@@ -543,7 +708,8 @@ def render_candidate(layout, source_record: dict, *, model_filename: str, target
                      construction: str, overlap: int, code_commit: str,
                      model_dir: str | Path = DEFAULT_MODEL_DIR,
                      executed_bundle_id: str | None = None,
-                     expected_sha256: str | None = None) -> dict:
+                     expected_sha256: str | None = None,
+                     input_recipe_id: str | None = None) -> dict:
     """Run one separation, build the construction, and write an immutable candidate
     keyed by ``recipe_id`` (docs/v2 §1.4, §1.6). Returns the manifest record.
 
@@ -560,7 +726,9 @@ def render_candidate(layout, source_record: dict, *, model_filename: str, target
     from .manifest import Manifest
     from .storage import ImmutableWriteError
 
-    canonical = Path(layout.source_dir) / "canonical.f32.wav"
+    canonical, model_input_record, input_parents = _resolve_model_input(
+        layout, source_record, input_recipe_id
+    )
 
     def _record_from_dir(rid: str) -> dict:
         cdir = layout.candidate_dir(rid)
@@ -569,10 +737,10 @@ def render_candidate(layout, source_record: dict, *, model_filename: str, target
         return {
             "recipe_id": rid,
             "operation": "separate" if construction.startswith("native") else "mixture_minus_source",
-            "parents": [source_record["input_pcm_sha256"]],
+            "parents": input_parents or [model_input_record["input_pcm_sha256"]],
             "artifact_pcm_sha256": artifact,
             "sample_rate_hz": int(info.samplerate),
-            "channels": source_record["channel_layout"] if info.channels == len(source_record["channel_layout"])
+            "channels": model_input_record["channel_layout"] if info.channels == len(model_input_record["channel_layout"])
             else [f"CH{i}" for i in range(info.channels)],
             "frames": int(info.frames),
             "sample_format": "float32",
@@ -589,9 +757,10 @@ def render_candidate(layout, source_record: dict, *, model_filename: str, target
             raise RuntimeError(f"model lock hash mismatch for {model_filename!r}: "
                                f"expected {expected_sha256[:16]}, on-disk {pre_hash[:16]}")
         pre_recipe = build_separate_recipe(
-            source_record, model_filename=model_filename, model_sha256=pre_hash,
+            model_input_record, model_filename=model_filename, model_sha256=pre_hash,
             overlap=overlap, construction=construction, target=target, code_commit=code_commit,
             executed_bundle_id=executed_bundle_id,
+            input_parent_recipe_ids=input_parents,
         )
         pre_rid = identity.recipe_id(pre_recipe)
         if (layout.candidate_dir(pre_rid) / "output.f32.wav").exists():
@@ -610,8 +779,8 @@ def render_candidate(layout, source_record: dict, *, model_filename: str, target
     sr = out.sr
     mix, _ = sf.read(str(canonical), dtype="float64", always_2d=True)
     expected_grid = (
-        int(source_record["frames"]), int(source_record["sample_rate_hz"]),
-        len(source_record["channel_layout"]),
+        int(model_input_record["frames"]), int(model_input_record["sample_rate_hz"]),
+        len(model_input_record["channel_layout"]),
     )
     if (len(mix), int(sr), mix.shape[1]) != expected_grid:
         raise ValueError(
@@ -649,14 +818,15 @@ def render_candidate(layout, source_record: dict, *, model_filename: str, target
         raise ValueError(f"separator output grid mismatch: {arr.shape} != {mix.shape}")
 
     recipe = build_separate_recipe(
-        source_record, model_filename=model_filename, model_sha256=out.model_sha256,
+        model_input_record, model_filename=model_filename, model_sha256=out.model_sha256,
         overlap=overlap, construction=construction, target=target, code_commit=code_commit,
         executed_bundle_id=executed_bundle_id,
+        input_parent_recipe_ids=input_parents,
     )
     rid = identity.recipe_id(recipe)
     frames, channels = int(arr.shape[0]), int(arr.shape[1])
-    ch_layout = (source_record["channel_layout"]
-                 if channels == len(source_record["channel_layout"])
+    ch_layout = (model_input_record["channel_layout"]
+                 if channels == len(model_input_record["channel_layout"])
                  else [f"CH{i}" for i in range(channels)])
     artifact = identity.artifact_pcm_sha256(arr, sr, ch_layout, frames)
 
@@ -675,7 +845,7 @@ def render_candidate(layout, source_record: dict, *, model_filename: str, target
     record = {
         "recipe_id": rid,
         "operation": "separate" if construction.startswith("native") else "mixture_minus_source",
-        "parents": [source_record["input_pcm_sha256"]],
+        "parents": input_parents or [model_input_record["input_pcm_sha256"]],
         "artifact_pcm_sha256": artifact,
         "sample_rate_hz": sr,
         "channels": ch_layout,
