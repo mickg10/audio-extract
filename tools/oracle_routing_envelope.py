@@ -213,6 +213,7 @@ def _write_route(
     parents: list[dict[str, Any]], plan: np.ndarray, config: RoutingConfig,
     code_commit: str, execution: dict[str, Any], truth_pcm: dict[str, str],
     solver_config: dict[str, Any] | None = None,
+    adapter_revision: str = "source-coordinate-stft-route/v1",
 ) -> dict[str, Any]:
     plan_hash = _route_plan_hash(mode, plan, config, solver_config)
     parent_ids = [member["recipe_id"] for member in parents]
@@ -226,7 +227,7 @@ def _write_route(
             "model_id": f"oracle-routing-{mode.lower()}",
             "weights_sha256": plan_hash.removeprefix("sha256:"),
             "adapter": "audio-extract-oracle-routing",
-            "adapter_revision": "source-coordinate-stft-route/v1",
+            "adapter_revision": adapter_revision,
             "members": parent_ids,
             "basis_sha256": basis_hash,
         },

@@ -71,14 +71,14 @@ def _member_record(layout: TrackLayout, name: str, accompaniment: dict,
     }
 
 
-def _median_record(layout: TrackLayout, accompaniment: dict,
-                   parent_rows: list[dict]) -> dict:
+def _ensemble_record(layout: TrackLayout, name: str, accompaniment: dict,
+                     parent_rows: list[dict]) -> dict:
     path = layout.candidate_dir(accompaniment["recipe_id"]) / "output.f32.wav"
     info = sf.info(path)
     if (info.samplerate, info.channels, info.subtype) != (44_100, 2, "FLOAT"):
-        raise RuntimeError(f"median control output is not exact FLOAT stereo: {path}")
+        raise RuntimeError(f"ensemble control output is not exact FLOAT stereo: {path}")
     return {
-        "name": "median_mdx_mel_bs",
+        "name": name,
         "executed_bundle_hashes": sorted(
             row["executed_bundle_hash"] for row in parent_rows
         ),
@@ -157,21 +157,31 @@ def run(args: argparse.Namespace) -> dict:
             layout, name, accompaniment, bundle["bundle_sha256"]
         ))
 
-    if args.include_median:
+    if args.include_median or args.include_composites:
         median_names = ("mdx23c", "melband", "bs_roformer")
         by_name = {row["name"]: row for row in members}
         if not set(median_names) <= set(by_name):
-            raise ValueError("--include-median requires mdx23c melband bs_roformer")
+            raise ValueError(
+                "ensemble controls require mdx23c melband bs_roformer"
+            )
         parents = [
             by_name[name]["vocal"]["recipe_id"] for name in median_names
         ]
-        median = render_ensemble_candidate(
-            layout, source, member_recipe_ids=parents, algo="median",
-            code_commit=code_commit,
-        )
-        members.append(_median_record(
-            layout, median, [by_name[name] for name in median_names]
-        ))
+        algorithms = [("median_mdx_mel_bs", "median")]
+        if args.include_composites:
+            algorithms.extend((
+                ("geomedian_mdx_mel_bs", "stft_geometric_median"),
+                ("convex_fusion_uniform", "mean"),
+            ))
+        for composite_name, algorithm in algorithms:
+            ensemble = render_ensemble_candidate(
+                layout, source, member_recipe_ids=parents, algo=algorithm,
+                code_commit=code_commit,
+            )
+            members.append(_ensemble_record(
+                layout, composite_name, ensemble,
+                [by_name[name] for name in median_names],
+            ))
 
     # Only the executed members must be resolvable from the combined lock.
     by_hash = {
@@ -230,6 +240,10 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--control", required=True, choices=sorted(CONTROL_FILES))
     parser.add_argument("--members", nargs="+", required=True, choices=BASIS_ORDER)
     parser.add_argument("--include-median", action="store_true")
+    parser.add_argument(
+        "--include-composites", action="store_true",
+        help="also render median, STFT geometric median, and uniform mean",
+    )
     parser.add_argument("--output-store", required=True, type=Path)
     parser.add_argument("--model-dir", required=True, type=Path)
     parser.add_argument("--baseline-config", required=True, type=Path)

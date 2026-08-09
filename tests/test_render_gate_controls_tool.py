@@ -20,10 +20,12 @@ def test_parser_requires_explicit_control_members_and_paths(tmp_path):
         "--baseline-config", str(tmp_path / "baseline.yaml"),
         "--demucs-045-config", str(tmp_path / "045.yaml"),
         "--demucs-955-config", str(tmp_path / "955.yaml"),
+        "--include-composites",
         "--output", str(tmp_path / "report.json"),
     ])
     assert args.control == "vocal_only"
     assert args.members == ["htdemucs_04573f0d", "bs_roformer"]
+    assert args.include_composites
 
 
 def test_parser_refuses_unknown_member(tmp_path):

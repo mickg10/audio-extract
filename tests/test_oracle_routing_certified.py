@@ -6,6 +6,7 @@ from audio_extract.oracle_routing_certified import (
     CertifiedRoutingConfig,
     best_whole_track,
     build_cell_quadratic,
+    build_spectral_quadratic_grid,
     project_simplex,
     route_objective,
     solve_convex_certified,
@@ -94,6 +95,38 @@ def test_vocal_only_cell_uses_direct_fallback_and_prefers_silence():
     assert cell.mode == "vocal_only_direct_fallback"
     assert costs[0] == pytest.approx(0.0, abs=1e-10)
     assert costs[1] > 0.0
+
+
+def test_track_relative_floor_routes_nearly_silent_cell_to_direct_fallback():
+    candidates, accompaniment, vocal = _basis([1.0, 0.5])
+    cell = build_cell_quadratic(
+        candidates * 1e-5,
+        accompaniment * 1e-5,
+        vocal * 1e-5,
+        _fast_config(min_source_power_relative=1e-3),
+        global_accompaniment_power=1.0,
+        global_vocal_power=1.0,
+    )
+    assert cell.mode == "silent_direct_fallback"
+
+
+def test_spectral_grid_accepts_complex64_and_covers_every_cell():
+    rng = np.random.default_rng(19)
+    candidates = (
+        rng.standard_normal((2, 2, 5, 6))
+        + 1j * rng.standard_normal((2, 2, 5, 6))
+    ).astype("complex64")
+    accompaniment = candidates[0].copy()
+    vocal = (0.2 * candidates[1]).astype("complex64")
+    grid = build_spectral_quadratic_grid(
+        candidates, accompaniment, vocal,
+        time_ranges=((0, 3), (3, 6)),
+        frequency_ranges=((0, 2), (2, 5)),
+        config=_fast_config(),
+    )
+    assert grid.validate() == (2, 2, 2)
+    assert grid.Q.dtype == np.float64
+    assert sum(np.count_nonzero(grid.modes == mode) for mode in set(grid.modes.flat)) == 4
 
 
 def test_simplex_projection_is_nonnegative_and_normalized():
