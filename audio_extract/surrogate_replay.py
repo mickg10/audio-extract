@@ -28,8 +28,8 @@ import yaml
 
 from . import identity
 from .classical_surrogate_alignment_v2 import SurrogateConfigV2, evaluate_surrogate_v2
-from .demucs_affine import DemucsAffine, forward_demucs_production_affine
-from .train_classical import SR, _read_exact, _source_metrics
+from .demucs_affine import DemucsAffine
+from .train_classical import SR, _read_exact, _separate_controls, _source_metrics
 
 
 SCHEMA = "audio-extract/loss-surrogate-alignment-replay/v1"
@@ -42,13 +42,13 @@ AXES = {
 FULL_COMMIT = re.compile(r"^[0-9a-f]{40}$")
 # The frozen report did not retain vocal-estimate PCM, so replay binding uses
 # the three independently recomputed external metrics. CUDA reduction order may
-# move their final decimals across driver/runtime invocations. Bounds are
-# metric-specific because two values are dB while artifact_ratio is unitless;
-# both remain far below the advancement thresholds.
+# move their final decimals across driver/runtime invocations. The map keeps
+# units explicit even though the tight absolute replay bound is currently the
+# same for all three metrics.
 METRIC_PARITY_TOLERANCES = {
-    "retained_voice_db_p90": 0.01,
-    "event_hole_db_p90": 0.01,
-    "artifact_ratio_p90": 0.001,
+    "retained_voice_db_p90": 0.0001,
+    "event_hole_db_p90": 0.0001,
+    "artifact_ratio_p90": 0.0001,
 }
 
 
@@ -477,15 +477,28 @@ def run_replay(
                     raise ReplayEvidenceError(
                         f"M != A + V at sample {sample_index}: {reconstruction_error}"
                     )
-                affine_record = material["recipe"]["demucs_full_track_affine"]["M"]
-                mixture = tensors["M"].unsqueeze(0).to(device)
-                affine = DemucsAffine(
-                    mean=torch.tensor([[float(affine_record["mean"])]], device=device),
-                    scale=torch.tensor([[float(affine_record["scale"])]], device=device),
+                full_track_affines = {}
+                for role in "MAV":
+                    affine_record = material["recipe"]["demucs_full_track_affine"][role]
+                    full_track_affines[role] = DemucsAffine(
+                        mean=torch.tensor([[float(affine_record["mean"])]], device=device),
+                        scale=torch.tensor([[float(affine_record["scale"])]], device=device),
+                    )
+                # Reproduce the frozen objective's exact M/A/V control batch. A
+                # mixture-only batch changes CUDA kernel shapes and can move the
+                # last decimals of tail metrics despite identical weights/input.
+                estimates = _separate_controls(
+                    model,
+                    tensors["M"].unsqueeze(0).to(device),
+                    tensors["A"].unsqueeze(0).to(device),
+                    tensors["V"].unsqueeze(0).to(device),
+                    int(config["vocal_source_index"]),
+                    "mixture_residual",
+                    None,
+                    full_track_affines,
                 )
-                estimates = forward_demucs_production_affine(model, mixture, affine)
-                vocal_hat = estimates[0, int(config["vocal_source_index"])].cpu()
-                accompaniment_hat = tensors["M"] - vocal_hat
+                vocal_hat = estimates["V_hat"][0].cpu()
+                accompaniment_hat = estimates["A_hat"][0].cpu()
                 old = fixed_index[(sample_index, step)]
                 actual_metrics = _source_metrics(
                     accompaniment_hat, tensors["A"], tensors["V"]
@@ -572,6 +585,7 @@ def run_replay(
         "device": device,
         "surrogate_config": asdict(surrogate_config),
         "checkpoint_metric_parity_tolerances": METRIC_PARITY_TOLERANCES,
+        "inference_batch_roles": ["M", "A", "V"],
     }
     summary = {
         "schema": SCHEMA + "/summary",
