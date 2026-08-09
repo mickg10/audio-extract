@@ -158,5 +158,8 @@ def test_verifier_refuses_byte_identical_primary_and_alternate(tmp_path):
     report["candidates"][1]["artifact_pcm_sha256"] = report["candidates"][0][
         "artifact_pcm_sha256"
     ]
-    with pytest.raises(VerificationError, match="artifact_pcm_sha256 mismatch|byte-identical"):
+    with pytest.raises(
+        VerificationError,
+        match="packaged report.json mismatch|artifact_pcm_sha256 mismatch|byte-identical",
+    ):
         verify_work(report, package_root)
