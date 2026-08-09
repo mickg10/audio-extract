@@ -1,13 +1,13 @@
 """Globally converged convex-hull oracle for exact source-routing diagnostics.
 
-The canonical discrete O2 route is solved globally as a Potts MILP.  This module
+The canonical discrete O2 route is solved globally as a Potts MILP. This module
 provides the complementary O3 question:
 
     What is the best smoothly varying *convex combination* of the available
     separator estimates under a source-assignment-aware quadratic objective?
 
 Unlike a softmax/Adam fit to the nonlinear evaluation metric, this program is
-convex.  It uses local complex source coordinates already held in
+convex. It uses local complex source coordinates already held in
 ``CellStatistics``:
 
     Y_i = alpha_i A + beta_i V + R_i.
@@ -20,18 +20,18 @@ For real simplex weights ``w``:
 
 The objective penalizes ``|alpha-1|^2``, retained-solo energy with a denominator
 fixed by the true accompaniment energy, orthogonal residual energy, and
-quadratic time/frequency weight variation.  It is a positive-semidefinite
+quadratic time/frequency weight variation. It is a positive-semidefinite
 quadratic over a product of simplices.
 
-The solver is deterministic monotone FISTA with exact simplex projections.  A
+The solver is deterministic monotone FISTA with exact simplex projections. A
 result is returned only when the projected-gradient mapping satisfies the
-configured KKT tolerance and independent starts agree.  Iteration-limit results
+configured KKT tolerance and independent starts agree. Iteration-limit results
 are rejected rather than presented as an oracle envelope.
 """
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
-from typing import Any, Iterable
+from typing import Any
 
 import numpy as np
 
@@ -111,6 +111,8 @@ class ConvexOracleResult:
     best_vertex_index: int
     best_vertex_objective: float
     start_objectives: dict[str, float]
+    restart_count: int
+    accelerated_steps: int
 
 
 def project_simplex(values: np.ndarray) -> np.ndarray:
@@ -125,7 +127,7 @@ def project_simplex(values: np.ndarray) -> np.ndarray:
     ranks = np.arange(1, k + 1, dtype=np.float64)
     positive = ordered - cssv / ranks > 0
     rho = positive.sum(axis=1) - 1
-    if np.any(rho < 0):  # finite vectors always have a nonempty active set
+    if np.any(rho < 0):
         raise ConvexOracleError("simplex projection active set is empty")
     theta = cssv[np.arange(len(flat)), rho] / (rho + 1)
     result = np.maximum(flat - theta[:, None], 0.0).reshape(x.shape)
@@ -241,7 +243,7 @@ def gradient(weights: np.ndarray, quadratic: ConvexQuadratic,
 
 def lipschitz_constant(quadratic: ConvexQuadratic,
                        config: ConvexOracleConfig) -> float:
-    # A one-dimensional path graph has Laplacian eigenvalue <=4. The Hessian of
+    # A path-graph Laplacian has eigenvalue <=4. The Hessian of
     # lambda*sum||w_i-w_j||^2 is 2*lambda*L, hence <=8*lambda.
     value = (
         2.0 * quadratic.max_local_eigenvalue
@@ -285,13 +287,18 @@ def _monotone_fista(start: np.ndarray, quadratic: ConvexQuadratic,
     converged = False
     mapping = projected_gradient_mapping_inf(x, quadratic, config, L)
     iterations = 0
+    restarts = 0
+    accelerated_steps = 0
     for iterations in range(1, config.max_iterations + 1):
+        extrapolation_origin = y
         proposal = project_simplex(y - gradient(y, quadratic, config) / L)
         proposal_value = objective(proposal, quadratic, config)[0]
         # Monotone restart: acceleration is optional, objective increase is not.
         if proposal_value > current + config.objective_tolerance:
             y = x
+            extrapolation_origin = y
             momentum = 1.0
+            restarts += 1
             proposal = project_simplex(y - gradient(y, quadratic, config) / L)
             proposal_value = objective(proposal, quadratic, config)[0]
         if proposal_value > current + config.objective_tolerance:
@@ -312,12 +319,16 @@ def _monotone_fista(start: np.ndarray, quadratic: ConvexQuadratic,
             break
         next_momentum = 0.5 * (1.0 + np.sqrt(1.0 + 4.0 * momentum * momentum))
         accelerated = x + ((momentum - 1.0) / next_momentum) * (x - previous)
-        # Adaptive restart when extrapolation points against the latest step.
-        if float(np.sum((accelerated - x) * (x - previous))) > 0:
+        # O'Donoghue-Candes gradient restart criterion:
+        # <y_k - x_{k+1}, x_{k+1} - x_k> > 0.
+        if float(np.sum((extrapolation_origin - x) * (x - previous))) > 0:
             y = x
             next_momentum = 1.0
+            restarts += 1
         else:
             y = accelerated
+            if next_momentum > 1.0:
+                accelerated_steps += 1
         momentum = next_momentum
         previous_value = current
     if not converged:
@@ -326,6 +337,11 @@ def _monotone_fista(start: np.ndarray, quadratic: ConvexQuadratic,
             f"iterations={iterations}, projected_gradient_mapping_inf={mapping}"
         )
     total, data, temporal, frequency = objective(best, quadratic, config)
+    best_mapping = projected_gradient_mapping_inf(best, quadratic, config, L)
+    if best_mapping > config.gradient_mapping_tolerance:
+        raise ConvexOracleError(
+            f"best convex iterate lacks KKT certificate: {best_mapping}"
+        )
     return best, {
         "objective": total,
         "data_objective": data,
@@ -333,12 +349,12 @@ def _monotone_fista(start: np.ndarray, quadratic: ConvexQuadratic,
         "frequency_smoothness": frequency,
         "iterations": iterations,
         "converged": True,
-        "projected_gradient_mapping_inf": projected_gradient_mapping_inf(
-            best, quadratic, config, L
-        ),
+        "projected_gradient_mapping_inf": best_mapping,
         "simplex_error": float(np.max(np.abs(best.sum(axis=-1) - 1.0))),
         "min_weight": float(best.min()),
         "lipschitz_constant": L,
+        "restart_count": restarts,
+        "accelerated_steps": accelerated_steps,
     }
 
 
@@ -392,4 +408,6 @@ def solve_true_convex_oracle(
         best_vertex_index=best_vertex,
         best_vertex_objective=best_vertex_objective,
         start_objectives={item[0]: float(item[2]["objective"]) for item in solutions},
+        restart_count=int(report["restart_count"]),
+        accelerated_steps=int(report["accelerated_steps"]),
     )
