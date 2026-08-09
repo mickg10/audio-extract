@@ -290,7 +290,7 @@ def render_ensemble_candidate(layout, source_record: dict, *, member_recipe_ids:
             "whitening": "identity",
             "solver": "weiszfeld",
             "solver_max_iter": 40,
-            "solver_tolerance": 0.0001,
+            "solver_tolerance": "0.0001",
         })
     identity_payload = json.dumps({
         "algo": algo,

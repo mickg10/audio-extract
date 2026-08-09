@@ -155,6 +155,23 @@ def test_stft_geometric_median_is_lr_ms_equivariant():
     assert np.max(np.abs(lr - roundtrip)) < 2e-4
 
 
+def test_stft_geometric_median_candidate_has_canonical_float_recipe(tmp_path):
+    layout, mix, _vocal, _orch, members = _run_with_vocal_members(tmp_path)
+    src = json.loads((layout.source_dir / "source.json").read_text())
+    record = render_ensemble_candidate(
+        layout, src, member_recipe_ids=list(members.values()),
+        algo="stft_geometric_median", code_commit="t",
+    )
+    cdir = layout.candidate_dir(record["recipe_id"])
+    info = sf.info(cdir / "output.f32.wav")
+    recipe = json.loads((cdir / "recipe.json").read_text())
+    assert (info.frames, info.samplerate, info.channels, info.subtype) == (
+        len(mix), SR, 2, "FLOAT"
+    )
+    assert recipe["operation"]["construction"] == "spectral_ensemble"
+    assert recipe["effective_config"]["solver_tolerance"] == "0.0001"
+
+
 def _passages_for(layout, n):
     layout.passages_dir.mkdir(parents=True, exist_ok=True)
     (layout.passages_dir / "passages.v1.json").write_text(json.dumps({
