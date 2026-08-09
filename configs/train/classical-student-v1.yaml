@@ -1,33 +1,52 @@
 schema: audio-extract/train/classical-student-v1
 base_arch: HTDemucs
-base_arch_fact: trainable torch nn.Module (verified fwd+bwd, no dora); exports via demucs.states + audio_separator.demucs_separator
-sources: [accompaniment, vocals]
+base_checkpoint:
+  signature: 04573f0d
+  role: released vocals-specialized single model (not htdemucs_ft bag)
+  sha256: f3cf25b222c4eed7cd49dd8b2c9597d50c18bd154090f7b919cfa5f93cf22c49
+base_arch_fact: >-
+  Preserve the pretrained four-source topology. Supervise vocals directly and
+  construct the delivered accompaniment as mixture minus the vocal estimate.
+  The random two-source model is an A2 control only.
+sources: [drums, bass, other, vocals]
+vocal_source_index: 3
 audio_channels: 2
 samplerate: 44100
-model:
-  channels: 48
-  depth: 4
 data:
   manifest: datasets/classical-v1.jsonl
   splits: datasets/classical-v1-splits.json
-  train_splits: [train]          # cantoria(14)+freidi(3); respects the frozen leak-audited splits
-  holdout: test-v1 (Bologna/Aalto — CONTAMINATED legacy; held out from THIS run, not for final acceptance)
+  materialized_root: /home/mickg/train_data_f32_v1
+  train_splits: [train]
+  holdout: test-v1 (Bologna/Aalto — CONTAMINATED legacy; excluded from training)
 optim:
   name: adam
-  lr: 0.0003
-  steps_first_run: 1500          # convergence + first held-out eval; full run is multi-hundred-k
-  batch: 4
-  crop_s: 6
-loss:                            # asymmetric family (orchestral theft expensive); NOT one SDR objective
-  wav: 1.0                       # waveform L1 per source, event-weighted
-  stft: 0.5                      # multi-res complex STFT (magnitude + real/imag => phase)
-  mix: 0.1                       # mixture-consistency A_hat+V_hat=M
-  theft: 0.5                     # no-vocal FALSE-POSITIVE: voice-in-accompaniment (beta^2) — makes theft expensive
-  fn: 0.3                        # vocal-only FALSE-NEGATIVE: voice missing where V active
-  alpha: 0.2                     # local source-coordinate alpha (accompaniment scale ->1)
-  stereo: 0.2                    # stereo/side coherence
-  event_vocal: 2.0               # event-tail weight on active-vocal frames (exact activity mask)
-  event_tutti: 1.5               # event-tail weight on extreme-tutti frames
+  steps_first_run: 2000
+  batch: 1
+  crop_s: 7.8
+  gradient_clip: 5.0
+  schedule:
+    - steps: [0, 500]
+      upper_decoder_lr: 0.0001
+      transformer_decoder_lr: 0.00003
+      lower_encoder_lr: 0
+    - steps: [500, 2000]
+      full_network_lr: 0.00002
+      decay: cosine
+  evaluation_steps: [0, 100, 500, 2000]
+loss:
+  complex_stft: 0.5
+  waveform_l1: 1.0
+  mixture_consistency: 0.1
+  no_vocal_false_positive: 0.25
+  vocal_only_false_negative: 0.25
+  source_coordinate_alpha_beta_R: 0.1
+  stereo_coherence: 0.05
+  exact_event_weighting: 0.25
+  implementation: audio_extract.classical_loss:classical_separation_loss
 export:
-  to: demucs.states .th -> demucs.apply_model (== audio-separator demucs_separator inference); registry packaging is final step
-note: Do NOT optimize the SHADOW judge (gpt56 H4). Stage-1 = dry exact linear stems only.
+  to: demucs.states .th -> demucs.apply_model -> audio_separator.demucs_separator
+  zero_step_parity_shifts: 0
+note: >-
+  PRETRAINED-HTDEMUCS-OPERA-001. Do not optimize the SHADOW judge. Stage 1 uses
+  only explicit float32 exact-grid materializations. A new prospective exact
+  holdout remains required before a production-qualified claim.
