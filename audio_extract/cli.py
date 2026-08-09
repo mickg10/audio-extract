@@ -657,8 +657,17 @@ def cmd_deliver(args: argparse.Namespace) -> int:
 
 
 def _code_commit() -> str:
+    import os
+    import re
     import subprocess
 
+    explicit = os.environ.get("AUDIO_EXTRACT_CODE_COMMIT")
+    if explicit is not None:
+        if re.fullmatch(r"[0-9a-f]{40}", explicit) is None:
+            raise RuntimeError(
+                "AUDIO_EXTRACT_CODE_COMMIT must be the exact 40-character lowercase git SHA"
+            )
+        return explicit
     try:
         return subprocess.check_output(
             ["git", "rev-parse", "HEAD"], cwd=str(Path(__file__).resolve().parent.parent),
