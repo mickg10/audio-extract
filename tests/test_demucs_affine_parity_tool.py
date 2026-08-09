@@ -43,6 +43,13 @@ def test_comparison_refuses_grid_mismatch():
         raise AssertionError("grid mismatch was accepted")
 
 
+def test_adapter_tolerance_is_frozen_above_immutable_diagnostic():
+    assert _PARITY.ADAPTER_MAX_ABS_TOLERANCE == 1.25e-4
+    assert _PARITY.ADAPTER_RMS_TOLERANCE == 4e-6
+    assert _PARITY.ADAPTER_MAX_ABS_TOLERANCE > 0.00011644698679447174
+    assert _PARITY.ADAPTER_RMS_TOLERANCE > 3.929586696028066e-6
+
+
 def test_publish_reopens_float_artifact_and_is_immutable(tmp_path):
     path = tmp_path / "other.f32.wav"
     audio = torch.linspace(-0.5, 0.5, 32, dtype=torch.float32).reshape(2, 16)
