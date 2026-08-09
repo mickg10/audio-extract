@@ -40,6 +40,11 @@ AXES = {
     "artifacts": ("artifact_cvar", "artifact_ratio_p90"),
 }
 FULL_COMMIT = re.compile(r"^[0-9a-f]{40}$")
+# The frozen report did not retain vocal-estimate PCM, so replay binding uses
+# the three independently recomputed external metrics.  CUDA reduction order
+# may move their final decimal places across driver/runtime invocations; this
+# bound is far below any gate threshold (including the 0.5 dB false-safe gate).
+METRIC_PARITY_TOLERANCE = 1e-4
 
 
 class ReplayEvidenceError(RuntimeError):
@@ -487,9 +492,10 @@ def run_replay(
                 )
                 parity = _metric_parity(actual_metrics, old["metrics"])
                 max_metric_difference = max(max_metric_difference, parity)
-                if parity > 1e-6:
+                if parity > METRIC_PARITY_TOLERANCE:
                     raise ReplayEvidenceError(
-                        f"checkpoint inference metric parity failed at {(sample_index, step)}: {parity}"
+                        "checkpoint inference metric parity failed at "
+                        f"{(sample_index, step)}: {parity} > {METRIC_PARITY_TOLERANCE}"
                     )
                 vocal_hat_np = vocal_hat.T.contiguous().numpy().astype("float32", copy=False)
                 a_np = tensors["A"].T.contiguous().numpy().astype("float32", copy=False)
@@ -560,6 +566,7 @@ def run_replay(
         "optimizer_steps": 0,
         "device": device,
         "surrogate_config": asdict(surrogate_config),
+        "checkpoint_metric_parity_tolerance": METRIC_PARITY_TOLERANCE,
     }
     summary = {
         "schema": SCHEMA + "/summary",
