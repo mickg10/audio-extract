@@ -71,8 +71,14 @@ def test_pairwise_projection_masks_third_members_and_unavailable_cells():
         [True, True, True, False],
         [True, False, True, True],
     ])
+    geometry = build_teacher_geometry(
+        gate.config,
+        time_ranges=((0, 1), (1, 2)),
+        frequency_ranges=((0, 1), (1, 2), (2, 3), (3, 4)),
+    )
     result = _targets(
-        gate, mixture, parent, aggressive, labels, available
+        gate, mixture, parent, aggressive, labels, available,
+        geometry=geometry,
     )
     assert result.target.shape == (1, 1, 2, 4)
     assert result.available.shape == result.target.shape
@@ -251,7 +257,7 @@ def test_teacher_geometry_must_match_exact_o2_grid():
     )
     require_teacher_geometry(exact, geometry)
     with pytest.raises(ValueError, match="geometry differs"):
-        require_teacher_geometry(SmoothGateConfig(), geometry)
+        require_teacher_geometry(SmoothGateConfig(hop_length=512), geometry)
 
 
 def test_teacher_loss_masks_all_unknown_cells_without_clean_labels():

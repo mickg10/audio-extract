@@ -595,13 +595,16 @@ def solve_convex_certified(
         )
 
     certified = [solution for solution in solutions if solution[-1]]
-    if not certified:
+    if len(certified) != len(solutions):
         details = {
             name: {"objective": value, "iterations": iterations,
-                   "projected_gradient_norm": norm}
-            for value, name, _, iterations, norm, _ in solutions
+                   "projected_gradient_norm": norm,
+                   "converged": converged}
+            for value, name, _, iterations, norm, converged in solutions
         }
-        raise CertifiedRoutingError(f"O3 did not converge: {details}")
+        raise CertifiedRoutingError(
+            f"O3 did not converge from every declared start: {details}"
+        )
     values = [solution[0] for solution in certified]
     if max(values) - min(values) > max(
         1e-8, 10.0 * cfg.projected_gradient_tolerance

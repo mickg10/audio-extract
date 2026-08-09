@@ -2,6 +2,7 @@ import numpy as np
 import pytest
 
 from audio_extract.oracle_routing_certified import (
+    CertifiedRoutingError,
     CertifiedRoutingConfig,
     best_whole_track,
     build_cell_quadratic,
@@ -122,6 +123,22 @@ def test_certified_o3_finds_exact_interpolation():
     assert result.weights[0, 0, 0] == pytest.approx(0.5, abs=1e-5)
     assert result.weights[0, 0, 1] == pytest.approx(0.5, abs=1e-5)
     assert result.objective < unary_costs(grid).min() - 1e-5
+
+
+def test_certified_o3_requires_every_declared_start_to_converge():
+    candidates, accompaniment, vocal = _basis([0.8, 1.2])
+    config = _fast_config(
+        voice_weight=0.0,
+        residual_weight=0.0,
+        max_projected_gradient_iterations=1,
+    )
+    grid = stack_cell_grid([[
+        build_cell_quadratic(candidates, accompaniment, vocal, config)
+    ]])
+    with pytest.raises(CertifiedRoutingError, match="every declared start"):
+        solve_convex_certified(
+            grid, config, o1_index=0, starts=("uniform", "O1")
+        )
 
 
 def test_global_o2_routes_complementary_time_cells():
