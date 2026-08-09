@@ -208,17 +208,19 @@ def _separate_controls(model, mixture, accompaniment, vocals, vocal_index: int):
     }
 
 
-def _export_and_parity(model, run_dir: Path, cfg: dict, *, label: str) -> dict:
+def _export_and_parity(model, run_dir: Path, cfg: dict, *, label: str,
+                       reuse_existing: bool = False) -> dict:
     torch = _torch()
     from demucs import states
     from demucs.apply import apply_model
     from omegaconf import OmegaConf
 
     destination = run_dir / f"model-{label}.th"
-    if destination.exists():
+    if destination.exists() and not reuse_existing:
         raise RuntimeError(f"refusing to rewrite immutable export: {destination}")
-    package = states.serialize_model(model, OmegaConf.create({"audio_extract": cfg}), half=False)
-    torch.save(package, destination)
+    if not destination.exists():
+        package = states.serialize_model(model, OmegaConf.create({"audio_extract": cfg}), half=False)
+        torch.save(package, destination)
     reloaded = states.load_model(destination, strict=True).to(next(model.parameters()).device).eval()
     generator = torch.Generator(device="cpu").manual_seed(8128)
     probe = torch.randn(1, 2, SR, generator=generator).to(next(model.parameters()).device)
@@ -290,6 +292,25 @@ def _evaluate(model, truth_root: Path, run_dir: Path, step: int, vocal_index: in
     return result
 
 
+def _existing_evaluation(run_dir: Path, step: int) -> dict | None:
+    step_dir = run_dir / "evaluation" / f"step-{step:06d}"
+    if not step_dir.exists():
+        return None
+    report_path = step_dir / "report.json"
+    if not report_path.exists():
+        raise RuntimeError(f"incomplete immutable evaluation requires inspection: {step_dir}")
+    report = json.loads(report_path.read_text())
+    if report.get("step") != step or set(report.get("works", {})) != set(EVAL_WORKS):
+        raise RuntimeError(f"invalid existing evaluation report: {report_path}")
+    for work, facts in report["works"].items():
+        for filename in ("accompaniment.f32.wav", "removed-vocal.f32.wav"):
+            info = sf.info(step_dir / work / filename)
+            if (info.frames, info.samplerate, info.channels, info.subtype) != (
+                    facts["frames"], SR, 2, "FLOAT"):
+                raise RuntimeError(f"existing evaluation grid verification failed: {work}/{filename}")
+    return report
+
+
 def run_training(args: argparse.Namespace) -> dict:
     torch = _torch()
     manifest = Path(args.manifest).resolve()
@@ -320,15 +341,45 @@ def run_training(args: argparse.Namespace) -> dict:
     vocal_index = int(cfg["vocal_source_index"])
     eval_steps = {int(s) for s in cfg["optim"]["evaluation_steps"] if int(s) <= requested_steps}
 
-    zero_export = _export_and_parity(model, run_dir, cfg, label="step-000000")
+    zero_export = _export_and_parity(
+        model, run_dir, cfg, label="step-000000", reuse_existing=bool(args.resume)
+    )
     evaluations = []
     if 0 in eval_steps:
-        evaluations.append(_evaluate(model, Path(args.truth_root), run_dir, 0, vocal_index, device))
+        existing = _existing_evaluation(run_dir, 0)
+        evaluations.append(existing or _evaluate(
+            model, Path(args.truth_root), run_dir, 0, vocal_index, device
+        ))
 
     history = []
     sampled = []
+    start_step = 0
+    resumed_from = None
+    if args.resume:
+        resume_path = Path(args.resume).resolve()
+        state = torch.load(resume_path, map_location=device, weights_only=False)
+        if state.get("config") != cfg or state.get("base_checkpoint") != base:
+            raise RuntimeError("resume checkpoint config or base identity mismatch")
+        start_step = int(state["step"])
+        if not 0 < start_step <= requested_steps:
+            raise RuntimeError(f"resume step {start_step} is outside requested run")
+        model.load_state_dict(state["model"])
+        optimizer.load_state_dict(state["optimizer"])
+        rng.bit_generator.state = state["numpy_rng_state"]
+        torch.set_rng_state(state["torch_rng_state"].cpu())
+        if device.startswith("cuda") and state.get("cuda_rng_state") is not None:
+            torch.cuda.set_rng_state_all(state["cuda_rng_state"])
+        history = list(state.get("history", []))
+        sampled = list(state.get("sampled", []))
+        resumed_from = {"path": str(resume_path), "sha256": _sha_file(resume_path),
+                        "step": start_step}
+        for eval_step in sorted(s for s in eval_steps if 0 < s <= start_step):
+            existing = _existing_evaluation(run_dir, eval_step)
+            if existing is None:
+                raise RuntimeError(f"checkpoint step {start_step} lacks evaluation step {eval_step}")
+            evaluations.append(existing)
     started = time.time()
-    for step in range(requested_steps):
+    for step in range(start_step, requested_steps):
         _set_learning_rates(model, optimizer, cfg, step)
         samples = [dataset.sample(rng) for _ in range(int(cfg["optim"]["batch"]))]
         mixture = torch.stack([s[0] for s in samples]).to(device)
@@ -369,13 +420,21 @@ def run_training(args: argparse.Namespace) -> dict:
         completed = step + 1
         if completed in eval_steps:
             checkpoint = run_dir / f"checkpoint-step-{completed:06d}.pt"
+            if checkpoint.exists():
+                raise RuntimeError(f"refusing to rewrite immutable checkpoint: {checkpoint}")
             torch.save({"model": model.state_dict(), "optimizer": optimizer.state_dict(),
-                        "step": completed, "config": cfg, "base_checkpoint": base}, checkpoint)
+                        "step": completed, "config": cfg, "base_checkpoint": base,
+                        "numpy_rng_state": rng.bit_generator.state,
+                        "torch_rng_state": torch.get_rng_state(),
+                        "cuda_rng_state": (torch.cuda.get_rng_state_all()
+                                           if device.startswith("cuda") else None),
+                        "history": history, "sampled": sampled}, checkpoint)
             evaluations.append(_evaluate(model, Path(args.truth_root), run_dir, completed,
                                          vocal_index, device))
 
     final_export = zero_export if requested_steps == 0 else _export_and_parity(
-        model, run_dir, cfg, label=f"step-{requested_steps:06d}"
+        model, run_dir, cfg, label=f"step-{requested_steps:06d}",
+        reuse_existing=bool(args.resume and start_step == requested_steps)
     )
     commit = subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True, text=True,
                             check=False).stdout.strip()
@@ -399,6 +458,7 @@ def run_training(args: argparse.Namespace) -> dict:
         "last_loss": None if not history else history[-1]["total"],
         "elapsed_s": round(time.time() - started, 3),
         "sample_count": len(sampled),
+        "resumed_from": resumed_from,
         "repro_command": " ".join(sys.argv),
     }
     (run_dir / "training-log.jsonl").write_text(
@@ -421,6 +481,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--steps", type=int)
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--device")
+    parser.add_argument("--resume", help="immutable checkpoint-step-XXXXXX.pt to resume")
     return parser
 
 

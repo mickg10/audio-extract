@@ -13,6 +13,7 @@ def test_train_classical_cli_contract_parses():
     assert args.group == "train"
     assert args.cmd == "classical"
     assert args.steps is None
+    assert args.resume is None
 
 
 def test_train_classical_cli_accepts_explicit_zero_step_parity_mode():
