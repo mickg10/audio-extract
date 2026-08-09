@@ -1,0 +1,8 @@
+policy_id: classical-exact-engineering-v1
+retained_voice_coef_p90_max: 0.12
+event_hole_db_p90_max: 18.0
+event_hole_db_max_max: 30.0
+alpha_error_p90_max: 0.75
+stereo_width_dev_db_max: 0.5
+coherence_dev_max: 0.10
+artifact_ratio_p90_max: null
