@@ -2,11 +2,11 @@
 """Independently apply the frozen oracle-routing binding policy.
 
 This command consumes a completed diagnostic report plus the immutable run-input
-record written before the experiment.  It verifies provenance, the exact
-compiled preregistration, source-manifest groups, frozen metric thresholds, and
-the closed method/resolution evidence matrix.
+record written before the experiment. It verifies provenance, the exact
+compiled preregistration, source-manifest groups, frozen metric thresholds,
+source-lineage recipes, and the closed method/resolution evidence matrix.
 
-The policy path is a human-readable witness, not a source of authority.  Its
+The policy path is a human-readable witness, not a source of authority. Its
 semantic content must equal the policy compiled into the exact verifier commit;
 JSON key order and whitespace cannot change that comparison.
 """
@@ -32,11 +32,19 @@ from audio_extract.oracle_routing_binding_policy_v2 import (
     policy_semantic_sha256,
 )
 from audio_extract.oracle_routing_decision_v2 import RoutingGateConfig
+from audio_extract.oracle_routing_source_lineage_v2 import (
+    LINEAGE_SCHEMA,
+    _recipe_identity,
+    _recipe_source,
+    _stable_json,
+    expected_source_from_audio,
+)
 
 
 RUN_INPUT_SCHEMA = "audio-extract/oracle-routing-run-inputs/v2"
 VERIFICATION_SCHEMA = "audio-extract/oracle-routing-binding-verification/v2"
 SOURCE_MANIFEST_GROUPS = ("voiced", "no_vocal")
+NO_VOCAL_WORKS = ("aalto_mozart_dry",)
 
 
 class BindingVerificationError(RuntimeError):
@@ -160,8 +168,13 @@ def _source_records(
                 raise BindingVerificationError(
                     f"{group} source manifest record {index} has no path"
                 )
+            raw_path = Path(path_text)
+            if raw_path.is_symlink():
+                raise BindingVerificationError(
+                    f"refusing symlinked source manifest: {raw_path}"
+                )
             try:
-                path = Path(path_text).resolve(strict=True)
+                path = raw_path.resolve(strict=True)
             except OSError as exc:
                 raise BindingVerificationError(
                     f"cannot resolve source manifest {path_text}: {exc}"
@@ -177,6 +190,188 @@ def _source_records(
             )
             result.append((group, path, expected))
     return tuple(result)
+
+
+def _candidate_lineage_fields() -> set[str]:
+    return {
+        "work_id",
+        "candidate_name",
+        "recipe_id",
+        "recipe_path",
+        "recipe_container_sha256",
+        "recipe_schema",
+        "source_role",
+        "source_pcm_sha256",
+        "source_frames",
+        "source_sample_rate_hz",
+        "source_channels",
+        "source_sample_format",
+    }
+
+
+def _verify_lineage_audit(
+    path: Path,
+    *,
+    expected_sha256: str,
+    role: str,
+    expected_works: Sequence[str],
+) -> None:
+    value, digest = _json(path, f"{role} source-lineage audit")
+    if digest != expected_sha256:
+        raise BindingVerificationError(
+            f"source-lineage audit changed: {path}"
+        )
+    if value.get("schema") != LINEAGE_SCHEMA or value.get("status") != "pass":
+        raise BindingVerificationError(
+            f"invalid source-lineage audit status/schema: {path}"
+        )
+    if value.get("source_role") != role:
+        raise BindingVerificationError(
+            f"source-lineage audit role mismatch: {path}"
+        )
+    works = value.get("works")
+    if not isinstance(works, list) or works != sorted(expected_works):
+        raise BindingVerificationError(
+            f"source-lineage audit work set mismatch: {works} != "
+            f"{sorted(expected_works)}"
+        )
+    expected_values = value.get("expected_sources")
+    if not isinstance(expected_values, Mapping) or set(expected_values) != set(
+        expected_works
+    ):
+        raise BindingVerificationError(
+            "source-lineage audit expected-source set is incomplete"
+        )
+
+    current_sources: dict[str, dict[str, Any]] = {}
+    for work in expected_works:
+        record = expected_values[work]
+        if not isinstance(record, Mapping):
+            raise BindingVerificationError(
+                f"source-lineage expected source {work} is not an object"
+            )
+        if record.get("work_id") != work or record.get("role") != role:
+            raise BindingVerificationError(
+                f"source-lineage expected source identity mismatch: {work}"
+            )
+        source_path = Path(str(record.get("path") or ""))
+        try:
+            current = expected_source_from_audio(
+                source_path, work_id=work, role=role
+            ).to_dict()
+        except (OSError, ValueError) as exc:
+            raise BindingVerificationError(
+                f"cannot reverify expected source {work}: {exc}"
+            ) from exc
+        if current != dict(record):
+            raise BindingVerificationError(
+                f"expected source changed since lineage audit: {work}"
+            )
+        current_sources[work] = current
+
+    candidates = value.get("candidates")
+    count = value.get("candidate_count")
+    if (
+        not isinstance(candidates, list)
+        or not candidates
+        or isinstance(count, bool)
+        or not isinstance(count, int)
+        or count != len(candidates)
+    ):
+        raise BindingVerificationError(
+            "source-lineage candidate list/count is invalid"
+        )
+    seen: set[tuple[str, str, str]] = set()
+    candidate_works: set[str] = set()
+    for index, record in enumerate(candidates):
+        if not isinstance(record, Mapping) or set(record) != (
+            _candidate_lineage_fields()
+        ):
+            raise BindingVerificationError(
+                f"source-lineage candidate {index} has the wrong field set"
+            )
+        work = str(record.get("work_id") or "")
+        name = str(record.get("candidate_name") or "")
+        recipe_id = _sha_identity(
+            record.get("recipe_id"), f"lineage candidate {index} recipe ID"
+        )
+        key = (work, name, recipe_id)
+        if work not in current_sources or not name or key in seen:
+            raise BindingVerificationError(
+                f"invalid or duplicate source-lineage candidate: {key}"
+            )
+        seen.add(key)
+        candidate_works.add(work)
+        expected = current_sources[work]
+        if record.get("source_role") != role:
+            raise BindingVerificationError(
+                f"candidate source role mismatch: {key}"
+            )
+        recipe_path = Path(str(record.get("recipe_path") or ""))
+        try:
+            recipe, recipe_digest = _stable_json(recipe_path)
+            computed_recipe_id = _recipe_identity(recipe)
+            source = _recipe_source(recipe)
+        except (OSError, ValueError) as exc:
+            raise BindingVerificationError(
+                f"cannot reverify candidate recipe {key}: {exc}"
+            ) from exc
+        if computed_recipe_id != recipe_id:
+            raise BindingVerificationError(
+                f"candidate recipe identity changed: {key}"
+            )
+        if recipe_digest != _sha_identity(
+            record.get("recipe_container_sha256"),
+            f"lineage candidate {index} recipe container",
+        ):
+            raise BindingVerificationError(
+                f"candidate recipe bytes changed: {key}"
+            )
+        if str(recipe.get("schema")) != record.get("recipe_schema"):
+            raise BindingVerificationError(
+                f"candidate recipe schema changed: {key}"
+            )
+        recipe_work = recipe.get("work_id")
+        if recipe_work is not None and str(recipe_work) != work:
+            raise BindingVerificationError(
+                f"candidate recipe work changed: {key}"
+            )
+        source_pcm, frames, sample_rate, channels, sample_format = source
+        if (
+            source_pcm != expected["artifact_pcm_sha256"]
+            or frames != expected["frames"]
+            or sample_rate != expected["sample_rate_hz"]
+            or list(channels) != expected["channels"]
+            or sample_format != "float32-le-interleaved"
+        ):
+            raise BindingVerificationError(
+                f"candidate recipe no longer binds the expected source: {key}"
+            )
+        declared_source = (
+            _sha_identity(
+                record.get("source_pcm_sha256"),
+                f"lineage candidate {index} source PCM",
+            ),
+            record.get("source_frames"),
+            record.get("source_sample_rate_hz"),
+            record.get("source_channels"),
+            record.get("source_sample_format"),
+        )
+        actual_source = (
+            source_pcm,
+            frames,
+            sample_rate,
+            list(channels),
+            sample_format,
+        )
+        if declared_source != actual_source:
+            raise BindingVerificationError(
+                f"candidate lineage row differs from recipe: {key}"
+            )
+    if candidate_works != set(expected_works):
+        raise BindingVerificationError(
+            "source-lineage candidates do not cover every expected work"
+        )
 
 
 def _verify_run_inputs(
@@ -269,6 +464,25 @@ def _verify_run_inputs(
         expected = _sha_identity(inputs.get(key), key)
         if _sha_file(path) != expected:
             raise BindingVerificationError(f"basis audit changed: {path}")
+
+    _verify_lineage_audit(
+        run_inputs_path.parent / "source-lineage-audit-v2.json",
+        expected_sha256=_sha_identity(
+            inputs.get("source_lineage_audit_sha256"),
+            "source_lineage_audit_sha256",
+        ),
+        role="voiced_mixture",
+        expected_works=works,
+    )
+    _verify_lineage_audit(
+        run_inputs_path.parent / "no-vocal-source-lineage-audit-v2.json",
+        expected_sha256=_sha_identity(
+            inputs.get("no_vocal_source_lineage_audit_sha256"),
+            "no_vocal_source_lineage_audit_sha256",
+        ),
+        role="no_vocal_accompaniment",
+        expected_works=NO_VOCAL_WORKS,
+    )
     return thresholds
 
 
