@@ -272,11 +272,21 @@ class CellPartitionRegistry:
             raise CellPartitionError(
                 "cell partition keys must be unique and canonically ordered"
             )
-        cell_owners: dict[str, tuple[str, str, int]] = {}
+        # A cell identity is a geometry hash that already encodes its spectral
+        # grid, so the same cell geometry may legitimately appear in several
+        # group-scoped partitions that are certified by genuinely distinct exact
+        # source reports.  What must never happen is the same cell certified by
+        # the same exact source report being re-labelled into a second partition
+        # identity: that is a cross-partition alias of one certified cell.
+        cell_owners: dict[tuple[str, str], tuple[str, str, int]] = {}
         for certificate in self.certificates:
             for entry in certificate.entries:
+                signature = (
+                    entry.cell_sha256,
+                    certificate.exact_source_report_sha256,
+                )
                 previous = cell_owners.setdefault(
-                    entry.cell_sha256, certificate.partition_key
+                    signature, certificate.partition_key
                 )
                 if previous != certificate.partition_key:
                     raise CellPartitionError(

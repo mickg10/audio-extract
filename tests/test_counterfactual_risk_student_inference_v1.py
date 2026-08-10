@@ -116,8 +116,10 @@ def exact_row(index: int, *, features) -> CounterfactualRiskRowV2:
 
 
 def inference_manifest(*, block_first=True, block_second=False):
+    # A feature-blocked position must be stored as canonical zero, so the
+    # blockable head of each row is zero whenever that row is blocked.
     first = exact_row(0, features=[0.0, 0.5])
-    second = exact_row(1, features=[1.0, 1.5])
+    second = exact_row(1, features=[0.0 if block_second else 1.0, 1.5])
     dataset = DatasetManifestV2.build(
         (first, second), source_commit=SOURCE_COMMIT
     )

@@ -99,6 +99,21 @@ def _expect_list(value: Any, name: str) -> list[Any]:
     return value
 
 
+def _reject_booleans(value: Any, name: str) -> Any:
+    """Reject JSON booleans anywhere in a numeric scalar or nested array.
+
+    ``True``/``False`` coerce silently to ``1.0``/``0.0`` under NumPy, so the
+    JSON scalar type must be checked before any float coercion.
+    """
+
+    if isinstance(value, bool):
+        raise CounterfactualRiskDatasetIOV2Error(f"{name} contains a boolean")
+    if isinstance(value, (list, tuple)):
+        for item in value:
+            _reject_booleans(item, name)
+    return value
+
+
 def _exact_keys(value: Mapping[str, Any], expected: set[str], name: str) -> None:
     keys = set(value)
     missing = expected - keys
@@ -319,12 +334,20 @@ def _parse_row(value: Any, *, panel: CandidatePanel, row_index: int) -> Counterf
             )
         ),
         features=np.asarray(
-            _expect_list(mapping["features"], f"rows[{row_index}].features"),
+            _reject_booleans(
+                _expect_list(
+                    mapping["features"], f"rows[{row_index}].features"
+                ),
+                "features",
+            ),
             dtype=np.float64,
         ),
         exact_risks=np.asarray(
-            _expect_list(
-                mapping["exact_risks"], f"rows[{row_index}].exact_risks"
+            _reject_booleans(
+                _expect_list(
+                    mapping["exact_risks"], f"rows[{row_index}].exact_risks"
+                ),
+                "exact_risks",
             ),
             dtype=np.float64,
         ),
@@ -356,6 +379,12 @@ def parse_dataset_document_v2(document: Mapping[str, Any]) -> DatasetManifestV2:
     if mapping.get("schema") != DATASET_SCHEMA:
         raise CounterfactualRiskDatasetIOV2Error(
             "dataset document uses the wrong schema"
+        )
+    if isinstance(mapping.get("feature_count"), bool) or not isinstance(
+        mapping.get("feature_count"), int
+    ) or mapping["feature_count"] < 1:
+        raise CounterfactualRiskDatasetIOV2Error(
+            "feature_count must be a positive integer, not boolean"
         )
     panel = _parse_panel(mapping["candidate_panel"])
     rows = tuple(

@@ -92,6 +92,10 @@ def _array_sha(value: np.ndarray, *, component: str, dtype: str) -> str:
 
 
 def _features(value: Any) -> np.ndarray:
+    if np.asarray(value).dtype == np.bool_:
+        raise CounterfactualRiskDatasetV2Error(
+            "features must be numeric and not boolean"
+        )
     result = np.asarray(value, dtype=np.float64)
     if result.ndim != 1 or result.size < 1 or not np.all(np.isfinite(result)):
         raise CounterfactualRiskDatasetV2Error(
@@ -101,6 +105,10 @@ def _features(value: Any) -> np.ndarray:
 
 
 def _risks(value: Any, shape: tuple[int, int]) -> np.ndarray:
+    if np.asarray(value).dtype == np.bool_:
+        raise CounterfactualRiskDatasetV2Error(
+            "exact risks must be numeric and not boolean"
+        )
     result = np.asarray(value, dtype=np.float64)
     if result.shape != shape:
         raise CounterfactualRiskDatasetV2Error(

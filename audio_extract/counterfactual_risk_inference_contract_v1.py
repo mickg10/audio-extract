@@ -287,6 +287,10 @@ class InferenceManifestV1:
         dataset: DatasetManifestV2,
         feature_registry: FeatureEvidenceRegistry,
     ) -> "InferenceManifestV1":
+        if feature_registry.source_commit != dataset.source_commit:
+            raise InferenceContractError(
+                "dataset and feature registry use different source commits"
+            )
         validate_dataset_feature_evidence(dataset, feature_registry)
         certificates = feature_registry.by_row_id()
         candidate_panel = dataset.rows[0].candidate_panel
