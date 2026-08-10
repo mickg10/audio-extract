@@ -1,9 +1,12 @@
 # D0/R0 grouped comparison v4 — validation record
 
-## Branch
+## Branch and current reviewed target
 
 ```text
-bigoracle/d0-r0-grouped-comparison-artifacts-20260810
+repository: mickg10/audio-extract
+branch:     bigoracle/d0-r0-grouped-comparison-artifacts-20260810
+draft PR:   #25
+exact head: 39d94a6646de33a4ecb5ac952a48cd05209e2956
 ```
 
 ## Authoritative files
@@ -11,6 +14,7 @@ bigoracle/d0-r0-grouped-comparison-artifacts-20260810
 ```text
 audio_extract/counterfactual_risk_grouped_report_artifact_v4.py
 audio_extract/counterfactual_risk_inference_partition_manifest_v2.py
+audio_extract/counterfactual_risk_source_lineage_v3.py
 audio_extract/counterfactual_risk_route_partition_attestation_v2.py
 audio_extract/counterfactual_risk_grouped_diagnostics_v4.py
 
@@ -18,6 +22,7 @@ schemas/d0-r0-grouped-comparison-report-v4.schema.json
 
 tests/test_counterfactual_risk_grouped_report_artifact_v4.py
 tests/test_counterfactual_risk_inference_partition_v2.py
+tests/test_counterfactual_risk_source_lineage_v3.py
 tests/test_d0_r0_grouped_comparison_schema_v4.py
 ```
 
@@ -25,11 +30,11 @@ tests/test_d0_r0_grouped_comparison_schema_v4.py
 
 ```text
 implementation uploaded: yes
-focused exact-head repository run: pending implementer
-complete repository pytest: pending implementer
-repository-wide Ruff: pending implementer
-compileall/diff check: pending implementer
-v4/v3 schema round-trip: pending implementer
+focused exact-head repository run: pending implementer / GitHub Actions
+complete repository pytest: pending implementer / GitHub Actions
+repository-wide Ruff: pending implementer / GitHub Actions
+compileall/diff check: pending implementer / GitHub Actions
+v4/v3 schema round-trip: pending implementer / GitHub Actions
 Codex exact-head review: requested after upload
 promotion decision: none
 ```
@@ -41,11 +46,12 @@ in the repository's real environment.
 
 ```bash
 git fetch origin bigoracle/d0-r0-grouped-comparison-artifacts-20260810
-git switch --detach <exact-head>
+git switch --detach 39d94a6646de33a4ecb5ac952a48cd05209e2956
 
 uv run --extra dev pytest -q \
   tests/test_counterfactual_risk_grouped_report_artifact_v4.py \
-  tests/test_counterfactual_risk_inference_partition_v2.py
+  tests/test_counterfactual_risk_inference_partition_v2.py \
+  tests/test_counterfactual_risk_source_lineage_v3.py
 
 # The schema test requires jsonschema without changing the frozen runtime path.
 uv run --with 'jsonschema>=4.23' --extra dev pytest -q \
@@ -65,20 +71,30 @@ git diff --check
 
 - issue one immutable paired v4 artifact from real repository classes;
 - validate it with the v4 schema while registering the sibling v3 schema;
+- require the public root to carry both `source_v3_verifier_commit` and the
+  frozen `paired_regret_tolerance`;
 - mutate the original NumPy route labels and prove the issued bytes/SHA remain
   unchanged while source revalidation fails;
+- reject reassignment of a complete D0 or R0 branch to another paired unit;
 - reject nested D0/R0 arm substitutions;
 - reject route evaluation backed by abstention lineage and the converse;
 - reject missing exact-oracle objectives for every oracle-available status;
 - reject critical/secondary violation-kind swaps;
+- reject nonpositive above-threshold values at the schema boundary;
+- reject `critical_above_threshold` unless semantic `value > threshold` holds;
 - reject one-sided oracle-unavailable paired units and status-cross-tab entries;
-- accept different exact-risk and partition-source report hashes only when the
-  content-bearing source lineage shares the frozen truth/PCM parents;
+- derive shared truth/M/A/V parents from the two content-bearing source reports,
+  not caller-supplied sibling hashes;
+- accept different exact-risk and partition-source report hashes only when those
+  reports share the frozen truth/PCM parents;
 - accept unused alternative certified resolutions;
 - reject D0/R0 selecting different partitions for the same held-out unit;
 - reject a run whose input-manifest SHA does not equal the content-bearing
   pre-execution manifest;
-- reject route shapes or switch counts outside the selected certificate grid.
+- reject route shapes or switch counts outside the selected certificate grid;
+- reconstruct and verify the embedded source-v3 report SHA from the paired
+  public payload and stored source verifier commit;
+- recompute all arm and pairwise summaries from the paired work evidence.
 
 ## Blocking state
 
