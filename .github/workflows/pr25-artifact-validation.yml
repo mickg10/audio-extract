@@ -51,12 +51,12 @@ jobs:
           uv sync --extra dev 2>&1 | tee validation-logs/uv-sync.log
           uv pip freeze | sort > validation-logs/environment.txt
 
-      - name: Focused v4 Python and source-lineage contracts
+      - name: Focused v4 Python and report-derived lineage contracts
         run: |
           set -o pipefail
           uv run --extra dev pytest -q \
             tests/test_counterfactual_risk_grouped_report_artifact_v4.py \
-            tests/test_counterfactual_risk_inference_partition_v2.py \
+            tests/test_counterfactual_risk_inference_partition_v3.py \
             tests/test_counterfactual_risk_source_lineage_v3.py \
             2>&1 | tee validation-logs/focused-v4.log
 
