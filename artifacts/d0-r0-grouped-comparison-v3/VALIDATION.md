@@ -12,12 +12,15 @@ bigoracle/d0-r0-grouped-comparison-artifacts-20260810
 audio_extract/counterfactual_risk_grouped_comparison_v3.py
 tests/test_counterfactual_risk_grouped_comparison_v3.py
 
-audio_extract/counterfactual_risk_grouped_diagnostics_v2.py
-tests/test_counterfactual_risk_grouped_diagnostics_v2.py
+audio_extract/counterfactual_risk_grouped_diagnostics_v3.py
+tests/test_counterfactual_risk_grouped_diagnostics_v3.py
 
+schemas/d0-r0-grouped-comparison-report-v3.schema.json
 docs/oracle/d0-r0-grouped-held-out-comparison-v3.md
 docs/oracle/pr25-p1-repair-contract.md
 ```
+
+V1/V2 files remain review history only.
 
 ## Current evidence status
 
@@ -27,6 +30,7 @@ focused exact-head repository run: pending implementer
 complete repository pytest: pending implementer
 repository-wide Ruff: pending implementer
 compileall/diff check: pending implementer
+synthetic schema round-trip: pending implementer
 Codex exact-head review: requested after upload
 promotion decision: none
 ```
@@ -42,11 +46,13 @@ git switch --detach <exact-head>
 
 uv run --extra dev pytest -q \
   tests/test_counterfactual_risk_grouped_comparison_v3.py \
-  tests/test_counterfactual_risk_grouped_diagnostics_v2.py
+  tests/test_counterfactual_risk_grouped_diagnostics_v3.py
 
 uv run --extra dev pytest -q
 uv run --extra dev ruff check .
 python -m compileall -q audio_extract tests
+python -m json.tool \
+  schemas/d0-r0-grouped-comparison-report-v3.schema.json >/dev/null
 git diff --check
 ```
 
@@ -59,10 +65,13 @@ git diff --check
 - route/abstention statuses agree;
 - every matrix cell has unique inference-run, output, artifact, and submission
   identities;
-- exact partition certificate binds the unit and exact panel/preflight/oracle;
+- geometry uses the complete existing `CellPartitionCertificate`, including
+  row-major entries, rational measures, range hashes, and exact source report;
+- every registry certificate is bound exactly once to a held-out unit;
 - impossible switch counts are rejected for safe, catastrophic, and incomplete
   route statuses;
-- stored summary types are validated before recomputed equality.
+- stored summary types are validated before recomputed equality;
+- external v3 JSON is closed and round-trips from the real Python classes.
 
 ## Local repair-bundle reference
 
