@@ -1,0 +1,425 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mickg10.github.io/audio-extract/schemas/counterfactual-risk-dataset-v2.schema.json",
+  "title": "Audio Extract grouped counterfactual-risk dataset v2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "purpose",
+    "dataset_name",
+    "source_commit",
+    "ordered_row_ids",
+    "group_family_sha256s",
+    "candidate_panel",
+    "candidate_panel_sha256",
+    "metric_names",
+    "metric_units",
+    "metric_directions",
+    "feature_contract_sha256",
+    "metric_contract_sha256",
+    "route_policy_sha256",
+    "feature_count",
+    "dataset_sha256",
+    "rows"
+  ],
+  "properties": {
+    "schema": {
+      "const": "audio-extract/counterfactual-risk-dataset/v2"
+    },
+    "purpose": {
+      "const": "D0_R0_EQUAL_COMPUTE"
+    },
+    "dataset_name": {
+      "$ref": "#/$defs/nonemptyString"
+    },
+    "source_commit": {
+      "$ref": "#/$defs/gitCommit"
+    },
+    "ordered_row_ids": {
+      "$ref": "#/$defs/nonemptyUniqueShaArray"
+    },
+    "group_family_sha256s": {
+      "$ref": "#/$defs/nonemptyUniqueShaArray"
+    },
+    "candidate_panel": {
+      "$ref": "#/$defs/candidatePanel"
+    },
+    "candidate_panel_sha256": {
+      "$ref": "#/$defs/sha256"
+    },
+    "metric_names": {
+      "$ref": "#/$defs/nonemptyUniqueStringArray"
+    },
+    "metric_units": {
+      "$ref": "#/$defs/nonemptyStringArray"
+    },
+    "metric_directions": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "const": "lower_is_better"
+      }
+    },
+    "feature_contract_sha256": {
+      "$ref": "#/$defs/sha256"
+    },
+    "metric_contract_sha256": {
+      "$ref": "#/$defs/sha256"
+    },
+    "route_policy_sha256": {
+      "$ref": "#/$defs/sha256"
+    },
+    "feature_count": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "dataset_sha256": {
+      "$ref": "#/$defs/sha256"
+    },
+    "rows": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/row"
+      }
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "gitCommit": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "nonemptyString": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^\\S(?:.*\\S)?$"
+    },
+    "nonemptyStringArray": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/nonemptyString"
+      }
+    },
+    "nonemptyUniqueStringArray": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/nonemptyString"
+      }
+    },
+    "nonemptyUniqueShaArray": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/sha256"
+      }
+    },
+    "candidateSlot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "slot_id",
+        "model_bundle_sha256",
+        "adapter_bundle_sha256",
+        "construction_contract_sha256",
+        "query_contract_sha256",
+        "output_role"
+      ],
+      "properties": {
+        "slot_id": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "model_bundle_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "adapter_bundle_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "construction_contract_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "query_contract_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "output_role": {
+          "const": "instrumental"
+        }
+      }
+    },
+    "candidatePanel": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "ordered_slots"
+      ],
+      "properties": {
+        "schema": {
+          "const": "audio-extract/counterfactual-candidate-panel/v2"
+        },
+        "ordered_slots": {
+          "type": "array",
+          "minItems": 2,
+          "items": {
+            "$ref": "#/$defs/candidateSlot"
+          }
+        }
+      }
+    },
+    "groupFamily": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "work_id",
+        "recording_session_id",
+        "target_singer_id",
+        "source_family_sha256",
+        "query_condition_sha256"
+      ],
+      "properties": {
+        "work_id": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "recording_session_id": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "target_singer_id": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "source_family_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "query_condition_sha256": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "cell": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sample_rate_hz",
+        "resolution_ms",
+        "start_frame",
+        "end_frame",
+        "band_low_hz",
+        "band_high_hz",
+        "spectral_grid_sha256"
+      ],
+      "properties": {
+        "sample_rate_hz": {
+          "type": "integer",
+          "minimum": 2
+        },
+        "resolution_ms": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "start_frame": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "end_frame": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "band_low_hz": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "band_high_hz": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "spectral_grid_sha256": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "candidateArtifactBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "status",
+        "slot_id",
+        "slot_sha256",
+        "recipe_id",
+        "artifact_pcm_sha256",
+        "recipe_semantic_sha256",
+        "recipe_slot_projection_sha256",
+        "source_family_sha256",
+        "verifier_commit"
+      ],
+      "properties": {
+        "schema": {
+          "const": "audio-extract/candidate-artifact-binding/v1"
+        },
+        "status": {
+          "const": "passed"
+        },
+        "slot_id": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "slot_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "recipe_id": {
+          "$ref": "#/$defs/sha256"
+        },
+        "artifact_pcm_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "recipe_semantic_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "recipe_slot_projection_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "source_family_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "verifier_commit": {
+          "$ref": "#/$defs/gitCommit"
+        }
+      }
+    },
+    "row": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "row_id",
+        "group_family_sha256",
+        "group_family",
+        "mixture_pcm_sha256",
+        "accompaniment_truth_pcm_sha256",
+        "vocal_truth_pcm_sha256",
+        "cell_sha256",
+        "cell",
+        "candidate_panel_sha256",
+        "candidate_artifacts",
+        "metric_names",
+        "metric_units",
+        "metric_directions",
+        "feature_contract_sha256",
+        "metric_contract_sha256",
+        "route_policy_sha256",
+        "feature_sha256",
+        "exact_risks_sha256",
+        "availability_sha256",
+        "features",
+        "exact_risks",
+        "available"
+      ],
+      "properties": {
+        "schema": {
+          "const": "audio-extract/counterfactual-risk-row/v2"
+        },
+        "row_id": {
+          "$ref": "#/$defs/sha256"
+        },
+        "group_family_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "group_family": {
+          "$ref": "#/$defs/groupFamily"
+        },
+        "mixture_pcm_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "accompaniment_truth_pcm_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "vocal_truth_pcm_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "cell_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "cell": {
+          "$ref": "#/$defs/cell"
+        },
+        "candidate_panel_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "candidate_artifacts": {
+          "type": "array",
+          "minItems": 2,
+          "items": {
+            "$ref": "#/$defs/candidateArtifactBinding"
+          }
+        },
+        "metric_names": {
+          "$ref": "#/$defs/nonemptyUniqueStringArray"
+        },
+        "metric_units": {
+          "$ref": "#/$defs/nonemptyStringArray"
+        },
+        "metric_directions": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "const": "lower_is_better"
+          }
+        },
+        "feature_contract_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "metric_contract_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "route_policy_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "feature_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "exact_risks_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "availability_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "features": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "number"
+          }
+        },
+        "exact_risks": {
+          "type": "array",
+          "minItems": 2,
+          "items": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "number",
+              "minimum": 0
+            }
+          }
+        },
+        "available": {
+          "type": "array",
+          "minItems": 2,
+          "items": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "boolean"
+            }
+          }
+        }
+      }
+    }
+  }
+}
