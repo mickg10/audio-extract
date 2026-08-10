@@ -24,10 +24,14 @@ audio_extract/counterfactual_risk_grouped_diagnostics_v4.py
 schemas/d0-r0-grouped-comparison-report-v4.schema.json
 
 tests/test_counterfactual_risk_grouped_report_artifact_v4.py
-tests/test_counterfactual_risk_inference_partition_v2.py
+tests/test_counterfactual_risk_inference_partition_v3.py
 tests/test_counterfactual_risk_source_lineage_v3.py
 tests/test_d0_r0_grouped_comparison_schema_v4.py
 ```
+
+The attestation validator now refuses the legacy v2 input-manifest object. Every
+route cell must carry `InferenceInputPartitionManifestV3`, whose report-derived
+source lineage is named by the pre-execution run.
 
 ## Current evidence status
 
@@ -53,7 +57,7 @@ git switch --detach <exact-head-from-current-review-request>
 
 uv run --extra dev pytest -q \
   tests/test_counterfactual_risk_grouped_report_artifact_v4.py \
-  tests/test_counterfactual_risk_inference_partition_v2.py \
+  tests/test_counterfactual_risk_inference_partition_v3.py \
   tests/test_counterfactual_risk_source_lineage_v3.py
 
 # The schema test requires jsonschema without changing the frozen runtime path.
@@ -86,13 +90,14 @@ git diff --check
 - reject nonpositive above-threshold values at the schema boundary;
 - reject `critical_above_threshold` unless semantic `value > threshold` holds;
 - reject one-sided oracle-unavailable paired units and status-cross-tab entries;
-- derive shared truth/M/A/V parents from the two content-bearing source reports,
-  not caller-supplied sibling hashes;
+- derive shared truth/M/A/V parents from two content-bearing source reports;
+- require each route attestation to contain the report-derived v3 manifest, not
+  the legacy v2 sibling-parent manifest;
 - accept different exact-risk and partition-source report hashes only when those
   reports share the frozen truth/PCM parents;
 - accept unused alternative certified resolutions;
 - reject D0/R0 selecting different partitions for the same held-out unit;
-- reject a run whose input-manifest SHA does not equal the content-bearing
+- reject a run whose input-manifest SHA does not equal the report-derived
   pre-execution manifest;
 - reject route shapes or switch counts outside the selected certificate grid;
 - reconstruct and verify the embedded source-v3 report SHA from the paired
