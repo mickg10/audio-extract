@@ -1,0 +1,273 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/mickg10/audio-extract/schemas/d0-r0-grouped-comparison-report-v1.schema.json",
+  "title": "D0/R0 grouped held-out comparison report v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "status",
+    "promotion_decision",
+    "preregistration_sha256",
+    "verifier_commit",
+    "work_evaluations",
+    "d0_summary",
+    "r0_summary",
+    "pairwise_summary"
+  ],
+  "properties": {
+    "schema": {
+      "const": "audio-extract/d0-r0-grouped-comparison-report/v1"
+    },
+    "status": {
+      "const": "COMPLETE_NO_PROMOTION_DECISION"
+    },
+    "promotion_decision": {
+      "type": "null"
+    },
+    "preregistration_sha256": {
+      "$ref": "#/$defs/sha256"
+    },
+    "verifier_commit": {
+      "$ref": "#/$defs/git40"
+    },
+    "work_evaluations": {
+      "type": "array",
+      "minItems": 4,
+      "items": {
+        "$ref": "#/$defs/workEvaluation"
+      }
+    },
+    "d0_summary": {
+      "allOf": [
+        { "$ref": "#/$defs/armSummary" },
+        { "properties": { "arm_id": { "const": "D0" } } }
+      ]
+    },
+    "r0_summary": {
+      "allOf": [
+        { "$ref": "#/$defs/armSummary" },
+        { "properties": { "arm_id": { "const": "R0" } } }
+      ]
+    },
+    "pairwise_summary": {
+      "$ref": "#/$defs/pairwiseSummary"
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "git40": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "nullableRatio": {
+      "type": ["number", "null"],
+      "minimum": 0,
+      "maximum": 1
+    },
+    "nullableNonnegative": {
+      "type": ["number", "null"],
+      "minimum": 0
+    },
+    "unit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "work_id",
+        "recording_session_id",
+        "target_singer_id",
+        "source_family_sha256",
+        "query_condition_sha256",
+        "group_family_sha256",
+        "query_quality_stratum_sha256",
+        "exact_evidence_sha256",
+        "exact_panel_sha256",
+        "exact_preflight_sha256",
+        "exact_oracle_decision_sha256"
+      ],
+      "properties": {
+        "schema": {
+          "const": "audio-extract/counterfactual-held-out-unit/v1"
+        },
+        "work_id": { "type": "string", "minLength": 1 },
+        "recording_session_id": { "type": "string", "minLength": 1 },
+        "target_singer_id": { "type": "string", "minLength": 1 },
+        "source_family_sha256": { "$ref": "#/$defs/sha256" },
+        "query_condition_sha256": { "$ref": "#/$defs/sha256" },
+        "group_family_sha256": { "$ref": "#/$defs/sha256" },
+        "query_quality_stratum_sha256": { "$ref": "#/$defs/sha256" },
+        "exact_evidence_sha256": { "$ref": "#/$defs/sha256" },
+        "exact_panel_sha256": { "$ref": "#/$defs/sha256" },
+        "exact_preflight_sha256": { "$ref": "#/$defs/sha256" },
+        "exact_oracle_decision_sha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "workEvaluation": {
+      "type": "object",
+      "required": [
+        "schema",
+        "unit",
+        "unit_sha256",
+        "group_family_sha256",
+        "arm_id",
+        "arm_run_sha256",
+        "dataset_sha256",
+        "split_sha256",
+        "test_subset_sha256",
+        "candidate_panel_sha256",
+        "feature_contract_sha256",
+        "metric_contract_sha256",
+        "preregistration_sha256",
+        "complete_route_evaluation",
+        "complete_route_evaluation_sha256"
+      ],
+      "properties": {
+        "schema": {
+          "const": "audio-extract/d0-r0-work-evaluation/v1"
+        },
+        "unit": { "$ref": "#/$defs/unit" },
+        "unit_sha256": { "$ref": "#/$defs/sha256" },
+        "group_family_sha256": { "$ref": "#/$defs/sha256" },
+        "arm_id": { "enum": ["D0", "R0"] },
+        "arm_run_sha256": { "$ref": "#/$defs/sha256" },
+        "dataset_sha256": { "$ref": "#/$defs/sha256" },
+        "split_sha256": { "$ref": "#/$defs/sha256" },
+        "test_subset_sha256": { "$ref": "#/$defs/sha256" },
+        "candidate_panel_sha256": { "$ref": "#/$defs/sha256" },
+        "feature_contract_sha256": { "$ref": "#/$defs/sha256" },
+        "metric_contract_sha256": { "$ref": "#/$defs/sha256" },
+        "preregistration_sha256": { "$ref": "#/$defs/sha256" },
+        "complete_route_evaluation": {
+          "type": "object"
+        },
+        "complete_route_evaluation_sha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "armSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "arm_id",
+        "unit_count",
+        "oracle_available_count",
+        "route_submission_count",
+        "safe_route_count",
+        "catastrophic_false_safe_count",
+        "incomplete_evidence_count",
+        "abstention_count",
+        "oracle_unavailable_count",
+        "critical_violation_count",
+        "incomplete_secondary_violation_count",
+        "route_submission_coverage",
+        "safe_route_coverage",
+        "abstention_rate",
+        "mean_safe_regret",
+        "median_safe_regret",
+        "worst_safe_regret",
+        "worst_safe_regret_unit_sha256",
+        "mean_safe_temporal_switches",
+        "mean_safe_frequency_switches"
+      ],
+      "properties": {
+        "schema": { "const": "audio-extract/d0-r0-arm-summary/v1" },
+        "arm_id": { "enum": ["D0", "R0"] },
+        "unit_count": { "$ref": "#/$defs/count" },
+        "oracle_available_count": { "$ref": "#/$defs/count" },
+        "route_submission_count": { "$ref": "#/$defs/count" },
+        "safe_route_count": { "$ref": "#/$defs/count" },
+        "catastrophic_false_safe_count": { "$ref": "#/$defs/count" },
+        "incomplete_evidence_count": { "$ref": "#/$defs/count" },
+        "abstention_count": { "$ref": "#/$defs/count" },
+        "oracle_unavailable_count": { "$ref": "#/$defs/count" },
+        "critical_violation_count": { "$ref": "#/$defs/count" },
+        "incomplete_secondary_violation_count": { "$ref": "#/$defs/count" },
+        "route_submission_coverage": { "$ref": "#/$defs/nullableRatio" },
+        "safe_route_coverage": { "$ref": "#/$defs/nullableRatio" },
+        "abstention_rate": { "$ref": "#/$defs/nullableRatio" },
+        "mean_safe_regret": { "$ref": "#/$defs/nullableNonnegative" },
+        "median_safe_regret": { "$ref": "#/$defs/nullableNonnegative" },
+        "worst_safe_regret": { "$ref": "#/$defs/nullableNonnegative" },
+        "worst_safe_regret_unit_sha256": {
+          "oneOf": [
+            { "$ref": "#/$defs/sha256" },
+            { "type": "null" }
+          ]
+        },
+        "mean_safe_temporal_switches": { "$ref": "#/$defs/nullableNonnegative" },
+        "mean_safe_frequency_switches": { "$ref": "#/$defs/nullableNonnegative" }
+      }
+    },
+    "pairwiseSummary": {
+      "type": "object",
+      "required": [
+        "schema",
+        "unit_count",
+        "oracle_available_count",
+        "both_submitted_route_count",
+        "both_safe_count",
+        "both_submitted_route_coverage",
+        "both_safe_coverage",
+        "d0_safe_r0_not_safe_count",
+        "r0_safe_d0_not_safe_count",
+        "both_catastrophic_count",
+        "d0_catastrophic_r0_not_count",
+        "r0_catastrophic_d0_not_count",
+        "r0_lower_regret_count",
+        "d0_lower_regret_count",
+        "regret_tie_count",
+        "mean_r0_minus_d0_regret",
+        "median_r0_minus_d0_regret",
+        "min_r0_minus_d0_regret",
+        "max_r0_minus_d0_regret",
+        "mean_r0_minus_d0_temporal_switches",
+        "mean_r0_minus_d0_frequency_switches",
+        "status_cross_tab"
+      ],
+      "properties": {
+        "schema": { "const": "audio-extract/d0-r0-pairwise-summary/v1" },
+        "unit_count": { "$ref": "#/$defs/count" },
+        "oracle_available_count": { "$ref": "#/$defs/count" },
+        "both_submitted_route_count": { "$ref": "#/$defs/count" },
+        "both_safe_count": { "$ref": "#/$defs/count" },
+        "both_submitted_route_coverage": { "$ref": "#/$defs/nullableRatio" },
+        "both_safe_coverage": { "$ref": "#/$defs/nullableRatio" },
+        "d0_safe_r0_not_safe_count": { "$ref": "#/$defs/count" },
+        "r0_safe_d0_not_safe_count": { "$ref": "#/$defs/count" },
+        "both_catastrophic_count": { "$ref": "#/$defs/count" },
+        "d0_catastrophic_r0_not_count": { "$ref": "#/$defs/count" },
+        "r0_catastrophic_d0_not_count": { "$ref": "#/$defs/count" },
+        "r0_lower_regret_count": { "$ref": "#/$defs/count" },
+        "d0_lower_regret_count": { "$ref": "#/$defs/count" },
+        "regret_tie_count": { "$ref": "#/$defs/count" },
+        "mean_r0_minus_d0_regret": { "type": ["number", "null"] },
+        "median_r0_minus_d0_regret": { "type": ["number", "null"] },
+        "min_r0_minus_d0_regret": { "type": ["number", "null"] },
+        "max_r0_minus_d0_regret": { "type": ["number", "null"] },
+        "mean_r0_minus_d0_temporal_switches": { "type": ["number", "null"] },
+        "mean_r0_minus_d0_frequency_switches": { "type": ["number", "null"] },
+        "status_cross_tab": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "minItems": 3,
+            "maxItems": 3,
+            "prefixItems": [
+              { "type": "string" },
+              { "type": "string" },
+              { "type": "integer", "minimum": 1 }
+            ]
+          }
+        }
+      }
+    }
+  }
+}

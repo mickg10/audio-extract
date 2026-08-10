@@ -1,0 +1,624 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/mickg10/audio-extract/schemas/d0-r0-grouped-comparison-report-v3.schema.json",
+  "title": "D0/R0 grouped held-out comparison report v3",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "status",
+    "promotion_decision",
+    "preregistration_sha256",
+    "verifier_commit",
+    "work_evaluations",
+    "d0_summary",
+    "r0_summary",
+    "pairwise_summary"
+  ],
+  "properties": {
+    "schema": {
+      "const": "audio-extract/d0-r0-grouped-comparison-report/v3"
+    },
+    "status": {"const": "COMPLETE_NO_PROMOTION_DECISION"},
+    "promotion_decision": {"type": "null"},
+    "preregistration_sha256": {"$ref": "#/$defs/sha256"},
+    "verifier_commit": {"$ref": "#/$defs/gitCommit"},
+    "work_evaluations": {
+      "type": "array",
+      "minItems": 4,
+      "items": {"$ref": "#/$defs/workEvaluation"}
+    },
+    "d0_summary": {
+      "allOf": [
+        {"$ref": "#/$defs/armSummary"},
+        {"properties": {"arm_id": {"const": "D0"}}}
+      ]
+    },
+    "r0_summary": {
+      "allOf": [
+        {"$ref": "#/$defs/armSummary"},
+        {"properties": {"arm_id": {"const": "R0"}}}
+      ]
+    },
+    "pairwise_summary": {"$ref": "#/$defs/pairwiseSummary"}
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "gitCommit": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "routeShape": {
+      "type": "array",
+      "prefixItems": [
+        {"type": "integer", "minimum": 1},
+        {"type": "integer", "minimum": 1}
+      ],
+      "items": false,
+      "minItems": 2,
+      "maxItems": 2
+    },
+    "heldOutUnit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "work_id",
+        "recording_session_id",
+        "target_singer_id",
+        "source_family_sha256",
+        "query_condition_sha256",
+        "group_family_sha256",
+        "query_quality_stratum_sha256",
+        "exact_evidence_sha256",
+        "exact_panel_sha256",
+        "exact_preflight_sha256",
+        "exact_oracle_decision_sha256"
+      ],
+      "properties": {
+        "schema": {"const": "audio-extract/counterfactual-held-out-unit/v1"},
+        "work_id": {"type": "string", "minLength": 1},
+        "recording_session_id": {"type": "string", "minLength": 1},
+        "target_singer_id": {"type": "string", "minLength": 1},
+        "source_family_sha256": {"$ref": "#/$defs/sha256"},
+        "query_condition_sha256": {"$ref": "#/$defs/sha256"},
+        "group_family_sha256": {"$ref": "#/$defs/sha256"},
+        "query_quality_stratum_sha256": {"$ref": "#/$defs/sha256"},
+        "exact_evidence_sha256": {"$ref": "#/$defs/sha256"},
+        "exact_panel_sha256": {"$ref": "#/$defs/sha256"},
+        "exact_preflight_sha256": {"$ref": "#/$defs/sha256"},
+        "exact_oracle_decision_sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "inferenceRun": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "preregistration_sha256",
+        "unit_sha256",
+        "group_family_sha256",
+        "query_condition_sha256",
+        "query_quality_stratum_sha256",
+        "arm_id",
+        "arm_run_sha256",
+        "arm_artifact_manifest_sha256",
+        "compute_budget_sha256",
+        "checkpoint_rule_sha256",
+        "inference_policy_sha256",
+        "dataset_sha256",
+        "split_sha256",
+        "test_subset_sha256",
+        "candidate_panel_sha256",
+        "feature_contract_sha256",
+        "metric_contract_sha256",
+        "inference_input_manifest_sha256",
+        "runner_bundle_sha256",
+        "source_commit",
+        "runner_commit",
+        "status"
+      ],
+      "properties": {
+        "schema": {"const": "audio-extract/d0-r0-arm-inference-run/v3"},
+        "preregistration_sha256": {"$ref": "#/$defs/sha256"},
+        "unit_sha256": {"$ref": "#/$defs/sha256"},
+        "group_family_sha256": {"$ref": "#/$defs/sha256"},
+        "query_condition_sha256": {"$ref": "#/$defs/sha256"},
+        "query_quality_stratum_sha256": {"$ref": "#/$defs/sha256"},
+        "arm_id": {"enum": ["D0", "R0"]},
+        "arm_run_sha256": {"$ref": "#/$defs/sha256"},
+        "arm_artifact_manifest_sha256": {"$ref": "#/$defs/sha256"},
+        "compute_budget_sha256": {"$ref": "#/$defs/sha256"},
+        "checkpoint_rule_sha256": {"$ref": "#/$defs/sha256"},
+        "inference_policy_sha256": {"$ref": "#/$defs/sha256"},
+        "dataset_sha256": {"$ref": "#/$defs/sha256"},
+        "split_sha256": {"$ref": "#/$defs/sha256"},
+        "test_subset_sha256": {"$ref": "#/$defs/sha256"},
+        "candidate_panel_sha256": {"$ref": "#/$defs/sha256"},
+        "feature_contract_sha256": {"$ref": "#/$defs/sha256"},
+        "metric_contract_sha256": {"$ref": "#/$defs/sha256"},
+        "inference_input_manifest_sha256": {"$ref": "#/$defs/sha256"},
+        "runner_bundle_sha256": {"$ref": "#/$defs/sha256"},
+        "source_commit": {"$ref": "#/$defs/gitCommit"},
+        "runner_commit": {"$ref": "#/$defs/gitCommit"},
+        "status": {"const": "verified"}
+      }
+    },
+    "routeOutput": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "unit_sha256",
+        "arm_id",
+        "source_status",
+        "status",
+        "labels_shape",
+        "labels_sha256",
+        "reason"
+      ],
+      "properties": {
+        "schema": {"const": "audio-extract/d0-r0-route-output/v3"},
+        "unit_sha256": {"$ref": "#/$defs/sha256"},
+        "arm_id": {"enum": ["D0", "R0"]},
+        "source_status": {"type": "string", "minLength": 1},
+        "status": {"enum": ["ROUTE", "ABSTAIN"]},
+        "labels_shape": {
+          "oneOf": [
+            {"type": "null"},
+            {"$ref": "#/$defs/routeShape"}
+          ]
+        },
+        "labels_sha256": {
+          "oneOf": [
+            {"type": "null"},
+            {"$ref": "#/$defs/sha256"}
+          ]
+        },
+        "reason": {"type": "string", "minLength": 1}
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {"status": {"const": "ROUTE"}},
+            "required": ["status"]
+          },
+          "then": {
+            "properties": {
+              "labels_shape": {"$ref": "#/$defs/routeShape"},
+              "labels_sha256": {"$ref": "#/$defs/sha256"}
+            }
+          },
+          "else": {
+            "properties": {
+              "labels_shape": {"type": "null"},
+              "labels_sha256": {"type": "null"}
+            }
+          }
+        }
+      ]
+    },
+    "routeSubmission": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "arm_id",
+        "route_evidence_sha256",
+        "source_status",
+        "status",
+        "labels_shape",
+        "labels_sha256",
+        "reason"
+      ],
+      "properties": {
+        "schema": {"const": "audio-extract/counterfactual-route-submission/v1"},
+        "arm_id": {"enum": ["D0", "R0"]},
+        "route_evidence_sha256": {"$ref": "#/$defs/sha256"},
+        "source_status": {"type": "string", "minLength": 1},
+        "status": {"enum": ["ROUTE", "ABSTAIN"]},
+        "labels_shape": {
+          "oneOf": [
+            {"type": "null"},
+            {"$ref": "#/$defs/routeShape"}
+          ]
+        },
+        "labels_sha256": {
+          "oneOf": [
+            {"type": "null"},
+            {"$ref": "#/$defs/sha256"}
+          ]
+        },
+        "reason": {"type": "string", "minLength": 1}
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {"status": {"const": "ROUTE"}},
+            "required": ["status"]
+          },
+          "then": {
+            "properties": {
+              "labels_shape": {"$ref": "#/$defs/routeShape"},
+              "labels_sha256": {"$ref": "#/$defs/sha256"}
+            }
+          },
+          "else": {
+            "properties": {
+              "labels_shape": {"type": "null"},
+              "labels_sha256": {"type": "null"}
+            }
+          }
+        }
+      ]
+    },
+    "routeArtifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "status",
+        "verifier_commit",
+        "inference_run",
+        "inference_run_sha256",
+        "route_output",
+        "route_output_sha256"
+      ],
+      "properties": {
+        "schema": {"const": "audio-extract/d0-r0-route-artifact-manifest/v3"},
+        "status": {"const": "verified"},
+        "verifier_commit": {"$ref": "#/$defs/gitCommit"},
+        "inference_run": {"$ref": "#/$defs/inferenceRun"},
+        "inference_run_sha256": {"$ref": "#/$defs/sha256"},
+        "route_output": {"$ref": "#/$defs/routeOutput"},
+        "route_output_sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "routeProvenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "route_artifact",
+        "route_artifact_sha256",
+        "submission",
+        "submission_sha256"
+      ],
+      "properties": {
+        "schema": {"const": "audio-extract/d0-r0-route-provenance/v3"},
+        "route_artifact": {"$ref": "#/$defs/routeArtifact"},
+        "route_artifact_sha256": {"$ref": "#/$defs/sha256"},
+        "submission": {"$ref": "#/$defs/routeSubmission"},
+        "submission_sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "violation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "time_index",
+        "band_index",
+        "candidate_index",
+        "metric_name",
+        "kind",
+        "threshold",
+        "value"
+      ],
+      "properties": {
+        "schema": {"const": "audio-extract/counterfactual-route-violation/v1"},
+        "time_index": {"type": "integer", "minimum": 0},
+        "band_index": {"type": "integer", "minimum": 0},
+        "candidate_index": {"type": "integer", "minimum": 0},
+        "metric_name": {"type": "string", "minLength": 1},
+        "kind": {
+          "enum": [
+            "critical_missing",
+            "critical_above_threshold",
+            "required_secondary_missing"
+          ]
+        },
+        "threshold": {"type": ["number", "null"]},
+        "value": {"type": ["number", "null"]}
+      }
+    },
+    "completeRouteEvaluation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "arm_id",
+        "exact_evidence_sha256",
+        "exact_panel_sha256",
+        "exact_preflight_sha256",
+        "policy_sha256",
+        "exact_oracle_decision_sha256",
+        "submission_sha256",
+        "status",
+        "critical_false_safe_violations",
+        "incomplete_secondary_violations",
+        "exact_oracle_objective",
+        "submitted_exact_objective",
+        "selection_regret",
+        "temporal_switches",
+        "frequency_switches",
+        "reason"
+      ],
+      "properties": {
+        "schema": {"const": "audio-extract/counterfactual-route-evaluation/v1"},
+        "arm_id": {"enum": ["D0", "R0"]},
+        "exact_evidence_sha256": {"$ref": "#/$defs/sha256"},
+        "exact_panel_sha256": {"$ref": "#/$defs/sha256"},
+        "exact_preflight_sha256": {"$ref": "#/$defs/sha256"},
+        "policy_sha256": {"$ref": "#/$defs/sha256"},
+        "exact_oracle_decision_sha256": {"$ref": "#/$defs/sha256"},
+        "submission_sha256": {"$ref": "#/$defs/sha256"},
+        "status": {
+          "enum": [
+            "ROUTE_SAFE",
+            "ROUTE_CATASTROPHIC_FALSE_SAFE",
+            "ROUTE_INCOMPLETE_REQUIRED_EVIDENCE",
+            "ABSTAIN",
+            "ORACLE_UNAVAILABLE"
+          ]
+        },
+        "critical_false_safe_violations": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/violation"}
+        },
+        "incomplete_secondary_violations": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/violation"}
+        },
+        "exact_oracle_objective": {"type": ["number", "null"], "minimum": 0},
+        "submitted_exact_objective": {"type": ["number", "null"], "minimum": 0},
+        "selection_regret": {"type": ["number", "null"], "minimum": 0},
+        "temporal_switches": {"type": ["integer", "null"], "minimum": 0},
+        "frequency_switches": {"type": ["integer", "null"], "minimum": 0},
+        "reason": {"type": "string", "minLength": 1}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"status": {"const": "ROUTE_SAFE"}}},
+          "then": {
+            "properties": {
+              "critical_false_safe_violations": {"maxItems": 0},
+              "incomplete_secondary_violations": {"maxItems": 0},
+              "exact_oracle_objective": {"type": "number", "minimum": 0},
+              "submitted_exact_objective": {"type": "number", "minimum": 0},
+              "selection_regret": {"type": "number", "minimum": 0},
+              "temporal_switches": {"type": "integer", "minimum": 0},
+              "frequency_switches": {"type": "integer", "minimum": 0}
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {"const": "ROUTE_CATASTROPHIC_FALSE_SAFE"}
+            }
+          },
+          "then": {
+            "properties": {
+              "critical_false_safe_violations": {"minItems": 1},
+              "submitted_exact_objective": {"type": "null"},
+              "selection_regret": {"type": "null"},
+              "temporal_switches": {"type": "integer", "minimum": 0},
+              "frequency_switches": {"type": "integer", "minimum": 0}
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {"const": "ROUTE_INCOMPLETE_REQUIRED_EVIDENCE"}
+            }
+          },
+          "then": {
+            "properties": {
+              "critical_false_safe_violations": {"maxItems": 0},
+              "incomplete_secondary_violations": {"minItems": 1},
+              "submitted_exact_objective": {"type": "null"},
+              "selection_regret": {"type": "null"},
+              "temporal_switches": {"type": "integer", "minimum": 0},
+              "frequency_switches": {"type": "integer", "minimum": 0}
+            }
+          }
+        },
+        {
+          "if": {"properties": {"status": {"const": "ABSTAIN"}}},
+          "then": {
+            "properties": {
+              "critical_false_safe_violations": {"maxItems": 0},
+              "incomplete_secondary_violations": {"maxItems": 0},
+              "exact_oracle_objective": {"type": "number", "minimum": 0},
+              "submitted_exact_objective": {"type": "null"},
+              "selection_regret": {"type": "null"},
+              "temporal_switches": {"type": "null"},
+              "frequency_switches": {"type": "null"}
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {"status": {"const": "ORACLE_UNAVAILABLE"}}
+          },
+          "then": {
+            "properties": {
+              "critical_false_safe_violations": {"maxItems": 0},
+              "incomplete_secondary_violations": {"maxItems": 0},
+              "exact_oracle_objective": {"type": "null"},
+              "submitted_exact_objective": {"type": "null"},
+              "selection_regret": {"type": "null"},
+              "temporal_switches": {"type": "null"},
+              "frequency_switches": {"type": "null"}
+            }
+          }
+        }
+      ]
+    },
+    "workEvaluation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "unit",
+        "unit_sha256",
+        "route_provenance",
+        "route_provenance_sha256",
+        "complete_route_evaluation",
+        "complete_route_evaluation_sha256"
+      ],
+      "properties": {
+        "schema": {"const": "audio-extract/d0-r0-work-evaluation/v3"},
+        "unit": {"$ref": "#/$defs/heldOutUnit"},
+        "unit_sha256": {"$ref": "#/$defs/sha256"},
+        "route_provenance": {"$ref": "#/$defs/routeProvenance"},
+        "route_provenance_sha256": {"$ref": "#/$defs/sha256"},
+        "complete_route_evaluation": {
+          "$ref": "#/$defs/completeRouteEvaluation"
+        },
+        "complete_route_evaluation_sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "armSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "arm_id",
+        "unit_count",
+        "oracle_available_count",
+        "route_submission_count",
+        "safe_route_count",
+        "catastrophic_false_safe_count",
+        "incomplete_evidence_count",
+        "abstention_count",
+        "oracle_unavailable_count",
+        "critical_violation_count",
+        "incomplete_secondary_violation_count",
+        "route_submission_coverage",
+        "safe_route_coverage",
+        "abstention_rate",
+        "mean_safe_regret",
+        "median_safe_regret",
+        "worst_safe_regret",
+        "worst_safe_regret_unit_sha256",
+        "mean_safe_temporal_switches",
+        "mean_safe_frequency_switches"
+      ],
+      "properties": {
+        "schema": {"const": "audio-extract/d0-r0-arm-summary/v2"},
+        "arm_id": {"enum": ["D0", "R0"]},
+        "unit_count": {"type": "integer", "minimum": 0},
+        "oracle_available_count": {"type": "integer", "minimum": 0},
+        "route_submission_count": {"type": "integer", "minimum": 0},
+        "safe_route_count": {"type": "integer", "minimum": 0},
+        "catastrophic_false_safe_count": {"type": "integer", "minimum": 0},
+        "incomplete_evidence_count": {"type": "integer", "minimum": 0},
+        "abstention_count": {"type": "integer", "minimum": 0},
+        "oracle_unavailable_count": {"type": "integer", "minimum": 0},
+        "critical_violation_count": {"type": "integer", "minimum": 0},
+        "incomplete_secondary_violation_count": {"type": "integer", "minimum": 0},
+        "route_submission_coverage": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+        "safe_route_coverage": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+        "abstention_rate": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+        "mean_safe_regret": {"type": ["number", "null"], "minimum": 0},
+        "median_safe_regret": {"type": ["number", "null"], "minimum": 0},
+        "worst_safe_regret": {"type": ["number", "null"], "minimum": 0},
+        "worst_safe_regret_unit_sha256": {
+          "oneOf": [
+            {"type": "null"},
+            {"$ref": "#/$defs/sha256"}
+          ]
+        },
+        "mean_safe_temporal_switches": {"type": ["number", "null"], "minimum": 0},
+        "mean_safe_frequency_switches": {"type": ["number", "null"], "minimum": 0}
+      }
+    },
+    "pairwiseSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "unit_count",
+        "oracle_available_count",
+        "both_submitted_route_count",
+        "both_safe_count",
+        "both_submitted_route_coverage",
+        "both_safe_coverage",
+        "d0_safe_r0_not_safe_count",
+        "r0_safe_d0_not_safe_count",
+        "both_catastrophic_count",
+        "d0_catastrophic_r0_not_count",
+        "r0_catastrophic_d0_not_count",
+        "r0_lower_regret_count",
+        "d0_lower_regret_count",
+        "regret_tie_count",
+        "mean_r0_minus_d0_regret",
+        "median_r0_minus_d0_regret",
+        "min_r0_minus_d0_regret",
+        "max_r0_minus_d0_regret",
+        "mean_r0_minus_d0_temporal_switches",
+        "mean_r0_minus_d0_frequency_switches",
+        "status_cross_tab"
+      ],
+      "properties": {
+        "schema": {"const": "audio-extract/d0-r0-pairwise-summary/v2"},
+        "unit_count": {"type": "integer", "minimum": 0},
+        "oracle_available_count": {"type": "integer", "minimum": 0},
+        "both_submitted_route_count": {"type": "integer", "minimum": 0},
+        "both_safe_count": {"type": "integer", "minimum": 0},
+        "both_submitted_route_coverage": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+        "both_safe_coverage": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+        "d0_safe_r0_not_safe_count": {"type": "integer", "minimum": 0},
+        "r0_safe_d0_not_safe_count": {"type": "integer", "minimum": 0},
+        "both_catastrophic_count": {"type": "integer", "minimum": 0},
+        "d0_catastrophic_r0_not_count": {"type": "integer", "minimum": 0},
+        "r0_catastrophic_d0_not_count": {"type": "integer", "minimum": 0},
+        "r0_lower_regret_count": {"type": "integer", "minimum": 0},
+        "d0_lower_regret_count": {"type": "integer", "minimum": 0},
+        "regret_tie_count": {"type": "integer", "minimum": 0},
+        "mean_r0_minus_d0_regret": {"type": ["number", "null"]},
+        "median_r0_minus_d0_regret": {"type": ["number", "null"]},
+        "min_r0_minus_d0_regret": {"type": ["number", "null"]},
+        "max_r0_minus_d0_regret": {"type": ["number", "null"]},
+        "mean_r0_minus_d0_temporal_switches": {"type": ["number", "null"]},
+        "mean_r0_minus_d0_frequency_switches": {"type": ["number", "null"]},
+        "status_cross_tab": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "prefixItems": [
+              {
+                "enum": [
+                  "ROUTE_SAFE",
+                  "ROUTE_CATASTROPHIC_FALSE_SAFE",
+                  "ROUTE_INCOMPLETE_REQUIRED_EVIDENCE",
+                  "ABSTAIN",
+                  "ORACLE_UNAVAILABLE"
+                ]
+              },
+              {
+                "enum": [
+                  "ROUTE_SAFE",
+                  "ROUTE_CATASTROPHIC_FALSE_SAFE",
+                  "ROUTE_INCOMPLETE_REQUIRED_EVIDENCE",
+                  "ABSTAIN",
+                  "ORACLE_UNAVAILABLE"
+                ]
+              },
+              {"type": "integer", "minimum": 1}
+            ],
+            "items": false,
+            "minItems": 3,
+            "maxItems": 3
+          }
+        }
+      }
+    }
+  }
+}
