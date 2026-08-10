@@ -1,17 +1,22 @@
-"""Route/partition attestation with content-bearing inference inputs v2.
+"""Route/partition attestation with report-derived inference inputs v2.
 
 V1 copied an opaque ``inference_input_manifest_sha256`` from the arm run and
-copied partition facts from a separately selected certificate.  A same-shaped
+copied partition facts from a separately selected certificate. A same-shaped
 certificate at another resolution could therefore be substituted while all
-local hashes were rebuilt.  V2 embeds and validates the pre-execution
-``InferenceInputPartitionManifestV2`` before certifying any route.
+local hashes were rebuilt.
+
+The authoritative v2 attestation now requires
+``InferenceInputPartitionManifestV3``. That manifest embeds the pre-execution
+partition contract and two content-bearing exact-source reports, so the route
+cannot be certified through the older caller-supplied ``ExactSourceLineageV2``
+path.
 
 A frozen partition registry may contain several legitimate resolutions for one
-source family.  The registry below requires exactly one attestation per held-out
+source family. The registry below requires exactly one attestation per held-out
 unit/arm cell, requires D0 and R0 to select the same certificate for a unit, and
 allows additional certified resolutions to remain unused.
 
-This is descriptive CPU-only research infrastructure.  It cannot select a
+This is descriptive CPU-only research infrastructure. It cannot select a
 winner or authorize model training.
 """
 from __future__ import annotations
@@ -33,8 +38,8 @@ from .counterfactual_risk_grouped_comparison_v3 import (
     GroupedComparisonReportV3,
     WorkArmEvaluationV3,
 )
-from .counterfactual_risk_inference_partition_manifest_v2 import (
-    InferenceInputPartitionManifestV2,
+from .counterfactual_risk_source_lineage_v3 import (
+    InferenceInputPartitionManifestV3,
 )
 
 ATTESTATION_SCHEMA = "audio-extract/d0-r0-route-partition-attestation/v2"
@@ -86,9 +91,9 @@ def _mapping_sha(value: Mapping[str, Any]) -> str:
 
 @dataclass(frozen=True)
 class RoutePartitionAttestationV2:
-    """One unit/arm route bound to the exact pre-execution partition manifest."""
+    """One unit/arm route bound to the exact pre-execution v3 manifest."""
 
-    input_manifest: InferenceInputPartitionManifestV2
+    input_manifest: InferenceInputPartitionManifestV3
     route_artifact_sha256: str
     route_output_sha256: str
     submission_sha256: str
@@ -123,6 +128,13 @@ class RoutePartitionAttestationV2:
             raise RoutePartitionAttestationV2Error(
                 "route-partition attestation status must be verified"
             )
+        if not isinstance(
+            self.input_manifest,
+            InferenceInputPartitionManifestV3,
+        ):
+            raise RoutePartitionAttestationV2Error(
+                "route attestation requires report-derived source lineage v3"
+            )
         for name in (
             "route_artifact_sha256",
             "route_output_sha256",
@@ -140,7 +152,10 @@ class RoutePartitionAttestationV2:
         submission = row.route_provenance.submission
         run = artifact.inference_run
         self.input_manifest.validate(
-            prereg, row.unit, run, certificate
+            prereg,
+            row.unit,
+            run,
+            certificate,
         )
         expected = {
             "route_artifact_sha256": artifact.sha256(prereg, row.unit),
@@ -204,10 +219,14 @@ class RoutePartitionAttestationV2:
             "unit_sha256": self.unit_sha256,
             "arm_id": self.arm_id,
             "input_manifest": self.input_manifest.identity_dict(
-                prereg, row.unit, certificate
+                prereg,
+                row.unit,
+                certificate,
             ),
             "input_manifest_sha256": self.input_manifest.sha256(
-                prereg, row.unit, certificate
+                prereg,
+                row.unit,
+                certificate,
             ),
             "route_artifact_sha256": self.route_artifact_sha256,
             "route_output_sha256": self.route_output_sha256,
@@ -305,6 +324,13 @@ class RoutePartitionAttestationRegistryV2:
         }
         selected_by_unit: dict[str, list[RoutePartitionAttestationV2]] = {}
         for attestation in ordered:
+            if not isinstance(
+                attestation.input_manifest,
+                InferenceInputPartitionManifestV3,
+            ):
+                raise RoutePartitionAttestationV2Error(
+                    "registry contains an input manifest without source lineage v3"
+                )
             row = rows[attestation.key]
             certificate = certificates.get(
                 attestation.input_manifest.partition_key
@@ -319,7 +345,9 @@ class RoutePartitionAttestationRegistryV2:
             )
             identities["input-manifest"].append(
                 attestation.input_manifest.sha256(
-                    prereg, row.unit, certificate
+                    prereg,
+                    row.unit,
+                    certificate,
                 )
             )
             identities["route-artifact"].append(
