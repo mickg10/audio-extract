@@ -1,4 +1,3 @@
-import copy
 import json
 from pathlib import Path
 
@@ -42,7 +41,20 @@ def assert_invalid(value):
 
 
 def test_real_v4_artifact_validates_against_paired_schema():
-    validator().validate(payload())
+    value = payload()
+    assert "source_v3_verifier_commit" in value
+    assert "paired_regret_tolerance" in value
+    validator().validate(value)
+
+
+@pytest.mark.parametrize(
+    "field",
+    ["source_v3_verifier_commit", "paired_regret_tolerance"],
+)
+def test_identity_bearing_v4_root_fields_are_required(field):
+    value = payload()
+    del value[field]
+    assert_invalid(value)
 
 
 def test_nested_arm_substitution_is_rejected():
@@ -125,6 +137,52 @@ def test_critical_and_secondary_violation_kinds_are_not_interchangeable():
             "kind": "required_secondary_missing",
             "threshold": None,
             "value": None,
+        }
+    ]
+    evaluation["submitted_exact_objective"] = None
+    evaluation["selection_regret"] = None
+    assert_invalid(value)
+
+
+def test_above_threshold_violation_requires_positive_numeric_facts():
+    value = payload()
+    evaluation = value["paired_units"][0]["d0"][
+        "complete_route_evaluation"
+    ]
+    evaluation["status"] = "ROUTE_CATASTROPHIC_FALSE_SAFE"
+    evaluation["critical_false_safe_violations"] = [
+        {
+            "schema": "audio-extract/counterfactual-route-violation/v1",
+            "time_index": 0,
+            "band_index": 0,
+            "candidate_index": 0,
+            "metric_name": "voice",
+            "kind": "critical_above_threshold",
+            "threshold": 1.0,
+            "value": 0.0,
+        }
+    ]
+    evaluation["submitted_exact_objective"] = None
+    evaluation["selection_regret"] = None
+    assert_invalid(value)
+
+
+def test_secondary_missing_violation_must_not_carry_a_value():
+    value = payload()
+    evaluation = value["paired_units"][0]["d0"][
+        "complete_route_evaluation"
+    ]
+    evaluation["status"] = "ROUTE_INCOMPLETE_REQUIRED_EVIDENCE"
+    evaluation["incomplete_secondary_violations"] = [
+        {
+            "schema": "audio-extract/counterfactual-route-violation/v1",
+            "time_index": 0,
+            "band_index": 0,
+            "candidate_index": 0,
+            "metric_name": "artifact",
+            "kind": "required_secondary_missing",
+            "threshold": None,
+            "value": 0.1,
         }
     ]
     evaluation["submitted_exact_objective"] = None
