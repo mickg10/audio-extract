@@ -1,0 +1,549 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/mickg10/audio-extract/schemas/d0-r0-grouped-comparison-report-v4.schema.json",
+  "title": "Immutable paired D0/R0 grouped held-out comparison report v4",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "status",
+    "promotion_decision",
+    "preregistration_sha256",
+    "source_v3_report_sha256",
+    "verifier_commit",
+    "paired_units",
+    "d0_summary",
+    "r0_summary",
+    "pairwise_summary"
+  ],
+  "properties": {
+    "schema": {
+      "const": "audio-extract/d0-r0-grouped-comparison-report/v4"
+    },
+    "status": {
+      "const": "COMPLETE_NO_PROMOTION_DECISION"
+    },
+    "promotion_decision": {
+      "type": "null"
+    },
+    "preregistration_sha256": {
+      "$ref": "#/$defs/sha256"
+    },
+    "source_v3_report_sha256": {
+      "$ref": "#/$defs/sha256"
+    },
+    "verifier_commit": {
+      "$ref": "#/$defs/gitCommit"
+    },
+    "paired_units": {
+      "type": "array",
+      "minItems": 2,
+      "items": {
+        "$ref": "#/$defs/pairedUnit"
+      }
+    },
+    "d0_summary": {
+      "allOf": [
+        {
+          "$ref": "d0-r0-grouped-comparison-report-v3.schema.json#/$defs/armSummary"
+        },
+        {
+          "properties": {
+            "arm_id": {
+              "const": "D0"
+            }
+          }
+        }
+      ]
+    },
+    "r0_summary": {
+      "allOf": [
+        {
+          "$ref": "d0-r0-grouped-comparison-report-v3.schema.json#/$defs/armSummary"
+        },
+        {
+          "properties": {
+            "arm_id": {
+              "const": "R0"
+            }
+          }
+        }
+      ]
+    },
+    "pairwise_summary": {
+      "allOf": [
+        {
+          "$ref": "d0-r0-grouped-comparison-report-v3.schema.json#/$defs/pairwiseSummary"
+        },
+        {
+          "properties": {
+            "status_cross_tab": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/statusPair"
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "gitCommit": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "routeStatus": {
+      "enum": [
+        "ROUTE_SAFE",
+        "ROUTE_CATASTROPHIC_FALSE_SAFE",
+        "ROUTE_INCOMPLETE_REQUIRED_EVIDENCE"
+      ]
+    },
+    "criticalViolation": {
+      "allOf": [
+        {
+          "$ref": "d0-r0-grouped-comparison-report-v3.schema.json#/$defs/violation"
+        },
+        {
+          "properties": {
+            "kind": {
+              "enum": [
+                "critical_missing",
+                "critical_above_threshold"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "secondaryViolation": {
+      "allOf": [
+        {
+          "$ref": "d0-r0-grouped-comparison-report-v3.schema.json#/$defs/violation"
+        },
+        {
+          "properties": {
+            "kind": {
+              "const": "required_secondary_missing"
+            }
+          }
+        }
+      ]
+    },
+    "workStrict": {
+      "type": "object",
+      "properties": {
+        "complete_route_evaluation": {
+          "type": "object",
+          "properties": {
+            "critical_false_safe_violations": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/criticalViolation"
+              }
+            },
+            "incomplete_secondary_violations": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/secondaryViolation"
+              }
+            }
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "complete_route_evaluation": {
+                "properties": {
+                  "status": {
+                    "$ref": "#/$defs/routeStatus"
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "route_provenance": {
+                "properties": {
+                  "route_artifact": {
+                    "properties": {
+                      "route_output": {
+                        "properties": {
+                          "status": {
+                            "const": "ROUTE"
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "submission": {
+                    "properties": {
+                      "status": {
+                        "const": "ROUTE"
+                      }
+                    }
+                  }
+                }
+              },
+              "complete_route_evaluation": {
+                "properties": {
+                  "exact_oracle_objective": {
+                    "type": "number",
+                    "minimum": 0
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "complete_route_evaluation": {
+                "properties": {
+                  "status": {
+                    "const": "ABSTAIN"
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "route_provenance": {
+                "properties": {
+                  "route_artifact": {
+                    "properties": {
+                      "route_output": {
+                        "properties": {
+                          "status": {
+                            "const": "ABSTAIN"
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "submission": {
+                    "properties": {
+                      "status": {
+                        "const": "ABSTAIN"
+                      }
+                    }
+                  }
+                }
+              },
+              "complete_route_evaluation": {
+                "properties": {
+                  "exact_oracle_objective": {
+                    "type": "number",
+                    "minimum": 0
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "complete_route_evaluation": {
+                "properties": {
+                  "status": {
+                    "const": "ORACLE_UNAVAILABLE"
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "complete_route_evaluation": {
+                "properties": {
+                  "exact_oracle_objective": {
+                    "type": "null"
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "armD0": {
+      "type": "object",
+      "properties": {
+        "route_provenance": {
+          "properties": {
+            "route_artifact": {
+              "properties": {
+                "inference_run": {
+                  "properties": {
+                    "arm_id": {
+                      "const": "D0"
+                    }
+                  }
+                },
+                "route_output": {
+                  "properties": {
+                    "arm_id": {
+                      "const": "D0"
+                    }
+                  }
+                }
+              }
+            },
+            "submission": {
+              "properties": {
+                "arm_id": {
+                  "const": "D0"
+                }
+              }
+            }
+          }
+        },
+        "complete_route_evaluation": {
+          "properties": {
+            "arm_id": {
+              "const": "D0"
+            }
+          }
+        }
+      }
+    },
+    "armR0": {
+      "type": "object",
+      "properties": {
+        "route_provenance": {
+          "properties": {
+            "route_artifact": {
+              "properties": {
+                "inference_run": {
+                  "properties": {
+                    "arm_id": {
+                      "const": "R0"
+                    }
+                  }
+                },
+                "route_output": {
+                  "properties": {
+                    "arm_id": {
+                      "const": "R0"
+                    }
+                  }
+                }
+              }
+            },
+            "submission": {
+              "properties": {
+                "arm_id": {
+                  "const": "R0"
+                }
+              }
+            }
+          }
+        },
+        "complete_route_evaluation": {
+          "properties": {
+            "arm_id": {
+              "const": "R0"
+            }
+          }
+        }
+      }
+    },
+    "workD0": {
+      "allOf": [
+        {
+          "$ref": "d0-r0-grouped-comparison-report-v3.schema.json#/$defs/workEvaluation"
+        },
+        {
+          "$ref": "#/$defs/workStrict"
+        },
+        {
+          "$ref": "#/$defs/armD0"
+        }
+      ]
+    },
+    "workR0": {
+      "allOf": [
+        {
+          "$ref": "d0-r0-grouped-comparison-report-v3.schema.json#/$defs/workEvaluation"
+        },
+        {
+          "$ref": "#/$defs/workStrict"
+        },
+        {
+          "$ref": "#/$defs/armR0"
+        }
+      ]
+    },
+    "pairedUnit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "unit",
+        "unit_sha256",
+        "d0",
+        "r0"
+      ],
+      "properties": {
+        "schema": {
+          "const": "audio-extract/d0-r0-paired-work-evaluation/v4"
+        },
+        "unit": {
+          "$ref": "d0-r0-grouped-comparison-report-v3.schema.json#/$defs/heldOutUnit"
+        },
+        "unit_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "d0": {
+          "$ref": "#/$defs/workD0"
+        },
+        "r0": {
+          "$ref": "#/$defs/workR0"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "d0": {
+                "properties": {
+                  "complete_route_evaluation": {
+                    "properties": {
+                      "status": {
+                        "const": "ORACLE_UNAVAILABLE"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "r0": {
+                "properties": {
+                  "complete_route_evaluation": {
+                    "properties": {
+                      "status": {
+                        "const": "ORACLE_UNAVAILABLE"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "r0": {
+                "properties": {
+                  "complete_route_evaluation": {
+                    "properties": {
+                      "status": {
+                        "const": "ORACLE_UNAVAILABLE"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "d0": {
+                "properties": {
+                  "complete_route_evaluation": {
+                    "properties": {
+                      "status": {
+                        "const": "ORACLE_UNAVAILABLE"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "statusPair": {
+      "type": "array",
+      "prefixItems": [
+        {
+          "enum": [
+            "ROUTE_SAFE",
+            "ROUTE_CATASTROPHIC_FALSE_SAFE",
+            "ROUTE_INCOMPLETE_REQUIRED_EVIDENCE",
+            "ABSTAIN",
+            "ORACLE_UNAVAILABLE"
+          ]
+        },
+        {
+          "enum": [
+            "ROUTE_SAFE",
+            "ROUTE_CATASTROPHIC_FALSE_SAFE",
+            "ROUTE_INCOMPLETE_REQUIRED_EVIDENCE",
+            "ABSTAIN",
+            "ORACLE_UNAVAILABLE"
+          ]
+        },
+        {
+          "type": "integer",
+          "minimum": 1
+        }
+      ],
+      "items": false,
+      "minItems": 3,
+      "maxItems": 3,
+      "allOf": [
+        {
+          "if": {
+            "prefixItems": [
+              {
+                "const": "ORACLE_UNAVAILABLE"
+              }
+            ]
+          },
+          "then": {
+            "prefixItems": [
+              {},
+              {
+                "const": "ORACLE_UNAVAILABLE"
+              }
+            ]
+          }
+        },
+        {
+          "if": {
+            "prefixItems": [
+              {},
+              {
+                "const": "ORACLE_UNAVAILABLE"
+              }
+            ]
+          },
+          "then": {
+            "prefixItems": [
+              {
+                "const": "ORACLE_UNAVAILABLE"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  }
+}
