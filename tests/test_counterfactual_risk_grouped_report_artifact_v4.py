@@ -1,5 +1,6 @@
 import dataclasses
 import hashlib
+import json
 
 import numpy as np
 import pytest
@@ -24,6 +25,7 @@ from audio_extract.counterfactual_risk_grouped_comparison_v3 import (
 from audio_extract.counterfactual_risk_grouped_report_artifact_v4 import (
     GroupedComparisonReportArtifactV4,
     GroupedReportArtifactV4Error,
+    _validate_violation,
 )
 
 
@@ -180,6 +182,21 @@ def fixture():
     return p, report, artifact
 
 
+def repack(artifact, payload):
+    encoded = json.dumps(
+        payload,
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=False,
+        allow_nan=False,
+    ).encode("utf-8")
+    return dataclasses.replace(
+        artifact,
+        payload_utf8=encoded,
+        payload_sha256="sha256:" + hashlib.sha256(encoded).hexdigest(),
+    )
+
+
 def test_v4_artifact_is_canonical_paired_and_nonpromoting():
     p, report, artifact = fixture()
     artifact.validate_frozen()
@@ -187,6 +204,7 @@ def test_v4_artifact_is_canonical_paired_and_nonpromoting():
     payload = artifact.identity_dict()
     assert payload["promotion_decision"] is None
     assert payload["status"] == "COMPLETE_NO_PROMOTION_DECISION"
+    assert payload["paired_regret_tolerance"] == p.paired_regret_tolerance
     assert len(payload["paired_units"]) == len(p.expected_units)
     assert all(
         row["d0"]["route_provenance"]["submission"]["arm_id"] == "D0"
@@ -225,22 +243,75 @@ def test_header_substitution_is_detected_even_with_rehashed_bytes():
     _p, _report, artifact = fixture()
     payload = artifact.identity_dict()
     payload["promotion_decision"] = "R0"
-    import json
-
-    changed = json.dumps(
-        payload,
-        sort_keys=True,
-        separators=(",", ":"),
-        ensure_ascii=False,
-        allow_nan=False,
-    ).encode("utf-8")
-    broken = dataclasses.replace(
-        artifact,
-        payload_utf8=changed,
-        payload_sha256=("sha256:" + hashlib.sha256(changed).hexdigest()),
-    )
+    broken = repack(artifact, payload)
     with pytest.raises(
         GroupedReportArtifactV4Error,
         match="header differs",
     ):
         broken.validate_frozen()
+
+
+def test_rehashed_malformed_payload_is_rejected():
+    _p, _report, artifact = fixture()
+    payload = artifact.identity_dict()
+    payload["paired_units"] = [{}]
+    broken = repack(artifact, payload)
+    with pytest.raises(GroupedReportArtifactV4Error):
+        broken.validate_frozen()
+
+
+def test_swapping_d0_branches_between_outer_units_is_rejected():
+    _p, _report, artifact = fixture()
+    payload = artifact.identity_dict()
+    first, second = payload["paired_units"]
+    first["d0"], second["d0"] = second["d0"], first["d0"]
+    broken = repack(artifact, payload)
+    with pytest.raises(
+        GroupedReportArtifactV4Error,
+        match="not bound to the outer held-out unit",
+    ):
+        broken.validate_frozen()
+
+
+def test_rehashed_nested_hash_substitution_is_rejected():
+    _p, _report, artifact = fixture()
+    payload = artifact.identity_dict()
+    payload["paired_units"][0]["d0"]["route_provenance"][
+        "submission_sha256"
+    ] = sha("other-submission")
+    broken = repack(artifact, payload)
+    with pytest.raises(
+        GroupedReportArtifactV4Error,
+        match="submission semantic SHA mismatch",
+    ):
+        broken.validate_frozen()
+
+
+def test_source_v3_report_is_reconstructed_from_paired_payload():
+    _p, _report, artifact = fixture()
+    payload = artifact.identity_dict()
+    payload["source_v3_verifier_commit"] = git("other-v3-verifier")
+    broken = repack(artifact, payload)
+    with pytest.raises(
+        GroupedReportArtifactV4Error,
+        match="does not reconstruct the named v3 report",
+    ):
+        broken.validate_frozen()
+
+
+def test_above_threshold_numeric_facts_are_semantically_validated():
+    violation = {
+        "schema": "audio-extract/counterfactual-route-violation/v1",
+        "time_index": 0,
+        "band_index": 0,
+        "candidate_index": 0,
+        "metric_name": "voice",
+        "kind": "critical_above_threshold",
+        "threshold": 1.0,
+        "value": 0.5,
+    }
+    with pytest.raises(
+        GroupedReportArtifactV4Error,
+        match="does not exceed",
+    ):
+        _validate_violation(violation, critical=True)
