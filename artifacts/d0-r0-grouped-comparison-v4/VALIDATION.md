@@ -1,13 +1,16 @@
 # D0/R0 grouped comparison v4 — validation record
 
-## Branch and current reviewed target
+## Branch and exact-head rule
 
 ```text
 repository: mickg10/audio-extract
 branch:     bigoracle/d0-r0-grouped-comparison-artifacts-20260810
 draft PR:   #25
-exact head: 39d94a6646de33a4ecb5ac952a48cd05209e2956
 ```
+
+The validator must detach the exact PR head named in the accompanying review or
+validation request. Results from an ancestor or a subsequently moved head are
+stale and do not satisfy this record.
 
 ## Authoritative files
 
@@ -46,7 +49,7 @@ in the repository's real environment.
 
 ```bash
 git fetch origin bigoracle/d0-r0-grouped-comparison-artifacts-20260810
-git switch --detach 39d94a6646de33a4ecb5ac952a48cd05209e2956
+git switch --detach <exact-head-from-current-review-request>
 
 uv run --extra dev pytest -q \
   tests/test_counterfactual_risk_grouped_report_artifact_v4.py \
@@ -58,7 +61,7 @@ uv run --with 'jsonschema>=4.23' --extra dev pytest -q \
   tests/test_d0_r0_grouped_comparison_schema_v4.py
 
 uv run --extra dev pytest -q
-uv run --extra dev ruff check .
+uv run --with 'ruff>=0.9' ruff check .
 python -m compileall -q audio_extract tests
 python -m json.tool \
   schemas/d0-r0-grouped-comparison-report-v3.schema.json >/dev/null
