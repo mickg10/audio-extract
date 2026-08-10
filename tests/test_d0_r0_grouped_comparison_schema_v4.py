@@ -190,6 +190,52 @@ def test_secondary_missing_violation_must_not_carry_a_value():
     assert_invalid(value)
 
 
+def test_missing_evidence_threshold_zero_is_schema_valid():
+    value = payload()
+    evaluation = value["paired_units"][0]["d0"][
+        "complete_route_evaluation"
+    ]
+    evaluation["status"] = "ROUTE_CATASTROPHIC_FALSE_SAFE"
+    evaluation["critical_false_safe_violations"] = [
+        {
+            "schema": "audio-extract/counterfactual-route-violation/v1",
+            "time_index": 0,
+            "band_index": 0,
+            "candidate_index": 0,
+            "metric_name": "voice",
+            "kind": "critical_missing",
+            "threshold": 0.0,
+            "value": None,
+        }
+    ]
+    evaluation["submitted_exact_objective"] = None
+    evaluation["selection_regret"] = None
+    validator().validate(value)
+
+
+def test_secondary_missing_threshold_zero_is_schema_valid():
+    value = payload()
+    evaluation = value["paired_units"][0]["d0"][
+        "complete_route_evaluation"
+    ]
+    evaluation["status"] = "ROUTE_INCOMPLETE_REQUIRED_EVIDENCE"
+    evaluation["incomplete_secondary_violations"] = [
+        {
+            "schema": "audio-extract/counterfactual-route-violation/v1",
+            "time_index": 0,
+            "band_index": 0,
+            "candidate_index": 0,
+            "metric_name": "artifact",
+            "kind": "required_secondary_missing",
+            "threshold": 0.0,
+            "value": None,
+        }
+    ]
+    evaluation["submitted_exact_objective"] = None
+    evaluation["selection_regret"] = None
+    validator().validate(value)
+
+
 def test_d0_and_r0_summaries_cannot_be_swapped():
     value = payload()
     value["d0_summary"], value["r0_summary"] = (
