@@ -1,0 +1,101 @@
+name: PR25 grouped D0-R0 artifact validation
+
+on:
+  push:
+    branches:
+      - bigoracle/d0-r0-grouped-comparison-artifacts-20260810
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr25-grouped-artifact-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    name: CPU exact-head validation
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+
+    steps:
+      - name: Checkout exact branch head
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install uv
+        run: |
+          python -m pip install --upgrade pip uv
+
+      - name: Record tool versions
+        run: |
+          mkdir -p validation-logs
+          {
+            echo "head=${GITHUB_SHA}"
+            python --version
+            uv --version
+            git --version
+          } | tee validation-logs/versions.log
+
+      - name: Resolve project environment
+        run: |
+          set -o pipefail
+          uv sync --extra dev 2>&1 | tee validation-logs/uv-sync.log
+          uv pip freeze | sort > validation-logs/environment.txt
+
+      - name: Focused v4 Python contracts
+        run: |
+          set -o pipefail
+          uv run --extra dev pytest -q \
+            tests/test_counterfactual_risk_grouped_report_artifact_v4.py \
+            tests/test_counterfactual_risk_inference_partition_v2.py \
+            2>&1 | tee validation-logs/focused-v4.log
+
+      - name: Paired v4 JSON Schema and rejected mutations
+        run: |
+          set -o pipefail
+          uv run --with "jsonschema>=4.23" --extra dev pytest -q \
+            tests/test_d0_r0_grouped_comparison_schema_v4.py \
+            2>&1 | tee validation-logs/schema-v4.log
+
+      - name: Complete repository pytest
+        run: |
+          set -o pipefail
+          uv run --extra dev pytest -q \
+            2>&1 | tee validation-logs/full-pytest.log
+
+      - name: Repository-wide Ruff
+        run: |
+          set -o pipefail
+          uv run --with "ruff>=0.9" ruff check . \
+            2>&1 | tee validation-logs/ruff.log
+
+      - name: Compile and structural checks
+        run: |
+          set -o pipefail
+          python -m compileall -q audio_extract tests \
+            2>&1 | tee validation-logs/compileall.log
+          python -m json.tool \
+            schemas/d0-r0-grouped-comparison-report-v3.schema.json \
+            > validation-logs/schema-v3.normalized.json
+          python -m json.tool \
+            schemas/d0-r0-grouped-comparison-report-v4.schema.json \
+            > validation-logs/schema-v4.normalized.json
+          git diff --check 2>&1 | tee validation-logs/git-diff-check.log
+
+      - name: Upload exact-head validation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr25-grouped-artifact-validation-${{ github.sha }}
+          path: validation-logs/
+          if-no-files-found: error
+          retention-days: 14
