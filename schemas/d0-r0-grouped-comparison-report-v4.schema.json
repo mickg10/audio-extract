@@ -10,6 +10,8 @@
     "promotion_decision",
     "preregistration_sha256",
     "source_v3_report_sha256",
+    "source_v3_verifier_commit",
+    "paired_regret_tolerance",
     "verifier_commit",
     "paired_units",
     "d0_summary",
@@ -31,6 +33,13 @@
     },
     "source_v3_report_sha256": {
       "$ref": "#/$defs/sha256"
+    },
+    "source_v3_verifier_commit": {
+      "$ref": "#/$defs/gitCommit"
+    },
+    "paired_regret_tolerance": {
+      "type": "number",
+      "minimum": 0
     },
     "verifier_commit": {
       "$ref": "#/$defs/gitCommit"
@@ -110,14 +119,54 @@
           "$ref": "d0-r0-grouped-comparison-report-v3.schema.json#/$defs/violation"
         },
         {
-          "properties": {
-            "kind": {
-              "enum": [
-                "critical_missing",
-                "critical_above_threshold"
-              ]
+          "oneOf": [
+            {
+              "required": [
+                "kind",
+                "threshold",
+                "value"
+              ],
+              "properties": {
+                "kind": {
+                  "const": "critical_missing"
+                },
+                "threshold": {
+                  "oneOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "number",
+                      "exclusiveMinimum": 0
+                    }
+                  ]
+                },
+                "value": {
+                  "type": "null"
+                }
+              }
+            },
+            {
+              "required": [
+                "kind",
+                "threshold",
+                "value"
+              ],
+              "properties": {
+                "kind": {
+                  "const": "critical_above_threshold"
+                },
+                "threshold": {
+                  "type": "number",
+                  "exclusiveMinimum": 0
+                },
+                "value": {
+                  "type": "number",
+                  "exclusiveMinimum": 0
+                }
+              }
             }
-          }
+          ]
         }
       ]
     },
@@ -127,9 +176,28 @@
           "$ref": "d0-r0-grouped-comparison-report-v3.schema.json#/$defs/violation"
         },
         {
+          "required": [
+            "kind",
+            "threshold",
+            "value"
+          ],
           "properties": {
             "kind": {
               "const": "required_secondary_missing"
+            },
+            "threshold": {
+              "oneOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "number",
+                  "exclusiveMinimum": 0
+                }
+              ]
+            },
+            "value": {
+              "type": "null"
             }
           }
         }
