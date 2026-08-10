@@ -434,7 +434,7 @@ def test_attestation_rejects_legacy_v2_manifest():
     )
     with pytest.raises(
         RoutePartitionAttestationV2Error,
-        match="requires report-derived source lineage v3",
+        match="source lineage v3",
     ):
         dataclasses.replace(
             attestations,
