@@ -28,8 +28,18 @@
       "minItems": 4,
       "items": {"$ref": "#/$defs/workEvaluation"}
     },
-    "d0_summary": {"$ref": "#/$defs/armSummary"},
-    "r0_summary": {"$ref": "#/$defs/armSummary"},
+    "d0_summary": {
+      "allOf": [
+        {"$ref": "#/$defs/armSummary"},
+        {"properties": {"arm_id": {"const": "D0"}}}
+      ]
+    },
+    "r0_summary": {
+      "allOf": [
+        {"$ref": "#/$defs/armSummary"},
+        {"properties": {"arm_id": {"const": "R0"}}}
+      ]
+    },
     "pairwise_summary": {"$ref": "#/$defs/pairwiseSummary"}
   },
   "$defs": {
@@ -40,6 +50,16 @@
     "gitCommit": {
       "type": "string",
       "pattern": "^[0-9a-f]{40}$"
+    },
+    "routeShape": {
+      "type": "array",
+      "prefixItems": [
+        {"type": "integer", "minimum": 1},
+        {"type": "integer", "minimum": 1}
+      ],
+      "items": false,
+      "minItems": 2,
+      "maxItems": 2
     },
     "heldOutUnit": {
       "type": "object",
@@ -149,15 +169,7 @@
         "labels_shape": {
           "oneOf": [
             {"type": "null"},
-            {
-              "type": "array",
-              "prefixItems": [
-                {"type": "integer", "minimum": 1},
-                {"type": "integer", "minimum": 1}
-              ],
-              "minItems": 2,
-              "maxItems": 2
-            }
+            {"$ref": "#/$defs/routeShape"}
           ]
         },
         "labels_sha256": {
@@ -167,7 +179,27 @@
           ]
         },
         "reason": {"type": "string", "minLength": 1}
-      }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {"status": {"const": "ROUTE"}},
+            "required": ["status"]
+          },
+          "then": {
+            "properties": {
+              "labels_shape": {"$ref": "#/$defs/routeShape"},
+              "labels_sha256": {"$ref": "#/$defs/sha256"}
+            }
+          },
+          "else": {
+            "properties": {
+              "labels_shape": {"type": "null"},
+              "labels_sha256": {"type": "null"}
+            }
+          }
+        }
+      ]
     },
     "routeSubmission": {
       "type": "object",
@@ -191,12 +223,7 @@
         "labels_shape": {
           "oneOf": [
             {"type": "null"},
-            {
-              "type": "array",
-              "items": {"type": "integer", "minimum": 1},
-              "minItems": 2,
-              "maxItems": 2
-            }
+            {"$ref": "#/$defs/routeShape"}
           ]
         },
         "labels_sha256": {
@@ -206,7 +233,27 @@
           ]
         },
         "reason": {"type": "string", "minLength": 1}
-      }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {"status": {"const": "ROUTE"}},
+            "required": ["status"]
+          },
+          "then": {
+            "properties": {
+              "labels_shape": {"$ref": "#/$defs/routeShape"},
+              "labels_sha256": {"$ref": "#/$defs/sha256"}
+            }
+          },
+          "else": {
+            "properties": {
+              "labels_shape": {"type": "null"},
+              "labels_sha256": {"type": "null"}
+            }
+          }
+        }
+      ]
     },
     "routeArtifact": {
       "type": "object",
@@ -332,7 +379,86 @@
         "temporal_switches": {"type": ["integer", "null"], "minimum": 0},
         "frequency_switches": {"type": ["integer", "null"], "minimum": 0},
         "reason": {"type": "string", "minLength": 1}
-      }
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"status": {"const": "ROUTE_SAFE"}}},
+          "then": {
+            "properties": {
+              "critical_false_safe_violations": {"maxItems": 0},
+              "incomplete_secondary_violations": {"maxItems": 0},
+              "exact_oracle_objective": {"type": "number", "minimum": 0},
+              "submitted_exact_objective": {"type": "number", "minimum": 0},
+              "selection_regret": {"type": "number", "minimum": 0},
+              "temporal_switches": {"type": "integer", "minimum": 0},
+              "frequency_switches": {"type": "integer", "minimum": 0}
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {"const": "ROUTE_CATASTROPHIC_FALSE_SAFE"}
+            }
+          },
+          "then": {
+            "properties": {
+              "critical_false_safe_violations": {"minItems": 1},
+              "submitted_exact_objective": {"type": "null"},
+              "selection_regret": {"type": "null"},
+              "temporal_switches": {"type": "integer", "minimum": 0},
+              "frequency_switches": {"type": "integer", "minimum": 0}
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {"const": "ROUTE_INCOMPLETE_REQUIRED_EVIDENCE"}
+            }
+          },
+          "then": {
+            "properties": {
+              "critical_false_safe_violations": {"maxItems": 0},
+              "incomplete_secondary_violations": {"minItems": 1},
+              "submitted_exact_objective": {"type": "null"},
+              "selection_regret": {"type": "null"},
+              "temporal_switches": {"type": "integer", "minimum": 0},
+              "frequency_switches": {"type": "integer", "minimum": 0}
+            }
+          }
+        },
+        {
+          "if": {"properties": {"status": {"const": "ABSTAIN"}}},
+          "then": {
+            "properties": {
+              "critical_false_safe_violations": {"maxItems": 0},
+              "incomplete_secondary_violations": {"maxItems": 0},
+              "exact_oracle_objective": {"type": "number", "minimum": 0},
+              "submitted_exact_objective": {"type": "null"},
+              "selection_regret": {"type": "null"},
+              "temporal_switches": {"type": "null"},
+              "frequency_switches": {"type": "null"}
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {"status": {"const": "ORACLE_UNAVAILABLE"}}
+          },
+          "then": {
+            "properties": {
+              "critical_false_safe_violations": {"maxItems": 0},
+              "incomplete_secondary_violations": {"maxItems": 0},
+              "exact_oracle_objective": {"type": "null"},
+              "submitted_exact_objective": {"type": "null"},
+              "selection_regret": {"type": "null"},
+              "temporal_switches": {"type": "null"},
+              "frequency_switches": {"type": "null"}
+            }
+          }
+        }
+      ]
     },
     "workEvaluation": {
       "type": "object",
@@ -404,7 +530,10 @@
         "median_safe_regret": {"type": ["number", "null"], "minimum": 0},
         "worst_safe_regret": {"type": ["number", "null"], "minimum": 0},
         "worst_safe_regret_unit_sha256": {
-          "oneOf": [{"type": "null"}, {"$ref": "#/$defs/sha256"}]
+          "oneOf": [
+            {"type": "null"},
+            {"$ref": "#/$defs/sha256"}
+          ]
         },
         "mean_safe_temporal_switches": {"type": ["number", "null"], "minimum": 0},
         "mean_safe_frequency_switches": {"type": ["number", "null"], "minimum": 0}
@@ -464,10 +593,27 @@
           "items": {
             "type": "array",
             "prefixItems": [
-              {"enum": ["ROUTE_SAFE", "ROUTE_CATASTROPHIC_FALSE_SAFE", "ROUTE_INCOMPLETE_REQUIRED_EVIDENCE", "ABSTAIN", "ORACLE_UNAVAILABLE"]},
-              {"enum": ["ROUTE_SAFE", "ROUTE_CATASTROPHIC_FALSE_SAFE", "ROUTE_INCOMPLETE_REQUIRED_EVIDENCE", "ABSTAIN", "ORACLE_UNAVAILABLE"]},
+              {
+                "enum": [
+                  "ROUTE_SAFE",
+                  "ROUTE_CATASTROPHIC_FALSE_SAFE",
+                  "ROUTE_INCOMPLETE_REQUIRED_EVIDENCE",
+                  "ABSTAIN",
+                  "ORACLE_UNAVAILABLE"
+                ]
+              },
+              {
+                "enum": [
+                  "ROUTE_SAFE",
+                  "ROUTE_CATASTROPHIC_FALSE_SAFE",
+                  "ROUTE_INCOMPLETE_REQUIRED_EVIDENCE",
+                  "ABSTAIN",
+                  "ORACLE_UNAVAILABLE"
+                ]
+              },
               {"type": "integer", "minimum": 1}
             ],
+            "items": false,
             "minItems": 3,
             "maxItems": 3
           }
