@@ -82,23 +82,32 @@ submission SHA
 
 across matrix cells. Route-label patterns themselves may coincide across works.
 
-## Certified normalized diagnostics
+## Complete certified partition diagnostics
 
-`counterfactual_risk_grouped_diagnostics_v2.py` consumes the v3 report and one
-content-bearing exact partition certificate per held-out unit.
+`counterfactual_risk_grouped_diagnostics_v3.py` consumes the v3 report and the
+existing `CellPartitionRegistry` contract rather than accepting free-standing
+cell counts.
 
-Each partition certificate binds:
+For every held-out unit, `UnitPartitionBindingV3` selects exactly one
+`CellPartitionCertificate` from the frozen registry and binds it to:
 
 - unit and source-family identity;
-- exact panel, preflight, and oracle decision;
-- spectral grid;
-- partition contract and partition artifact;
-- time-cell and band counts;
+- exact evidence, panel, preflight, and oracle decision;
+- spectral grid and exact resolution;
+- complete row-major cell entries;
+- exact rational cell measures;
+- time-range and frequency-range hashes;
+- measure contract and exact source report;
 - source and verifier commits.
+
+The registry must have the same source commit as the preregistration. Every
+registry certificate must be used exactly once and every held-out unit must have
+exactly one binding.
 
 Switch-count feasibility is checked for **every submitted route**, including
 catastrophic and incomplete-evidence routes, before safe-only normalized
-summaries are computed.
+summaries are computed. The normalization denominators come from the certified
+rectangular grid, not caller-supplied counts.
 
 ## Outputs
 
@@ -121,7 +130,7 @@ It may report:
 - complete-route exact regret for safe routes;
 - paired R0-D0 regret differences;
 - status cross-tabulation;
-- normalized temporal/frequency switching;
+- certified normalized temporal/frequency switching;
 - fail-closed status dominance.
 
 Promotion belongs to a separate preregistered policy.
@@ -131,11 +140,11 @@ Promotion belongs to a separate preregistered policy.
 Before v3 can be copied into PR #23:
 
 1. exact-head Codex review;
-2. focused v3 comparison and diagnostics tests;
+2. focused comparison-v3 and diagnostics-v3 tests;
 3. complete repository pytest and Ruff;
 4. compileall and diff check;
 5. synthetic report round-trip through the closed v3 JSON Schema;
-6. zero unresolved review threads on the authoritative v3 files.
+6. zero unresolved review threads on the authoritative files.
 
 No fitting, calibration run, GPU job, audio rendering, or production selector is
 authorized by this artifact.
