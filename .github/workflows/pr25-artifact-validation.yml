@@ -4,6 +4,13 @@ on:
   push:
     branches:
       - bigoracle/d0-r0-grouped-comparison-artifacts-20260810
+  pull_request:
+    branches:
+      - bigoracle/counterfactual-risk-router-v0-20260809
+    types:
+      - opened
+      - synchronize
+      - reopened
   workflow_dispatch:
 
 permissions:
