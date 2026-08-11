@@ -66,8 +66,8 @@ def srccoord(A_hat, A, V, sample_mask):
     wmean = lambda x: (x * vm).sum() / den
     l_alpha = wmean((alpha - 1.0) ** 2)
     l_beta = wmean(beta ** 2)
-    l_baud = wmean((beta ** 2 * ev) / (alpha ** 2 * ea + 1e-6))
-    l_R = wmean(R.pow(2).mean(1).squeeze(-1) / (ea + 1e-6))
+    l_baud = wmean(((beta ** 2 * ev) / (alpha ** 2 * ea + 1e-3 * ea + 1e-9)).clamp(max=10.0))
+    l_R = wmean((R.pow(2).mean(1).squeeze(-1) / (ea + 1e-6)).clamp(max=10.0))
     return l_alpha, l_beta, l_baud, l_R
 
 

@@ -1,0 +1,31 @@
+# Zero-init residual correction on the median MDX23C/MelBand/BS champion (§13.5).
+# A_refined = A_median + iSTFT(Delta_theta(STFT(M), STFT(A_median))); Delta zero-init -> step-0 parity.
+# Research experiment (owner-authorized); NOT the PR#25 router lane. Do NOT optimize the SHADOW judge.
+schema: ensemble-residual-correction/v1
+model: ResidualRefiner            # spectral U-Net, final-conv zero-init
+champion_baseline: median_mdx_mel_bs
+optim:
+  lr: 0.0003
+  batch: 2
+  crop_s: 6
+  base: 24                        # U-Net base channels
+  steps: 2000
+loss:                             # full asymmetric family + §11 source-coord + §13.5 sparse correction
+  vc: 1.0                         # complex-MRSTFT(V_refined, V)
+  ac: 1.0                         # complex-MRSTFT(A_refined, A)
+  aw: 1.0                         # event-weighted |A_refined - A|_1
+  mix: 0.1                        # mixture consistency (0 by construction; sanity)
+  alpha: 0.2                      # §11 |alpha-1|^2
+  beta: 0.5                       # §11 |beta|^2 (retained voice / theft)
+  beta_aud: 0.2                   # §11 audibility ratio
+  R: 0.3                          # §11 unexplained artifact
+  stereo: 0.2                     # stereo/side coherence
+  no_vocal: 2.0                   # no-vocal false-positive: V_refined -> 0 (high weight)
+  vocal_fn: 1.0                   # vocal-only false-negative: keep all voice
+  l1_delta: 0.05                  # §13.5 sparse correction ||Delta||_1
+gate:
+  steps: [0, 100, 500, 2000]
+  held_out: [bologna_verdi, bologna_puccini, bologna_donizetti, aalto_mozart_dry, aalto_mozart_hall]
+  baseline: median_mdx_mel_bs
+  parity: step0 == A_median (max_abs_dev < 1e-4)
+  win: refined BEATS champion (hole/theft no worse AND si_sdr no worse AND retained-voice below ceiling)
