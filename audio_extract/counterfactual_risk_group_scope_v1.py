@@ -9,12 +9,13 @@ existing calibration certificate.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Any, Mapping
 import hashlib
 import json
 import math
 import re
+from collections.abc import Mapping
+from dataclasses import dataclass
+from typing import Any
 
 from .counterfactual_risk_dataset_contract_v2 import (
     DatasetManifestV2,
@@ -84,7 +85,7 @@ class GroupSubsetManifestV1:
         split: SplitManifestV2,
         *,
         partition: str,
-    ) -> "GroupSubsetManifestV1":
+    ) -> GroupSubsetManifestV1:
         split.validate(dataset)
         mapping = {
             "train": split.train_group_family_sha256s,
@@ -168,7 +169,7 @@ class GroupSubsetManifestV1:
         split: SplitManifestV2,
         *,
         partition: str,
-    ) -> "GroupSubsetManifestV1":
+    ) -> GroupSubsetManifestV1:
         mapping = {
             "train": split.train_group_family_sha256s,
             "calibration": split.calibration_group_family_sha256s,
@@ -248,7 +249,7 @@ class GroupCalibrationScopeV1:
         query_quality_strata_policy_sha256: str,
         source_commit: str,
         verifier_commit: str,
-    ) -> "GroupCalibrationScopeV1":
+    ) -> GroupCalibrationScopeV1:
         result = cls(
             train=GroupSubsetManifestV1.build(
                 dataset, split, partition="train"
@@ -400,7 +401,6 @@ class BoundGroupedRiskStudentV1:
     def validate(
         self, dataset: DatasetManifestV2, split: SplitManifestV2
     ) -> None:
-        self.student.validate()
         self.scope.validate(dataset, split)
         calibration = self.student.calibration
         first = dataset.rows[0]
@@ -458,6 +458,10 @@ class BoundGroupedRiskStudentV1:
             raise GroupScopeError(
                 f"student calibration differs from frozen grouped scope: {different}"
             )
+        # The calibration's internal coverage/rank consistency is verified last
+        # so a scope-binding substitution is reported as a scope mismatch rather
+        # than masked by the calibration's own coverage self-check.
+        self.student.validate()
 
     def identity_dict(
         self, dataset: DatasetManifestV2, split: SplitManifestV2

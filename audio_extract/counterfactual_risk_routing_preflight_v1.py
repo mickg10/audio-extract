@@ -8,12 +8,13 @@ complete grid is eligible for the separately certified structured decoder.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Any, Mapping
 import hashlib
 import json
 import math
 import re
+from collections.abc import Mapping
+from dataclasses import dataclass
+from typing import Any
 
 import numpy as np
 
@@ -205,7 +206,7 @@ class RoutingPreflightV1:
                 "routing unary costs must be finite and non-negative"
             )
         observed = tuple(
-            tuple(int(value) for value in row)
+            (int(row[0]), int(row[1]))
             for row in np.argwhere(~np.any(feasible, axis=-1))
         )
         if self.no_feasible_candidate_cells != observed:
@@ -314,7 +315,7 @@ def preflight_partitioned_upper_risks(
             "routing preflight produced invalid unary costs"
         )
     no_candidate = tuple(
-        tuple(int(value) for value in row)
+        (int(row[0]), int(row[1]))
         for row in np.argwhere(~np.any(feasible, axis=-1))
     )
     status = (

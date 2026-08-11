@@ -18,11 +18,12 @@ render audio, or make a promotion decision.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Any, Mapping
 import hashlib
 import json
 import re
+from collections.abc import Mapping
+from dataclasses import dataclass
+from typing import Any
 
 from .counterfactual_risk_cell_partition_v1 import CellPartitionCertificate
 from .counterfactual_risk_grouped_comparison_v1 import (

@@ -10,11 +10,12 @@ parents, and clean-truth ancestry are refused.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Any, Mapping, Sequence
 import hashlib
 import json
 import re
+from collections.abc import Mapping, Sequence
+from dataclasses import dataclass
+from typing import Any
 
 from .counterfactual_risk_dataset_contract_v1 import (
     CounterfactualRiskDatasetError,
@@ -310,8 +311,8 @@ class SourceFamilyRegistryV2:
         certificates: Sequence[SourceFamilyCertificateV2],
         *,
         source_commit: str,
-    ) -> "SourceFamilyRegistryV2":
-        ordered = tuple(sorted(tuple(certificates), key=lambda value: value.sha256))
+    ) -> SourceFamilyRegistryV2:
+        ordered = tuple(sorted(certificates, key=lambda value: value.sha256))
         result = cls(ordered, source_commit)
         result.validate()
         return result

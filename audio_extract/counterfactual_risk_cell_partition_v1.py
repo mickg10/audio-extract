@@ -9,13 +9,13 @@ extras, or silent uniform reweighting.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from fractions import Fraction
-from typing import Any, Mapping, Sequence
 import hashlib
 import json
-import math
 import re
+from collections.abc import Mapping, Sequence
+from dataclasses import dataclass
+from fractions import Fraction
+from typing import Any
 
 from .counterfactual_risk_dataset_contract_v2 import (
     CounterfactualRiskDatasetV2Error,
@@ -103,7 +103,7 @@ class RationalMeasure:
         }
 
     @classmethod
-    def from_fraction(cls, value: Fraction) -> "RationalMeasure":
+    def from_fraction(cls, value: Fraction) -> RationalMeasure:
         if value <= 0:
             raise CellPartitionError("cell measure fraction must be positive")
         return cls(value.numerator, value.denominator)
@@ -253,9 +253,9 @@ class CellPartitionRegistry:
         certificates: Sequence[CellPartitionCertificate],
         *,
         source_commit: str,
-    ) -> "CellPartitionRegistry":
+    ) -> CellPartitionRegistry:
         ordered = tuple(
-            sorted(tuple(certificates), key=lambda value: value.partition_key)
+            sorted(certificates, key=lambda value: value.partition_key)
         )
         result = cls(ordered, source_commit)
         result.validate()

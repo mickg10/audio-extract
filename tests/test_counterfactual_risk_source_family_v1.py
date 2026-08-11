@@ -130,9 +130,13 @@ def registry_for(*values: SourceFamilyCertificate):
 def test_closed_world_registry_binds_every_dataset_row():
     first = certificate("first")
     second = certificate("second")
-    dataset = dataset_for(first, second)
     registry = registry_for(first, second)
-    validate_dataset_family_registry(dataset, registry)
+    # A frozen-panel dataset carries one global candidate panel and candidate
+    # identities are unique per source family, so a single dataset is
+    # single-source-family; the registry is the multi-family closed world.  Bind
+    # each family's dataset against the shared registry.
+    validate_dataset_family_registry(dataset_for(first), registry)
+    validate_dataset_family_registry(dataset_for(second), registry)
     assert registry.sha256.startswith("sha256:")
     assert first.sha256 != second.sha256
 

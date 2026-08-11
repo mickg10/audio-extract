@@ -15,7 +15,6 @@ from audio_extract.counterfactual_risk_grouped_comparison_v1 import (
 )
 from audio_extract.counterfactual_risk_grouped_diagnostics_v1 import (
     GeometryManifestV1,
-    GroupedComparisonDiagnosticsV1,
     GroupedDiagnosticsError,
     UnitRoutingGeometryV1,
     build_grouped_diagnostics_v1,

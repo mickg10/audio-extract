@@ -173,7 +173,15 @@ def test_exhaustive_availability_and_threshold_states_match_fail_closed_rule():
         risks = np.asarray(risk_bits, dtype=np.float64).reshape(2, 2)
         for mask_bits in itertools.product((False, True), repeat=4):
             mask = np.asarray(mask_bits, dtype=bool).reshape(2, 2)
-            value = row(0, "source", risks=risks, available=mask)
+            # Unavailable exact-risk entries are stored as canonical zero (the
+            # dataset-v2 invariant); feasibility is gated by availability, so the
+            # expected fail-closed result is unchanged.
+            value = row(
+                0,
+                "source",
+                risks=np.where(mask, risks, 0.0),
+                available=mask,
+            )
             observed = critical_candidate_feasibility_v2(
                 value, {"voice": threshold, "hole": threshold}
             )

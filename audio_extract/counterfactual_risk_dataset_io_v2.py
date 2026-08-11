@@ -8,10 +8,11 @@ reconstructed Python semantics.
 
 from __future__ import annotations
 
-from pathlib import Path
-from typing import Any, Mapping, Sequence
 import hashlib
 import json
+from collections.abc import Mapping, Sequence
+from pathlib import Path
+from typing import Any
 
 import numpy as np
 

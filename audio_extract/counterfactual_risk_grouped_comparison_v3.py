@@ -17,11 +17,12 @@ render audio, select a winner, or enter the production path.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Any, Mapping, Sequence
 import hashlib
 import json
 import re
+from collections.abc import Mapping, Sequence
+from dataclasses import dataclass
+from typing import Any
 
 import numpy as np
 
@@ -30,9 +31,9 @@ from .counterfactual_risk_complete_route_evaluation_v1 import (
     CompleteRouteEvaluationV1,
 )
 from .counterfactual_risk_grouped_comparison_v1 import (
+    ROUTE_STATUSES,
     GroupedComparisonPreregistrationV1,
     HeldOutUnitV1,
-    ROUTE_STATUSES,
 )
 from .counterfactual_risk_grouped_comparison_v2 import (
     ArmRouteProvenanceV2,
@@ -251,7 +252,7 @@ class RouteOutputV3:
         cls,
         unit: HeldOutUnitV1,
         submission: ArmRouteSubmissionV1,
-    ) -> "RouteOutputV3":
+    ) -> RouteOutputV3:
         submission.validate()
         labels = None if submission.labels is None else np.asarray(
             submission.labels
@@ -608,7 +609,7 @@ class GroupedComparisonReportV3:
         records: Sequence[WorkArmEvaluationV3],
         *,
         verifier_commit: str,
-    ) -> "GroupedComparisonReportV3":
+    ) -> GroupedComparisonReportV3:
         ordered = tuple(
             sorted(records, key=lambda row: (row.unit.sha256, row.arm_id))
         )

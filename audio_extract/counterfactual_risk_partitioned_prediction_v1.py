@@ -12,13 +12,13 @@ No exact risks or clean truth are arguments to this module.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from fractions import Fraction
-from typing import Any, Mapping, Sequence
 import hashlib
 import json
-import math
 import re
+from collections.abc import Mapping
+from dataclasses import dataclass
+from fractions import Fraction
+from typing import Any
 
 import numpy as np
 

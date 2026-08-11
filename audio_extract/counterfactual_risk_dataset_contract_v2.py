@@ -8,12 +8,13 @@ construction/query semantics) from its verified per-source artifact binding.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Any, Mapping, Sequence
 import hashlib
 import json
 import math
 import re
+from collections.abc import Mapping, Sequence
+from dataclasses import dataclass
+from typing import Any
 
 import numpy as np
 
@@ -493,7 +494,6 @@ class CounterfactualRiskRowV2:
             "candidate_panel_sha256": self.candidate_panel.sha256,
             "candidate_artifacts": self.artifact_documents(),
             "feature_contract_sha256": self.feature_contract_sha256,
-            "feature_sha256": self.feature_sha256,
             "features": _features(self.features).tolist(),
         }
 
@@ -512,8 +512,8 @@ class DatasetManifestV2:
         *,
         source_commit: str,
         dataset_name: str = "d0-r0-grouped-exact-v2",
-    ) -> "DatasetManifestV2":
-        ordered = tuple(sorted(tuple(rows), key=lambda row: row.row_id))
+    ) -> DatasetManifestV2:
+        ordered = tuple(sorted(rows, key=lambda row: row.row_id))
         result = cls(
             rows=ordered,
             source_commit=source_commit,

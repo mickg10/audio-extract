@@ -13,16 +13,15 @@ used only by :func:`counterfactual_risk_training_loss`.
 
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
-from typing import Any, Mapping, Sequence
 import hashlib
+import itertools
 import json
 import math
-
-import numpy as np
+from collections.abc import Mapping, Sequence
+from dataclasses import dataclass
+from typing import Any
 
 from .counterfactual_risk_router import RiskPanel, RiskPanelIdentity
-
 
 MODEL_CONFIG_SCHEMA = "audio-extract/counterfactual-risk-model-config/v1"
 MODEL_BUNDLE_SCHEMA = "audio-extract/counterfactual-risk-model-bundle/v1"
@@ -84,7 +83,7 @@ class RiskModelConfig:
     hidden_channels: int = 64
     blocks: int = 3
     candidate_embedding_dim: int = 16
-    query_projection_dim: int = 16
+    query_projection_dim: int = 0
     availability_probability_threshold: float = 0.9
     initial_risk_logit: float = -4.0
     initial_availability_probability: float = 0.5
@@ -137,7 +136,7 @@ class RiskModelConfig:
         if (
             not levels
             or any(not math.isfinite(value) or not 0 < value < 1 for value in levels)
-            or any(right <= left for left, right in zip(levels, levels[1:]))
+            or any(right <= left for left, right in itertools.pairwise(levels))
         ):
             raise ValueError(
                 "quantile levels must be finite, unique, and strictly increasing"
