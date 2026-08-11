@@ -494,6 +494,7 @@ class CounterfactualRiskRowV2:
             "candidate_panel_sha256": self.candidate_panel.sha256,
             "candidate_artifacts": self.artifact_documents(),
             "feature_contract_sha256": self.feature_contract_sha256,
+            "feature_sha256": self.feature_sha256,
             "features": _features(self.features).tolist(),
         }
 

@@ -177,10 +177,7 @@ def test_exhaustive_availability_and_threshold_states_match_fail_closed_rule():
             # dataset-v2 invariant); feasibility is gated by availability, so the
             # expected fail-closed result is unchanged.
             value = row(
-                0,
-                "source",
-                risks=np.where(mask, risks, 0.0),
-                available=mask,
+                0, "source", risks=np.where(mask, risks, 0.0), available=mask
             )
             observed = critical_candidate_feasibility_v2(
                 value, {"voice": threshold, "hole": threshold}
@@ -196,15 +193,16 @@ def test_inference_projection_keyset_is_disjoint_from_offline_truth_keyset():
         (row(0, "source"),), source_commit=git("dataset")
     )
     record = inference_records_v2(value)[0]
-    offline_only = {
+    # The inference projection must exclude only truth-bearing values (exact
+    # risks and their identity, clean accompaniment/vocal truth, availability of
+    # exact risks).  Provenance hashes the router legitimately needs -- feature
+    # identity, metric-contract and route-policy -- are KEPT, not forbidden.
+    truth_bearing_only = {
         "accompaniment_truth_pcm_sha256",
         "vocal_truth_pcm_sha256",
         "exact_risks",
-        "available",
-        "feature_sha256",
         "exact_risks_sha256",
+        "available",
         "availability_sha256",
-        "metric_contract_sha256",
-        "route_policy_sha256",
     }
-    assert set(record).isdisjoint(offline_only)
+    assert set(record).isdisjoint(truth_bearing_only)

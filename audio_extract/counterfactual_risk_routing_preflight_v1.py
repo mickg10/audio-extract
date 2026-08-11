@@ -206,7 +206,7 @@ class RoutingPreflightV1:
                 "routing unary costs must be finite and non-negative"
             )
         observed = tuple(
-            (int(row[0]), int(row[1]))
+            tuple(int(value) for value in row)
             for row in np.argwhere(~np.any(feasible, axis=-1))
         )
         if self.no_feasible_candidate_cells != observed:
@@ -315,7 +315,7 @@ def preflight_partitioned_upper_risks(
             "routing preflight produced invalid unary costs"
         )
     no_candidate = tuple(
-        (int(row[0]), int(row[1]))
+        tuple(int(value) for value in row)
         for row in np.argwhere(~np.any(feasible, axis=-1))
     )
     status = (

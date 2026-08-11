@@ -27,11 +27,11 @@ def git(text: str) -> str:
     return hashlib.sha1(text.encode("utf-8")).hexdigest()
 
 
-def artifact(role: str, name: str, *, parents=()):
+def artifact(role: str, name: str, *, parents=(), pcm_name=None):
     return SourceArtifact(
         role=role,
         recipe_ids=(sha(f"recipe:{name}"),),
-        artifact_pcm_sha256=sha(f"pcm:{name}"),
+        artifact_pcm_sha256=sha(f"pcm:{pcm_name or name}"),
         parent_pcm_sha256s=tuple(sorted(parents)),
     )
 
@@ -40,16 +40,21 @@ def certificate(name: str, *, closed_world=True, derived=None):
     mixture = artifact("mixture_root", f"{name}:mixture")
     accompaniment = artifact("accompaniment_truth", f"{name}:a")
     vocal = artifact("vocal_truth", f"{name}:v")
+    # One globally-ordered frozen candidate-recipe panel shared across families
+    # ("candidate-0"/"candidate-1" recipes), each decoding its own per-family
+    # artifact PCM.
     candidates = (
         artifact(
             "candidate",
-            f"{name}:candidate-0",
+            "candidate-0",
             parents=(mixture.artifact_pcm_sha256,),
+            pcm_name=f"{name}:candidate-0",
         ),
         artifact(
             "candidate",
-            f"{name}:candidate-1",
+            "candidate-1",
             parents=(mixture.artifact_pcm_sha256,),
+            pcm_name=f"{name}:candidate-1",
         ),
     )
     return SourceFamilyCertificate(
@@ -130,13 +135,9 @@ def registry_for(*values: SourceFamilyCertificate):
 def test_closed_world_registry_binds_every_dataset_row():
     first = certificate("first")
     second = certificate("second")
+    dataset = dataset_for(first, second)
     registry = registry_for(first, second)
-    # A frozen-panel dataset carries one global candidate panel and candidate
-    # identities are unique per source family, so a single dataset is
-    # single-source-family; the registry is the multi-family closed world.  Bind
-    # each family's dataset against the shared registry.
-    validate_dataset_family_registry(dataset_for(first), registry)
-    validate_dataset_family_registry(dataset_for(second), registry)
+    validate_dataset_family_registry(dataset, registry)
     assert registry.sha256.startswith("sha256:")
     assert first.sha256 != second.sha256
 

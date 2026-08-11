@@ -57,16 +57,21 @@ def certificate(
         pcm_name=(f"{name}:mixture" if no_vocal_alias else None),
     )
     vocal = node("vocal_truth", f"{name}:v")
+    # One globally-ordered frozen candidate-recipe panel shared across all
+    # families ("candidate-0"/"candidate-1" recipes); each family decodes its
+    # own per-family artifact PCM for those recipes.
     default_derived = (
         node(
             "candidate",
-            f"{name}:candidate-0",
+            "candidate-0",
             parents=(mixture.identity,),
+            pcm_name=f"{name}:candidate-0",
         ),
         node(
             "candidate",
-            f"{name}:candidate-1",
+            "candidate-1",
             parents=(mixture.identity,),
+            pcm_name=f"{name}:candidate-1",
         ),
     )
     values = tuple(default_derived if derived is None else derived)
@@ -156,13 +161,10 @@ def registry_for(*values: SourceFamilyCertificateV2):
 def test_strict_registry_binds_dataset_rows():
     first = certificate("first")
     second = certificate("second")
-    registry = registry_for(first, second)
-    # A frozen-panel dataset carries one global candidate panel, and candidate
-    # identities are unique per source family, so a single dataset is
-    # single-source-family; the registry is the multi-family closed world.  Bind
-    # each family's dataset against the shared registry.
-    validate_dataset_family_registry_v2(dataset_for(first), registry)
-    validate_dataset_family_registry_v2(dataset_for(second), registry)
+    validate_dataset_family_registry_v2(
+        dataset_for(first, second),
+        registry_for(first, second),
+    )
 
 
 def test_multi_parent_convergent_ensemble_is_valid_when_every_path_is_mixture_only():

@@ -324,9 +324,14 @@ def test_catastrophic_and_incomplete_are_not_zero_regret():
 
 def test_oracle_unavailable_status_must_agree_between_arms():
     p = prereg("one", "two")
+    # Both arms are individually valid: D0 = ORACLE_UNAVAILABLE and R0 = ABSTAIN
+    # (an oracle-available status that permits a None oracle objective).  Their
+    # exact_oracle_objective is made to agree (both None) so the exact-field
+    # drift check passes and the pairwise oracle-availability disagreement is
+    # what gets rejected.
     values = matrix(
         p,
-        {("one", "D0"): "ORACLE_UNAVAILABLE"},
+        {("one", "D0"): "ORACLE_UNAVAILABLE", ("one", "R0"): "ABSTAIN"},
     )
     r0_index = next(
         index for index, row in enumerate(values)

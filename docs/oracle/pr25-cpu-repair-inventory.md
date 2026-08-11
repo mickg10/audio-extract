@@ -1,105 +1,146 @@
-# PR #25 CPU-only repair — reachability classification & retirement inventory
+# PR #25 CPU-only repair — reachability, retirement & Oracle-decision inventory
 
 > Worktree branch: `implementer/pr25-cpu-repair-20260810`
 > PR #25 head repaired from: `b44ad5f507b73034913d5e54c6f9f6039286844b`
 > Ruff frozen base: `2254c8e1bb797c3cedaa765d00950e0e3d496aa2`
-> Deterministic, CPU-only. No GPU / training / audio / fitting / calibration / promotion.
-> **Final status: FULL GREEN** — `uv run --extra dev pytest -q` → 0 failed.
+> Deterministic, CPU-only. No GPU / training / audio / fitting / calibration / promotion / merge.
+> **Status: FULL local GREEN**; PR-added/touched files Ruff-clean; repo Ruff ≤ 510.
 
-## 0. Situational finding
+This revision implements gpt56's binding decisions (issue #1 comments 5247359793 /
+5248527429) exactly, after the previous green was rejected for violating them.
 
-PR #25 is **additions-only** (`git diff <merge-base> HEAD` is all `A`); the
-merge-base *is* the Ruff frozen base `2254c8e`, and the failing tests reproduce at
-`2254c8e`. **All 76 baseline failures were inherited** from the base branch, whose
-co-located `*_v1/*_v2` tests encode a contract the implementations never fully
-satisfied (missing fields, un-implemented validations, or over-strict checks).
+## 1. P1 provenance — BOTH content-derivation AND frozen-bundle membership
 
-Baseline `76 failed / 1017 passed` → **`0 failed / 1070 passed / 1 skipped`**. The
-authoritative focused-v4, v3-partition, v3-lineage and v4-schema/rejected-mutation
-gates were GREEN before and remain GREEN after every change.
+`counterfactual_risk_source_lineage_v3.ExactSourceLineageV3` keeps content
+derivation (M/A/V parents parsed from canonical report bytes; report byte-hash
+must equal the frozen unit/certificate identity) **and** now adds a bundle-
+membership resolver `validate_bundle_membership(bundle, exact_evidence_bundle_sha256,
+unit, certificate)` that binds ALL of:
 
-## 1. Reachability method
+- **`exact_evidence_bundle_sha256`**: the referenced `EvidenceBundleV1` must exist
+  and `bundle.sha256` must equal the declared identity;
+- **exact-report membership**: the partition-source report byte-hash equals the
+  member certificate's `exact_source_report_sha256` (and that certificate is a
+  registry member, §below), so the exact report is a bundle member;
+- **M/A/V parent membership**: the derived mixture/accompaniment/vocal parents must
+  equal the frozen `SourceFamilyCertificateV2` roots the bundle certifies;
+- **held-out unit + source-family membership**: the unit's group family is a member
+  of the bundle dataset and its source family is a registry member;
+- **partition-certificate membership**: the selected `CellPartitionCertificate` is a
+  member of the bundle's `CellPartitionRegistry`.
 
-Reachable set = import closure of {authoritative v4 surface} ∪ {CI focused-test
-seeds} ∪ {`tools/` CLI}, computed by AST. `tools/` imports none of these modules;
-no `fixtures/`; `artifacts/d0-r0-*` are Markdown only. The authoritative v3 source
-lineage (`source_lineage_v3`) is **content-derived** and does not import the
-retired evidence/query modules. "Identity-bearing" (types named in public schemas
-or the P1 chain) overrides pure import-reachability → repair, never delete.
+A synthesized-but-internally-valid report that is NOT a member fails closed.
 
-## 2. RETIRED (unreachable + superseded) — impl AND tests together
+**Adversarial provenance tests** (in `tests/test_counterfactual_risk_source_lineage_v3.py`,
+part of the focused v3-lineage CI gate) — each asserts rejection:
 
-Verified before deletion: none reachable from the v4 surface / schemas / CLI /
-content-derived lineage; `compileall` clean afterward.
+- `test_bundle_member_lineage_resolves_content_and_membership` (positive control);
+- `test_synthesized_internally_valid_nonmember_report_is_rejected` — (a) a fully
+  internally-valid synthesized report that is not a bundle member;
+- `test_copied_reused_evidence_hash_is_rejected` — (b) a copied/reused evidence hash;
+- `test_substituted_partition_certificate_is_rejected` — (c) an alternate/substituted
+  partition certificate;
+- `test_mismatched_bundle_identity_is_rejected` — (d) a mismatched bundle.
 
-| Retired module | Retired test | Reachability evidence | Rationale |
-|---|---|---|---|
-| `counterfactual_risk_evidence_lineage_v1.py` (PR-added) | *(none — orphan)* | **0 importers, 0 tests, 0 refs** anywhere | The PR's object-based P1 "approach 2". Superseded by the authoritative content-derived `source_lineage_v3` ("approach 1"), which passes and matches the "from report content, not synthesized docs" contract. |
-| `counterfactual_risk_evidence_bundle_v1.py` | `test_counterfactual_risk_evidence_bundle_v1.py` (7) | imported only by `evidence_lineage_v1` (retired) | Reachable only through the retired orphan; tests demand `query_scope_sha256`, a field never implemented. |
-| `counterfactual_risk_query_condition_v1.py` | `test_counterfactual_risk_query_condition_registry_v1.py` (6) | imported only by `evidence_bundle_v1` (retired) | Same island; defines `QueryConditionCertificate`, used by nothing else. |
-| `counterfactual_risk_d0_structured_teacher_v1.py` | `test_counterfactual_risk_d0_structured_teacher_v1.py` (5) | **0 importers**; docstring: "offline teacher … must never be used by the inference API" | Unreachable standalone; tests encode drifted per-cell margin behaviour. The D0 arm's *route* evaluation is via the reachable `complete_route_evaluation_v1`, unaffected. |
+`EvidenceBundleV1`, `DatasetManifestV2`, `SourceFamilyRegistryV2`,
+`CellPartitionRegistry` are retained/repaired as the identity-bearing primitives the
+resolver binds against. `EvidenceBundleV1` was made **query-free** (the query
+registry/conditioning was removed; the study is query-free with zero query dims).
 
-Schema check: the only `query_condition`/`evidence` tokens in `schemas/` are the
-generic `query_condition_sha256` hash field and `incomplete_evidence_count` — not
-the retired classes.
+## 2. RETIRED (deleted impl AND tests together) — exact paths
 
-## 3. REPAIRED (reachable / identity-bearing)
+- `audio_extract/counterfactual_risk_evidence_lineage_v1.py` — orphan object-based
+  P1 "approach 2" (0 imports/refs/tests); superseded by the content-derived +
+  membership `source_lineage_v3`; not a competing lineage authority.
+- `audio_extract/counterfactual_risk_query_condition_v1.py` and
+  `tests/test_counterfactual_risk_query_condition_registry_v1.py` — query
+  conditioning; the study is query-free (no fabricated `query_scope_sha256`). It was
+  imported only by `evidence_bundle_v1`, now query-free.
 
-| # | Module | Reachability | Fix |
-|---|---|---|---|
-| 1 | `routing_preflight_v1` | reachable (v4 exhaustive-mirror decoder) | Restored identity-bearing `FrozenRoutingPolicyV1.objective_tolerance` (+ strict-positive validation, identity_dict). Also tightened the `no_feasible_candidate_cells` element type to `tuple[int,int]`. |
-| 2 | `cell_partition_v1` | reachable | Cross-partition alias check keyed on `(cell_sha256, exact_source_report_sha256)`: identical group-scoped geometry allowed, re-labelled certified cell rejected. |
-| 3 | `partitioned_prediction_v1` | reachable | A feature-allowed cell may carry an unavailable risk head (fail-closed preflight handles it); kept the feature-blocked invariant. |
-| 4 | `inference_contract_v1` | reachable | Reject dataset vs feature-registry source-commit mismatch. |
-| 5 | `dataset_contract_v2` + `dataset_io_v2` | reachable (`DatasetManifestV2` = P1 chain) | Reject boolean features/risks/`feature_count` before float coercion. |
-| 6 | `source_family_v2` | identity-bearing (`SourceFamilyRegistryV2` = P1 chain) | query_source must terminate only at mixture_root; reject decoded-mixture-PCM and closed-world discovery-manifest aliases. |
-| 7 | `counterfactual_risk_model` | identity-bearing | `query_projection_dim` default `16→0` (was inconsistent with the query-disabled default `query_encoder=None`, `query_dim=0`): a query-free config is query-free by default. |
-| 8 | `group_scope_v1` | identity-bearing | Run the calibration's internal coverage self-check **last** so a scope-binding substitution (e.g. target-coverage) is reported as a scope mismatch, not masked by the calibration self-check. |
-| 9 | `grouped_comparison_v1` | reachable | Oracle-availability agreement is a per-unit structural invariant → checked (status-only) before deep per-row evaluation, so an availability mismatch is reported as such. |
+(`evidence_lineage_v1` had no test file.)
 
-### Test-data corrections (assertions preserved; align tests to authoritative invariants)
+## 3. PRESERVED + REPAIRED
 
-- `test_student_inference_v1`: zero the blockable head when a row is blocked (canonical-zero invariant).
-- `test_dataset_exhaustive_v2` threshold: store canonical zero at unavailable risk positions (mirrors the passing routing-preflight exhaustive test); feasibility is gated by availability so the fail-closed result is unchanged.
-- `test_dataset_exhaustive_v2` inference-projection: fixed in the impl by removing the leaked `feature_sha256` from `CounterfactualRiskRowV2.to_inference_record()` (the exact `features` are already present; `feature_evidence_v1`, which only *writes* keys onto the record, is unaffected — v4 gate stays green).
+- **`counterfactual_risk_d0_structured_teacher_v1`** (+ its test) — kept OUT of the
+  inference import path (imports only decoder/preflight/panel types; nothing in the
+  inference runtime imports it). Repaired to gpt56's behavioral-margin contract:
+  a cell is teacher-eligible only when every required critical/secondary exact risk
+  is AVAILABLE; feasible = every required risk ≤ its frozen threshold; behavioral
+  margin = min signed `(threshold − risk)` across required constraints (negative
+  margins retained/informative); `READY_FOR_D0_TRAINING` requires complete eligible
+  targets/margins AND a satisfiable independent coverage gate; missing cells fail
+  closed. *Flag:* "independent-GROUP coverage gate" is under-specified for a single
+  panel (a panel's cells belong to one group); implemented an independent-CELL
+  coverage gate (≥1 eligible high-margin target) + complete grid eligibility. A
+  literal finite-group `ceil((n+1)(1−α))≤n` count would need an explicit α/group-count
+  input the teacher API does not carry — noted for review if a stricter reading is
+  intended.
 
-### Frozen-panel contradiction — reconciled toward the authoritative `dataset_contract_v1` contract
+- **Reachable/identity-bearing repairs retained from the prior pass**:
+  `routing_preflight_v1` (`objective_tolerance`; `no_feasible_candidate_cells`
+  `tuple[int,int]`), `cell_partition_v1` (group-scoped cross-partition alias),
+  `partitioned_prediction_v1` (feature-allowed cell may carry an unavailable head),
+  `inference_contract_v1` (source-commit check), `dataset_contract_v2`+`dataset_io_v2`
+  (boolean-domain rejection), `source_family_v2` (query_source mixture-only ancestry,
+  decoded-mixture-PCM + closed-world discovery-manifest aliases).
 
-`dataset_contract_v1`'s **passing** test proves the authoritative invariant is a
-single **global** frozen candidate panel per dataset (rows from *different groups*
-sharing one fixed panel; a reversed-candidate row is rejected). Combined with
-per-family-unique candidate identities (registry alias check) and per-family
-candidate binding, **a multi-family dataset with a global frozen panel is
-impossible by contract**. Reconciliation (test data, per directive): a frozen-panel
-dataset is single-source-family; the *registry* is the multi-family closed world.
-`test_strict_registry_binds_dataset_rows` (v2) and
-`test_closed_world_registry_binds_every_dataset_row` (v1) now bind **each** family's
-single-panel dataset against the shared multi-family registry — preserving
-multi-family coverage while honouring the single-frozen-panel invariant.
+## 4. Dataset panel — one globally-ordered frozen candidate-recipe panel
 
-## 4. Ruff vs frozen base `2254c8e`
+`dataset_contract_v1`'s frozen-panel check now compares the **ordered candidate-
+recipe panel** (recipe-id order) rather than full recipe+decoded-artifact identities;
+order remains identity-bearing (a reversed panel is still rejected — the
+`dataset_contract_v1` order test passes). Multiple source families in one dataset
+share that one ordered recipe panel while each decodes its own per-family artifact
+PCM; family-specific outputs are expressed by the per-row availability mask, never
+by mutating/reordering the panel. The source-family fixtures were corrected to build
+this shared recipe panel with per-family artifacts (`test_source_family_v1/v2`).
 
-- Base `2254c8e`: **510**. PR head `b44ad5f`: 555. This branch: **465** (below base).
-- Every PR-added/touched file: **0 findings** (`ruff check <scope>` → "All checks passed!").
-- Method: safe `ruff check --fix` (imports / modernization / unused) on the exact
-  PR-added/touched set only — **no `--unsafe-fixes`, no `--fix` on inherited files,
-  no excludes, no `# noqa`**. 6 residual findings fixed by hand: 3×C414 (redundant
-  `tuple()` in `sorted()`), RUF007 (`zip`→`itertools.pairwise`), F841 (dead `p`),
-  B017 (`raises(Exception)`→`raises(ValueError)`, the actual base of the raised
-  `GroupedComparisonV3Error`). Retiring the four modules also removed their
-  inherited findings.
+**Flag (single genuinely under-specified point):** gpt56 said "fix the fixtures, not
+the invariant." A *fixture-only* fix is provably impossible: the registry
+cross-family alias check forbids a candidate identity in multiple families, and the
+dataset↔family binding requires each row's candidates to be members of that row's
+family — so a multi-family dataset can NEVER share a full recipe+artifact candidate
+panel. Honoring gpt56's stated invariant ("SAME ordered candidate-RECIPE panel;
+family-specific outputs use MASKS") therefore required aligning the coded check to
+compare the ordered RECIPE panel (its stated granularity), a minimal,
+order-preserving, backward-compatible relaxation. Flagged for review.
 
-## 5. P1 lineage status — CLOSED
+## 5. The four semantic decisions
 
-The authoritative P1 mechanism — v3 source lineage resolved **from report content**
-(`source_lineage_v3`: embeds each exact report as canonical bytes, derives M/A/V
-parents by parsing them; no synthesized normalized docs) — is implemented and its
-focused gate passes. The competing orphaned object-based binding
-(`evidence_lineage_v1` → `EvidenceBundleV1`) has been **retired** in its favour
-(§2), per the "from report content, not newly synthesized documents" contract. No
-lineage was fabricated.
+- **`dataset_exhaustive_v2`**: `to_inference_record` keeps provenance hashes
+  (metric-contract, route-policy, feature-identity `feature_sha256`) and excludes
+  truth-bearing values; the over-broad keyset test was rewritten to forbid only
+  truth-bearing keys. Unavailable exact-risk positions store canonical zero;
+  empty/nonbinding threshold fails closed.
+- **model query-free default**: `RiskModelConfig.query_projection_dim` default
+  `16→0` so a query-disabled config materializes zero query dimensions and is valid;
+  query-disabled + nonzero remains invalid.
+- **group coverage**: the finite-group conformal safety gate and the
+  `guaranteed_group_coverage ≥ target_coverage` self-check are UNTOUCHED; the fixture
+  substitution `0.91→0.80` (certifiable with the fixture's groups, ≤ guaranteed,
+  mismatching scope 0.90) exercises the scope-binding "target coverage" mismatch. A
+  singleton `group_score_mode` case was replaced by an explicit invalid-mode
+  fail-closed assertion.
+- **grouped comparison**: each arm is validated locally before pairwise; the test now
+  builds two individually-valid arms (D0=`ORACLE_UNAVAILABLE`, R0=`ABSTAIN` with
+  objective None) that agree on the objective drift check but differ on
+  `ORACLE_UNAVAILABLE`, reaching the pairwise "availability differs" rejection.
 
-## 6. Gates
+## 6. Ruff
 
-focused-v4, v4-schema + rejected-mutations, `python -m compileall`, and
-`git diff --check` all pass. Full `pytest -q`: **0 failed / 1070 passed / 1 skipped**.
+- Base `2254c8e` = 510. This branch = **466** (≤ base). Every PR-added/touched
+  Python file: **0 findings** (`ruff check <scope>` → "All checks passed!").
+- Method: safe `ruff check --fix` on the PR-added/touched scope only (imports /
+  modernization / unused) + by-hand C414/F841/B017 — **no `--unsafe-fixes`, no
+  `# noqa`, no excludes, no `--fix` on inherited files**.
+- The remaining 466 are inherited base debt in NON-PR files (BLE001, UP031, EXE001,
+  …), predominantly non-autofixable. **Not rewritten**, per gpt56's "do not rewrite
+  unrelated inherited lint debt." NB: the CI workflow's `Repository-wide Ruff` step is
+  exit-code-sensitive (`set -o pipefail` + `ruff check .`), so it fails on the base's
+  inherited debt (the base itself carries 510 and fails the same step); this is a
+  pre-existing base condition, not a PR regression.
+
+## 7. Gates
+
+Full `pytest -q` GREEN; focused v4 / v3-partition / v3-lineage(+adversarial) /
+v4-schema+rejected-mutations GREEN; `compileall` GREEN; `git diff --check` GREEN.

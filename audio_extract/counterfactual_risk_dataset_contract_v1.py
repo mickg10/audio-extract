@@ -9,12 +9,13 @@ inference projection.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Any, Mapping, Sequence
 import hashlib
 import json
 import math
 import re
+from collections.abc import Mapping, Sequence
+from dataclasses import dataclass
+from typing import Any
 
 import numpy as np
 
@@ -415,8 +416,8 @@ class DatasetManifest:
         *,
         source_commit: str,
         dataset_name: str = "d0-r0-grouped-exact-v1",
-    ) -> "DatasetManifest":
-        ordered = tuple(sorted(tuple(rows), key=lambda row: row.row_id))
+    ) -> DatasetManifest:
+        ordered = tuple(sorted(rows, key=lambda row: row.row_id))
         result = cls(
             rows=ordered,
             source_commit=source_commit,
@@ -442,9 +443,19 @@ class DatasetManifest:
         if len(set(row_ids)) != len(row_ids):
             raise CounterfactualRiskDatasetError("dataset row IDs are duplicated")
 
+        # One globally-ordered frozen candidate-RECIPE panel per dataset: every
+        # row shares the same ordered recipe slots (count + order + recipe
+        # identity are frozen), while each source family carries its own decoded
+        # candidate artifacts.  Family-specific missing outputs are expressed by
+        # the per-row availability mask, never by mutating or reordering the
+        # panel, so the recipe panel is compared here rather than the decoded
+        # artifact identities.
+        def _recipe_panel(row: CounterfactualRiskRow) -> tuple[str, ...]:
+            return tuple(candidate.recipe_id for candidate in row.candidates)
+
         first = self.rows[0]
         common = (
-            first.candidates,
+            _recipe_panel(first),
             first.metric_names,
             first.metric_units,
             first.metric_directions,
@@ -455,7 +466,7 @@ class DatasetManifest:
         )
         for row in self.rows[1:]:
             row_common = (
-                row.candidates,
+                _recipe_panel(row),
                 row.metric_names,
                 row.metric_units,
                 row.metric_directions,

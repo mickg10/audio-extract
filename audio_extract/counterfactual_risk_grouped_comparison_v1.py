@@ -665,22 +665,6 @@ def _validate_matrix(
 ) -> tuple[WorkArmEvaluationV1, ...]:
     prereg.validate()
     values = tuple(records)
-    # Oracle availability is a per-unit property: both arms must agree on it
-    # before either arm's route is validated in detail, so an availability
-    # mismatch is reported structurally rather than as a downstream per-arm
-    # objective inconsistency.
-    statuses_by_unit: dict[str, dict[str, str]] = {}
-    for row in values:
-        statuses_by_unit.setdefault(row.unit.sha256, {})[row.arm_id] = (
-            row.evaluation.status
-        )
-    for arms in statuses_by_unit.values():
-        if "D0" in arms and "R0" in arms and (
-            arms["D0"] == "ORACLE_UNAVAILABLE"
-        ) != (arms["R0"] == "ORACLE_UNAVAILABLE"):
-            raise GroupedComparisonError(
-                "oracle availability differs between arms"
-            )
     for row in values:
         row.validate(prereg)
     ordered = tuple(
