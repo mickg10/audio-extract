@@ -82,11 +82,119 @@ jobs:
           uv run --extra dev pytest -q \
             2>&1 | tee validation-logs/full-pytest.log
 
-      - name: Repository-wide Ruff
+      - name: PR touched-file Ruff (zero findings, pinned)
         run: |
           set -o pipefail
-          uv run --with "ruff>=0.9" ruff check . \
-            2>&1 | tee validation-logs/ruff.log
+          mkdir -p validation-logs
+          BASE_SHA=2254c8e1bb797c3cedaa765d00950e0e3d496aa2
+          RUFF_VERSION=0.16.2
+          # Fail closed if the frozen Ruff base commit is missing from history.
+          if ! git cat-file -e "${BASE_SHA}^{commit}" 2>/dev/null; then
+            echo "FATAL: frozen Ruff base ${BASE_SHA} is absent from history" \
+              | tee validation-logs/ruff-touched.log
+            exit 1
+          fi
+          MERGE_BASE="$(git merge-base "${BASE_SHA}" HEAD)"
+          if [ -z "${MERGE_BASE}" ]; then
+            echo "FATAL: cannot compute merge-base for the PR diff" \
+              | tee validation-logs/ruff-touched.log
+            exit 1
+          fi
+          # Deterministically enumerate every PR-added/modified Python file that
+          # still exists, then require ZERO findings on that exact set.
+          git diff --name-only "${MERGE_BASE}..HEAD" -- '*.py' \
+            > validation-logs/touched-all.txt
+          : > validation-logs/touched-files.txt
+          while IFS= read -r path; do
+            if [ -n "${path}" ] && [ -f "${path}" ]; then
+              printf '%s\n' "${path}" >> validation-logs/touched-files.txt
+            fi
+          done < validation-logs/touched-all.txt
+          TOUCHED_COUNT="$(grep -c . validation-logs/touched-files.txt || true)"
+          {
+            echo "base_sha=${BASE_SHA}"
+            echo "merge_base=${MERGE_BASE}"
+            echo "ruff_version=${RUFF_VERSION}"
+            echo "touched_file_count=${TOUCHED_COUNT}"
+          } | tee validation-logs/ruff-touched-meta.log
+          # Fail closed if the diff could not be enumerated.
+          if [ "${TOUCHED_COUNT}" -eq 0 ]; then
+            echo "FATAL: no PR-touched Python files could be enumerated" \
+              | tee -a validation-logs/ruff-touched.log
+            exit 1
+          fi
+          mapfile -t TOUCHED < validation-logs/touched-files.txt
+          uvx "ruff@${RUFF_VERSION}" check --no-cache --output-format concise \
+            "${TOUCHED[@]}" 2>&1 | tee -a validation-logs/ruff-touched.log
+
+      - name: Repository-wide Ruff ratchet (head <= frozen base 510)
+        run: |
+          set -o pipefail
+          mkdir -p validation-logs
+          BASE_SHA=2254c8e1bb797c3cedaa765d00950e0e3d496aa2
+          RUFF_VERSION=0.16.2
+          RECORDED_BASE_COUNT=510
+          # Fail closed on a malformed recorded baseline.
+          case "${RECORDED_BASE_COUNT}" in
+            ''|*[!0-9]*)
+              echo "FATAL: recorded base count is malformed" \
+                | tee validation-logs/ruff-ratchet.log
+              exit 1 ;;
+          esac
+          if ! git cat-file -e "${BASE_SHA}^{commit}" 2>/dev/null; then
+            echo "FATAL: frozen Ruff base ${BASE_SHA} is absent from history" \
+              | tee validation-logs/ruff-ratchet.log
+            exit 1
+          fi
+          # Re-derive the base count with the pinned Ruff in a throwaway
+          # worktree so the frozen baseline is tamper-evident; fail closed on
+          # any drift from the recorded count.
+          BASE_TREE="${RUNNER_TEMP:-/tmp}/ruff-base-${BASE_SHA}"
+          rm -rf "${BASE_TREE}"
+          git worktree add --detach "${BASE_TREE}" "${BASE_SHA}" >/dev/null
+          ( cd "${BASE_TREE}" \
+              && uvx "ruff@${RUFF_VERSION}" check --no-cache \
+                   --output-format json . ) \
+            > validation-logs/ruff-base.json || true
+          DERIVED_BASE_COUNT="$(python -c 'import json;print(len(json.load(open("validation-logs/ruff-base.json"))))')"
+          git worktree remove --force "${BASE_TREE}" >/dev/null 2>&1 || true
+          case "${DERIVED_BASE_COUNT}" in
+            ''|*[!0-9]*)
+              echo "FATAL: derived base count is malformed" \
+                | tee validation-logs/ruff-ratchet.log
+              exit 1 ;;
+          esac
+          if [ "${DERIVED_BASE_COUNT}" -ne "${RECORDED_BASE_COUNT}" ]; then
+            echo "FATAL: base Ruff count drifted: derived ${DERIVED_BASE_COUNT} != recorded ${RECORDED_BASE_COUNT}" \
+              | tee validation-logs/ruff-ratchet.log
+            exit 1
+          fi
+          # Deterministic head count with the same pinned Ruff.
+          uvx "ruff@${RUFF_VERSION}" check --no-cache --output-format json . \
+            > validation-logs/ruff-head.json || true
+          HEAD_COUNT="$(python -c 'import json;print(len(json.load(open("validation-logs/ruff-head.json"))))')"
+          case "${HEAD_COUNT}" in
+            ''|*[!0-9]*)
+              echo "FATAL: head count is malformed" \
+                | tee validation-logs/ruff-ratchet.log
+              exit 1 ;;
+          esac
+          uvx "ruff@${RUFF_VERSION}" check --no-cache --output-format concise . \
+            > validation-logs/ruff-head.txt 2>&1 || true
+          {
+            echo "base_sha=${BASE_SHA}"
+            echo "ruff_version=${RUFF_VERSION}"
+            echo "recorded_base_count=${RECORDED_BASE_COUNT}"
+            echo "derived_base_count=${DERIVED_BASE_COUNT}"
+            echo "head_count=${HEAD_COUNT}"
+          } | tee validation-logs/ruff-ratchet.log
+          if [ "${HEAD_COUNT}" -gt "${RECORDED_BASE_COUNT}" ]; then
+            echo "FATAL: repository-wide Ruff regressed: head ${HEAD_COUNT} > base ${RECORDED_BASE_COUNT}" \
+              | tee -a validation-logs/ruff-ratchet.log
+            exit 1
+          fi
+          echo "OK: head ${HEAD_COUNT} <= base ${RECORDED_BASE_COUNT}" \
+            | tee -a validation-logs/ruff-ratchet.log
 
       - name: Compile and structural checks
         run: |

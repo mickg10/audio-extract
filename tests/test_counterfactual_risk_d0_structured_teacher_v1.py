@@ -5,6 +5,7 @@ import pytest
 
 from audio_extract.counterfactual_risk_cell_partition_v1 import RationalMeasure
 from audio_extract.counterfactual_risk_d0_structured_teacher_v1 import (
+    READY_FOR_GROUPED_ASSEMBLY,
     D0StructuredTeacherError,
     D0StructuredTeacherV1,
     build_d0_structured_teacher,
@@ -144,7 +145,7 @@ def test_d0_targets_use_global_route_and_behavioral_margins():
     routing_policy = policy()
     value = panel(routing_policy)
     _, result = teacher(value, routing_policy, minimum_margin=0.1)
-    assert result.status == "READY_FOR_D0_TRAINING"
+    assert result.status == READY_FOR_GROUPED_ASSEMBLY
     assert result.labels is not None
     # Global structured route: cell 0 keeps candidate 0, cell 1 candidate 1.
     assert result.labels.tolist() == [[0, 1]]
@@ -171,12 +172,28 @@ def test_d0_targets_use_global_route_and_behavioral_margins():
     )
 
 
+def test_per_panel_teacher_binds_group_identity_and_never_trains():
+    routing_policy = policy()
+    value = panel(routing_policy)
+    _, result = teacher(value, routing_policy, minimum_margin=0.1)
+    # A per-panel teacher certifies exactly one frozen group: its identity binds
+    # that group's SHA, and its strongest status is grouped-assembly readiness.
+    assert result.group_family_sha256 == value.group_family_sha256
+    assert result.status == READY_FOR_GROUPED_ASSEMBLY
+    # The per-panel teacher must never emit a training-ready status; that is
+    # reserved for the grouped training-manifest boundary.
+    assert result.status != "READY_FOR_D0_TRAINING"
+    assert result.identity_dict(candidate_count=2)["group_family_sha256"] == (
+        value.group_family_sha256
+    )
+
+
 def test_larger_frozen_margin_admits_only_the_high_margin_cell():
     routing_policy = policy()
     value = panel(routing_policy)
     _, result = teacher(value, routing_policy, minimum_margin=0.6)
     # 0.5 < 0.6 <= 0.7 -> only the second cell is a training target.
-    assert result.status == "READY_FOR_D0_TRAINING"
+    assert result.status == READY_FOR_GROUPED_ASSEMBLY
     assert result.target_available.tolist() == [[False, True]]
     assert len(result.training_rows()) == 1
     assert result.training_rows()[0]["offline_inference_row_sha256"] == sha(

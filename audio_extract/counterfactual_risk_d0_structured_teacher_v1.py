@@ -7,12 +7,18 @@ optimum route and then, for the selected candidate in every cell, measures the
 the required critical constraints.  A cell is a training target only when every
 required exact risk is available (eligible), every required risk is at or below
 its frozen threshold (feasible), and the behavioral margin meets the frozen
-minimum.  ``READY_FOR_D0_TRAINING`` additionally requires that every cell is
-eligible and feasible and that the independent-cell coverage gate is satisfiable
-(at least one high-margin target); anything else fails closed.
+minimum.  ``READY_FOR_GROUPED_ASSEMBLY`` additionally requires that every cell is
+eligible and feasible and that at least one high-margin target exists; anything
+else fails closed.
 
-This is an offline teacher contract.  It accepts an explicit exact-evidence SHA
-and must never be used by the inference API.
+This is a *per-panel* offline teacher contract.  A single panel certifies exactly
+one frozen group, so this teacher NEVER claims finite-sample conformal or training
+coverage: one panel is one exchangeable group.  Its strongest status is
+``READY_FOR_GROUPED_ASSEMBLY``.  Only the grouped training-manifest boundary
+(``counterfactual_risk_grouped_training_manifest_v1``) may promote a set of
+grouped-assembly-ready panels to a training-ready status after counting the
+independent group identities.  It accepts an explicit exact-evidence SHA and must
+never be used by the inference API.
 """
 
 from __future__ import annotations
@@ -40,9 +46,14 @@ from .counterfactual_risk_routing_preflight_v1 import (
 )
 
 TEACHER_SCHEMA = "audio-extract/d0-structured-teacher/v1"
+# The strongest status a per-panel teacher may emit.  A single panel is a single
+# exchangeable group, so the teacher must never claim finite-sample conformal or
+# training coverage; only the grouped training-manifest boundary promotes a set
+# of grouped-assembly-ready panels to a training-ready status.
+READY_FOR_GROUPED_ASSEMBLY = "READY_FOR_GROUPED_ASSEMBLY"
 _SHA_RE = re.compile(r"sha256:[0-9a-f]{64}\Z")
 _ELIGIBLE_STATUSES = {
-    "READY_FOR_D0_TRAINING",
+    READY_FOR_GROUPED_ASSEMBLY,
     "UNAVAILABLE_NO_HIGH_MARGIN_CELLS",
 }
 _ALLOWED_UNAVAILABLE = {
@@ -125,6 +136,7 @@ def _secondary_metric_indices(
 @dataclass(frozen=True)
 class D0StructuredTeacherV1:
     exact_evidence_sha256: str
+    group_family_sha256: str
     panel_sha256: str
     preflight_sha256: str
     policy_sha256: str
@@ -143,6 +155,7 @@ class D0StructuredTeacherV1:
     def validate(self, *, candidate_count: int) -> None:
         for name, value in (
             ("exact_evidence_sha256", self.exact_evidence_sha256),
+            ("group_family_sha256", self.group_family_sha256),
             ("panel_sha256", self.panel_sha256),
             ("preflight_sha256", self.preflight_sha256),
             ("policy_sha256", self.policy_sha256),
@@ -251,7 +264,7 @@ class D0StructuredTeacherV1:
             # satisfiable independent-cell coverage gate (>=1 high-margin cell).
             complete = bool(np.all(available) and np.all(feasible))
             expected_status = (
-                "READY_FOR_D0_TRAINING"
+                READY_FOR_GROUPED_ASSEMBLY
                 if complete and np.any(target)
                 else "UNAVAILABLE_NO_HIGH_MARGIN_CELLS"
             )
@@ -291,6 +304,7 @@ class D0StructuredTeacherV1:
         return {
             "schema": TEACHER_SCHEMA,
             "exact_evidence_sha256": self.exact_evidence_sha256,
+            "group_family_sha256": self.group_family_sha256,
             "panel_sha256": self.panel_sha256,
             "preflight_sha256": self.preflight_sha256,
             "policy_sha256": self.policy_sha256,
@@ -378,6 +392,7 @@ def _unavailable_teacher(
     status, reason = mapping[decision.status]
     result = D0StructuredTeacherV1(
         exact_evidence_sha256=exact_evidence_sha256,
+        group_family_sha256=panel.group_family_sha256,
         panel_sha256=panel.sha256,
         preflight_sha256=preflight.sha256,
         policy_sha256=policy.sha256,
@@ -468,9 +483,11 @@ def build_d0_structured_teacher(
     )
     complete = bool(np.all(cell_available) and np.all(cell_feasible))
     if complete and np.any(target_available):
-        status = "READY_FOR_D0_TRAINING"
+        status = READY_FOR_GROUPED_ASSEMBLY
         reason = (
-            "unique global route; D0 labels are filtered by frozen behavioral margins"
+            "unique global route; per-panel behavioral-margin targets are ready "
+            "for grouped assembly (one exchangeable group; not training-certified "
+            "at the panel boundary)"
         )
     else:
         status = "UNAVAILABLE_NO_HIGH_MARGIN_CELLS"
@@ -488,6 +505,7 @@ def build_d0_structured_teacher(
         array.setflags(write=False)
     result = D0StructuredTeacherV1(
         exact_evidence_sha256=exact_evidence_sha256,
+        group_family_sha256=panel.group_family_sha256,
         panel_sha256=panel.sha256,
         preflight_sha256=preflight.sha256,
         policy_sha256=policy.sha256,
