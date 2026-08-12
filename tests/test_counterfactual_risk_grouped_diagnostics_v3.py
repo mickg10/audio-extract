@@ -320,7 +320,6 @@ def test_binding_rejects_another_certificate_for_the_same_unit():
 
 def test_partition_source_report_must_match_unit_exact_evidence():
     held_out = unit("one")
-    p = prereg(held_out, unit("two"))
     good = partition(held_out)
     bad = dataclasses.replace(
         good,

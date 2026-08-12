@@ -10,30 +10,29 @@ The artifact is descriptive and non-promoting.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
-from statistics import fmean
-from typing import Any, Mapping, Sequence
 import hashlib
 import json
-import math
 import re
+from collections.abc import Mapping
+from dataclasses import dataclass
+from statistics import fmean
+from typing import Any
 
 from .counterfactual_risk_cell_partition_v1 import (
     CellPartitionCertificate,
     CellPartitionRegistry,
 )
 from .counterfactual_risk_grouped_comparison_v1 import (
+    ROUTE_STATUSES,
     GroupedComparisonPreregistrationV1,
     HeldOutUnitV1,
-    ROUTE_STATUSES,
 )
 from .counterfactual_risk_grouped_comparison_v3 import (
     GroupedComparisonReportV3,
 )
 from .counterfactual_risk_grouped_diagnostics_v2 import (
-    NormalizedSwitchSummaryV2,
     OUTCOME_ORDER,
-    OUTCOME_ORDER_ID,
+    NormalizedSwitchSummaryV2,
     StatusDominanceSummaryV2,
 )
 

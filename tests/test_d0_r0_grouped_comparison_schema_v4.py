@@ -9,7 +9,6 @@ from tests.test_counterfactual_risk_grouped_report_artifact_v4 import (
     fixture as report_fixture,
 )
 
-
 ROOT = Path(__file__).resolve().parents[1]
 V3_PATH = ROOT / "schemas" / "d0-r0-grouped-comparison-report-v3.schema.json"
 V4_PATH = ROOT / "schemas" / "d0-r0-grouped-comparison-report-v4.schema.json"

@@ -27,11 +27,11 @@ def git(text: str) -> str:
     return hashlib.sha1(text.encode("utf-8")).hexdigest()
 
 
-def artifact(role: str, name: str, *, parents=()):
+def artifact(role: str, name: str, *, parents=(), pcm_name=None):
     return SourceArtifact(
         role=role,
         recipe_ids=(sha(f"recipe:{name}"),),
-        artifact_pcm_sha256=sha(f"pcm:{name}"),
+        artifact_pcm_sha256=sha(f"pcm:{pcm_name or name}"),
         parent_pcm_sha256s=tuple(sorted(parents)),
     )
 
@@ -40,16 +40,21 @@ def certificate(name: str, *, closed_world=True, derived=None):
     mixture = artifact("mixture_root", f"{name}:mixture")
     accompaniment = artifact("accompaniment_truth", f"{name}:a")
     vocal = artifact("vocal_truth", f"{name}:v")
+    # One globally-ordered frozen candidate-recipe panel shared across families
+    # ("candidate-0"/"candidate-1" recipes), each decoding its own per-family
+    # artifact PCM.
     candidates = (
         artifact(
             "candidate",
-            f"{name}:candidate-0",
+            "candidate-0",
             parents=(mixture.artifact_pcm_sha256,),
+            pcm_name=f"{name}:candidate-0",
         ),
         artifact(
             "candidate",
-            f"{name}:candidate-1",
+            "candidate-1",
             parents=(mixture.artifact_pcm_sha256,),
+            pcm_name=f"{name}:candidate-1",
         ),
     )
     return SourceFamilyCertificate(

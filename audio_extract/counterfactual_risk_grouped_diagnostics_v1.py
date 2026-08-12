@@ -10,18 +10,18 @@ decision.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from statistics import fmean
-from typing import Any, Mapping, Sequence
 import hashlib
 import json
 import math
 import re
+from collections.abc import Mapping
+from dataclasses import dataclass
+from statistics import fmean
+from typing import Any
 
 from .counterfactual_risk_grouped_comparison_v1 import (
     GroupedComparisonPreregistrationV1,
     GroupedComparisonReportV1,
-    ROUTE_STATUSES,
 )
 
 GEOMETRY_SCHEMA = "audio-extract/d0-r0-unit-routing-geometry/v1"

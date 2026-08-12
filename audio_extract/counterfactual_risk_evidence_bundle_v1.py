@@ -10,11 +10,12 @@ routing, rendering, or production promotion.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Any, Mapping
 import hashlib
 import json
 import re
+from collections.abc import Mapping
+from dataclasses import dataclass
+from typing import Any
 
 from .counterfactual_risk_candidate_projection_v1 import (
     CandidateProjectionRegistry,
@@ -34,10 +35,6 @@ from .counterfactual_risk_dataset_source_binding_v2 import (
 from .counterfactual_risk_feature_evidence_v1 import (
     FeatureEvidenceRegistry,
     validate_dataset_feature_evidence,
-)
-from .counterfactual_risk_query_condition_v1 import (
-    QueryConditionRegistry,
-    validate_dataset_query_conditions,
 )
 from .counterfactual_risk_source_family_v2 import SourceFamilyRegistryV2
 
@@ -88,14 +85,12 @@ class EvidenceBundleV1:
     dataset: DatasetManifestV2
     split: SplitManifestV2
     source_registry: SourceFamilyRegistryV2
-    query_registry: QueryConditionRegistry
     projection_registry: CandidateProjectionRegistry
     partition_registry: CellPartitionRegistry
     feature_registry: FeatureEvidenceRegistry
     dataset_container_sha256: str
     dataset_schema_sha256: str
     source_family_schema_sha256: str
-    query_schema_sha256: str
     projection_schema_sha256: str
     partition_schema_sha256: str
     feature_evidence_schema_sha256: str
@@ -117,7 +112,6 @@ class EvidenceBundleV1:
             "dataset_container_sha256",
             "dataset_schema_sha256",
             "source_family_schema_sha256",
-            "query_schema_sha256",
             "projection_schema_sha256",
             "partition_schema_sha256",
             "feature_evidence_schema_sha256",
@@ -130,7 +124,6 @@ class EvidenceBundleV1:
         # malformed object cannot hide behind a syntactically valid commit.
         self.dataset.validate()
         self.source_registry.validate()
-        self.query_registry.validate()
         self.projection_registry.validate()
         self.partition_registry.validate()
         self.feature_registry.validate()
@@ -140,7 +133,6 @@ class EvidenceBundleV1:
             "dataset": self.dataset.source_commit,
             "split": self.split.source_commit,
             "source_registry": self.source_registry.source_commit,
-            "query_registry": self.query_registry.source_commit,
             "projection_registry": self.projection_registry.source_commit,
             "partition_registry": self.partition_registry.source_commit,
             "feature_registry": self.feature_registry.source_commit,
@@ -158,9 +150,6 @@ class EvidenceBundleV1:
         # verifier and still obtain a valid bundle identity.
         validate_dataset_v2_family_registry(
             self.dataset, self.source_registry
-        )
-        validate_dataset_query_conditions(
-            self.dataset, self.source_registry, self.query_registry
         )
         validate_dataset_candidate_projections(
             self.dataset, self.source_registry, self.projection_registry
@@ -189,13 +178,11 @@ class EvidenceBundleV1:
             "dataset_container_sha256": self.dataset_container_sha256,
             "split_sha256": self.split.sha256(self.dataset),
             "source_registry_sha256": self.source_registry.sha256,
-            "query_registry_sha256": self.query_registry.sha256,
             "projection_registry_sha256": self.projection_registry.sha256,
             "partition_registry_sha256": self.partition_registry.sha256,
             "feature_registry_sha256": self.feature_registry.sha256,
             "dataset_schema_sha256": self.dataset_schema_sha256,
             "source_family_schema_sha256": self.source_family_schema_sha256,
-            "query_schema_sha256": self.query_schema_sha256,
             "projection_schema_sha256": self.projection_schema_sha256,
             "partition_schema_sha256": self.partition_schema_sha256,
             "feature_evidence_schema_sha256": (

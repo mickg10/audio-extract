@@ -25,7 +25,6 @@ from audio_extract.counterfactual_risk_grouped_comparison_v3 import (
 from audio_extract.counterfactual_risk_grouped_diagnostics_v2 import (
     ExactPartitionCertificateV2,
     GeometryManifestV2,
-    GroupedComparisonDiagnosticsV2,
     GroupedDiagnosticsV2Error,
     build_grouped_diagnostics_v2,
 )

@@ -8,12 +8,13 @@ complete grid is eligible for the separately certified structured decoder.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Any, Mapping
 import hashlib
 import json
 import math
 import re
+from collections.abc import Mapping
+from dataclasses import dataclass
+from typing import Any
 
 import numpy as np
 
@@ -74,6 +75,7 @@ class FrozenRoutingPolicyV1:
     temporal_switch_penalty: float = 0.05
     frequency_switch_penalty: float = 0.05
     feasibility_tolerance: float = 0.0
+    objective_tolerance: float = 1e-10
     whole_track_abstention: bool = True
     require_secondary_evidence: bool = True
 
@@ -123,6 +125,7 @@ class FrozenRoutingPolicyV1:
             "temporal_switch_penalty",
             "frequency_switch_penalty",
             "feasibility_tolerance",
+            "objective_tolerance",
         ):
             value = float(getattr(self, name))
             if not math.isfinite(value) or value < 0:
@@ -132,6 +135,10 @@ class FrozenRoutingPolicyV1:
         if self.critical_slack_weight <= 0:
             raise RoutingPreflightError(
                 "critical_slack_weight must be strictly positive"
+            )
+        if self.objective_tolerance <= 0:
+            raise RoutingPreflightError(
+                "objective_tolerance must be strictly positive"
             )
         if self.whole_track_abstention is not True:
             raise RoutingPreflightError(
@@ -162,6 +169,7 @@ class FrozenRoutingPolicyV1:
                 self.frequency_switch_penalty
             ),
             "feasibility_tolerance": float(self.feasibility_tolerance),
+            "objective_tolerance": float(self.objective_tolerance),
             "whole_track_abstention": self.whole_track_abstention,
             "require_secondary_evidence": self.require_secondary_evidence,
         }

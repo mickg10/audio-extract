@@ -18,13 +18,15 @@ It does not execute a model, render audio, or make a promotion decision.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Any, Mapping
 import hashlib
 import json
 import re
+from collections.abc import Mapping
+from dataclasses import dataclass
+from typing import Any
 
 from .counterfactual_risk_cell_partition_v1 import CellPartitionCertificate
+from .counterfactual_risk_evidence_bundle_v1 import EvidenceBundleV1
 from .counterfactual_risk_grouped_comparison_v1 import (
     GroupedComparisonPreregistrationV1,
     HeldOutUnitV1,
@@ -111,7 +113,7 @@ class ExactSourceReportDocumentV3:
         accompaniment_pcm_sha256: str,
         vocal_pcm_sha256: str,
         verifier_commit: str,
-    ) -> "ExactSourceReportDocumentV3":
+    ) -> ExactSourceReportDocumentV3:
         value = {
             "schema": REPORT_SCHEMA,
             "status": "verified",
@@ -289,6 +291,92 @@ class ExactSourceLineageV3:
         ):
             raise ExactSourceLineageV3Error(
                 "partition report verifier differs from its certificate"
+            )
+
+    def validate_bundle_membership(
+        self,
+        bundle: EvidenceBundleV1,
+        exact_evidence_bundle_sha256: str,
+        unit: HeldOutUnitV1,
+        certificate: CellPartitionCertificate,
+    ) -> None:
+        """Anchor content-derived lineage to a frozen exact-evidence bundle.
+
+        Parsing report bytes proves the two reports are internally consistent,
+        but NOT that they belong to the frozen study: a caller could synthesize
+        a brand-new, internally-valid report with arbitrary parents.  This
+        resolver requires BOTH properties at once — content-derivation (above)
+        AND frozen-bundle membership:
+
+        * the referenced ``exact_evidence_bundle_sha256`` bundle must already
+          exist and its recomputed hash must equal the declared identity;
+        * the held-out unit and its source family must be members of the bundle;
+        * the selected partition certificate must be a member of the bundle's
+          partition registry (its exact partition-source report is thereby a
+          member, since the certificate names that report byte-hash);
+        * the derived mixture/accompaniment/vocal parents must be exactly the
+          frozen source-family roots the bundle certifies (M/A/V membership).
+
+        A synthesized-but-internally-valid report that is not a member fails
+        closed, as do copied/reused hashes, a substituted partition
+        certificate, and a mismatched bundle.
+        """
+
+        # (1) Content-derivation must hold first: report bytes equal the frozen
+        # unit/certificate identities and both reports derive the same parents.
+        self.validate(unit, certificate)
+
+        # (2) The referenced bundle must exist and its hash must verify.
+        bundle.validate()
+        declared = _sha(
+            exact_evidence_bundle_sha256, "exact_evidence_bundle_sha256"
+        )
+        if bundle.sha256 != declared:
+            raise ExactSourceLineageV3Error(
+                "evidence bundle hash does not match the declared "
+                "exact_evidence_bundle_sha256"
+            )
+
+        # (3) The held-out unit's group family must be a member of the bundle.
+        if unit.group_family_sha256 not in bundle.dataset.group_family_sha256s:
+            raise ExactSourceLineageV3Error(
+                "held-out unit is not a member of the evidence bundle dataset"
+            )
+
+        # (4) The selected partition certificate must be a member of the bundle
+        # partition registry.  self.validate already bound the partition-source
+        # report byte-hash to certificate.exact_source_report_sha256, so proving
+        # the certificate is a member proves the exact report is a member too.
+        member_partition_shas = {
+            member.sha256
+            for member in bundle.partition_registry.certificates
+        }
+        if certificate.sha256 not in member_partition_shas:
+            raise ExactSourceLineageV3Error(
+                "partition certificate is not a member of the bundle "
+                "partition registry"
+            )
+
+        # (5) M/A/V parent membership: the parents derived from the report bytes
+        # must be exactly the frozen source-family roots the bundle certifies.
+        source_certificate = bundle.source_registry.by_sha256().get(
+            unit.source_family_sha256
+        )
+        if source_certificate is None:
+            raise ExactSourceLineageV3Error(
+                "unit source family is not a member of the bundle source "
+                "registry"
+            )
+        _, mixture, accompaniment, vocal = self.parent_tuple
+        frozen_roots = (
+            source_certificate.mixture_root.identity.artifact_pcm_sha256,
+            source_certificate.accompaniment_truth.identity.artifact_pcm_sha256,
+            source_certificate.vocal_truth.identity.artifact_pcm_sha256,
+        )
+        if (mixture, accompaniment, vocal) != frozen_roots:
+            raise ExactSourceLineageV3Error(
+                "derived mixture/accompaniment/vocal parents are not the frozen "
+                "source-family roots certified by the bundle"
             )
 
     @property

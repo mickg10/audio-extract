@@ -15,13 +15,14 @@ This artifact is descriptive and contains no promotion decision.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass, fields
-from statistics import fmean, median
-from typing import Any, Mapping, Sequence
 import hashlib
 import json
 import math
 import re
+from collections.abc import Mapping, Sequence
+from dataclasses import dataclass, fields
+from statistics import fmean, median
+from typing import Any
 
 from .counterfactual_risk_grouped_comparison_v1 import (
     ALL_STATUSES,
@@ -1025,7 +1026,7 @@ class GroupedComparisonReportArtifactV4:
         prereg: GroupedComparisonPreregistrationV1,
         *,
         verifier_commit: str,
-    ) -> "GroupedComparisonReportArtifactV4":
+    ) -> GroupedComparisonReportArtifactV4:
         value = _payload(report, prereg, verifier_commit)
         payload = _canonical(value)
         result = cls(

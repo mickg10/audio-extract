@@ -5,6 +5,7 @@ import pytest
 
 from audio_extract.counterfactual_risk_cell_partition_v1 import RationalMeasure
 from audio_extract.counterfactual_risk_d0_structured_teacher_v1 import (
+    READY_FOR_GROUPED_ASSEMBLY,
     D0StructuredTeacherError,
     D0StructuredTeacherV1,
     build_d0_structured_teacher,
@@ -29,18 +30,21 @@ def git(text: str) -> str:
     return hashlib.sha1(text.encode()).hexdigest()
 
 
+_DEFAULT_EVIDENCE = "sha256:" + hashlib.sha256(b"exact-evidence").hexdigest()
+
+
 def policy(**kwargs) -> FrozenRoutingPolicyV1:
-    values = dict(
-        critical_thresholds=(("voice", 1.0), ("hole", 1.0)),
-        secondary_weights=(("artifact", 0.1),),
-        critical_slack_weight=1.0,
-        temporal_switch_penalty=0.05,
-        frequency_switch_penalty=0.04,
-        feasibility_tolerance=0.0,
-        objective_tolerance=1e-10,
-        whole_track_abstention=True,
-        require_secondary_evidence=True,
-    )
+    values = {
+        "critical_thresholds": (("voice", 1.0), ("hole", 1.0)),
+        "secondary_weights": (("artifact", 0.1),),
+        "critical_slack_weight": 1.0,
+        "temporal_switch_penalty": 0.05,
+        "frequency_switch_penalty": 0.04,
+        "feasibility_tolerance": 0.0,
+        "objective_tolerance": 1e-10,
+        "whole_track_abstention": True,
+        "require_secondary_evidence": True,
+    }
     values.update(kwargs)
     return FrozenRoutingPolicyV1(**values)
 
@@ -123,7 +127,7 @@ def teacher(
     *,
     minimum_margin=0.1,
     maximum_cells=12,
-    exact_evidence=sha("exact-evidence"),
+    exact_evidence=_DEFAULT_EVIDENCE,
 ):
     preflight = preflight_partitioned_upper_risks(value, routing_policy)
     result = build_d0_structured_teacher(
@@ -137,74 +141,97 @@ def teacher(
     return preflight, result
 
 
-def test_d0_targets_use_global_route_and_per_cell_alternative_route_gaps():
+def test_d0_targets_use_global_route_and_behavioral_margins():
     routing_policy = policy()
     value = panel(routing_policy)
     _, result = teacher(value, routing_policy, minimum_margin=0.1)
-    assert result.status == "READY_FOR_D0_TRAINING"
+    assert result.status == READY_FOR_GROUPED_ASSEMBLY
     assert result.labels is not None
+    # Global structured route: cell 0 keeps candidate 0, cell 1 candidate 1.
     assert result.labels.tolist() == [[0, 1]]
-    assert result.forced_label.tolist() == [[False, False]]
-    assert result.alternative_available.tolist() == [[True, True]]
-    assert result.optimum_objective == pytest.approx(0.50)
-    assert result.alternative_objective[0, 0] == pytest.approx(0.58)
-    assert result.structured_margin[0, 0] == pytest.approx(0.08)
-    assert result.alternative_objective[0, 1] == pytest.approx(
-        1.0333333333333334
-    )
-    assert result.structured_margin[0, 1] == pytest.approx(
-        0.5333333333333334
-    )
-    assert result.target_available.tolist() == [[False, True]]
+    assert result.cell_available.tolist() == [[True, True]]
+    assert result.cell_feasible.tolist() == [[True, True]]
+    # Behavioral margin = min(threshold - exact_risk) over the critical
+    # constraints for the selected candidate.
+    # cell (0,0) candidate 0: min(1.0-0.5, 1.0-0.2) = 0.5
+    # cell (0,1) candidate 1: min(1.0-0.2, 1.0-0.3) = 0.7
+    assert result.behavioral_margin[0, 0] == pytest.approx(0.5)
+    assert result.behavioral_margin[0, 1] == pytest.approx(0.7)
+    assert result.target_available.tolist() == [[True, True]]
     assert result.training_rows() == (
+        {
+            "offline_inference_row_sha256": sha("row-0"),
+            "candidate_index": 0,
+            "behavioral_margin": pytest.approx(0.5),
+        },
         {
             "offline_inference_row_sha256": sha("row-1"),
             "candidate_index": 1,
-            "forced_label": False,
-            "structured_margin": pytest.approx(0.5333333333333334),
+            "behavioral_margin": pytest.approx(0.7),
         },
     )
 
 
-def test_smaller_frozen_margin_admits_both_unique_route_cells():
+def test_per_panel_teacher_binds_group_identity_and_never_trains():
     routing_policy = policy()
     value = panel(routing_policy)
-    _, result = teacher(value, routing_policy, minimum_margin=0.05)
-    assert result.target_available.tolist() == [[True, True]]
-    assert len(result.training_rows()) == 2
+    _, result = teacher(value, routing_policy, minimum_margin=0.1)
+    # A per-panel teacher certifies exactly one frozen group: its identity binds
+    # that group's SHA, and its strongest status is grouped-assembly readiness.
+    assert result.group_family_sha256 == value.group_family_sha256
+    assert result.status == READY_FOR_GROUPED_ASSEMBLY
+    # The per-panel teacher must never emit a training-ready status; that is
+    # reserved for the grouped training-manifest boundary.
+    assert result.status != "READY_FOR_D0_TRAINING"
+    assert result.identity_dict(candidate_count=2)["group_family_sha256"] == (
+        value.group_family_sha256
+    )
+
+
+def test_larger_frozen_margin_admits_only_the_high_margin_cell():
+    routing_policy = policy()
+    value = panel(routing_policy)
+    _, result = teacher(value, routing_policy, minimum_margin=0.6)
+    # 0.5 < 0.6 <= 0.7 -> only the second cell is a training target.
+    assert result.status == READY_FOR_GROUPED_ASSEMBLY
+    assert result.target_available.tolist() == [[False, True]]
+    assert len(result.training_rows()) == 1
+    assert result.training_rows()[0]["offline_inference_row_sha256"] == sha(
+        "row-1"
+    )
 
 
 def test_structured_teacher_can_disagree_with_local_unary_argmin():
     routing_policy = policy(frequency_switch_penalty=0.3)
     value = panel(routing_policy)
     preflight, result = teacher(value, routing_policy, minimum_margin=0.1)
-    assert result.labels.tolist() == [[1, 1]]
     # Candidate 0 is locally cheaper in the first cell, but the global route
     # selects candidate 1 after switching cost and physical measure.
     assert preflight.cost[0, 0, 0] < preflight.cost[0, 0, 1]
+    assert result.labels.tolist() == [[1, 1]]
     assert result.labels[0, 0] == 1
-    assert result.target_available[0, 0]
-    assert result.structured_margin[0, 0] == pytest.approx(
-        1.0333333333333334 - 0.58
-    )
+    # Candidate 1 in cell 0 sits exactly on the hole threshold -> margin 0.0.
+    assert result.behavioral_margin[0, 0] == pytest.approx(0.0)
+    assert result.cell_feasible[0, 0]
+    assert not result.target_available[0, 0]
 
 
-def test_sole_feasible_candidate_is_forced_and_available_without_infinite_margin():
+def test_sole_feasible_candidate_is_forced_by_feasibility():
     routing_policy = policy()
     value = panel(routing_policy)
     upper = np.asarray(value.upper).copy()
+    # Make candidate 1 in cell 0 critical-infeasible; candidate 0 is forced.
     upper[0, 0, 1, 0] = 1.2
     changed = PartitionedUpperRiskPanelV1(
         **{**value.__dict__, "upper": upper}
     )
-    _, result = teacher(changed, routing_policy, minimum_margin=10.0)
+    _, result = teacher(changed, routing_policy, minimum_margin=0.1)
     assert result.labels.tolist() == [[0, 1]]
-    assert result.forced_label.tolist() == [[True, False]]
-    assert result.alternative_available.tolist() == [[False, True]]
-    assert result.alternative_objective[0, 0] == 0.0
-    assert result.structured_margin[0, 0] == 0.0
+    assert result.cell_available.tolist() == [[True, True]]
+    assert result.cell_feasible.tolist() == [[True, True]]
+    assert result.behavioral_margin[0, 0] == pytest.approx(0.5)
     assert result.target_available[0, 0]
-    assert result.training_rows()[0]["forced_label"] is True
+    assert result.training_rows()[0]["candidate_index"] == 0
 
 
 def test_nonunique_route_produces_no_d0_labels_or_margins():
@@ -220,16 +247,18 @@ def test_nonunique_route_produces_no_d0_labels_or_margins():
     _, result = teacher(value, routing_policy)
     assert result.status == "UNAVAILABLE_NONUNIQUE_ROUTE"
     assert result.labels is None
+    assert result.cell_available is None
+    assert result.behavioral_margin is None
     assert result.target_available is None
-    assert result.structured_margin is None
     assert result.training_rows() == ()
 
 
-def test_no_confidently_feasible_cell_produces_no_teacher_labels():
+def test_missing_required_risk_cell_fails_closed():
     routing_policy = policy()
     value = panel(routing_policy, allowed=(False, True))
     upper = np.asarray(value.upper).copy()
     available = np.asarray(value.available).copy()
+    # The first cell has no confidently feasible candidate (evidence missing).
     upper[0, 0] = 0.0
     available[0, 0] = False
     blocked = PartitionedUpperRiskPanelV1(
@@ -238,6 +267,7 @@ def test_no_confidently_feasible_cell_produces_no_teacher_labels():
     _, result = teacher(blocked, routing_policy)
     assert result.status == "UNAVAILABLE_NO_CONFIDENTLY_FEASIBLE_ROUTE"
     assert result.labels is None
+    assert result.behavioral_margin is None
     assert result.training_rows() == ()
 
 
@@ -245,6 +275,7 @@ def test_unique_route_with_no_high_margin_cells_is_a_nontraining_result():
     routing_policy = policy()
     value = panel(routing_policy)
     _, result = teacher(value, routing_policy, minimum_margin=1.0)
+    # Every behavioral margin (0.5, 0.7) is below the frozen minimum of 1.0.
     assert result.status == "UNAVAILABLE_NO_HIGH_MARGIN_CELLS"
     assert result.labels.tolist() == [[0, 1]]
     assert not result.target_available.any()
@@ -255,7 +286,7 @@ def test_teacher_arrays_are_read_only_and_identity_binds_evidence_margin_and_rou
     routing_policy = policy()
     value = panel(routing_policy)
     _, first = teacher(value, routing_policy, minimum_margin=0.1)
-    _, changed_margin = teacher(value, routing_policy, minimum_margin=0.05)
+    _, changed_margin = teacher(value, routing_policy, minimum_margin=0.6)
     _, changed_evidence = teacher(
         value,
         routing_policy,
@@ -265,11 +296,10 @@ def test_teacher_arrays_are_read_only_and_identity_binds_evidence_margin_and_rou
     assert first.labels is not None
     for array in (
         first.labels,
+        first.cell_available,
+        first.cell_feasible,
+        first.behavioral_margin,
         first.target_available,
-        first.forced_label,
-        first.alternative_available,
-        first.alternative_objective,
-        first.structured_margin,
     ):
         assert not array.flags.writeable
     with pytest.raises(ValueError):
@@ -283,13 +313,13 @@ def test_teacher_arrays_are_read_only_and_identity_binds_evidence_margin_and_rou
     ) == 3
 
 
-def test_teacher_validation_rejects_target_rule_margin_and_canonical_storage_corruption():
+def test_teacher_validation_rejects_target_and_feasibility_corruption():
     routing_policy = policy()
     value = panel(routing_policy)
     _, result = teacher(value, routing_policy, minimum_margin=0.1)
 
     target = np.asarray(result.target_available).copy()
-    target[0, 0] = True
+    target[0, 0] = False
     with pytest.raises(
         D0StructuredTeacherError,
         match="target availability differs",
@@ -298,35 +328,15 @@ def test_teacher_validation_rejects_target_rule_margin_and_canonical_storage_cor
             **{**result.__dict__, "target_available": target}
         ).validate(candidate_count=2)
 
-    margin = np.asarray(result.structured_margin).copy()
-    margin[0, 1] += 1.0
+    margin = np.asarray(result.behavioral_margin).copy()
+    # A negative margin contradicts the stored feasibility of the cell.
+    margin[0, 0] = -0.5
     with pytest.raises(
         D0StructuredTeacherError,
-        match="margins differ",
+        match="feasibility differs",
     ):
         D0StructuredTeacherV1(
-            **{**result.__dict__, "structured_margin": margin}
-        ).validate(candidate_count=2)
-
-    upper = np.asarray(value.upper).copy()
-    upper[0, 0, 1, 0] = 1.2
-    forced_panel = PartitionedUpperRiskPanelV1(
-        **{**value.__dict__, "upper": upper}
-    )
-    _, forced_result = teacher(
-        forced_panel, routing_policy, minimum_margin=10.0
-    )
-    alt = np.asarray(forced_result.alternative_objective).copy()
-    alt[0, 0] = 1.0
-    with pytest.raises(
-        D0StructuredTeacherError,
-        match="canonical zero storage",
-    ):
-        D0StructuredTeacherV1(
-            **{
-                **forced_result.__dict__,
-                "alternative_objective": alt,
-            }
+            **{**result.__dict__, "behavioral_margin": margin}
         ).validate(candidate_count=2)
 
 

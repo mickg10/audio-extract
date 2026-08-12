@@ -33,10 +33,6 @@ from audio_extract.counterfactual_risk_feature_evidence_v1 import (
     FeatureEvidenceCertificate,
     FeatureEvidenceRegistry,
 )
-from audio_extract.counterfactual_risk_query_condition_v1 import (
-    QueryConditionCertificate,
-    QueryConditionRegistry,
-)
 from audio_extract.counterfactual_risk_source_family_v2 import (
     ArtifactNode,
     ArtifactRef,
@@ -107,47 +103,28 @@ def build_group(index: int, candidate_panel: CandidatePanel):
         )
         for slot in candidate_panel.slots
     )
-    query_source = ArtifactNode(
-        "query_source",
-        ArtifactRef(sha(f"{name}:query-recipe"), sha(f"{name}:query-pcm")),
-        (mixture.identity,),
-    )
-    query_scope = sha(f"{name}:query-scope")
+    # Query-free study: the source family carries a generic query-condition
+    # hash but no query-conditioning certificate/registry.
+    query_condition = sha(f"{name}:query-condition")
     family = SourceFamilyCertificateV2(
         mixture_root=mixture,
         accompaniment_truth=accompaniment,
         vocal_truth=vocal,
         derived_artifacts=tuple(
-            sorted((*candidate_nodes, query_source), key=lambda item: item.identity)
+            sorted(candidate_nodes, key=lambda item: item.identity)
         ),
         spectral_grid_sha256s=(sha(f"{name}:grid"),),
-        query_condition_sha256s=(query_scope,),
+        query_condition_sha256s=(query_condition,),
         discovery_manifest_sha256=sha(f"{name}:inventory"),
         derivation_policy_sha256=sha("family-derivation-policy"),
         verifier_commit=git("family-verifier"),
-    )
-    query = QueryConditionCertificate(
-        source_family_sha256=family.sha256,
-        query_scope_sha256=query_scope,
-        target_singer_id=target,
-        target_identity_sha256=sha(f"target:{target}"),
-        query_source=query_source.identity,
-        query_encoder_bundle_sha256=sha("query-encoder"),
-        query_feature_contract_sha256=FEATURE_CONTRACT,
-        query_embedding_sha256=sha(f"{name}:query-embedding"),
-        query_segment_manifest_sha256=sha(f"{name}:query-segments"),
-        query_projection_sha256=sha(f"{name}:query-projection"),
-        quality_class="mixture_derived_verified",
-        quality_policy_sha256=sha("query-quality-policy"),
-        quality_report_sha256=sha(f"{name}:query-quality-report"),
-        verifier_commit=git("query-verifier"),
     )
     group_family = GroupFamilyIdentity(
         work_id=f"work-{index}",
         recording_session_id=f"session-{index}",
         target_singer_id=target,
         source_family_sha256=family.sha256,
-        query_condition_sha256=query.sha256,
+        query_condition_sha256=query_condition,
     )
     node_by_recipe = {
         node.identity.recipe_id: node for node in candidate_nodes
@@ -265,7 +242,7 @@ def build_group(index: int, candidate_panel: CandidatePanel):
         extractor_bundle_sha256=sha("feature-extractor"),
         verifier_commit=git("feature-verifier"),
     )
-    return row, family, query, tuple(projections), partition, feature
+    return row, family, tuple(projections), partition, feature
 
 
 def valid_bundle() -> EvidenceBundleV1:
@@ -291,30 +268,25 @@ def valid_bundle() -> EvidenceBundleV1:
             tuple(item[1] for item in components),
             source_commit=SOURCE_COMMIT,
         ),
-        query_registry=QueryConditionRegistry.build(
-            tuple(item[2] for item in components),
-            source_commit=SOURCE_COMMIT,
-        ),
         projection_registry=CandidateProjectionRegistry.build(
             tuple(
                 certificate
                 for item in components
-                for certificate in item[3]
+                for certificate in item[2]
             ),
             source_commit=SOURCE_COMMIT,
         ),
         partition_registry=CellPartitionRegistry.build(
-            tuple(item[4] for item in components),
+            tuple(item[3] for item in components),
             source_commit=SOURCE_COMMIT,
         ),
         feature_registry=FeatureEvidenceRegistry.build(
-            tuple(item[5] for item in components),
+            tuple(item[4] for item in components),
             source_commit=SOURCE_COMMIT,
         ),
         dataset_container_sha256=sha("dataset-container"),
         dataset_schema_sha256=sha("dataset-schema"),
         source_family_schema_sha256=sha("source-family-schema"),
-        query_schema_sha256=sha("query-schema"),
         projection_schema_sha256=sha("projection-schema"),
         partition_schema_sha256=sha("partition-schema"),
         feature_evidence_schema_sha256=sha("feature-schema"),
@@ -376,18 +348,8 @@ def test_missing_projection_or_partition_cannot_be_omitted_from_bundle_gate():
         changed.validate()
 
 
-def test_query_and_feature_certificates_are_mandatory_at_bundle_boundary():
+def test_feature_certificates_are_mandatory_at_bundle_boundary():
     bundle = valid_bundle()
-    missing_query = QueryConditionRegistry.build(
-        bundle.query_registry.certificates[:-1],
-        source_commit=SOURCE_COMMIT,
-    )
-    changed = EvidenceBundleV1(
-        **{**bundle.__dict__, "query_registry": missing_query}
-    )
-    with pytest.raises(Exception, match="unregistered query-condition"):
-        changed.validate()
-
     missing_feature = FeatureEvidenceRegistry.build(
         bundle.feature_registry.certificates[:-1],
         source_commit=SOURCE_COMMIT,

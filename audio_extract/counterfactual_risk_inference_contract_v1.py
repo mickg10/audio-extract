@@ -9,12 +9,13 @@ binding that is never returned by ``model_input_document()``.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Any, Mapping, Sequence
 import hashlib
 import json
 import math
 import re
+from collections.abc import Mapping, Sequence
+from dataclasses import dataclass
+from typing import Any
 
 import numpy as np
 
@@ -286,7 +287,11 @@ class InferenceManifestV1:
         cls,
         dataset: DatasetManifestV2,
         feature_registry: FeatureEvidenceRegistry,
-    ) -> "InferenceManifestV1":
+    ) -> InferenceManifestV1:
+        if feature_registry.source_commit != dataset.source_commit:
+            raise InferenceContractError(
+                "dataset and feature registry use different source commits"
+            )
         validate_dataset_feature_evidence(dataset, feature_registry)
         certificates = feature_registry.by_row_id()
         candidate_panel = dataset.rows[0].candidate_panel

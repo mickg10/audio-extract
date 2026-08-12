@@ -12,13 +12,13 @@ No exact risks or clean truth are arguments to this module.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from fractions import Fraction
-from typing import Any, Mapping, Sequence
 import hashlib
 import json
-import math
 import re
+from collections.abc import Mapping
+from dataclasses import dataclass
+from fractions import Fraction
+from typing import Any
 
 import numpy as np
 
@@ -307,14 +307,15 @@ class PartitionedUpperRiskPanelV1:
             raise PartitionedPredictionError(
                 "unavailable upper risks must be canonical zero"
             )
+        # ``row_prediction_allowed`` is a truth-free FEATURE-evidence gate: a
+        # feature-blocked cell must stay completely dark.  A feature-allowed cell
+        # may still carry an unavailable risk head (missing required evidence);
+        # the fail-closed preflight marks such cells infeasible rather than the
+        # panel forbidding them, so only the feature-blocked case is rejected
+        # here.
         flattened = available.reshape(cell_count, *available.shape[2:])
         for index, allowed in enumerate(self.row_prediction_allowed):
-            if bool(allowed):
-                if not np.all(flattened[index]):
-                    raise PartitionedPredictionError(
-                        "allowed route cell has unavailable risk heads"
-                    )
-            elif np.any(flattened[index]):
+            if not bool(allowed) and np.any(flattened[index]):
                 raise PartitionedPredictionError(
                     "feature-blocked route cell exposes available risk heads"
                 )

@@ -8,12 +8,13 @@ construction/query semantics) from its verified per-source artifact binding.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Any, Mapping, Sequence
 import hashlib
 import json
 import math
 import re
+from collections.abc import Mapping, Sequence
+from dataclasses import dataclass
+from typing import Any
 
 import numpy as np
 
@@ -92,6 +93,10 @@ def _array_sha(value: np.ndarray, *, component: str, dtype: str) -> str:
 
 
 def _features(value: Any) -> np.ndarray:
+    if np.asarray(value).dtype == np.bool_:
+        raise CounterfactualRiskDatasetV2Error(
+            "features must be numeric and not boolean"
+        )
     result = np.asarray(value, dtype=np.float64)
     if result.ndim != 1 or result.size < 1 or not np.all(np.isfinite(result)):
         raise CounterfactualRiskDatasetV2Error(
@@ -101,6 +106,10 @@ def _features(value: Any) -> np.ndarray:
 
 
 def _risks(value: Any, shape: tuple[int, int]) -> np.ndarray:
+    if np.asarray(value).dtype == np.bool_:
+        raise CounterfactualRiskDatasetV2Error(
+            "exact risks must be numeric and not boolean"
+        )
     result = np.asarray(value, dtype=np.float64)
     if result.shape != shape:
         raise CounterfactualRiskDatasetV2Error(
@@ -504,8 +513,8 @@ class DatasetManifestV2:
         *,
         source_commit: str,
         dataset_name: str = "d0-r0-grouped-exact-v2",
-    ) -> "DatasetManifestV2":
-        ordered = tuple(sorted(tuple(rows), key=lambda row: row.row_id))
+    ) -> DatasetManifestV2:
+        ordered = tuple(sorted(rows, key=lambda row: row.row_id))
         result = cls(
             rows=ordered,
             source_commit=source_commit,

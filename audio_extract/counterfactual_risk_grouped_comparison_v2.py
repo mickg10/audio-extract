@@ -13,13 +13,14 @@ It does not train a model, render audio, or choose a winner.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
-from statistics import fmean, median
-from typing import Any, Mapping, Sequence
 import hashlib
 import json
 import math
 import re
+from collections.abc import Mapping, Sequence
+from dataclasses import dataclass
+from statistics import fmean, median
+from typing import Any
 
 from .counterfactual_risk_complete_route_evaluation_v1 import (
     ArmRouteSubmissionV1,
@@ -28,10 +29,10 @@ from .counterfactual_risk_complete_route_evaluation_v1 import (
 from .counterfactual_risk_grouped_comparison_v1 import (
     ALL_STATUSES,
     ARM_METHODS,
+    ROUTE_STATUSES,
     ComparisonArmV1,
     GroupedComparisonPreregistrationV1,
     HeldOutUnitV1,
-    ROUTE_STATUSES,
 )
 
 ROUTE_PROVENANCE_SCHEMA = "audio-extract/d0-r0-route-provenance/v2"
@@ -998,7 +999,7 @@ class GroupedComparisonReportV2:
         records: Sequence[WorkArmEvaluationV2],
         *,
         verifier_commit: str,
-    ) -> "GroupedComparisonReportV2":
+    ) -> GroupedComparisonReportV2:
         ordered = tuple(
             sorted(records, key=lambda row: (row.unit.sha256, row.arm_id))
         )

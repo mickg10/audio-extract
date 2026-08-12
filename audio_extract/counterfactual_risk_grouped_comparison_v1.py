@@ -9,13 +9,14 @@ route switching.  Promotion belongs to a separate preregistered policy.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from statistics import fmean, median
-from typing import Any, Mapping, Sequence
 import hashlib
 import json
 import math
 import re
+from collections.abc import Mapping, Sequence
+from dataclasses import dataclass
+from statistics import fmean, median
+from typing import Any
 
 from .counterfactual_risk_complete_route_evaluation_v1 import (
     CompleteRouteEvaluationV1,
@@ -735,7 +736,7 @@ class GroupedComparisonReportV1:
         records: Sequence[WorkArmEvaluationV1],
         *,
         verifier_commit: str,
-    ) -> "GroupedComparisonReportV1":
+    ) -> GroupedComparisonReportV1:
         ordered = tuple(
             sorted(records, key=lambda row: (row.unit.sha256, row.arm_id))
         )

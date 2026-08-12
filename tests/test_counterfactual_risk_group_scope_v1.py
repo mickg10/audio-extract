@@ -22,6 +22,7 @@ from audio_extract.counterfactual_risk_group_scope_v1 import (
     GroupSubsetManifestV1,
 )
 from audio_extract.group_conformal_risk_student import (
+    GroupConformalRiskError,
     fit_grouped_linear_risk_student,
 )
 
@@ -286,10 +287,17 @@ def test_bound_student_refuses_manifest_coverage_count_rank_and_code_substitutio
             "calibration subset",
         ),
         ("split_manifest_sha256", sha("other-split"), "split"),
-        ("target_coverage", 0.91, "target coverage"),
+        # A certifiable target (ceil((9+1)*0.80)=8 <= 9) that stays <= the fitted
+        # guaranteed coverage but mismatches the frozen scope target (0.90): this
+        # exercises the scope-binding mismatch, not the finite-group coverage gate.
+        ("target_coverage", 0.80, "target coverage"),
         ("calibration_group_count", 10, "calibration group count"),
         ("conformal_rank", 8, "conformal rank"),
-        ("group_score_mode", "other", "group score mode"),
+        # group_score_mode is a singleton ("max_cells_candidates_metrics/v1"),
+        # so no valid-but-different substitution exists: an invalid mode is
+        # refused fail-closed by the calibration mode safety check (kept intact),
+        # not by the scope-binding comparison, so it is not a scope-substitution
+        # case (see the mode fail-closed check below).
         ("code_commit", git("other-code"), "code commit"),
     )
     for field, value, expected in mutations:
@@ -303,6 +311,22 @@ def test_bound_student_refuses_manifest_coverage_count_rank_and_code_substitutio
             BoundGroupedRiskStudentV1(
                 changed_student, calibration_scope
             ).validate(dataset, split)
+
+    # A substituted group-score mode is a singleton, so it cannot be a valid
+    # scope-binding mismatch; it is refused fail-closed by the calibration's mode
+    # safety check.
+    mode_substituted = student.__class__(
+        **{
+            **student.__dict__,
+            "calibration": calibration.__class__(
+                **{**calibration.__dict__, "group_score_mode": "other"}
+            ),
+        }
+    )
+    with pytest.raises(GroupConformalRiskError, match="unknown group score mode"):
+        BoundGroupedRiskStudentV1(
+            mode_substituted, calibration_scope
+        ).validate(dataset, split)
 
 
 def test_scope_identity_binds_exchangeability_hyperparameters_strata_and_components():

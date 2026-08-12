@@ -222,7 +222,7 @@ def test_mutating_source_labels_cannot_change_issued_artifact_bytes():
     assert artifact.payload_utf8 == before_bytes
     assert artifact.sha256 == before_sha
     artifact.validate_frozen()
-    with pytest.raises(Exception):
+    with pytest.raises(ValueError):
         artifact.validate_against_source(report, p)
 
 

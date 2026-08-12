@@ -57,16 +57,21 @@ def certificate(
         pcm_name=(f"{name}:mixture" if no_vocal_alias else None),
     )
     vocal = node("vocal_truth", f"{name}:v")
+    # One globally-ordered frozen candidate-recipe panel shared across all
+    # families ("candidate-0"/"candidate-1" recipes); each family decodes its
+    # own per-family artifact PCM for those recipes.
     default_derived = (
         node(
             "candidate",
-            f"{name}:candidate-0",
+            "candidate-0",
             parents=(mixture.identity,),
+            pcm_name=f"{name}:candidate-0",
         ),
         node(
             "candidate",
-            f"{name}:candidate-1",
+            "candidate-1",
             parents=(mixture.identity,),
+            pcm_name=f"{name}:candidate-1",
         ),
     )
     values = tuple(default_derived if derived is None else derived)

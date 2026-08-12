@@ -10,11 +10,12 @@ parents, and clean-truth ancestry are refused.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Any, Mapping, Sequence
 import hashlib
 import json
 import re
+from collections.abc import Mapping, Sequence
+from dataclasses import dataclass
+from typing import Any
 
 from .counterfactual_risk_dataset_contract_v1 import (
     CounterfactualRiskDatasetError,
@@ -245,16 +246,21 @@ class SourceFamilyCertificateV2:
 
         for node in self.derived_artifacts:
             roots = terminal_roots(node.identity)
-            if node.role in {"candidate", "feature_source"} and roots != frozenset(
-                ("mixture_root",)
-            ):
-                raise SourceFamilyV2Error(
-                    f"{node.role} ancestry must terminate only at mixture_root; "
-                    f"found {sorted(roots)}"
-                )
             if node.role == "query_source" and not roots:
                 raise SourceFamilyV2Error(
                     "query_source ancestry has no certified terminal root"
+                )
+            # Candidate, feature-source, and inference-time query artifacts must
+            # all be mixture-only: a clean accompaniment/vocal truth reachable in
+            # their ancestry would leak the exact target at inference.
+            if node.role in {
+                "candidate",
+                "feature_source",
+                "query_source",
+            } and roots != frozenset(("mixture_root",)):
+                raise SourceFamilyV2Error(
+                    f"{node.role} ancestry must terminate only at mixture_root; "
+                    f"found {sorted(roots)}"
                 )
 
         _ordered_shas(self.spectral_grid_sha256s, "spectral_grid_sha256s")
@@ -305,8 +311,8 @@ class SourceFamilyRegistryV2:
         certificates: Sequence[SourceFamilyCertificateV2],
         *,
         source_commit: str,
-    ) -> "SourceFamilyRegistryV2":
-        ordered = tuple(sorted(tuple(certificates), key=lambda value: value.sha256))
+    ) -> SourceFamilyRegistryV2:
+        ordered = tuple(sorted(certificates, key=lambda value: value.sha256))
         result = cls(ordered, source_commit)
         result.validate()
         return result
@@ -330,6 +336,23 @@ class SourceFamilyRegistryV2:
         if len(set(mixture_refs)) != len(mixture_refs):
             raise SourceFamilyV2Error(
                 "one exact mixture artifact appears in multiple source families"
+            )
+        mixture_pcms = tuple(
+            certificate.mixture_root.identity.artifact_pcm_sha256
+            for certificate in self.certificates
+        )
+        if len(set(mixture_pcms)) != len(mixture_pcms):
+            raise SourceFamilyV2Error(
+                "decoded mixture PCM appears in multiple source families"
+            )
+        closed_world_manifests = tuple(
+            certificate.discovery_manifest_sha256
+            for certificate in self.certificates
+            if certificate.closed_world
+        )
+        if len(set(closed_world_manifests)) != len(closed_world_manifests):
+            raise SourceFamilyV2Error(
+                "closed-world discovery manifest appears in multiple source families"
             )
         candidate_refs = tuple(
             node.identity

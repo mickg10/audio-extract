@@ -15,23 +15,24 @@ The artifact is descriptive and cannot promote an arm.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
-from statistics import fmean
-from typing import Any, Mapping
 import hashlib
 import json
 import re
+from collections.abc import Mapping
+from dataclasses import dataclass
+from statistics import fmean
+from typing import Any
 
 from .counterfactual_risk_cell_partition_v1 import CellPartitionRegistry
 from .counterfactual_risk_grouped_comparison_v1 import (
-    GroupedComparisonPreregistrationV1,
     ROUTE_STATUSES,
+    GroupedComparisonPreregistrationV1,
 )
 from .counterfactual_risk_grouped_comparison_v3 import GroupedComparisonReportV3
 from .counterfactual_risk_grouped_diagnostics_v2 import (
-    NormalizedSwitchSummaryV2,
     OUTCOME_ORDER,
     OUTCOME_ORDER_ID,
+    NormalizedSwitchSummaryV2,
     StatusDominanceSummaryV2,
 )
 from .counterfactual_risk_route_partition_attestation_v2 import (
