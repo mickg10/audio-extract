@@ -9,6 +9,29 @@
 This revision implements gpt56's binding decisions (issue #1 comments 5247359793 /
 5248527429) exactly, after the previous green was rejected for violating them.
 
+**Latest head** additionally implements gpt56's three adjudicated decisions on
+draft PR #26 (issue #1 comment 5267006554):
+
+1. **Ruff hard ratchet in CI** (§6): the workflow's single `ruff check .` step is
+   replaced by two *binding* checks with the pinned Ruff `0.16.2` — (a) zero
+   findings on the deterministically-enumerated PR-touched Python files, and
+   (b) a repo-wide ratchet requiring `head_count (466) <= base_count (510)`, with
+   the base count re-derived in a throwaway base-SHA worktree and asserted equal
+   to the frozen `510` (tamper-evident). Base SHA, Ruff version, base/head counts
+   and the touched-file list are written to `validation-logs/`; malformed/missing
+   baseline or an unenumerable diff fails closed.
+2. **Frozen panel** (§4): gpt56 CONFIRMED the recipe-level-identity
+   implementation; verified the coded `DatasetManifest.validate` matches it
+   exactly (ordered candidate-RECIPE panel; per-family immutable artifacts;
+   availability masks; reorder/substitute changes dataset identity). No change.
+3. **D0 teacher contract split** (§3): the per-panel teacher now emits
+   `READY_FOR_GROUPED_ASSEMBLY` (never a training-ready status) and binds its
+   exact group identity; a new grouped dataset/training-manifest boundary
+   (`counterfactual_risk_grouped_training_manifest_v1`) is the *only* emitter of
+   `READY_FOR_D0_TRAINING`, gated by the finite-group inequality
+   `ceil((n_groups + 1) * (1 - alpha)) <= n_groups` with `alpha`/`n_groups`
+   identity-bearing; unsatisfiable → uncertifiable / fail-closed.
+
 ## 1. P1 provenance — BOTH content-derivation AND frozen-bundle membership
 
 `counterfactual_risk_source_lineage_v3.ExactSourceLineageV3` keeps content
@@ -63,18 +86,33 @@ registry/conditioning was removed; the study is query-free with zero query dims)
 
 - **`counterfactual_risk_d0_structured_teacher_v1`** (+ its test) — kept OUT of the
   inference import path (imports only decoder/preflight/panel types; nothing in the
-  inference runtime imports it). Repaired to gpt56's behavioral-margin contract:
-  a cell is teacher-eligible only when every required critical/secondary exact risk
-  is AVAILABLE; feasible = every required risk ≤ its frozen threshold; behavioral
+  inference runtime imports it). Behavioral-margin contract unchanged: a cell is
+  teacher-eligible only when every required critical/secondary exact risk is
+  AVAILABLE; feasible = every required risk ≤ its frozen threshold; behavioral
   margin = min signed `(threshold − risk)` across required constraints (negative
-  margins retained/informative); `READY_FOR_D0_TRAINING` requires complete eligible
-  targets/margins AND a satisfiable independent coverage gate; missing cells fail
-  closed. *Flag:* "independent-GROUP coverage gate" is under-specified for a single
-  panel (a panel's cells belong to one group); implemented an independent-CELL
-  coverage gate (≥1 eligible high-margin target) + complete grid eligibility. A
-  literal finite-group `ceil((n+1)(1−α))≤n` count would need an explicit α/group-count
-  input the teacher API does not carry — noted for review if a stricter reading is
-  intended.
+  margins retained/informative). **gpt56 decision #3 (contracts split):** the
+  per-panel teacher's ready status is renamed `READY_FOR_D0_TRAINING` →
+  **`READY_FOR_GROUPED_ASSEMBLY`** (module-level constant `READY_FOR_GROUPED_ASSEMBLY`);
+  it now binds its **exact group identity** (`group_family_sha256`, derived from the
+  panel, hashed into the teacher identity) and must NOT claim conformal/training
+  coverage from one panel (one panel = one exchangeable group). The prior "flag"
+  about the under-specified single-panel coverage gate is thereby RESOLVED.
+
+- **NEW `counterfactual_risk_grouped_training_manifest_v1`** (+ its test) — the
+  grouped dataset/training-manifest boundary and the **only** emitter of a
+  training-ready status. `GroupedTrainingManifestV1.build(members, alpha=…)`
+  aggregates `GroupedAssemblyMemberV1` records (each derived from a real
+  `READY_FOR_GROUPED_ASSEMBLY` teacher via `from_teacher`, so group identity and the
+  content-addressed teacher artifact always describe the same panel), counts the
+  DISTINCT group identities `n_groups`, and applies the finite-group conformal
+  inequality `ceil((n_groups + 1) * (1 − alpha)) <= n_groups`. Satisfiable →
+  `READY_FOR_D0_TRAINING`; unsatisfiable → `UNCERTIFIABLE_INSUFFICIENT_INDEPENDENT_GROUPS`
+  (fail-closed, never training-ready). `alpha` and `n_groups` are identity-bearing
+  (in the hashed identity), plus `target_coverage`, `conformal_rank`, sorted
+  `group_family_sha256s`, and member identities. Repeated group identities count
+  ONCE; non-ready members, duplicate teacher artifacts, malformed `alpha`
+  (outside `(0, 0.5)`), out-of-order members and empty manifests all fail closed.
+  Kept OUT of the inference import path (imports only the teacher module).
 
 - **Reachable/identity-bearing repairs retained from the prior pass**:
   `routing_preflight_v1` (`objective_tolerance`; `no_feasible_candidate_cells`
@@ -105,6 +143,17 @@ family-specific outputs use MASKS") therefore required aligning the coded check 
 compare the ordered RECIPE panel (its stated granularity), a minimal,
 order-preserving, backward-compatible relaxation. Flagged for review.
 
+**RESOLVED — gpt56 CONFIRMED (PR #26, comment 5267006554):** the recipe-level
+identity is the intended design — "one globally ordered panel of candidate
+recipes/model identities per dataset version; per-family immutable artifacts per
+panel member; availability masks for missing artifacts; reordering/substituting a
+recipe changes dataset identity." Verified `DatasetManifest.validate` /
+`identity_dict` match this wording exactly (ordered `recipe_id` panel compared
+across rows; per-row `artifact_pcm_sha256`; per-row availability mask; identity
+carries the ordered `candidate_panel` + `ordered_row_ids`). Backed by
+`test_candidate_order_is_identity_bearing_and_cannot_mix_inside_dataset`. No code
+change required.
+
 ## 5. The four semantic decisions
 
 - **`dataset_exhaustive_v2`**: `to_inference_record` keeps provenance hashes
@@ -133,14 +182,32 @@ order-preserving, backward-compatible relaxation. Flagged for review.
 - Method: safe `ruff check --fix` on the PR-added/touched scope only (imports /
   modernization / unused) + by-hand C414/F841/B017 — **no `--unsafe-fixes`, no
   `# noqa`, no excludes, no `--fix` on inherited files**.
-- The remaining 466 are inherited base debt in NON-PR files (BLE001, UP031, EXE001,
-  …), predominantly non-autofixable. **Not rewritten**, per gpt56's "do not rewrite
-  unrelated inherited lint debt." NB: the CI workflow's `Repository-wide Ruff` step is
-  exit-code-sensitive (`set -o pipefail` + `ruff check .`), so it fails on the base's
-  inherited debt (the base itself carries 510 and fails the same step); this is a
-  pre-existing base condition, not a PR regression.
+- The remaining 466 are inherited base debt in NON-PR files, predominantly
+  non-autofixable. **Not rewritten**, per gpt56's "do not rewrite unrelated
+  inherited lint debt."
+
+**gpt56 decision #1 — CI Ruff hard ratchet (pinned `ruff==0.16.2`).** Empirically
+verified the pin reproduces the frozen recording: at base SHA `2254c8e` the default
+ruleset (no repo Ruff config exists) yields exactly **510** under `0.16.2`
+(≤ `0.15` yields 258 — `0.16` stabilized many rules), and the branch head yields
+**466**. The workflow's single `ruff check .` step is replaced by two binding steps:
+  - **PR touched-file Ruff (zero findings):** enumerate PR-added/modified `*.py` via
+    `git diff --name-only $(git merge-base 2254c8e HEAD)..HEAD -- '*.py'`, existing
+    files only, and require **0 findings** under the pin.
+  - **Repository-wide Ruff ratchet:** re-derive the base count in a throwaway
+    base-SHA worktree with the pin and assert it equals the recorded **510**
+    (tamper-evident), compute the deterministic head count, and require
+    `head_count <= 510`.
+  Both write `validation-logs/` evidence (base SHA, Ruff version, base/head counts,
+  touched-file list). Missing/malformed baseline, base-count drift, or an
+  unenumerable diff **fail closed**. No blanket exclude, no `# noqa`, no
+  `--unsafe-fixes`, no rewriting inherited debt. This resolves the previously-red
+  `Repository-wide Ruff` step (466 ≤ 510) at the exact head.
 
 ## 7. Gates
 
-Full `pytest -q` GREEN; focused v4 / v3-partition / v3-lineage(+adversarial) /
-v4-schema+rejected-mutations GREEN; `compileall` GREEN; `git diff --check` GREEN.
+Full `pytest -q` GREEN (**1107 passed / 1 skipped**); focused v4 / v3-partition /
+v3-lineage(+adversarial) / v4-schema+rejected-mutations GREEN; d0-structured-teacher
+and NEW grouped-training-manifest gates GREEN; `compileall` GREEN;
+`git diff --check` GREEN. Touched-file Ruff (pin `0.16.2`) = **0**; repo-wide Ruff
+head = **466 ≤ 510**.
