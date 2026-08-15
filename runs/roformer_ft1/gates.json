@@ -1,0 +1,410 @@
+{
+ "0": {
+  "bologna_verdi": {
+   "refined": {
+    "retained_voice_db_p90": -16.97,
+    "retained_voice_coef_p90": 0.619,
+    "event_hole_db_p90": 1.65,
+    "event_hole_db_max": 16.43,
+    "event_hole_cvar90": 4.1,
+    "alpha_error_p90": 0.173,
+    "si_sdr_db": 17.37
+   },
+   "champion": {
+    "retained_voice_db_p90": -16.97,
+    "retained_voice_coef_p90": 0.619,
+    "event_hole_db_p90": 1.65,
+    "event_hole_db_max": 16.43,
+    "event_hole_cvar90": 4.1,
+    "alpha_error_p90": 0.173,
+    "si_sdr_db": 17.37
+   }
+  },
+  "bologna_puccini": {
+   "refined": {
+    "retained_voice_db_p90": -24.89,
+    "retained_voice_coef_p90": 0.656,
+    "event_hole_db_p90": 0.45,
+    "event_hole_db_max": 7.14,
+    "event_hole_cvar90": 1.64,
+    "alpha_error_p90": 0.051,
+    "si_sdr_db": 25.15
+   },
+   "champion": {
+    "retained_voice_db_p90": -24.89,
+    "retained_voice_coef_p90": 0.656,
+    "event_hole_db_p90": 0.45,
+    "event_hole_db_max": 7.14,
+    "event_hole_cvar90": 1.64,
+    "alpha_error_p90": 0.051,
+    "si_sdr_db": 25.15
+   }
+  },
+  "bologna_donizetti": {
+   "refined": {
+    "retained_voice_db_p90": -14.52,
+    "retained_voice_coef_p90": 0.169,
+    "event_hole_db_p90": 3.75,
+    "event_hole_db_max": 13.46,
+    "event_hole_cvar90": 7.01,
+    "alpha_error_p90": 0.35,
+    "si_sdr_db": 26.64
+   },
+   "champion": {
+    "retained_voice_db_p90": -14.52,
+    "retained_voice_coef_p90": 0.169,
+    "event_hole_db_p90": 3.75,
+    "event_hole_db_max": 13.46,
+    "event_hole_cvar90": 7.01,
+    "alpha_error_p90": 0.35,
+    "si_sdr_db": 26.64
+   }
+  },
+  "aalto_mozart_dry": {
+   "refined": {
+    "retained_voice_db_p90": -29.28,
+    "retained_voice_coef_p90": 0.349,
+    "event_hole_db_p90": 0.4,
+    "event_hole_db_max": 5.45,
+    "event_hole_cvar90": 1.28,
+    "alpha_error_p90": 0.045,
+    "si_sdr_db": 20.51
+   },
+   "champion": {
+    "retained_voice_db_p90": -29.28,
+    "retained_voice_coef_p90": 0.349,
+    "event_hole_db_p90": 0.4,
+    "event_hole_db_max": 5.45,
+    "event_hole_cvar90": 1.28,
+    "alpha_error_p90": 0.045,
+    "si_sdr_db": 20.51
+   }
+  },
+  "aalto_mozart_hall": {
+   "refined": {
+    "retained_voice_db_p90": -7.98,
+    "retained_voice_coef_p90": 0.72,
+    "event_hole_db_p90": 2.7,
+    "event_hole_db_max": 6.54,
+    "event_hole_cvar90": 3.68,
+    "alpha_error_p90": 0.267,
+    "si_sdr_db": 8.27
+   },
+   "champion": {
+    "retained_voice_db_p90": -7.98,
+    "retained_voice_coef_p90": 0.72,
+    "event_hole_db_p90": 2.7,
+    "event_hole_db_max": 6.54,
+    "event_hole_cvar90": 3.68,
+    "alpha_error_p90": 0.267,
+    "si_sdr_db": 8.27
+   }
+  }
+ },
+ "100": {
+  "bologna_verdi": {
+   "refined": {
+    "retained_voice_db_p90": -17.21,
+    "retained_voice_coef_p90": 0.608,
+    "event_hole_db_p90": 1.67,
+    "event_hole_db_max": 16.78,
+    "event_hole_cvar90": 4.16,
+    "alpha_error_p90": 0.174,
+    "si_sdr_db": 17.44
+   },
+   "champion": {
+    "retained_voice_db_p90": -16.97,
+    "retained_voice_coef_p90": 0.619,
+    "event_hole_db_p90": 1.65,
+    "event_hole_db_max": 16.43,
+    "event_hole_cvar90": 4.1,
+    "alpha_error_p90": 0.173,
+    "si_sdr_db": 17.37
+   }
+  },
+  "bologna_puccini": {
+   "refined": {
+    "retained_voice_db_p90": -24.89,
+    "retained_voice_coef_p90": 0.658,
+    "event_hole_db_p90": 0.46,
+    "event_hole_db_max": 7.14,
+    "event_hole_cvar90": 1.64,
+    "alpha_error_p90": 0.051,
+    "si_sdr_db": 25.16
+   },
+   "champion": {
+    "retained_voice_db_p90": -24.89,
+    "retained_voice_coef_p90": 0.656,
+    "event_hole_db_p90": 0.45,
+    "event_hole_db_max": 7.14,
+    "event_hole_cvar90": 1.64,
+    "alpha_error_p90": 0.051,
+    "si_sdr_db": 25.15
+   }
+  },
+  "bologna_donizetti": {
+   "refined": {
+    "retained_voice_db_p90": -14.52,
+    "retained_voice_coef_p90": 0.167,
+    "event_hole_db_p90": 3.75,
+    "event_hole_db_max": 13.55,
+    "event_hole_cvar90": 7.03,
+    "alpha_error_p90": 0.351,
+    "si_sdr_db": 26.64
+   },
+   "champion": {
+    "retained_voice_db_p90": -14.52,
+    "retained_voice_coef_p90": 0.169,
+    "event_hole_db_p90": 3.75,
+    "event_hole_db_max": 13.46,
+    "event_hole_cvar90": 7.01,
+    "alpha_error_p90": 0.35,
+    "si_sdr_db": 26.64
+   }
+  },
+  "aalto_mozart_dry": {
+   "refined": {
+    "retained_voice_db_p90": -29.31,
+    "retained_voice_coef_p90": 0.35,
+    "event_hole_db_p90": 0.4,
+    "event_hole_db_max": 5.45,
+    "event_hole_cvar90": 1.3,
+    "alpha_error_p90": 0.045,
+    "si_sdr_db": 20.49
+   },
+   "champion": {
+    "retained_voice_db_p90": -29.28,
+    "retained_voice_coef_p90": 0.349,
+    "event_hole_db_p90": 0.4,
+    "event_hole_db_max": 5.45,
+    "event_hole_cvar90": 1.28,
+    "alpha_error_p90": 0.045,
+    "si_sdr_db": 20.51
+   }
+  },
+  "aalto_mozart_hall": {
+   "refined": {
+    "retained_voice_db_p90": -8.28,
+    "retained_voice_coef_p90": 0.638,
+    "event_hole_db_p90": 3.01,
+    "event_hole_db_max": 6.86,
+    "event_hole_cvar90": 4.26,
+    "alpha_error_p90": 0.293,
+    "si_sdr_db": 8.91
+   },
+   "champion": {
+    "retained_voice_db_p90": -7.98,
+    "retained_voice_coef_p90": 0.72,
+    "event_hole_db_p90": 2.7,
+    "event_hole_db_max": 6.54,
+    "event_hole_cvar90": 3.68,
+    "alpha_error_p90": 0.267,
+    "si_sdr_db": 8.27
+   }
+  }
+ },
+ "300": {
+  "bologna_verdi": {
+   "refined": {
+    "retained_voice_db_p90": -17.19,
+    "retained_voice_coef_p90": 0.608,
+    "event_hole_db_p90": 1.66,
+    "event_hole_db_max": 15.68,
+    "event_hole_cvar90": 4.03,
+    "alpha_error_p90": 0.174,
+    "si_sdr_db": 17.42
+   },
+   "champion": {
+    "retained_voice_db_p90": -16.97,
+    "retained_voice_coef_p90": 0.619,
+    "event_hole_db_p90": 1.65,
+    "event_hole_db_max": 16.43,
+    "event_hole_cvar90": 4.1,
+    "alpha_error_p90": 0.173,
+    "si_sdr_db": 17.37
+   }
+  },
+  "bologna_puccini": {
+   "refined": {
+    "retained_voice_db_p90": -24.88,
+    "retained_voice_coef_p90": 0.656,
+    "event_hole_db_p90": 0.45,
+    "event_hole_db_max": 7.14,
+    "event_hole_cvar90": 1.64,
+    "alpha_error_p90": 0.051,
+    "si_sdr_db": 25.15
+   },
+   "champion": {
+    "retained_voice_db_p90": -24.89,
+    "retained_voice_coef_p90": 0.656,
+    "event_hole_db_p90": 0.45,
+    "event_hole_db_max": 7.14,
+    "event_hole_cvar90": 1.64,
+    "alpha_error_p90": 0.051,
+    "si_sdr_db": 25.15
+   }
+  },
+  "bologna_donizetti": {
+   "refined": {
+    "retained_voice_db_p90": -14.52,
+    "retained_voice_coef_p90": 0.168,
+    "event_hole_db_p90": 3.73,
+    "event_hole_db_max": 13.5,
+    "event_hole_cvar90": 7.01,
+    "alpha_error_p90": 0.349,
+    "si_sdr_db": 26.65
+   },
+   "champion": {
+    "retained_voice_db_p90": -14.52,
+    "retained_voice_coef_p90": 0.169,
+    "event_hole_db_p90": 3.75,
+    "event_hole_db_max": 13.46,
+    "event_hole_cvar90": 7.01,
+    "alpha_error_p90": 0.35,
+    "si_sdr_db": 26.64
+   }
+  },
+  "aalto_mozart_dry": {
+   "refined": {
+    "retained_voice_db_p90": -29.25,
+    "retained_voice_coef_p90": 0.349,
+    "event_hole_db_p90": 0.4,
+    "event_hole_db_max": 5.45,
+    "event_hole_cvar90": 1.29,
+    "alpha_error_p90": 0.045,
+    "si_sdr_db": 20.51
+   },
+   "champion": {
+    "retained_voice_db_p90": -29.28,
+    "retained_voice_coef_p90": 0.349,
+    "event_hole_db_p90": 0.4,
+    "event_hole_db_max": 5.45,
+    "event_hole_cvar90": 1.28,
+    "alpha_error_p90": 0.045,
+    "si_sdr_db": 20.51
+   }
+  },
+  "aalto_mozart_hall": {
+   "refined": {
+    "retained_voice_db_p90": -8.8,
+    "retained_voice_coef_p90": 0.575,
+    "event_hole_db_p90": 3.16,
+    "event_hole_db_max": 8.03,
+    "event_hole_cvar90": 4.58,
+    "alpha_error_p90": 0.305,
+    "si_sdr_db": 9.74
+   },
+   "champion": {
+    "retained_voice_db_p90": -7.98,
+    "retained_voice_coef_p90": 0.72,
+    "event_hole_db_p90": 2.7,
+    "event_hole_db_max": 6.54,
+    "event_hole_cvar90": 3.68,
+    "alpha_error_p90": 0.267,
+    "si_sdr_db": 8.27
+   }
+  }
+ },
+ "600": {
+  "bologna_verdi": {
+   "refined": {
+    "retained_voice_db_p90": -16.83,
+    "retained_voice_coef_p90": 0.614,
+    "event_hole_db_p90": 1.64,
+    "event_hole_db_max": 13.83,
+    "event_hole_cvar90": 3.72,
+    "alpha_error_p90": 0.172,
+    "si_sdr_db": 17.45
+   },
+   "champion": {
+    "retained_voice_db_p90": -16.97,
+    "retained_voice_coef_p90": 0.619,
+    "event_hole_db_p90": 1.65,
+    "event_hole_db_max": 16.43,
+    "event_hole_cvar90": 4.1,
+    "alpha_error_p90": 0.173,
+    "si_sdr_db": 17.37
+   }
+  },
+  "bologna_puccini": {
+   "refined": {
+    "retained_voice_db_p90": -24.86,
+    "retained_voice_coef_p90": 0.652,
+    "event_hole_db_p90": 0.45,
+    "event_hole_db_max": 7.14,
+    "event_hole_cvar90": 1.64,
+    "alpha_error_p90": 0.051,
+    "si_sdr_db": 25.15
+   },
+   "champion": {
+    "retained_voice_db_p90": -24.89,
+    "retained_voice_coef_p90": 0.656,
+    "event_hole_db_p90": 0.45,
+    "event_hole_db_max": 7.14,
+    "event_hole_cvar90": 1.64,
+    "alpha_error_p90": 0.051,
+    "si_sdr_db": 25.15
+   }
+  },
+  "bologna_donizetti": {
+   "refined": {
+    "retained_voice_db_p90": -14.52,
+    "retained_voice_coef_p90": 0.168,
+    "event_hole_db_p90": 3.7,
+    "event_hole_db_max": 13.5,
+    "event_hole_cvar90": 7.02,
+    "alpha_error_p90": 0.347,
+    "si_sdr_db": 26.66
+   },
+   "champion": {
+    "retained_voice_db_p90": -14.52,
+    "retained_voice_coef_p90": 0.169,
+    "event_hole_db_p90": 3.75,
+    "event_hole_db_max": 13.46,
+    "event_hole_cvar90": 7.01,
+    "alpha_error_p90": 0.35,
+    "si_sdr_db": 26.64
+   }
+  },
+  "aalto_mozart_dry": {
+   "refined": {
+    "retained_voice_db_p90": -29.28,
+    "retained_voice_coef_p90": 0.346,
+    "event_hole_db_p90": 0.4,
+    "event_hole_db_max": 5.43,
+    "event_hole_cvar90": 1.28,
+    "alpha_error_p90": 0.045,
+    "si_sdr_db": 20.55
+   },
+   "champion": {
+    "retained_voice_db_p90": -29.28,
+    "retained_voice_coef_p90": 0.349,
+    "event_hole_db_p90": 0.4,
+    "event_hole_db_max": 5.45,
+    "event_hole_cvar90": 1.28,
+    "alpha_error_p90": 0.045,
+    "si_sdr_db": 20.51
+   }
+  },
+  "aalto_mozart_hall": {
+   "refined": {
+    "retained_voice_db_p90": -8.59,
+    "retained_voice_coef_p90": 0.575,
+    "event_hole_db_p90": 3.15,
+    "event_hole_db_max": 7.19,
+    "event_hole_cvar90": 4.52,
+    "alpha_error_p90": 0.304,
+    "si_sdr_db": 9.67
+   },
+   "champion": {
+    "retained_voice_db_p90": -7.98,
+    "retained_voice_coef_p90": 0.72,
+    "event_hole_db_p90": 2.7,
+    "event_hole_db_max": 6.54,
+    "event_hole_cvar90": 3.68,
+    "alpha_error_p90": 0.267,
+    "si_sdr_db": 8.27
+   }
+  }
+ }
+}
