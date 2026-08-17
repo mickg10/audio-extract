@@ -2,6 +2,7 @@ import hashlib
 import json
 
 import numpy as np
+import pytest
 import soundfile as sf
 
 from audio_extract.separate import (
@@ -39,14 +40,16 @@ def test_residual_primary_prefers_vocals_no_truthiness_error():
     assert _residual_primary({}) is None
 
 
-def test_owned_separator_scratch_is_removed_after_read(tmp_path):
-    scratch = tmp_path / "scratch"
-    scratch.mkdir()
+def _canonical_input(tmp_path, frames=32, channels=2, sr=44_100):
+    src = tmp_path / "input.f32.wav"
+    sf.write(src, np.zeros((frames, channels), dtype="float32"), sr, subtype="FLOAT")
+    return src
 
+
+def _stub_separator(scratch, write_stem):
     class Backend:
         def separate(self, _audio_path):
-            sf.write(scratch / "mix_(Vocals)_model.wav", np.zeros((32, 2), dtype="float32"),
-                     44_100, subtype="FLOAT")
+            write_stem()
 
     separator = Separator.__new__(Separator)
     separator._out = scratch
@@ -55,9 +58,75 @@ def test_owned_separator_scratch_is_removed_after_read(tmp_path):
     separator.model_filename = "model.ckpt"
     separator.model_sha256 = "sha256:model"
     separator.overlap = 8
-    result = separator.separate_file(tmp_path / "unused.wav")
+    return separator
+
+
+def test_owned_separator_scratch_is_removed_after_read(tmp_path):
+    scratch = tmp_path / "scratch"
+    scratch.mkdir()
+    separator = _stub_separator(
+        scratch,
+        lambda: sf.write(scratch / "mix_(Vocals)_model.wav",
+                         np.zeros((32, 2), dtype="float32"), 44_100, subtype="FLOAT"),
+    )
+    result = separator.separate_file(_canonical_input(tmp_path))
     assert result.stems["vocals"].shape == (32, 2)
     assert not scratch.exists()
+
+
+@pytest.mark.parametrize("subtype", ["PCM_16", "PCM_24"])
+def test_quantized_backend_stem_is_refused_before_read(tmp_path, subtype):
+    # Oracle ruling regression (v2_ext rejection): an int16/int24 stem on disk
+    # read back with dtype="float64" silently launders quantized PCM into
+    # "float" arrays. separate_file must inspect the on-disk subtype BEFORE
+    # reading samples and raise instead of returning stems.
+    scratch = tmp_path / "scratch"
+    scratch.mkdir()
+    separator = _stub_separator(
+        scratch,
+        lambda: sf.write(scratch / "mix_(Vocals)_model.wav",
+                         np.zeros((32, 2), dtype="float32"), 44_100, subtype=subtype),
+    )
+    with pytest.raises(RuntimeError, match=f"subtype '{subtype}'"):
+        separator.separate_file(_canonical_input(tmp_path))
+
+
+def test_backend_stem_sample_rate_mismatch_is_refused(tmp_path):
+    scratch = tmp_path / "scratch"
+    scratch.mkdir()
+    separator = _stub_separator(
+        scratch,
+        lambda: sf.write(scratch / "mix_(Vocals)_model.wav",
+                         np.zeros((32, 2), dtype="float32"), 48_000, subtype="FLOAT"),
+    )
+    with pytest.raises(RuntimeError, match="sample rate 48000 != canonical input 44100"):
+        separator.separate_file(_canonical_input(tmp_path))
+
+
+def test_backend_stem_channel_mismatch_is_refused(tmp_path):
+    scratch = tmp_path / "scratch"
+    scratch.mkdir()
+    separator = _stub_separator(
+        scratch,
+        lambda: sf.write(scratch / "mix_(Vocals)_model.wav",
+                         np.zeros((32, 1), dtype="float32"), 44_100, subtype="FLOAT"),
+    )
+    with pytest.raises(RuntimeError, match="channel count 1 != canonical input 2"):
+        separator.separate_file(_canonical_input(tmp_path))
+
+
+def test_backend_stem_non_finite_samples_are_refused(tmp_path):
+    scratch = tmp_path / "scratch"
+    scratch.mkdir()
+    bad = np.zeros((32, 2), dtype="float32")
+    bad[7, 0] = np.nan
+    separator = _stub_separator(
+        scratch,
+        lambda: sf.write(scratch / "mix_(Vocals)_model.wav", bad, 44_100,
+                         subtype="FLOAT"),
+    )
+    with pytest.raises(RuntimeError, match="non-finite"):
+        separator.separate_file(_canonical_input(tmp_path))
 
 
 def test_mono_channel_map_is_explicit_parent_for_separator_and_ensemble(tmp_path, monkeypatch):

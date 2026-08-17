@@ -5,6 +5,12 @@ This adapter takes §7.4 option 2: ``use_soundfile=True`` (float WAV writer),
 ``normalization_threshold=1.0`` and ``amplification_threshold=0.0`` (no gain
 touching), then reads stems back as float64. Identity records the *actual*
 checkpoint hash, not the filename.
+
+Float gate (oracle ruling 2026-08-17): ``separate_file`` inspects every stem the
+backend wrote *before* reading samples and hard-fails unless the on-disk subtype
+is exactly ``FLOAT`` with the canonical input's sample rate and channel count;
+non-finite samples also fail. Quantized lineage can therefore never reach a
+candidate write.
 """
 
 from __future__ import annotations
@@ -97,13 +103,39 @@ class Separator:
     def separate_file(self, audio_path: str | Path) -> SepOutput:
         import soundfile as sf
 
+        in_info = sf.info(str(audio_path))  # canonical input defines the grid
         before = set(self._out.glob("*.wav"))
         self._sep.separate(str(audio_path))
         produced = [p for p in self._out.glob("*.wav") if p not in before]
+        # Float gate (oracle ruling 2026-08-17, v2_ext rejection): inspect every
+        # produced stem file BEFORE reading samples. A non-FLOAT subtype means the
+        # backend quantized on disk and sf.read would silently launder int PCM
+        # into "float" arrays — refuse here, before any candidate write/return.
+        for p in produced:
+            info = sf.info(str(p))
+            if info.subtype != "FLOAT":
+                raise RuntimeError(
+                    f"separator backend wrote non-float stem {p.name!r}: subtype "
+                    f"{info.subtype!r} != 'FLOAT' — quantized lineage refused"
+                )
+            if int(info.samplerate) != int(in_info.samplerate):
+                raise RuntimeError(
+                    f"separator backend stem {p.name!r} sample rate "
+                    f"{info.samplerate} != canonical input {in_info.samplerate}"
+                )
+            if int(info.channels) != int(in_info.channels):
+                raise RuntimeError(
+                    f"separator backend stem {p.name!r} channel count "
+                    f"{info.channels} != canonical input {in_info.channels}"
+                )
         stems: dict[str, np.ndarray] = {}
-        sr = 44100
+        sr = int(in_info.samplerate)
         for p in produced:  # scan the dir so we capture every stem, not just the return value
             arr, sr = sf.read(str(p), dtype="float64", always_2d=True)
+            if not np.all(np.isfinite(arr)):
+                raise RuntimeError(
+                    f"separator backend stem {p.name!r} contains non-finite samples"
+                )
             stems[_normalize_stem_name(p.stem)] = arr
         if self._owns_out:
             for p in produced:
