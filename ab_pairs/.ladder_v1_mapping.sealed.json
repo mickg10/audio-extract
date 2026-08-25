@@ -1,0 +1,208 @@
+{
+ "design": "ladder_v1 phase-1: paired vs-original, LUFS-matched, blind A/B",
+ "pairs": {
+  "L3841_p1": {
+   "A": "codecnull",
+   "B": "original",
+   "cand_lufs": -9.8,
+   "candidate": "codecnull",
+   "gain_db_on_candidate": 0.0,
+   "orig_lufs": -9.8,
+   "window": "L3841"
+  },
+  "L3841_p2": {
+   "A": "original",
+   "B": "mdx23c",
+   "cand_lufs": -21.8,
+   "candidate": "mdx23c",
+   "gain_db_on_candidate": 12,
+   "orig_lufs": -9.8,
+   "window": "L3841"
+  },
+  "L3841_p3": {
+   "A": "roformer",
+   "B": "original",
+   "cand_lufs": -21.9,
+   "candidate": "roformer",
+   "gain_db_on_candidate": 12,
+   "orig_lufs": -9.8,
+   "window": "L3841"
+  },
+  "L3841_p4": {
+   "A": "original",
+   "B": "melband",
+   "cand_lufs": -14.0,
+   "candidate": "melband",
+   "gain_db_on_candidate": 4.2,
+   "orig_lufs": -9.8,
+   "window": "L3841"
+  },
+  "L3841_p5": {
+   "A": "median",
+   "B": "original",
+   "cand_lufs": -14.0,
+   "candidate": "median",
+   "gain_db_on_candidate": 4.2,
+   "orig_lufs": -9.8,
+   "window": "L3841"
+  },
+  "L3841_p6": {
+   "A": "ensmax",
+   "B": "original",
+   "cand_lufs": -21.7,
+   "candidate": "ensmax",
+   "gain_db_on_candidate": 11.9,
+   "orig_lufs": -9.8,
+   "window": "L3841"
+  },
+  "L3841_p7": {
+   "A": "original",
+   "B": "deecho",
+   "cand_lufs": -22.1,
+   "candidate": "deecho",
+   "gain_db_on_candidate": 12,
+   "orig_lufs": -9.8,
+   "window": "L3841"
+  },
+  "L4853_p1": {
+   "A": "codecnull",
+   "B": "original",
+   "cand_lufs": -12.6,
+   "candidate": "codecnull",
+   "gain_db_on_candidate": 0.0,
+   "orig_lufs": -12.6,
+   "window": "L4853"
+  },
+  "L4853_p2": {
+   "A": "original",
+   "B": "mdx23c",
+   "cand_lufs": -22.4,
+   "candidate": "mdx23c",
+   "gain_db_on_candidate": 9.8,
+   "orig_lufs": -12.6,
+   "window": "L4853"
+  },
+  "L4853_p3": {
+   "A": "original",
+   "B": "roformer",
+   "cand_lufs": -22.4,
+   "candidate": "roformer",
+   "gain_db_on_candidate": 9.8,
+   "orig_lufs": -12.6,
+   "window": "L4853"
+  },
+  "L4853_p4": {
+   "A": "melband",
+   "B": "original",
+   "cand_lufs": -15.8,
+   "candidate": "melband",
+   "gain_db_on_candidate": 3.2,
+   "orig_lufs": -12.6,
+   "window": "L4853"
+  },
+  "L4853_p5": {
+   "A": "median",
+   "B": "original",
+   "cand_lufs": -15.8,
+   "candidate": "median",
+   "gain_db_on_candidate": 3.2,
+   "orig_lufs": -12.6,
+   "window": "L4853"
+  },
+  "L4853_p6": {
+   "A": "original",
+   "B": "ensmax",
+   "cand_lufs": -22.3,
+   "candidate": "ensmax",
+   "gain_db_on_candidate": 9.7,
+   "orig_lufs": -12.6,
+   "window": "L4853"
+  },
+  "L4853_p7": {
+   "A": "deecho",
+   "B": "original",
+   "cand_lufs": -22.7,
+   "candidate": "deecho",
+   "gain_db_on_candidate": 10.1,
+   "orig_lufs": -12.6,
+   "window": "L4853"
+  },
+  "L94102_p1": {
+   "A": "original",
+   "B": "codecnull",
+   "cand_lufs": -22.7,
+   "candidate": "codecnull",
+   "gain_db_on_candidate": 0.0,
+   "orig_lufs": -22.7,
+   "window": "L94102"
+  },
+  "L94102_p2": {
+   "A": "original",
+   "B": "mdx23c",
+   "cand_lufs": -31.5,
+   "candidate": "mdx23c",
+   "gain_db_on_candidate": 8.8,
+   "orig_lufs": -22.7,
+   "window": "L94102"
+  },
+  "L94102_p3": {
+   "A": "original",
+   "B": "roformer",
+   "cand_lufs": -31.3,
+   "candidate": "roformer",
+   "gain_db_on_candidate": 8.6,
+   "orig_lufs": -22.7,
+   "window": "L94102"
+  },
+  "L94102_p4": {
+   "A": "melband",
+   "B": "original",
+   "cand_lufs": -25.3,
+   "candidate": "melband",
+   "gain_db_on_candidate": 2.6,
+   "orig_lufs": -22.7,
+   "window": "L94102"
+  },
+  "L94102_p5": {
+   "A": "median",
+   "B": "original",
+   "cand_lufs": -25.3,
+   "candidate": "median",
+   "gain_db_on_candidate": 2.6,
+   "orig_lufs": -22.7,
+   "window": "L94102"
+  },
+  "L94102_p6": {
+   "A": "original",
+   "B": "ensmax",
+   "cand_lufs": -31.2,
+   "candidate": "ensmax",
+   "gain_db_on_candidate": 8.5,
+   "orig_lufs": -22.7,
+   "window": "L94102"
+  },
+  "L94102_p7": {
+   "A": "original",
+   "B": "deecho",
+   "cand_lufs": -32.2,
+   "candidate": "deecho",
+   "gain_db_on_candidate": 9.5,
+   "orig_lufs": -22.7,
+   "window": "L94102"
+  }
+ },
+ "windows": {
+  "L3841": [
+   38.0,
+   41.0
+  ],
+  "L4853": [
+   48.0,
+   53.0
+  ],
+  "L94102": [
+   94.0,
+   102.0
+  ]
+ }
+}

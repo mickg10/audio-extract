@@ -1,0 +1,1399 @@
+{
+ "store_root": "/home/mickg/v2_provenance/store_v2",
+ "run1_writes": 35,
+ "run2_writes": 0,
+ "n_files": 115,
+ "run2_zero_writes": true,
+ "snapshots_identical": true,
+ "diffs": [],
+ "before_summary": {
+  "n_files": 115
+ },
+ "after_summary": {
+  "n_files": 115
+ },
+ "before": {
+  "gianni_schicchi_babbino/candidates/sha256_1f2d445a025e1c78e26b1c919f93d3687f0ffce0d3aaeecd0a05cf0fcd126592/output.f32.wav": {
+   "inode": 1839503,
+   "mtime_ns": 1786891946051818367,
+   "size": 54377136,
+   "sha256": "0779356ab20be6ff224b03d6ad30f1e20253b0a656e5fce66ca8b8895e1c1eab"
+  },
+  "gianni_schicchi_babbino/candidates/sha256_1f2d445a025e1c78e26b1c919f93d3687f0ffce0d3aaeecd0a05cf0fcd126592/recipe.json": {
+   "inode": 1839505,
+   "mtime_ns": 1786893763536724733,
+   "size": 1538,
+   "sha256": "63559c176cb2e7d775c58f8df1d691e040a725b7f0169648974497e2081617cf"
+  },
+  "gianni_schicchi_babbino/candidates/sha256_1f2d445a025e1c78e26b1c919f93d3687f0ffce0d3aaeecd0a05cf0fcd126592/COMPLETE": {
+   "inode": 1839508,
+   "mtime_ns": 1786893763732728709,
+   "size": 0,
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "gianni_schicchi_babbino/candidates/sha256_1f2d445a025e1c78e26b1c919f93d3687f0ffce0d3aaeecd0a05cf0fcd126592/output.pcm.sha256": {
+   "inode": 1839507,
+   "mtime_ns": 1786893763536724733,
+   "size": 72,
+   "sha256": "25cecbcdb4491a06f086d7b8a65125cd1b0b13d223f772e6b90bfee58d84c13a"
+  },
+  "gianni_schicchi_babbino/candidates/sha256_1f2d445a025e1c78e26b1c919f93d3687f0ffce0d3aaeecd0a05cf0fcd126592/execution.json": {
+   "inode": 1839506,
+   "mtime_ns": 1786893763536724733,
+   "size": 568,
+   "sha256": "44a814f0efab95430b1cde754b8da396571b48f8d6b0aaef89180c37c7fb07d6"
+  },
+  "gianni_schicchi_babbino/candidates/sha256_db486c87993e528f5e61dc55570f1ac2949b5b8fb6c66399b1349b37a8d41aee/output.f32.wav": {
+   "inode": 1839497,
+   "mtime_ns": 1786891945915815597,
+   "size": 54377136,
+   "sha256": "40a39ef7e005ef13d0d43c1410c9b3a3f814371dc31a7d96c653178d8e328902"
+  },
+  "gianni_schicchi_babbino/candidates/sha256_db486c87993e528f5e61dc55570f1ac2949b5b8fb6c66399b1349b37a8d41aee/recipe.json": {
+   "inode": 1839499,
+   "mtime_ns": 1786893762624706232,
+   "size": 961,
+   "sha256": "2cc69aac413427fa212a17ced2f553bae954c3ff8e0bca834b9f8e5bf77b682b"
+  },
+  "gianni_schicchi_babbino/candidates/sha256_db486c87993e528f5e61dc55570f1ac2949b5b8fb6c66399b1349b37a8d41aee/COMPLETE": {
+   "inode": 1839502,
+   "mtime_ns": 1786893762804709884,
+   "size": 0,
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "gianni_schicchi_babbino/candidates/sha256_db486c87993e528f5e61dc55570f1ac2949b5b8fb6c66399b1349b37a8d41aee/output.pcm.sha256": {
+   "inode": 1839501,
+   "mtime_ns": 1786893762624706232,
+   "size": 72,
+   "sha256": "9ae1cf7df8f21ab9d7e283838e5a2db0a91211dfca0ceb955414d196b7ff58d8"
+  },
+  "gianni_schicchi_babbino/candidates/sha256_db486c87993e528f5e61dc55570f1ac2949b5b8fb6c66399b1349b37a8d41aee/execution.json": {
+   "inode": 1839500,
+   "mtime_ns": 1786893762624706232,
+   "size": 571,
+   "sha256": "1fcaab3ea6939d5b25b8aebe2ded834028453319219a48cee33f0a02d81cdc0a"
+  },
+  "gianni_schicchi_babbino/candidates/sha256_3b88228dc21d165d7a309ad8c647df2ebc56f1ec94b156be6e6ad3f86200e551/output.f32.wav": {
+   "inode": 1839509,
+   "mtime_ns": 1786891946191821217,
+   "size": 54377136,
+   "sha256": "0ab266ecf418072bbac0a7ca8ae968cc2d6fc06178c01e7309110f621f03e331"
+  },
+  "gianni_schicchi_babbino/candidates/sha256_3b88228dc21d165d7a309ad8c647df2ebc56f1ec94b156be6e6ad3f86200e551/recipe.json": {
+   "inode": 1839511,
+   "mtime_ns": 1786893764448743234,
+   "size": 913,
+   "sha256": "ab665b8ad19dcb04f8342a504b01a363895ddb29c6cceab1dbb0a8203ce52f00"
+  },
+  "gianni_schicchi_babbino/candidates/sha256_3b88228dc21d165d7a309ad8c647df2ebc56f1ec94b156be6e6ad3f86200e551/COMPLETE": {
+   "inode": 1839514,
+   "mtime_ns": 1786893764628746885,
+   "size": 0,
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "gianni_schicchi_babbino/candidates/sha256_3b88228dc21d165d7a309ad8c647df2ebc56f1ec94b156be6e6ad3f86200e551/output.pcm.sha256": {
+   "inode": 1839513,
+   "mtime_ns": 1786893764448743234,
+   "size": 72,
+   "sha256": "945f052546c99310c72f9c9e865b2233397e711db9e9a28fe710d7ec187c55a2"
+  },
+  "gianni_schicchi_babbino/candidates/sha256_3b88228dc21d165d7a309ad8c647df2ebc56f1ec94b156be6e6ad3f86200e551/execution.json": {
+   "inode": 1839512,
+   "mtime_ns": 1786893764448743234,
+   "size": 571,
+   "sha256": "81ca5606b5a27ea6d8845ea39ea61264d5de0398d8551b8e6e60bc3478dd28fd"
+  },
+  "gianni_schicchi_babbino/candidates/sha256_fe0beb0eca7444d1ea264d091a3639351d855f688d77f8dff32ded8d4b83e4e3/output.f32.wav": {
+   "inode": 1839491,
+   "mtime_ns": 1786891945783812909,
+   "size": 54377136,
+   "sha256": "ee85cc617f56e1e4093a7c1dd0f81a3ddaf053ad9a304ea201a6e522c6f22992"
+  },
+  "gianni_schicchi_babbino/candidates/sha256_fe0beb0eca7444d1ea264d091a3639351d855f688d77f8dff32ded8d4b83e4e3/recipe.json": {
+   "inode": 1839493,
+   "mtime_ns": 1786893761800689517,
+   "size": 917,
+   "sha256": "985ff034dda59e126f4423989519e5ac0e46ec343321eef6ff38a432c7224f9e"
+  },
+  "gianni_schicchi_babbino/candidates/sha256_fe0beb0eca7444d1ea264d091a3639351d855f688d77f8dff32ded8d4b83e4e3/COMPLETE": {
+   "inode": 1839496,
+   "mtime_ns": 1786893761980693168,
+   "size": 0,
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "gianni_schicchi_babbino/candidates/sha256_fe0beb0eca7444d1ea264d091a3639351d855f688d77f8dff32ded8d4b83e4e3/output.pcm.sha256": {
+   "inode": 1839495,
+   "mtime_ns": 1786893761800689517,
+   "size": 72,
+   "sha256": "d9a970a1fa66f91d67bf364d8b0c95bcdfbd5d1e1dc262da7e11d90e773748c0"
+  },
+  "gianni_schicchi_babbino/candidates/sha256_fe0beb0eca7444d1ea264d091a3639351d855f688d77f8dff32ded8d4b83e4e3/execution.json": {
+   "inode": 1839494,
+   "mtime_ns": 1786893761800689517,
+   "size": 485,
+   "sha256": "bc14b5c5b7422bdcdb131eb9d4b1740a50dae2401e089b793fbc9618c1d373c5"
+  },
+  "gianni_schicchi_babbino/source/original.wav": {
+   "inode": 1839488,
+   "mtime_ns": 1786885652892097865,
+   "size": 54377136,
+   "sha256": "822b03d8a9f2334ea2a7736ce9de90391c2b30451337a9cb9a7c726d375a4819"
+  },
+  "gianni_schicchi_babbino/source/source.json": {
+   "inode": 1839490,
+   "mtime_ns": 1786893761556684567,
+   "size": 475,
+   "sha256": "43f3768a1141e88c1191efa5dea8aa025bc1ad287df62ea2505aa7d40e7cb4a6"
+  },
+  "gianni_schicchi_babbino/source/canonical.f32.wav": {
+   "inode": 1839489,
+   "mtime_ns": 1786891945783812909,
+   "size": 54377136,
+   "sha256": "ee85cc617f56e1e4093a7c1dd0f81a3ddaf053ad9a304ea201a6e522c6f22992"
+  },
+  "elisir_furtiva_lagrima/candidates/sha256_7e2f218adb27d99cf7e66dfffb74c00f9d19866322927ebfd426a7ace5cce75a/output.f32.wav": {
+   "inode": 1839529,
+   "mtime_ns": 1786891989584704590,
+   "size": 93664944,
+   "sha256": "f98cb7688d8a7bb6b8c67da14ed9a71048d2e9729231213f7318dc7a5cb0f135"
+  },
+  "elisir_furtiva_lagrima/candidates/sha256_7e2f218adb27d99cf7e66dfffb74c00f9d19866322927ebfd426a7ace5cce75a/recipe.json": {
+   "inode": 1839531,
+   "mtime_ns": 1786893768712829733,
+   "size": 962,
+   "sha256": "e42c3105cc1d65632db08b85e53bd9e62d1b73f6ebd5dd35647374a6fdd5ebdc"
+  },
+  "elisir_furtiva_lagrima/candidates/sha256_7e2f218adb27d99cf7e66dfffb74c00f9d19866322927ebfd426a7ace5cce75a/COMPLETE": {
+   "inode": 1839534,
+   "mtime_ns": 1786893769024836062,
+   "size": 0,
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "elisir_furtiva_lagrima/candidates/sha256_7e2f218adb27d99cf7e66dfffb74c00f9d19866322927ebfd426a7ace5cce75a/output.pcm.sha256": {
+   "inode": 1839533,
+   "mtime_ns": 1786893768712829733,
+   "size": 72,
+   "sha256": "4635bac7124f76746e41862d2bd18a9d031c6e6ff53fda4e29b87978c4b4b023"
+  },
+  "elisir_furtiva_lagrima/candidates/sha256_7e2f218adb27d99cf7e66dfffb74c00f9d19866322927ebfd426a7ace5cce75a/execution.json": {
+   "inode": 1839532,
+   "mtime_ns": 1786893768712829733,
+   "size": 571,
+   "sha256": "725f9a920fddc64d2f159e6ee5bcc2c486f7f45f8b98a1a1038977a7b024f5a8"
+  },
+  "elisir_furtiva_lagrima/candidates/sha256_b07ac9ffeadb3c44060541c12b64056e00dd8daaa5b04d9f3cf7dcce91eeb980/output.f32.wav": {
+   "inode": 1839535,
+   "mtime_ns": 1786891989856710126,
+   "size": 93664944,
+   "sha256": "c62b7f475d86ca4e649fd2d6ede3dcbe4091377e8c58418f35a085061e3fdc14"
+  },
+  "elisir_furtiva_lagrima/candidates/sha256_b07ac9ffeadb3c44060541c12b64056e00dd8daaa5b04d9f3cf7dcce91eeb980/recipe.json": {
+   "inode": 1839537,
+   "mtime_ns": 1786893770184859594,
+   "size": 1539,
+   "sha256": "31772279c9862127ced3e573b3003638de249833d82f7792c275b2fb5dadc557"
+  },
+  "elisir_furtiva_lagrima/candidates/sha256_b07ac9ffeadb3c44060541c12b64056e00dd8daaa5b04d9f3cf7dcce91eeb980/COMPLETE": {
+   "inode": 1839540,
+   "mtime_ns": 1786893770492865842,
+   "size": 0,
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "elisir_furtiva_lagrima/candidates/sha256_b07ac9ffeadb3c44060541c12b64056e00dd8daaa5b04d9f3cf7dcce91eeb980/output.pcm.sha256": {
+   "inode": 1839539,
+   "mtime_ns": 1786893770184859594,
+   "size": 72,
+   "sha256": "eef19461cfba341b97ae8973d71e044df8d8d31143cfa4a28797b5d70e70e1eb"
+  },
+  "elisir_furtiva_lagrima/candidates/sha256_b07ac9ffeadb3c44060541c12b64056e00dd8daaa5b04d9f3cf7dcce91eeb980/execution.json": {
+   "inode": 1839538,
+   "mtime_ns": 1786893770184859594,
+   "size": 568,
+   "sha256": "84b1c627924ef54c3911aef2ebc9b642a90429f8a9c00d3bd75ec09cb9e884c9"
+  },
+  "elisir_furtiva_lagrima/candidates/sha256_510ceba1eb81bbfb46367a903fb7908d6604b3e6a45ef2071d02181cf266aeb1/output.f32.wav": {
+   "inode": 1839523,
+   "mtime_ns": 1786891989340699624,
+   "size": 93664944,
+   "sha256": "0a659e9ab812cc4f89a9737ca59f64375f359a72438539e3661e43ac408233bb"
+  },
+  "elisir_furtiva_lagrima/candidates/sha256_510ceba1eb81bbfb46367a903fb7908d6604b3e6a45ef2071d02181cf266aeb1/recipe.json": {
+   "inode": 1839525,
+   "mtime_ns": 1786893767224799548,
+   "size": 918,
+   "sha256": "f2cc31909446e96bd09a6913ea3115d41d2927c792bc8dc8e24f77b5c23b6968"
+  },
+  "elisir_furtiva_lagrima/candidates/sha256_510ceba1eb81bbfb46367a903fb7908d6604b3e6a45ef2071d02181cf266aeb1/COMPLETE": {
+   "inode": 1839528,
+   "mtime_ns": 1786893767548806121,
+   "size": 0,
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "elisir_furtiva_lagrima/candidates/sha256_510ceba1eb81bbfb46367a903fb7908d6604b3e6a45ef2071d02181cf266aeb1/output.pcm.sha256": {
+   "inode": 1839527,
+   "mtime_ns": 1786893767224799548,
+   "size": 72,
+   "sha256": "bbc0356e314fb2e134d916da321633a84aa66d1f06c0a5c4e0922dd26cc4e976"
+  },
+  "elisir_furtiva_lagrima/candidates/sha256_510ceba1eb81bbfb46367a903fb7908d6604b3e6a45ef2071d02181cf266aeb1/execution.json": {
+   "inode": 1839526,
+   "mtime_ns": 1786893767224799548,
+   "size": 485,
+   "sha256": "bc14b5c5b7422bdcdb131eb9d4b1740a50dae2401e089b793fbc9618c1d373c5"
+  },
+  "elisir_furtiva_lagrima/candidates/sha256_94c9e3cb2ae95d4a4f9bfcb24a03b4e444eaf585e48c0f913589aeb110b28525/output.f32.wav": {
+   "inode": 1839541,
+   "mtime_ns": 1786891990108715255,
+   "size": 93664944,
+   "sha256": "b6e66e3b42c2b81338151b8da431866ff417681fccc16c57fa0e33e7b6590f72"
+  },
+  "elisir_furtiva_lagrima/candidates/sha256_94c9e3cb2ae95d4a4f9bfcb24a03b4e444eaf585e48c0f913589aeb110b28525/recipe.json": {
+   "inode": 1839543,
+   "mtime_ns": 1786893771668889698,
+   "size": 914,
+   "sha256": "39d1ac88d7ec033ec3ace972919e1f87af00e395ee61fa0697840910f2fd4741"
+  },
+  "elisir_furtiva_lagrima/candidates/sha256_94c9e3cb2ae95d4a4f9bfcb24a03b4e444eaf585e48c0f913589aeb110b28525/COMPLETE": {
+   "inode": 1839546,
+   "mtime_ns": 1786893771968895784,
+   "size": 0,
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "elisir_furtiva_lagrima/candidates/sha256_94c9e3cb2ae95d4a4f9bfcb24a03b4e444eaf585e48c0f913589aeb110b28525/output.pcm.sha256": {
+   "inode": 1839545,
+   "mtime_ns": 1786893771668889698,
+   "size": 72,
+   "sha256": "250c4f457123408df82a79fd61c254c6262a94bb9ad3c350d0f82cd19bc5b5a9"
+  },
+  "elisir_furtiva_lagrima/candidates/sha256_94c9e3cb2ae95d4a4f9bfcb24a03b4e444eaf585e48c0f913589aeb110b28525/execution.json": {
+   "inode": 1839544,
+   "mtime_ns": 1786893771668889698,
+   "size": 571,
+   "sha256": "4e67409ec1c9cb87d11eb6c48e62f5c81a4f3680960040af0f2729ecafdcf989"
+  },
+  "elisir_furtiva_lagrima/source/original.wav": {
+   "inode": 1839520,
+   "mtime_ns": 1786885656744175023,
+   "size": 93664944,
+   "sha256": "d306cd53130e9f99a5478b0a961380a3c35462d177673032059a8292e6864266"
+  },
+  "elisir_furtiva_lagrima/source/source.json": {
+   "inode": 1839522,
+   "mtime_ns": 1786893766812791190,
+   "size": 475,
+   "sha256": "6f76cd2488b6e07a073188b5d6b36e070bc4c845406d12ef64c2b7e8d5a2f33e"
+  },
+  "elisir_furtiva_lagrima/source/canonical.f32.wav": {
+   "inode": 1839521,
+   "mtime_ns": 1786891989340699624,
+   "size": 93664944,
+   "sha256": "0a659e9ab812cc4f89a9737ca59f64375f359a72438539e3661e43ac408233bb"
+  },
+  "verdi_slow_voices/candidates/sha256_18cfc8cc53da8efa6dface4afaa2b6971764173cdc38cc04f1f67e8bc54190d5/output.f32.wav": {
+   "inode": 1839465,
+   "mtime_ns": 1786890344278427606,
+   "size": 36753496,
+   "sha256": "a16598e86bdd5b26c9b70c89719e3489417077c1cad1ab5f848951932d55c1af"
+  },
+  "verdi_slow_voices/candidates/sha256_18cfc8cc53da8efa6dface4afaa2b6971764173cdc38cc04f1f67e8bc54190d5/recipe.json": {
+   "inode": 1839467,
+   "mtime_ns": 1786893758956631823,
+   "size": 961,
+   "sha256": "40ab93b5e8fb7565c94d6080ce8e884a03aadc06e56d92a710f4891791648cec"
+  },
+  "verdi_slow_voices/candidates/sha256_18cfc8cc53da8efa6dface4afaa2b6971764173cdc38cc04f1f67e8bc54190d5/COMPLETE": {
+   "inode": 1839470,
+   "mtime_ns": 1786893759080634338,
+   "size": 0,
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "verdi_slow_voices/candidates/sha256_18cfc8cc53da8efa6dface4afaa2b6971764173cdc38cc04f1f67e8bc54190d5/output.pcm.sha256": {
+   "inode": 1839469,
+   "mtime_ns": 1786893758956631823,
+   "size": 72,
+   "sha256": "5c3c07577711d91cbd32b69818285c23bee3d62bdb3bb1880f431e40e01ba814"
+  },
+  "verdi_slow_voices/candidates/sha256_18cfc8cc53da8efa6dface4afaa2b6971764173cdc38cc04f1f67e8bc54190d5/execution.json": {
+   "inode": 1839468,
+   "mtime_ns": 1786893758956631823,
+   "size": 571,
+   "sha256": "6494892312886367cb21251d3a7f607b5ff165510cd01132d407058fe9543197"
+  },
+  "verdi_slow_voices/candidates/sha256_e15964a3f0ec9acdf1ce9964ee22b3b0efbd0ae25feaaa9e9d24f616ec1827ca/output.f32.wav": {
+   "inode": 1839459,
+   "mtime_ns": 1786890344186425764,
+   "size": 36753496,
+   "sha256": "928834249c40f1fea4fda1fceaeac969678347c505fdedb38d0d8a21c90dd463"
+  },
+  "verdi_slow_voices/candidates/sha256_e15964a3f0ec9acdf1ce9964ee22b3b0efbd0ae25feaaa9e9d24f616ec1827ca/recipe.json": {
+   "inode": 1839461,
+   "mtime_ns": 1786893758340619328,
+   "size": 907,
+   "sha256": "09eb439875c888618d2f592daa6c63eeed06b4c089ad30ad4a75f63f5c22ca47"
+  },
+  "verdi_slow_voices/candidates/sha256_e15964a3f0ec9acdf1ce9964ee22b3b0efbd0ae25feaaa9e9d24f616ec1827ca/COMPLETE": {
+   "inode": 1839464,
+   "mtime_ns": 1786893758476622086,
+   "size": 0,
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "verdi_slow_voices/candidates/sha256_e15964a3f0ec9acdf1ce9964ee22b3b0efbd0ae25feaaa9e9d24f616ec1827ca/output.pcm.sha256": {
+   "inode": 1839463,
+   "mtime_ns": 1786893758340619328,
+   "size": 72,
+   "sha256": "3bffa0bfe3ef5923e0e9e9cd52a103f7d05a29f66e98b552adc60c452eac8d2d"
+  },
+  "verdi_slow_voices/candidates/sha256_e15964a3f0ec9acdf1ce9964ee22b3b0efbd0ae25feaaa9e9d24f616ec1827ca/execution.json": {
+   "inode": 1839462,
+   "mtime_ns": 1786893758340619328,
+   "size": 485,
+   "sha256": "bc14b5c5b7422bdcdb131eb9d4b1740a50dae2401e089b793fbc9618c1d373c5"
+  },
+  "verdi_slow_voices/candidates/sha256_12ad757804c6f39c55c2a28cae2d7a39d81dc7f1d7ed1720f79cebb70479ea06/output.f32.wav": {
+   "inode": 1839471,
+   "mtime_ns": 1786890344366429368,
+   "size": 36753496,
+   "sha256": "59b73d0f19a8477826ecf3d5052c77cbd9188168952cccb2d6a4c6169a4bf5ed"
+  },
+  "verdi_slow_voices/candidates/sha256_12ad757804c6f39c55c2a28cae2d7a39d81dc7f1d7ed1720f79cebb70479ea06/recipe.json": {
+   "inode": 1839473,
+   "mtime_ns": 1786893759532643508,
+   "size": 1538,
+   "sha256": "e729c3ef2cb32742ad6db588e492af3440cb893731c0bec89ba0388faff8fde4"
+  },
+  "verdi_slow_voices/candidates/sha256_12ad757804c6f39c55c2a28cae2d7a39d81dc7f1d7ed1720f79cebb70479ea06/COMPLETE": {
+   "inode": 1839476,
+   "mtime_ns": 1786893759660646105,
+   "size": 0,
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "verdi_slow_voices/candidates/sha256_12ad757804c6f39c55c2a28cae2d7a39d81dc7f1d7ed1720f79cebb70479ea06/output.pcm.sha256": {
+   "inode": 1839475,
+   "mtime_ns": 1786893759532643508,
+   "size": 72,
+   "sha256": "b5bf1b9a228e73cf6b5376cd67c7ba7899a2ed73ce00c553815539397ad40446"
+  },
+  "verdi_slow_voices/candidates/sha256_12ad757804c6f39c55c2a28cae2d7a39d81dc7f1d7ed1720f79cebb70479ea06/execution.json": {
+   "inode": 1839474,
+   "mtime_ns": 1786893759532643508,
+   "size": 568,
+   "sha256": "0418c31cafdd6b6406633cdf65ad4b4ab5022ed9fbe31c5373bf779800eab7fd"
+  },
+  "verdi_slow_voices/candidates/sha256_ed484a6210b5ca85211247d69fa81b9e1799a5f0ac512b487abd0568419175d0/output.f32.wav": {
+   "inode": 1839477,
+   "mtime_ns": 1786890344102424083,
+   "size": 36753496,
+   "sha256": "f38f33f367df4fcf0d72f59c7b8048e9261a82ff8a05fe9e786316399fbf4a81"
+  },
+  "verdi_slow_voices/candidates/sha256_ed484a6210b5ca85211247d69fa81b9e1799a5f0ac512b487abd0568419175d0/recipe.json": {
+   "inode": 1839479,
+   "mtime_ns": 1786893760120655437,
+   "size": 913,
+   "sha256": "93dee0e13d39381b172a9d34f9605b7a50a52cbc6583ba2722e10b56861d795e"
+  },
+  "verdi_slow_voices/candidates/sha256_ed484a6210b5ca85211247d69fa81b9e1799a5f0ac512b487abd0568419175d0/COMPLETE": {
+   "inode": 1839482,
+   "mtime_ns": 1786893760244657952,
+   "size": 0,
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "verdi_slow_voices/candidates/sha256_ed484a6210b5ca85211247d69fa81b9e1799a5f0ac512b487abd0568419175d0/output.pcm.sha256": {
+   "inode": 1839481,
+   "mtime_ns": 1786893760120655437,
+   "size": 72,
+   "sha256": "f5019a3003e7a213208663d7b3fbd94e276742ef97b83acb5169b90f6ee4dadd"
+  },
+  "verdi_slow_voices/candidates/sha256_ed484a6210b5ca85211247d69fa81b9e1799a5f0ac512b487abd0568419175d0/execution.json": {
+   "inode": 1839480,
+   "mtime_ns": 1786893760120655437,
+   "size": 571,
+   "sha256": "7c6a8ee8e8cc2768e69e6d21e466637bb39353a3d3471d56fb15c20f68428ada"
+  },
+  "verdi_slow_voices/source/source.json": {
+   "inode": 1839458,
+   "mtime_ns": 1786893758148615432,
+   "size": 466,
+   "sha256": "aeb513e6afdd3aba850eb67149722c6d5b1a6c9d099427909d5b1042e666c102"
+  },
+  "verdi_slow_voices/source/original.mp3": {
+   "inode": 1839456,
+   "mtime_ns": 1786888794327518938,
+   "size": 2496488,
+   "sha256": "3c8a76459c7c44bf9c8a1f33efbf5d1d63e43f5811b1eb0dee605091d4d586cb"
+  },
+  "verdi_slow_voices/source/canonical.f32.wav": {
+   "inode": 1839457,
+   "mtime_ns": 1786890344186425764,
+   "size": 36753496,
+   "sha256": "928834249c40f1fea4fda1fceaeac969678347c505fdedb38d0d8a21c90dd463"
+  },
+  "control_bologna_verdi_orch/candidates/sha256_9727536749dc57138b577a67c169a412343d9ed1b0adbefe23f862502e48393b/output.f32.wav": {
+   "inode": 1839594,
+   "mtime_ns": 1786892062798194386,
+   "size": 32499672,
+   "sha256": "fc0a30e06a91c12955a7bb1c27b2b4a9af1778e10e21b63b516d896db3e0293c"
+  },
+  "control_bologna_verdi_orch/candidates/sha256_9727536749dc57138b577a67c169a412343d9ed1b0adbefe23f862502e48393b/recipe.json": {
+   "inode": 1839596,
+   "mtime_ns": 1786893788237225794,
+   "size": 961,
+   "sha256": "a935b9f5cbf51db8840e8b99bb63133f63ca37a256955d2a461ef3f455afb59f"
+  },
+  "control_bologna_verdi_orch/candidates/sha256_9727536749dc57138b577a67c169a412343d9ed1b0adbefe23f862502e48393b/COMPLETE": {
+   "inode": 1839599,
+   "mtime_ns": 1786893788345227985,
+   "size": 0,
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "control_bologna_verdi_orch/candidates/sha256_9727536749dc57138b577a67c169a412343d9ed1b0adbefe23f862502e48393b/output.pcm.sha256": {
+   "inode": 1839598,
+   "mtime_ns": 1786893788237225794,
+   "size": 72,
+   "sha256": "9f685b3b31fadae7405c514a13600324e0de9e2cab578ff82e9e290ed1979e0a"
+  },
+  "control_bologna_verdi_orch/candidates/sha256_9727536749dc57138b577a67c169a412343d9ed1b0adbefe23f862502e48393b/execution.json": {
+   "inode": 1839597,
+   "mtime_ns": 1786893788237225794,
+   "size": 571,
+   "sha256": "41b3249b9a39a4359213275a50575fa6070ef1ced2ddcdfdfd62898d98aa57e3"
+  },
+  "control_bologna_verdi_orch/candidates/sha256_bac7eb23470b7b43b6bfb005f5430af22b55a8abaee438993fb068e6e96c4185/output.f32.wav": {
+   "inode": 1839600,
+   "mtime_ns": 1786892062866195769,
+   "size": 32499672,
+   "sha256": "ab04ff6a0f82c79a5c5628ddf7af344ef4eb29480ee103bd76c599bc72df8636"
+  },
+  "control_bologna_verdi_orch/candidates/sha256_bac7eb23470b7b43b6bfb005f5430af22b55a8abaee438993fb068e6e96c4185/recipe.json": {
+   "inode": 1839602,
+   "mtime_ns": 1786893788709235369,
+   "size": 1538,
+   "sha256": "787d73de2c7a71244ab6f2e1f6adbb7a56c0b0617608c2fa9628c21db094281d"
+  },
+  "control_bologna_verdi_orch/candidates/sha256_bac7eb23470b7b43b6bfb005f5430af22b55a8abaee438993fb068e6e96c4185/COMPLETE": {
+   "inode": 1839605,
+   "mtime_ns": 1786893788817237560,
+   "size": 0,
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "control_bologna_verdi_orch/candidates/sha256_bac7eb23470b7b43b6bfb005f5430af22b55a8abaee438993fb068e6e96c4185/output.pcm.sha256": {
+   "inode": 1839604,
+   "mtime_ns": 1786893788713235450,
+   "size": 72,
+   "sha256": "694c7f8cbdf4bab3314bfc33a4673bb017a6bb4cd1c4c1e73ff5168a1014f7f3"
+  },
+  "control_bologna_verdi_orch/candidates/sha256_bac7eb23470b7b43b6bfb005f5430af22b55a8abaee438993fb068e6e96c4185/execution.json": {
+   "inode": 1839603,
+   "mtime_ns": 1786893788713235450,
+   "size": 568,
+   "sha256": "109f9d4220335e3cae6a28bd394bcba74cd3938745a2e4c9a150346dc3416efd"
+  },
+  "control_bologna_verdi_orch/candidates/sha256_970262d0fba84f7808704da1e2dc3b0e5dcba3edc05809c13a9ce7a2eab9e14b/output.f32.wav": {
+   "inode": 1839588,
+   "mtime_ns": 1786892062734193083,
+   "size": 32499672,
+   "sha256": "fc0a30e06a91c12955a7bb1c27b2b4a9af1778e10e21b63b516d896db3e0293c"
+  },
+  "control_bologna_verdi_orch/candidates/sha256_970262d0fba84f7808704da1e2dc3b0e5dcba3edc05809c13a9ce7a2eab9e14b/recipe.json": {
+   "inode": 1839590,
+   "mtime_ns": 1786893787757216057,
+   "size": 917,
+   "sha256": "720822ed5bdb7a292b963adb071f80d144fd64b82365347ca159abe6f9e484f8"
+  },
+  "control_bologna_verdi_orch/candidates/sha256_970262d0fba84f7808704da1e2dc3b0e5dcba3edc05809c13a9ce7a2eab9e14b/COMPLETE": {
+   "inode": 1839593,
+   "mtime_ns": 1786893787869218329,
+   "size": 0,
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "control_bologna_verdi_orch/candidates/sha256_970262d0fba84f7808704da1e2dc3b0e5dcba3edc05809c13a9ce7a2eab9e14b/output.pcm.sha256": {
+   "inode": 1839592,
+   "mtime_ns": 1786893787765216219,
+   "size": 72,
+   "sha256": "9f685b3b31fadae7405c514a13600324e0de9e2cab578ff82e9e290ed1979e0a"
+  },
+  "control_bologna_verdi_orch/candidates/sha256_970262d0fba84f7808704da1e2dc3b0e5dcba3edc05809c13a9ce7a2eab9e14b/execution.json": {
+   "inode": 1839591,
+   "mtime_ns": 1786893787765216219,
+   "size": 485,
+   "sha256": "bc14b5c5b7422bdcdb131eb9d4b1740a50dae2401e089b793fbc9618c1d373c5"
+  },
+  "control_bologna_verdi_orch/candidates/sha256_84c7fc59b816eaa90d46f155c28e7d079692000d201ebe6bd9ea4d4000e651e9/output.f32.wav": {
+   "inode": 1839606,
+   "mtime_ns": 1786892062926196990,
+   "size": 32499672,
+   "sha256": "293a1a23b1e7169a338b89cade7fb28456248305aa79df45f9f8616237925cc1"
+  },
+  "control_bologna_verdi_orch/candidates/sha256_84c7fc59b816eaa90d46f155c28e7d079692000d201ebe6bd9ea4d4000e651e9/recipe.json": {
+   "inode": 1839608,
+   "mtime_ns": 1786893789197245269,
+   "size": 913,
+   "sha256": "58cddc81aea0fea1a00e512af61774ca8422b6820a37f5cb4988c8dd80ce3bc1"
+  },
+  "control_bologna_verdi_orch/candidates/sha256_84c7fc59b816eaa90d46f155c28e7d079692000d201ebe6bd9ea4d4000e651e9/COMPLETE": {
+   "inode": 1839611,
+   "mtime_ns": 1786893789301247379,
+   "size": 0,
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "control_bologna_verdi_orch/candidates/sha256_84c7fc59b816eaa90d46f155c28e7d079692000d201ebe6bd9ea4d4000e651e9/output.pcm.sha256": {
+   "inode": 1839610,
+   "mtime_ns": 1786893789197245269,
+   "size": 72,
+   "sha256": "fc250b92f12b56544afe2668edc874f1e2dd95eb0b586cadd0d08a6267cbcdaf"
+  },
+  "control_bologna_verdi_orch/candidates/sha256_84c7fc59b816eaa90d46f155c28e7d079692000d201ebe6bd9ea4d4000e651e9/execution.json": {
+   "inode": 1839609,
+   "mtime_ns": 1786893789197245269,
+   "size": 571,
+   "sha256": "cc21f7acdec33a15b95394e43185f31a3aa463b1af9f8ab0ccf7bdbe2b3540f4"
+  },
+  "control_bologna_verdi_orch/source/original.wav": {
+   "inode": 1839585,
+   "mtime_ns": 1786885663628312919,
+   "size": 32499672,
+   "sha256": "722ca10c7c9b5892c33f233c4525b8c3c42a845922245ec81ed3515940703eb2"
+  },
+  "control_bologna_verdi_orch/source/source.json": {
+   "inode": 1839587,
+   "mtime_ns": 1786893787617213217,
+   "size": 478,
+   "sha256": "48d59f5d90cf8d29f233750bc0d22e52c9928e294d4abbae60ba603b3f367524"
+  },
+  "control_bologna_verdi_orch/source/canonical.f32.wav": {
+   "inode": 1839586,
+   "mtime_ns": 1786892062734193083,
+   "size": 32499672,
+   "sha256": "fc0a30e06a91c12955a7bb1c27b2b4a9af1778e10e21b63b516d896db3e0293c"
+  },
+  "don_giovanni_madamina/candidates/sha256_95a326b1979ee95979b63130d29804bb629c71aa39fe1b893b7897e859c28ce4/output.f32.wav": {
+   "inode": 1839567,
+   "mtime_ns": 1786892048369900849,
+   "size": 145018512,
+   "sha256": "78b66f807ac0c5ebb8c1b8abc956dc3a572092cbd4d0e18c7b4cf1cc9fd31517"
+  },
+  "don_giovanni_madamina/candidates/sha256_95a326b1979ee95979b63130d29804bb629c71aa39fe1b893b7897e859c28ce4/recipe.json": {
+   "inode": 1839569,
+   "mtime_ns": 1786893782041100103,
+   "size": 1539,
+   "sha256": "42cba7d49c8071b17950031e208323a66c3d58c03533f4a10dec902432de889f"
+  },
+  "don_giovanni_madamina/candidates/sha256_95a326b1979ee95979b63130d29804bb629c71aa39fe1b893b7897e859c28ce4/COMPLETE": {
+   "inode": 1839572,
+   "mtime_ns": 1786893782513109678,
+   "size": 0,
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "don_giovanni_madamina/candidates/sha256_95a326b1979ee95979b63130d29804bb629c71aa39fe1b893b7897e859c28ce4/output.pcm.sha256": {
+   "inode": 1839571,
+   "mtime_ns": 1786893782041100103,
+   "size": 72,
+   "sha256": "6953998501801542cfdb998ae56d67985a482a1718ed24c0d96669be7d1c48aa"
+  },
+  "don_giovanni_madamina/candidates/sha256_95a326b1979ee95979b63130d29804bb629c71aa39fe1b893b7897e859c28ce4/execution.json": {
+   "inode": 1839570,
+   "mtime_ns": 1786893782041100103,
+   "size": 568,
+   "sha256": "e0e0fed52fb92ee5ec990e554564bfdeab27ea1cfa9df7990a8ebdb416225fa2"
+  },
+  "don_giovanni_madamina/candidates/sha256_ecb2def6e5cc40809ca7977382e2bffbcf1e860ce42732d278c60bab512544b7/output.f32.wav": {
+   "inode": 1839574,
+   "mtime_ns": 1786892048681907197,
+   "size": 145018512,
+   "sha256": "7eb86638b6a48fb263e354266c50e2545c63f0e41b02676050ca4c564c257800"
+  },
+  "don_giovanni_madamina/candidates/sha256_ecb2def6e5cc40809ca7977382e2bffbcf1e860ce42732d278c60bab512544b7/recipe.json": {
+   "inode": 1839576,
+   "mtime_ns": 1786893784561151224,
+   "size": 914,
+   "sha256": "39ffbbfab5f36acbd8c60fa7b501d407316227c1f16366c2ba91484a3cdee92d"
+  },
+  "don_giovanni_madamina/candidates/sha256_ecb2def6e5cc40809ca7977382e2bffbcf1e860ce42732d278c60bab512544b7/COMPLETE": {
+   "inode": 1839579,
+   "mtime_ns": 1786893785049161123,
+   "size": 0,
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "don_giovanni_madamina/candidates/sha256_ecb2def6e5cc40809ca7977382e2bffbcf1e860ce42732d278c60bab512544b7/output.pcm.sha256": {
+   "inode": 1839578,
+   "mtime_ns": 1786893784561151224,
+   "size": 72,
+   "sha256": "d677ebeffc7564042b6593a36aeca7da26831d417fa6561db495c389c0dd342e"
+  },
+  "don_giovanni_madamina/candidates/sha256_ecb2def6e5cc40809ca7977382e2bffbcf1e860ce42732d278c60bab512544b7/execution.json": {
+   "inode": 1839577,
+   "mtime_ns": 1786893784561151224,
+   "size": 571,
+   "sha256": "ba211e8f72bc0744465bc6387c03873b40e30683d73abde25e210523bcbee501"
+  },
+  "don_giovanni_madamina/candidates/sha256_f8e355b3345f5013c898dbf71383c426e3fab5724864aa0da10ac9ec251b6130/output.f32.wav": {
+   "inode": 1839561,
+   "mtime_ns": 1786892048049894338,
+   "size": 145018512,
+   "sha256": "6e4cb957eedb198bbc9d4496cd7fe899cf966e2c20020c67884d7863c025c74e"
+  },
+  "don_giovanni_madamina/candidates/sha256_f8e355b3345f5013c898dbf71383c426e3fab5724864aa0da10ac9ec251b6130/recipe.json": {
+   "inode": 1839563,
+   "mtime_ns": 1786893779793054501,
+   "size": 962,
+   "sha256": "11047a2b8794a65f705dfb96546cbeb03c0f8915e71351853d468b89bae6c49b"
+  },
+  "don_giovanni_madamina/candidates/sha256_f8e355b3345f5013c898dbf71383c426e3fab5724864aa0da10ac9ec251b6130/COMPLETE": {
+   "inode": 1839566,
+   "mtime_ns": 1786893780261063995,
+   "size": 0,
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "don_giovanni_madamina/candidates/sha256_f8e355b3345f5013c898dbf71383c426e3fab5724864aa0da10ac9ec251b6130/output.pcm.sha256": {
+   "inode": 1839565,
+   "mtime_ns": 1786893779793054501,
+   "size": 72,
+   "sha256": "6094aef16553bb3885e5cf129ecfb4e664140295a70e700f8b1b163b0228ca4b"
+  },
+  "don_giovanni_madamina/candidates/sha256_f8e355b3345f5013c898dbf71383c426e3fab5724864aa0da10ac9ec251b6130/execution.json": {
+   "inode": 1839564,
+   "mtime_ns": 1786893779793054501,
+   "size": 571,
+   "sha256": "d47ac3b258d79b08d557e4949165e9534bdcf69fcbd72d0b9b36427b03a17513"
+  },
+  "don_giovanni_madamina/candidates/sha256_ec260df7e5e144af2f618b69f2aa499cdf99e6ccc3d9534c68208f5c3aa6bf05/output.f32.wav": {
+   "inode": 1839555,
+   "mtime_ns": 1786892047721887665,
+   "size": 145018512,
+   "sha256": "e8a7aa74a4142fa69e254d0446522a458bc8cfa5c48a1ad65e714d937b84abf8"
+  },
+  "don_giovanni_madamina/candidates/sha256_ec260df7e5e144af2f618b69f2aa499cdf99e6ccc3d9534c68208f5c3aa6bf05/recipe.json": {
+   "inode": 1839557,
+   "mtime_ns": 1786893777593009871,
+   "size": 918,
+   "sha256": "bb3fce05ecd30a98ea91350af94ead2a1270630cede6035e26e369e2c71d3c65"
+  },
+  "don_giovanni_madamina/candidates/sha256_ec260df7e5e144af2f618b69f2aa499cdf99e6ccc3d9534c68208f5c3aa6bf05/COMPLETE": {
+   "inode": 1839560,
+   "mtime_ns": 1786893778073019609,
+   "size": 0,
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "don_giovanni_madamina/candidates/sha256_ec260df7e5e144af2f618b69f2aa499cdf99e6ccc3d9534c68208f5c3aa6bf05/output.pcm.sha256": {
+   "inode": 1839559,
+   "mtime_ns": 1786893777593009871,
+   "size": 72,
+   "sha256": "6094aef16553bb3885e5cf129ecfb4e664140295a70e700f8b1b163b0228ca4b"
+  },
+  "don_giovanni_madamina/candidates/sha256_ec260df7e5e144af2f618b69f2aa499cdf99e6ccc3d9534c68208f5c3aa6bf05/execution.json": {
+   "inode": 1839558,
+   "mtime_ns": 1786893777593009871,
+   "size": 485,
+   "sha256": "bc14b5c5b7422bdcdb131eb9d4b1740a50dae2401e089b793fbc9618c1d373c5"
+  },
+  "don_giovanni_madamina/source/original.wav": {
+   "inode": 1839552,
+   "mtime_ns": 1786885661988280068,
+   "size": 145018512,
+   "sha256": "0929236c8943a9fe4433fd252820d761adc81c77dea51c619d7b972f30ba00b9"
+  },
+  "don_giovanni_madamina/source/source.json": {
+   "inode": 1839554,
+   "mtime_ns": 1786893776916996158,
+   "size": 474,
+   "sha256": "ace4c67cccd2f0ad2405762a7bedd54452e110b1edc5cdb79e74715ce9efa8d6"
+  },
+  "don_giovanni_madamina/source/canonical.f32.wav": {
+   "inode": 1839553,
+   "mtime_ns": 1786892047721887665,
+   "size": 145018512,
+   "sha256": "e8a7aa74a4142fa69e254d0446522a458bc8cfa5c48a1ad65e714d937b84abf8"
+  }
+ },
+ "after": {
+  "gianni_schicchi_babbino/candidates/sha256_1f2d445a025e1c78e26b1c919f93d3687f0ffce0d3aaeecd0a05cf0fcd126592/output.f32.wav": {
+   "inode": 1839503,
+   "mtime_ns": 1786891946051818367,
+   "size": 54377136,
+   "sha256": "0779356ab20be6ff224b03d6ad30f1e20253b0a656e5fce66ca8b8895e1c1eab"
+  },
+  "gianni_schicchi_babbino/candidates/sha256_1f2d445a025e1c78e26b1c919f93d3687f0ffce0d3aaeecd0a05cf0fcd126592/recipe.json": {
+   "inode": 1839505,
+   "mtime_ns": 1786893763536724733,
+   "size": 1538,
+   "sha256": "63559c176cb2e7d775c58f8df1d691e040a725b7f0169648974497e2081617cf"
+  },
+  "gianni_schicchi_babbino/candidates/sha256_1f2d445a025e1c78e26b1c919f93d3687f0ffce0d3aaeecd0a05cf0fcd126592/COMPLETE": {
+   "inode": 1839508,
+   "mtime_ns": 1786893763732728709,
+   "size": 0,
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "gianni_schicchi_babbino/candidates/sha256_1f2d445a025e1c78e26b1c919f93d3687f0ffce0d3aaeecd0a05cf0fcd126592/output.pcm.sha256": {
+   "inode": 1839507,
+   "mtime_ns": 1786893763536724733,
+   "size": 72,
+   "sha256": "25cecbcdb4491a06f086d7b8a65125cd1b0b13d223f772e6b90bfee58d84c13a"
+  },
+  "gianni_schicchi_babbino/candidates/sha256_1f2d445a025e1c78e26b1c919f93d3687f0ffce0d3aaeecd0a05cf0fcd126592/execution.json": {
+   "inode": 1839506,
+   "mtime_ns": 1786893763536724733,
+   "size": 568,
+   "sha256": "44a814f0efab95430b1cde754b8da396571b48f8d6b0aaef89180c37c7fb07d6"
+  },
+  "gianni_schicchi_babbino/candidates/sha256_db486c87993e528f5e61dc55570f1ac2949b5b8fb6c66399b1349b37a8d41aee/output.f32.wav": {
+   "inode": 1839497,
+   "mtime_ns": 1786891945915815597,
+   "size": 54377136,
+   "sha256": "40a39ef7e005ef13d0d43c1410c9b3a3f814371dc31a7d96c653178d8e328902"
+  },
+  "gianni_schicchi_babbino/candidates/sha256_db486c87993e528f5e61dc55570f1ac2949b5b8fb6c66399b1349b37a8d41aee/recipe.json": {
+   "inode": 1839499,
+   "mtime_ns": 1786893762624706232,
+   "size": 961,
+   "sha256": "2cc69aac413427fa212a17ced2f553bae954c3ff8e0bca834b9f8e5bf77b682b"
+  },
+  "gianni_schicchi_babbino/candidates/sha256_db486c87993e528f5e61dc55570f1ac2949b5b8fb6c66399b1349b37a8d41aee/COMPLETE": {
+   "inode": 1839502,
+   "mtime_ns": 1786893762804709884,
+   "size": 0,
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "gianni_schicchi_babbino/candidates/sha256_db486c87993e528f5e61dc55570f1ac2949b5b8fb6c66399b1349b37a8d41aee/output.pcm.sha256": {
+   "inode": 1839501,
+   "mtime_ns": 1786893762624706232,
+   "size": 72,
+   "sha256": "9ae1cf7df8f21ab9d7e283838e5a2db0a91211dfca0ceb955414d196b7ff58d8"
+  },
+  "gianni_schicchi_babbino/candidates/sha256_db486c87993e528f5e61dc55570f1ac2949b5b8fb6c66399b1349b37a8d41aee/execution.json": {
+   "inode": 1839500,
+   "mtime_ns": 1786893762624706232,
+   "size": 571,
+   "sha256": "1fcaab3ea6939d5b25b8aebe2ded834028453319219a48cee33f0a02d81cdc0a"
+  },
+  "gianni_schicchi_babbino/candidates/sha256_3b88228dc21d165d7a309ad8c647df2ebc56f1ec94b156be6e6ad3f86200e551/output.f32.wav": {
+   "inode": 1839509,
+   "mtime_ns": 1786891946191821217,
+   "size": 54377136,
+   "sha256": "0ab266ecf418072bbac0a7ca8ae968cc2d6fc06178c01e7309110f621f03e331"
+  },
+  "gianni_schicchi_babbino/candidates/sha256_3b88228dc21d165d7a309ad8c647df2ebc56f1ec94b156be6e6ad3f86200e551/recipe.json": {
+   "inode": 1839511,
+   "mtime_ns": 1786893764448743234,
+   "size": 913,
+   "sha256": "ab665b8ad19dcb04f8342a504b01a363895ddb29c6cceab1dbb0a8203ce52f00"
+  },
+  "gianni_schicchi_babbino/candidates/sha256_3b88228dc21d165d7a309ad8c647df2ebc56f1ec94b156be6e6ad3f86200e551/COMPLETE": {
+   "inode": 1839514,
+   "mtime_ns": 1786893764628746885,
+   "size": 0,
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "gianni_schicchi_babbino/candidates/sha256_3b88228dc21d165d7a309ad8c647df2ebc56f1ec94b156be6e6ad3f86200e551/output.pcm.sha256": {
+   "inode": 1839513,
+   "mtime_ns": 1786893764448743234,
+   "size": 72,
+   "sha256": "945f052546c99310c72f9c9e865b2233397e711db9e9a28fe710d7ec187c55a2"
+  },
+  "gianni_schicchi_babbino/candidates/sha256_3b88228dc21d165d7a309ad8c647df2ebc56f1ec94b156be6e6ad3f86200e551/execution.json": {
+   "inode": 1839512,
+   "mtime_ns": 1786893764448743234,
+   "size": 571,
+   "sha256": "81ca5606b5a27ea6d8845ea39ea61264d5de0398d8551b8e6e60bc3478dd28fd"
+  },
+  "gianni_schicchi_babbino/candidates/sha256_fe0beb0eca7444d1ea264d091a3639351d855f688d77f8dff32ded8d4b83e4e3/output.f32.wav": {
+   "inode": 1839491,
+   "mtime_ns": 1786891945783812909,
+   "size": 54377136,
+   "sha256": "ee85cc617f56e1e4093a7c1dd0f81a3ddaf053ad9a304ea201a6e522c6f22992"
+  },
+  "gianni_schicchi_babbino/candidates/sha256_fe0beb0eca7444d1ea264d091a3639351d855f688d77f8dff32ded8d4b83e4e3/recipe.json": {
+   "inode": 1839493,
+   "mtime_ns": 1786893761800689517,
+   "size": 917,
+   "sha256": "985ff034dda59e126f4423989519e5ac0e46ec343321eef6ff38a432c7224f9e"
+  },
+  "gianni_schicchi_babbino/candidates/sha256_fe0beb0eca7444d1ea264d091a3639351d855f688d77f8dff32ded8d4b83e4e3/COMPLETE": {
+   "inode": 1839496,
+   "mtime_ns": 1786893761980693168,
+   "size": 0,
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "gianni_schicchi_babbino/candidates/sha256_fe0beb0eca7444d1ea264d091a3639351d855f688d77f8dff32ded8d4b83e4e3/output.pcm.sha256": {
+   "inode": 1839495,
+   "mtime_ns": 1786893761800689517,
+   "size": 72,
+   "sha256": "d9a970a1fa66f91d67bf364d8b0c95bcdfbd5d1e1dc262da7e11d90e773748c0"
+  },
+  "gianni_schicchi_babbino/candidates/sha256_fe0beb0eca7444d1ea264d091a3639351d855f688d77f8dff32ded8d4b83e4e3/execution.json": {
+   "inode": 1839494,
+   "mtime_ns": 1786893761800689517,
+   "size": 485,
+   "sha256": "bc14b5c5b7422bdcdb131eb9d4b1740a50dae2401e089b793fbc9618c1d373c5"
+  },
+  "gianni_schicchi_babbino/source/original.wav": {
+   "inode": 1839488,
+   "mtime_ns": 1786885652892097865,
+   "size": 54377136,
+   "sha256": "822b03d8a9f2334ea2a7736ce9de90391c2b30451337a9cb9a7c726d375a4819"
+  },
+  "gianni_schicchi_babbino/source/source.json": {
+   "inode": 1839490,
+   "mtime_ns": 1786893761556684567,
+   "size": 475,
+   "sha256": "43f3768a1141e88c1191efa5dea8aa025bc1ad287df62ea2505aa7d40e7cb4a6"
+  },
+  "gianni_schicchi_babbino/source/canonical.f32.wav": {
+   "inode": 1839489,
+   "mtime_ns": 1786891945783812909,
+   "size": 54377136,
+   "sha256": "ee85cc617f56e1e4093a7c1dd0f81a3ddaf053ad9a304ea201a6e522c6f22992"
+  },
+  "elisir_furtiva_lagrima/candidates/sha256_7e2f218adb27d99cf7e66dfffb74c00f9d19866322927ebfd426a7ace5cce75a/output.f32.wav": {
+   "inode": 1839529,
+   "mtime_ns": 1786891989584704590,
+   "size": 93664944,
+   "sha256": "f98cb7688d8a7bb6b8c67da14ed9a71048d2e9729231213f7318dc7a5cb0f135"
+  },
+  "elisir_furtiva_lagrima/candidates/sha256_7e2f218adb27d99cf7e66dfffb74c00f9d19866322927ebfd426a7ace5cce75a/recipe.json": {
+   "inode": 1839531,
+   "mtime_ns": 1786893768712829733,
+   "size": 962,
+   "sha256": "e42c3105cc1d65632db08b85e53bd9e62d1b73f6ebd5dd35647374a6fdd5ebdc"
+  },
+  "elisir_furtiva_lagrima/candidates/sha256_7e2f218adb27d99cf7e66dfffb74c00f9d19866322927ebfd426a7ace5cce75a/COMPLETE": {
+   "inode": 1839534,
+   "mtime_ns": 1786893769024836062,
+   "size": 0,
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "elisir_furtiva_lagrima/candidates/sha256_7e2f218adb27d99cf7e66dfffb74c00f9d19866322927ebfd426a7ace5cce75a/output.pcm.sha256": {
+   "inode": 1839533,
+   "mtime_ns": 1786893768712829733,
+   "size": 72,
+   "sha256": "4635bac7124f76746e41862d2bd18a9d031c6e6ff53fda4e29b87978c4b4b023"
+  },
+  "elisir_furtiva_lagrima/candidates/sha256_7e2f218adb27d99cf7e66dfffb74c00f9d19866322927ebfd426a7ace5cce75a/execution.json": {
+   "inode": 1839532,
+   "mtime_ns": 1786893768712829733,
+   "size": 571,
+   "sha256": "725f9a920fddc64d2f159e6ee5bcc2c486f7f45f8b98a1a1038977a7b024f5a8"
+  },
+  "elisir_furtiva_lagrima/candidates/sha256_b07ac9ffeadb3c44060541c12b64056e00dd8daaa5b04d9f3cf7dcce91eeb980/output.f32.wav": {
+   "inode": 1839535,
+   "mtime_ns": 1786891989856710126,
+   "size": 93664944,
+   "sha256": "c62b7f475d86ca4e649fd2d6ede3dcbe4091377e8c58418f35a085061e3fdc14"
+  },
+  "elisir_furtiva_lagrima/candidates/sha256_b07ac9ffeadb3c44060541c12b64056e00dd8daaa5b04d9f3cf7dcce91eeb980/recipe.json": {
+   "inode": 1839537,
+   "mtime_ns": 1786893770184859594,
+   "size": 1539,
+   "sha256": "31772279c9862127ced3e573b3003638de249833d82f7792c275b2fb5dadc557"
+  },
+  "elisir_furtiva_lagrima/candidates/sha256_b07ac9ffeadb3c44060541c12b64056e00dd8daaa5b04d9f3cf7dcce91eeb980/COMPLETE": {
+   "inode": 1839540,
+   "mtime_ns": 1786893770492865842,
+   "size": 0,
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "elisir_furtiva_lagrima/candidates/sha256_b07ac9ffeadb3c44060541c12b64056e00dd8daaa5b04d9f3cf7dcce91eeb980/output.pcm.sha256": {
+   "inode": 1839539,
+   "mtime_ns": 1786893770184859594,
+   "size": 72,
+   "sha256": "eef19461cfba341b97ae8973d71e044df8d8d31143cfa4a28797b5d70e70e1eb"
+  },
+  "elisir_furtiva_lagrima/candidates/sha256_b07ac9ffeadb3c44060541c12b64056e00dd8daaa5b04d9f3cf7dcce91eeb980/execution.json": {
+   "inode": 1839538,
+   "mtime_ns": 1786893770184859594,
+   "size": 568,
+   "sha256": "84b1c627924ef54c3911aef2ebc9b642a90429f8a9c00d3bd75ec09cb9e884c9"
+  },
+  "elisir_furtiva_lagrima/candidates/sha256_510ceba1eb81bbfb46367a903fb7908d6604b3e6a45ef2071d02181cf266aeb1/output.f32.wav": {
+   "inode": 1839523,
+   "mtime_ns": 1786891989340699624,
+   "size": 93664944,
+   "sha256": "0a659e9ab812cc4f89a9737ca59f64375f359a72438539e3661e43ac408233bb"
+  },
+  "elisir_furtiva_lagrima/candidates/sha256_510ceba1eb81bbfb46367a903fb7908d6604b3e6a45ef2071d02181cf266aeb1/recipe.json": {
+   "inode": 1839525,
+   "mtime_ns": 1786893767224799548,
+   "size": 918,
+   "sha256": "f2cc31909446e96bd09a6913ea3115d41d2927c792bc8dc8e24f77b5c23b6968"
+  },
+  "elisir_furtiva_lagrima/candidates/sha256_510ceba1eb81bbfb46367a903fb7908d6604b3e6a45ef2071d02181cf266aeb1/COMPLETE": {
+   "inode": 1839528,
+   "mtime_ns": 1786893767548806121,
+   "size": 0,
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "elisir_furtiva_lagrima/candidates/sha256_510ceba1eb81bbfb46367a903fb7908d6604b3e6a45ef2071d02181cf266aeb1/output.pcm.sha256": {
+   "inode": 1839527,
+   "mtime_ns": 1786893767224799548,
+   "size": 72,
+   "sha256": "bbc0356e314fb2e134d916da321633a84aa66d1f06c0a5c4e0922dd26cc4e976"
+  },
+  "elisir_furtiva_lagrima/candidates/sha256_510ceba1eb81bbfb46367a903fb7908d6604b3e6a45ef2071d02181cf266aeb1/execution.json": {
+   "inode": 1839526,
+   "mtime_ns": 1786893767224799548,
+   "size": 485,
+   "sha256": "bc14b5c5b7422bdcdb131eb9d4b1740a50dae2401e089b793fbc9618c1d373c5"
+  },
+  "elisir_furtiva_lagrima/candidates/sha256_94c9e3cb2ae95d4a4f9bfcb24a03b4e444eaf585e48c0f913589aeb110b28525/output.f32.wav": {
+   "inode": 1839541,
+   "mtime_ns": 1786891990108715255,
+   "size": 93664944,
+   "sha256": "b6e66e3b42c2b81338151b8da431866ff417681fccc16c57fa0e33e7b6590f72"
+  },
+  "elisir_furtiva_lagrima/candidates/sha256_94c9e3cb2ae95d4a4f9bfcb24a03b4e444eaf585e48c0f913589aeb110b28525/recipe.json": {
+   "inode": 1839543,
+   "mtime_ns": 1786893771668889698,
+   "size": 914,
+   "sha256": "39d1ac88d7ec033ec3ace972919e1f87af00e395ee61fa0697840910f2fd4741"
+  },
+  "elisir_furtiva_lagrima/candidates/sha256_94c9e3cb2ae95d4a4f9bfcb24a03b4e444eaf585e48c0f913589aeb110b28525/COMPLETE": {
+   "inode": 1839546,
+   "mtime_ns": 1786893771968895784,
+   "size": 0,
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "elisir_furtiva_lagrima/candidates/sha256_94c9e3cb2ae95d4a4f9bfcb24a03b4e444eaf585e48c0f913589aeb110b28525/output.pcm.sha256": {
+   "inode": 1839545,
+   "mtime_ns": 1786893771668889698,
+   "size": 72,
+   "sha256": "250c4f457123408df82a79fd61c254c6262a94bb9ad3c350d0f82cd19bc5b5a9"
+  },
+  "elisir_furtiva_lagrima/candidates/sha256_94c9e3cb2ae95d4a4f9bfcb24a03b4e444eaf585e48c0f913589aeb110b28525/execution.json": {
+   "inode": 1839544,
+   "mtime_ns": 1786893771668889698,
+   "size": 571,
+   "sha256": "4e67409ec1c9cb87d11eb6c48e62f5c81a4f3680960040af0f2729ecafdcf989"
+  },
+  "elisir_furtiva_lagrima/source/original.wav": {
+   "inode": 1839520,
+   "mtime_ns": 1786885656744175023,
+   "size": 93664944,
+   "sha256": "d306cd53130e9f99a5478b0a961380a3c35462d177673032059a8292e6864266"
+  },
+  "elisir_furtiva_lagrima/source/source.json": {
+   "inode": 1839522,
+   "mtime_ns": 1786893766812791190,
+   "size": 475,
+   "sha256": "6f76cd2488b6e07a073188b5d6b36e070bc4c845406d12ef64c2b7e8d5a2f33e"
+  },
+  "elisir_furtiva_lagrima/source/canonical.f32.wav": {
+   "inode": 1839521,
+   "mtime_ns": 1786891989340699624,
+   "size": 93664944,
+   "sha256": "0a659e9ab812cc4f89a9737ca59f64375f359a72438539e3661e43ac408233bb"
+  },
+  "verdi_slow_voices/candidates/sha256_18cfc8cc53da8efa6dface4afaa2b6971764173cdc38cc04f1f67e8bc54190d5/output.f32.wav": {
+   "inode": 1839465,
+   "mtime_ns": 1786890344278427606,
+   "size": 36753496,
+   "sha256": "a16598e86bdd5b26c9b70c89719e3489417077c1cad1ab5f848951932d55c1af"
+  },
+  "verdi_slow_voices/candidates/sha256_18cfc8cc53da8efa6dface4afaa2b6971764173cdc38cc04f1f67e8bc54190d5/recipe.json": {
+   "inode": 1839467,
+   "mtime_ns": 1786893758956631823,
+   "size": 961,
+   "sha256": "40ab93b5e8fb7565c94d6080ce8e884a03aadc06e56d92a710f4891791648cec"
+  },
+  "verdi_slow_voices/candidates/sha256_18cfc8cc53da8efa6dface4afaa2b6971764173cdc38cc04f1f67e8bc54190d5/COMPLETE": {
+   "inode": 1839470,
+   "mtime_ns": 1786893759080634338,
+   "size": 0,
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "verdi_slow_voices/candidates/sha256_18cfc8cc53da8efa6dface4afaa2b6971764173cdc38cc04f1f67e8bc54190d5/output.pcm.sha256": {
+   "inode": 1839469,
+   "mtime_ns": 1786893758956631823,
+   "size": 72,
+   "sha256": "5c3c07577711d91cbd32b69818285c23bee3d62bdb3bb1880f431e40e01ba814"
+  },
+  "verdi_slow_voices/candidates/sha256_18cfc8cc53da8efa6dface4afaa2b6971764173cdc38cc04f1f67e8bc54190d5/execution.json": {
+   "inode": 1839468,
+   "mtime_ns": 1786893758956631823,
+   "size": 571,
+   "sha256": "6494892312886367cb21251d3a7f607b5ff165510cd01132d407058fe9543197"
+  },
+  "verdi_slow_voices/candidates/sha256_e15964a3f0ec9acdf1ce9964ee22b3b0efbd0ae25feaaa9e9d24f616ec1827ca/output.f32.wav": {
+   "inode": 1839459,
+   "mtime_ns": 1786890344186425764,
+   "size": 36753496,
+   "sha256": "928834249c40f1fea4fda1fceaeac969678347c505fdedb38d0d8a21c90dd463"
+  },
+  "verdi_slow_voices/candidates/sha256_e15964a3f0ec9acdf1ce9964ee22b3b0efbd0ae25feaaa9e9d24f616ec1827ca/recipe.json": {
+   "inode": 1839461,
+   "mtime_ns": 1786893758340619328,
+   "size": 907,
+   "sha256": "09eb439875c888618d2f592daa6c63eeed06b4c089ad30ad4a75f63f5c22ca47"
+  },
+  "verdi_slow_voices/candidates/sha256_e15964a3f0ec9acdf1ce9964ee22b3b0efbd0ae25feaaa9e9d24f616ec1827ca/COMPLETE": {
+   "inode": 1839464,
+   "mtime_ns": 1786893758476622086,
+   "size": 0,
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "verdi_slow_voices/candidates/sha256_e15964a3f0ec9acdf1ce9964ee22b3b0efbd0ae25feaaa9e9d24f616ec1827ca/output.pcm.sha256": {
+   "inode": 1839463,
+   "mtime_ns": 1786893758340619328,
+   "size": 72,
+   "sha256": "3bffa0bfe3ef5923e0e9e9cd52a103f7d05a29f66e98b552adc60c452eac8d2d"
+  },
+  "verdi_slow_voices/candidates/sha256_e15964a3f0ec9acdf1ce9964ee22b3b0efbd0ae25feaaa9e9d24f616ec1827ca/execution.json": {
+   "inode": 1839462,
+   "mtime_ns": 1786893758340619328,
+   "size": 485,
+   "sha256": "bc14b5c5b7422bdcdb131eb9d4b1740a50dae2401e089b793fbc9618c1d373c5"
+  },
+  "verdi_slow_voices/candidates/sha256_12ad757804c6f39c55c2a28cae2d7a39d81dc7f1d7ed1720f79cebb70479ea06/output.f32.wav": {
+   "inode": 1839471,
+   "mtime_ns": 1786890344366429368,
+   "size": 36753496,
+   "sha256": "59b73d0f19a8477826ecf3d5052c77cbd9188168952cccb2d6a4c6169a4bf5ed"
+  },
+  "verdi_slow_voices/candidates/sha256_12ad757804c6f39c55c2a28cae2d7a39d81dc7f1d7ed1720f79cebb70479ea06/recipe.json": {
+   "inode": 1839473,
+   "mtime_ns": 1786893759532643508,
+   "size": 1538,
+   "sha256": "e729c3ef2cb32742ad6db588e492af3440cb893731c0bec89ba0388faff8fde4"
+  },
+  "verdi_slow_voices/candidates/sha256_12ad757804c6f39c55c2a28cae2d7a39d81dc7f1d7ed1720f79cebb70479ea06/COMPLETE": {
+   "inode": 1839476,
+   "mtime_ns": 1786893759660646105,
+   "size": 0,
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "verdi_slow_voices/candidates/sha256_12ad757804c6f39c55c2a28cae2d7a39d81dc7f1d7ed1720f79cebb70479ea06/output.pcm.sha256": {
+   "inode": 1839475,
+   "mtime_ns": 1786893759532643508,
+   "size": 72,
+   "sha256": "b5bf1b9a228e73cf6b5376cd67c7ba7899a2ed73ce00c553815539397ad40446"
+  },
+  "verdi_slow_voices/candidates/sha256_12ad757804c6f39c55c2a28cae2d7a39d81dc7f1d7ed1720f79cebb70479ea06/execution.json": {
+   "inode": 1839474,
+   "mtime_ns": 1786893759532643508,
+   "size": 568,
+   "sha256": "0418c31cafdd6b6406633cdf65ad4b4ab5022ed9fbe31c5373bf779800eab7fd"
+  },
+  "verdi_slow_voices/candidates/sha256_ed484a6210b5ca85211247d69fa81b9e1799a5f0ac512b487abd0568419175d0/output.f32.wav": {
+   "inode": 1839477,
+   "mtime_ns": 1786890344102424083,
+   "size": 36753496,
+   "sha256": "f38f33f367df4fcf0d72f59c7b8048e9261a82ff8a05fe9e786316399fbf4a81"
+  },
+  "verdi_slow_voices/candidates/sha256_ed484a6210b5ca85211247d69fa81b9e1799a5f0ac512b487abd0568419175d0/recipe.json": {
+   "inode": 1839479,
+   "mtime_ns": 1786893760120655437,
+   "size": 913,
+   "sha256": "93dee0e13d39381b172a9d34f9605b7a50a52cbc6583ba2722e10b56861d795e"
+  },
+  "verdi_slow_voices/candidates/sha256_ed484a6210b5ca85211247d69fa81b9e1799a5f0ac512b487abd0568419175d0/COMPLETE": {
+   "inode": 1839482,
+   "mtime_ns": 1786893760244657952,
+   "size": 0,
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "verdi_slow_voices/candidates/sha256_ed484a6210b5ca85211247d69fa81b9e1799a5f0ac512b487abd0568419175d0/output.pcm.sha256": {
+   "inode": 1839481,
+   "mtime_ns": 1786893760120655437,
+   "size": 72,
+   "sha256": "f5019a3003e7a213208663d7b3fbd94e276742ef97b83acb5169b90f6ee4dadd"
+  },
+  "verdi_slow_voices/candidates/sha256_ed484a6210b5ca85211247d69fa81b9e1799a5f0ac512b487abd0568419175d0/execution.json": {
+   "inode": 1839480,
+   "mtime_ns": 1786893760120655437,
+   "size": 571,
+   "sha256": "7c6a8ee8e8cc2768e69e6d21e466637bb39353a3d3471d56fb15c20f68428ada"
+  },
+  "verdi_slow_voices/source/source.json": {
+   "inode": 1839458,
+   "mtime_ns": 1786893758148615432,
+   "size": 466,
+   "sha256": "aeb513e6afdd3aba850eb67149722c6d5b1a6c9d099427909d5b1042e666c102"
+  },
+  "verdi_slow_voices/source/original.mp3": {
+   "inode": 1839456,
+   "mtime_ns": 1786888794327518938,
+   "size": 2496488,
+   "sha256": "3c8a76459c7c44bf9c8a1f33efbf5d1d63e43f5811b1eb0dee605091d4d586cb"
+  },
+  "verdi_slow_voices/source/canonical.f32.wav": {
+   "inode": 1839457,
+   "mtime_ns": 1786890344186425764,
+   "size": 36753496,
+   "sha256": "928834249c40f1fea4fda1fceaeac969678347c505fdedb38d0d8a21c90dd463"
+  },
+  "control_bologna_verdi_orch/candidates/sha256_9727536749dc57138b577a67c169a412343d9ed1b0adbefe23f862502e48393b/output.f32.wav": {
+   "inode": 1839594,
+   "mtime_ns": 1786892062798194386,
+   "size": 32499672,
+   "sha256": "fc0a30e06a91c12955a7bb1c27b2b4a9af1778e10e21b63b516d896db3e0293c"
+  },
+  "control_bologna_verdi_orch/candidates/sha256_9727536749dc57138b577a67c169a412343d9ed1b0adbefe23f862502e48393b/recipe.json": {
+   "inode": 1839596,
+   "mtime_ns": 1786893788237225794,
+   "size": 961,
+   "sha256": "a935b9f5cbf51db8840e8b99bb63133f63ca37a256955d2a461ef3f455afb59f"
+  },
+  "control_bologna_verdi_orch/candidates/sha256_9727536749dc57138b577a67c169a412343d9ed1b0adbefe23f862502e48393b/COMPLETE": {
+   "inode": 1839599,
+   "mtime_ns": 1786893788345227985,
+   "size": 0,
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "control_bologna_verdi_orch/candidates/sha256_9727536749dc57138b577a67c169a412343d9ed1b0adbefe23f862502e48393b/output.pcm.sha256": {
+   "inode": 1839598,
+   "mtime_ns": 1786893788237225794,
+   "size": 72,
+   "sha256": "9f685b3b31fadae7405c514a13600324e0de9e2cab578ff82e9e290ed1979e0a"
+  },
+  "control_bologna_verdi_orch/candidates/sha256_9727536749dc57138b577a67c169a412343d9ed1b0adbefe23f862502e48393b/execution.json": {
+   "inode": 1839597,
+   "mtime_ns": 1786893788237225794,
+   "size": 571,
+   "sha256": "41b3249b9a39a4359213275a50575fa6070ef1ced2ddcdfdfd62898d98aa57e3"
+  },
+  "control_bologna_verdi_orch/candidates/sha256_bac7eb23470b7b43b6bfb005f5430af22b55a8abaee438993fb068e6e96c4185/output.f32.wav": {
+   "inode": 1839600,
+   "mtime_ns": 1786892062866195769,
+   "size": 32499672,
+   "sha256": "ab04ff6a0f82c79a5c5628ddf7af344ef4eb29480ee103bd76c599bc72df8636"
+  },
+  "control_bologna_verdi_orch/candidates/sha256_bac7eb23470b7b43b6bfb005f5430af22b55a8abaee438993fb068e6e96c4185/recipe.json": {
+   "inode": 1839602,
+   "mtime_ns": 1786893788709235369,
+   "size": 1538,
+   "sha256": "787d73de2c7a71244ab6f2e1f6adbb7a56c0b0617608c2fa9628c21db094281d"
+  },
+  "control_bologna_verdi_orch/candidates/sha256_bac7eb23470b7b43b6bfb005f5430af22b55a8abaee438993fb068e6e96c4185/COMPLETE": {
+   "inode": 1839605,
+   "mtime_ns": 1786893788817237560,
+   "size": 0,
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "control_bologna_verdi_orch/candidates/sha256_bac7eb23470b7b43b6bfb005f5430af22b55a8abaee438993fb068e6e96c4185/output.pcm.sha256": {
+   "inode": 1839604,
+   "mtime_ns": 1786893788713235450,
+   "size": 72,
+   "sha256": "694c7f8cbdf4bab3314bfc33a4673bb017a6bb4cd1c4c1e73ff5168a1014f7f3"
+  },
+  "control_bologna_verdi_orch/candidates/sha256_bac7eb23470b7b43b6bfb005f5430af22b55a8abaee438993fb068e6e96c4185/execution.json": {
+   "inode": 1839603,
+   "mtime_ns": 1786893788713235450,
+   "size": 568,
+   "sha256": "109f9d4220335e3cae6a28bd394bcba74cd3938745a2e4c9a150346dc3416efd"
+  },
+  "control_bologna_verdi_orch/candidates/sha256_970262d0fba84f7808704da1e2dc3b0e5dcba3edc05809c13a9ce7a2eab9e14b/output.f32.wav": {
+   "inode": 1839588,
+   "mtime_ns": 1786892062734193083,
+   "size": 32499672,
+   "sha256": "fc0a30e06a91c12955a7bb1c27b2b4a9af1778e10e21b63b516d896db3e0293c"
+  },
+  "control_bologna_verdi_orch/candidates/sha256_970262d0fba84f7808704da1e2dc3b0e5dcba3edc05809c13a9ce7a2eab9e14b/recipe.json": {
+   "inode": 1839590,
+   "mtime_ns": 1786893787757216057,
+   "size": 917,
+   "sha256": "720822ed5bdb7a292b963adb071f80d144fd64b82365347ca159abe6f9e484f8"
+  },
+  "control_bologna_verdi_orch/candidates/sha256_970262d0fba84f7808704da1e2dc3b0e5dcba3edc05809c13a9ce7a2eab9e14b/COMPLETE": {
+   "inode": 1839593,
+   "mtime_ns": 1786893787869218329,
+   "size": 0,
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "control_bologna_verdi_orch/candidates/sha256_970262d0fba84f7808704da1e2dc3b0e5dcba3edc05809c13a9ce7a2eab9e14b/output.pcm.sha256": {
+   "inode": 1839592,
+   "mtime_ns": 1786893787765216219,
+   "size": 72,
+   "sha256": "9f685b3b31fadae7405c514a13600324e0de9e2cab578ff82e9e290ed1979e0a"
+  },
+  "control_bologna_verdi_orch/candidates/sha256_970262d0fba84f7808704da1e2dc3b0e5dcba3edc05809c13a9ce7a2eab9e14b/execution.json": {
+   "inode": 1839591,
+   "mtime_ns": 1786893787765216219,
+   "size": 485,
+   "sha256": "bc14b5c5b7422bdcdb131eb9d4b1740a50dae2401e089b793fbc9618c1d373c5"
+  },
+  "control_bologna_verdi_orch/candidates/sha256_84c7fc59b816eaa90d46f155c28e7d079692000d201ebe6bd9ea4d4000e651e9/output.f32.wav": {
+   "inode": 1839606,
+   "mtime_ns": 1786892062926196990,
+   "size": 32499672,
+   "sha256": "293a1a23b1e7169a338b89cade7fb28456248305aa79df45f9f8616237925cc1"
+  },
+  "control_bologna_verdi_orch/candidates/sha256_84c7fc59b816eaa90d46f155c28e7d079692000d201ebe6bd9ea4d4000e651e9/recipe.json": {
+   "inode": 1839608,
+   "mtime_ns": 1786893789197245269,
+   "size": 913,
+   "sha256": "58cddc81aea0fea1a00e512af61774ca8422b6820a37f5cb4988c8dd80ce3bc1"
+  },
+  "control_bologna_verdi_orch/candidates/sha256_84c7fc59b816eaa90d46f155c28e7d079692000d201ebe6bd9ea4d4000e651e9/COMPLETE": {
+   "inode": 1839611,
+   "mtime_ns": 1786893789301247379,
+   "size": 0,
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "control_bologna_verdi_orch/candidates/sha256_84c7fc59b816eaa90d46f155c28e7d079692000d201ebe6bd9ea4d4000e651e9/output.pcm.sha256": {
+   "inode": 1839610,
+   "mtime_ns": 1786893789197245269,
+   "size": 72,
+   "sha256": "fc250b92f12b56544afe2668edc874f1e2dd95eb0b586cadd0d08a6267cbcdaf"
+  },
+  "control_bologna_verdi_orch/candidates/sha256_84c7fc59b816eaa90d46f155c28e7d079692000d201ebe6bd9ea4d4000e651e9/execution.json": {
+   "inode": 1839609,
+   "mtime_ns": 1786893789197245269,
+   "size": 571,
+   "sha256": "cc21f7acdec33a15b95394e43185f31a3aa463b1af9f8ab0ccf7bdbe2b3540f4"
+  },
+  "control_bologna_verdi_orch/source/original.wav": {
+   "inode": 1839585,
+   "mtime_ns": 1786885663628312919,
+   "size": 32499672,
+   "sha256": "722ca10c7c9b5892c33f233c4525b8c3c42a845922245ec81ed3515940703eb2"
+  },
+  "control_bologna_verdi_orch/source/source.json": {
+   "inode": 1839587,
+   "mtime_ns": 1786893787617213217,
+   "size": 478,
+   "sha256": "48d59f5d90cf8d29f233750bc0d22e52c9928e294d4abbae60ba603b3f367524"
+  },
+  "control_bologna_verdi_orch/source/canonical.f32.wav": {
+   "inode": 1839586,
+   "mtime_ns": 1786892062734193083,
+   "size": 32499672,
+   "sha256": "fc0a30e06a91c12955a7bb1c27b2b4a9af1778e10e21b63b516d896db3e0293c"
+  },
+  "don_giovanni_madamina/candidates/sha256_95a326b1979ee95979b63130d29804bb629c71aa39fe1b893b7897e859c28ce4/output.f32.wav": {
+   "inode": 1839567,
+   "mtime_ns": 1786892048369900849,
+   "size": 145018512,
+   "sha256": "78b66f807ac0c5ebb8c1b8abc956dc3a572092cbd4d0e18c7b4cf1cc9fd31517"
+  },
+  "don_giovanni_madamina/candidates/sha256_95a326b1979ee95979b63130d29804bb629c71aa39fe1b893b7897e859c28ce4/recipe.json": {
+   "inode": 1839569,
+   "mtime_ns": 1786893782041100103,
+   "size": 1539,
+   "sha256": "42cba7d49c8071b17950031e208323a66c3d58c03533f4a10dec902432de889f"
+  },
+  "don_giovanni_madamina/candidates/sha256_95a326b1979ee95979b63130d29804bb629c71aa39fe1b893b7897e859c28ce4/COMPLETE": {
+   "inode": 1839572,
+   "mtime_ns": 1786893782513109678,
+   "size": 0,
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "don_giovanni_madamina/candidates/sha256_95a326b1979ee95979b63130d29804bb629c71aa39fe1b893b7897e859c28ce4/output.pcm.sha256": {
+   "inode": 1839571,
+   "mtime_ns": 1786893782041100103,
+   "size": 72,
+   "sha256": "6953998501801542cfdb998ae56d67985a482a1718ed24c0d96669be7d1c48aa"
+  },
+  "don_giovanni_madamina/candidates/sha256_95a326b1979ee95979b63130d29804bb629c71aa39fe1b893b7897e859c28ce4/execution.json": {
+   "inode": 1839570,
+   "mtime_ns": 1786893782041100103,
+   "size": 568,
+   "sha256": "e0e0fed52fb92ee5ec990e554564bfdeab27ea1cfa9df7990a8ebdb416225fa2"
+  },
+  "don_giovanni_madamina/candidates/sha256_ecb2def6e5cc40809ca7977382e2bffbcf1e860ce42732d278c60bab512544b7/output.f32.wav": {
+   "inode": 1839574,
+   "mtime_ns": 1786892048681907197,
+   "size": 145018512,
+   "sha256": "7eb86638b6a48fb263e354266c50e2545c63f0e41b02676050ca4c564c257800"
+  },
+  "don_giovanni_madamina/candidates/sha256_ecb2def6e5cc40809ca7977382e2bffbcf1e860ce42732d278c60bab512544b7/recipe.json": {
+   "inode": 1839576,
+   "mtime_ns": 1786893784561151224,
+   "size": 914,
+   "sha256": "39ffbbfab5f36acbd8c60fa7b501d407316227c1f16366c2ba91484a3cdee92d"
+  },
+  "don_giovanni_madamina/candidates/sha256_ecb2def6e5cc40809ca7977382e2bffbcf1e860ce42732d278c60bab512544b7/COMPLETE": {
+   "inode": 1839579,
+   "mtime_ns": 1786893785049161123,
+   "size": 0,
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "don_giovanni_madamina/candidates/sha256_ecb2def6e5cc40809ca7977382e2bffbcf1e860ce42732d278c60bab512544b7/output.pcm.sha256": {
+   "inode": 1839578,
+   "mtime_ns": 1786893784561151224,
+   "size": 72,
+   "sha256": "d677ebeffc7564042b6593a36aeca7da26831d417fa6561db495c389c0dd342e"
+  },
+  "don_giovanni_madamina/candidates/sha256_ecb2def6e5cc40809ca7977382e2bffbcf1e860ce42732d278c60bab512544b7/execution.json": {
+   "inode": 1839577,
+   "mtime_ns": 1786893784561151224,
+   "size": 571,
+   "sha256": "ba211e8f72bc0744465bc6387c03873b40e30683d73abde25e210523bcbee501"
+  },
+  "don_giovanni_madamina/candidates/sha256_f8e355b3345f5013c898dbf71383c426e3fab5724864aa0da10ac9ec251b6130/output.f32.wav": {
+   "inode": 1839561,
+   "mtime_ns": 1786892048049894338,
+   "size": 145018512,
+   "sha256": "6e4cb957eedb198bbc9d4496cd7fe899cf966e2c20020c67884d7863c025c74e"
+  },
+  "don_giovanni_madamina/candidates/sha256_f8e355b3345f5013c898dbf71383c426e3fab5724864aa0da10ac9ec251b6130/recipe.json": {
+   "inode": 1839563,
+   "mtime_ns": 1786893779793054501,
+   "size": 962,
+   "sha256": "11047a2b8794a65f705dfb96546cbeb03c0f8915e71351853d468b89bae6c49b"
+  },
+  "don_giovanni_madamina/candidates/sha256_f8e355b3345f5013c898dbf71383c426e3fab5724864aa0da10ac9ec251b6130/COMPLETE": {
+   "inode": 1839566,
+   "mtime_ns": 1786893780261063995,
+   "size": 0,
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "don_giovanni_madamina/candidates/sha256_f8e355b3345f5013c898dbf71383c426e3fab5724864aa0da10ac9ec251b6130/output.pcm.sha256": {
+   "inode": 1839565,
+   "mtime_ns": 1786893779793054501,
+   "size": 72,
+   "sha256": "6094aef16553bb3885e5cf129ecfb4e664140295a70e700f8b1b163b0228ca4b"
+  },
+  "don_giovanni_madamina/candidates/sha256_f8e355b3345f5013c898dbf71383c426e3fab5724864aa0da10ac9ec251b6130/execution.json": {
+   "inode": 1839564,
+   "mtime_ns": 1786893779793054501,
+   "size": 571,
+   "sha256": "d47ac3b258d79b08d557e4949165e9534bdcf69fcbd72d0b9b36427b03a17513"
+  },
+  "don_giovanni_madamina/candidates/sha256_ec260df7e5e144af2f618b69f2aa499cdf99e6ccc3d9534c68208f5c3aa6bf05/output.f32.wav": {
+   "inode": 1839555,
+   "mtime_ns": 1786892047721887665,
+   "size": 145018512,
+   "sha256": "e8a7aa74a4142fa69e254d0446522a458bc8cfa5c48a1ad65e714d937b84abf8"
+  },
+  "don_giovanni_madamina/candidates/sha256_ec260df7e5e144af2f618b69f2aa499cdf99e6ccc3d9534c68208f5c3aa6bf05/recipe.json": {
+   "inode": 1839557,
+   "mtime_ns": 1786893777593009871,
+   "size": 918,
+   "sha256": "bb3fce05ecd30a98ea91350af94ead2a1270630cede6035e26e369e2c71d3c65"
+  },
+  "don_giovanni_madamina/candidates/sha256_ec260df7e5e144af2f618b69f2aa499cdf99e6ccc3d9534c68208f5c3aa6bf05/COMPLETE": {
+   "inode": 1839560,
+   "mtime_ns": 1786893778073019609,
+   "size": 0,
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "don_giovanni_madamina/candidates/sha256_ec260df7e5e144af2f618b69f2aa499cdf99e6ccc3d9534c68208f5c3aa6bf05/output.pcm.sha256": {
+   "inode": 1839559,
+   "mtime_ns": 1786893777593009871,
+   "size": 72,
+   "sha256": "6094aef16553bb3885e5cf129ecfb4e664140295a70e700f8b1b163b0228ca4b"
+  },
+  "don_giovanni_madamina/candidates/sha256_ec260df7e5e144af2f618b69f2aa499cdf99e6ccc3d9534c68208f5c3aa6bf05/execution.json": {
+   "inode": 1839558,
+   "mtime_ns": 1786893777593009871,
+   "size": 485,
+   "sha256": "bc14b5c5b7422bdcdb131eb9d4b1740a50dae2401e089b793fbc9618c1d373c5"
+  },
+  "don_giovanni_madamina/source/original.wav": {
+   "inode": 1839552,
+   "mtime_ns": 1786885661988280068,
+   "size": 145018512,
+   "sha256": "0929236c8943a9fe4433fd252820d761adc81c77dea51c619d7b972f30ba00b9"
+  },
+  "don_giovanni_madamina/source/source.json": {
+   "inode": 1839554,
+   "mtime_ns": 1786893776916996158,
+   "size": 474,
+   "sha256": "ace4c67cccd2f0ad2405762a7bedd54452e110b1edc5cdb79e74715ce9efa8d6"
+  },
+  "don_giovanni_madamina/source/canonical.f32.wav": {
+   "inode": 1839553,
+   "mtime_ns": 1786892047721887665,
+   "size": 145018512,
+   "sha256": "e8a7aa74a4142fa69e254d0446522a458bc8cfa5c48a1ad65e714d937b84abf8"
+  }
+ }
+}

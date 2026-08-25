@@ -1,0 +1,1011 @@
+{
+ "challenge": "DET4 corrected 20-28s lexical challenge (frozen protocol)",
+ "frozen_success_rule": "PASS iff all 5 positives {C,Z,V1,V3,V5} recover >=1 control-unique ref word AND V2 recovers 0",
+ "frozen_seeds": [
+  4001,
+  4002,
+  4003,
+  4004,
+  4005
+ ],
+ "reference_window_s": [
+  18.0,
+  30.0
+ ],
+ "candidate_clip_s": [
+  20.0,
+  28.0
+ ],
+ "tol_s": 3.0,
+ "candidate_signal": "HTDemucs-04 extracted vocal stem (extract-then-transcribe); mix transcript supplementary",
+ "reference_agreements": [
+  {
+   "word": " lo",
+   "t": 18.04,
+   "mix_t": 18.04,
+   "stem_t": 18.04,
+   "mix_p": 0.7,
+   "stem_p": 0.81
+  },
+  {
+   "word": " stridere,",
+   "t": 18.65,
+   "mix_t": 18.64,
+   "stem_t": 18.66,
+   "mix_p": 0.99,
+   "stem_p": 0.99
+  },
+  {
+   "word": " testi",
+   "t": 20.0,
+   "mix_t": 20.0,
+   "stem_t": 20.0,
+   "mix_p": 0.85,
+   "stem_p": 0.77
+  },
+  {
+   "word": " che",
+   "t": 20.9,
+   "mix_t": 20.82,
+   "stem_t": 20.98,
+   "mix_p": 0.99,
+   "stem_p": 0.99
+  },
+  {
+   "word": " mai",
+   "t": 21.3,
+   "mix_t": 21.3,
+   "stem_t": 21.3,
+   "mix_p": 1.0,
+   "stem_p": 1.0
+  },
+  {
+   "word": " dicesti.",
+   "t": 21.82,
+   "mix_t": 21.82,
+   "stem_t": 21.82,
+   "mix_p": 0.98,
+   "stem_p": 0.98
+  },
+  {
+   "word": " Io?",
+   "t": 24.1,
+   "mix_t": 24.1,
+   "stem_t": 24.1,
+   "mix_p": 0.96,
+   "stem_p": 0.97
+  },
+  {
+   "word": " S\u00ec,",
+   "t": 25.06,
+   "mix_t": 25.06,
+   "stem_t": 25.06,
+   "mix_p": 0.9,
+   "stem_p": 0.76
+  },
+  {
+   "word": " anzi,",
+   "t": 25.44,
+   "mix_t": 25.52,
+   "stem_t": 25.36,
+   "mix_p": 0.98,
+   "stem_p": 0.95
+  },
+  {
+   "word": " Mentre",
+   "t": 27.17,
+   "mix_t": 27.18,
+   "stem_t": 27.16,
+   "mix_p": 0.81,
+   "stem_p": 0.64
+  },
+  {
+   "word": " S\u00ec.",
+   "t": 28.91,
+   "mix_t": 28.92,
+   "stem_t": 28.9,
+   "mix_p": 1.0,
+   "stem_p": 1.0
+  }
+ ],
+ "reference_disagreements": [
+  {
+   "src": "mix_only",
+   "word": " ho",
+   "t": 25.9,
+   "p": 0.38
+  },
+  {
+   "src": "mix_only",
+   "word": " detto",
+   "t": 25.96,
+   "p": 0.86
+  },
+  {
+   "src": "mix_only",
+   "word": " il",
+   "t": 26.18,
+   "p": 0.4
+  },
+  {
+   "src": "mix_only",
+   "word": " farmi.",
+   "t": 26.28,
+   "p": 0.87
+  },
+  {
+   "src": "mix_only",
+   "word": " scendeva?",
+   "t": 27.72,
+   "p": 0.66
+  },
+  {
+   "src": "stem_only",
+   "word": " or",
+   "t": 25.88,
+   "p": 0.45
+  },
+  {
+   "src": "stem_only",
+   "word": " di",
+   "t": 25.98,
+   "p": 0.33
+  },
+  {
+   "src": "stem_only",
+   "word": " interfarmi.",
+   "t": 26.1,
+   "p": 0.72
+  },
+  {
+   "src": "stem_only",
+   "word": " scendea?",
+   "t": 27.7,
+   "p": 0.94
+  }
+ ],
+ "per_candidate_control_unique": {
+  "C_cascade": 1,
+  "Z": 0,
+  "V1_inverted": 5,
+  "V3_roformer": 1,
+  "V5_ensmax": 1,
+  "V2_mdx23c": 1
+ },
+ "positives_recover_ge1": {
+  "C_cascade": true,
+  "Z": false,
+  "V1_inverted": true,
+  "V3_roformer": true,
+  "V5_ensmax": true
+ },
+ "negative_V2_recovers_0": false,
+ "VERDICT": "FAIL (archive as calibration_failed)",
+ "results": {
+  "C_cascade": {
+   "stem_transcript": [
+    {
+     "w": "grazie",
+     "t": 23.78,
+     "p": 0.55
+    },
+    {
+     "w": "a",
+     "t": 25.18,
+     "p": 0.4
+    },
+    {
+     "w": "tutti",
+     "t": 25.44,
+     "p": 0.98
+    }
+   ],
+   "mix_transcript_supplementary": [
+    {
+     "w": "grazie",
+     "t": 20.0,
+     "p": 0.61
+    },
+    {
+     "w": "a",
+     "t": 21.12,
+     "p": 0.59
+    },
+    {
+     "w": "tutti",
+     "t": 21.48,
+     "p": 0.99
+    }
+   ],
+   "recovered_ref": [
+    {
+     "ref_i": 8,
+     "word": " anzi,",
+     "ref_t": 25.44,
+     "res_t": 25.18
+    }
+   ],
+   "control_scrambles": [
+    {
+     "seed": 4001,
+     "transcript": [],
+     "recovered": []
+    },
+    {
+     "seed": 4002,
+     "transcript": [],
+     "recovered": []
+    },
+    {
+     "seed": 4003,
+     "transcript": [
+      {
+       "w": "s\u00ec",
+       "t": 21.8,
+       "p": 0.22
+      },
+      {
+       "w": "s\u00ec",
+       "t": 24.74,
+       "p": 0.19
+      },
+      {
+       "w": "s\u00ec",
+       "t": 25.32,
+       "p": 0.82
+      },
+      {
+       "w": "s\u00ec",
+       "t": 25.74,
+       "p": 0.9
+      }
+     ],
+     "recovered": []
+    },
+    {
+     "seed": 4004,
+     "transcript": [],
+     "recovered": []
+    },
+    {
+     "seed": 4005,
+     "transcript": [],
+     "recovered": []
+    }
+   ],
+   "floor_union": [],
+   "floor_majority": [],
+   "control_unique": [
+    " anzi,"
+   ],
+   "control_unique_detail": [
+    {
+     "ref_i": 8,
+     "word": " anzi,",
+     "ref_t": 25.44,
+     "res_t": 25.18
+    }
+   ],
+   "n_control_unique": 1
+  },
+  "Z": {
+   "stem_transcript": [
+    {
+     "w": "dio",
+     "t": 23.44,
+     "p": 0.57
+    }
+   ],
+   "mix_transcript_supplementary": [
+    {
+     "w": "grazie",
+     "t": 20.0,
+     "p": 0.6
+    },
+    {
+     "w": "a",
+     "t": 21.12,
+     "p": 0.6
+    },
+    {
+     "w": "tutti",
+     "t": 21.48,
+     "p": 0.99
+    }
+   ],
+   "recovered_ref": [],
+   "control_scrambles": [
+    {
+     "seed": 4001,
+     "transcript": [
+      {
+       "w": "grazie",
+       "t": 20.0,
+       "p": 0.54
+      },
+      {
+       "w": "a",
+       "t": 20.56,
+       "p": 0.44
+      },
+      {
+       "w": "tutti",
+       "t": 20.68,
+       "p": 0.98
+      }
+     ],
+     "recovered": [
+      " mai"
+     ]
+    },
+    {
+     "seed": 4002,
+     "transcript": [
+      {
+       "w": "no",
+       "t": 23.32,
+       "p": 0.22
+      }
+     ],
+     "recovered": []
+    },
+    {
+     "seed": 4003,
+     "transcript": [
+      {
+       "w": "grazie",
+       "t": 20.0,
+       "p": 0.54
+      },
+      {
+       "w": "a",
+       "t": 22.56,
+       "p": 0.41
+      },
+      {
+       "w": "tutti",
+       "t": 22.56,
+       "p": 0.98
+      }
+     ],
+     "recovered": [
+      " mai"
+     ]
+    },
+    {
+     "seed": 4004,
+     "transcript": [
+      {
+       "w": "grazie",
+       "t": 20.0,
+       "p": 0.56
+      },
+      {
+       "w": "a",
+       "t": 20.54,
+       "p": 0.44
+      },
+      {
+       "w": "tutti",
+       "t": 20.68,
+       "p": 0.98
+      }
+     ],
+     "recovered": [
+      " mai"
+     ]
+    },
+    {
+     "seed": 4005,
+     "transcript": [
+      {
+       "w": "grazie",
+       "t": 23.72,
+       "p": 0.51
+      }
+     ],
+     "recovered": []
+    }
+   ],
+   "floor_union": [
+    " mai"
+   ],
+   "floor_majority": [
+    " mai"
+   ],
+   "control_unique": [],
+   "control_unique_detail": [],
+   "n_control_unique": 0
+  },
+  "V1_inverted": {
+   "stem_transcript": [
+    {
+     "w": "testi",
+     "t": 20.0,
+     "p": 0.67
+    },
+    {
+     "w": "che",
+     "t": 20.92,
+     "p": 0.94
+    },
+    {
+     "w": "mai",
+     "t": 21.32,
+     "p": 0.99
+    },
+    {
+     "w": "dicesti",
+     "t": 21.88,
+     "p": 0.84
+    },
+    {
+     "w": "io",
+     "t": 23.52,
+     "p": 0.55
+    },
+    {
+     "w": "che",
+     "t": 24.62,
+     "p": 0.13
+    },
+    {
+     "w": "anzi",
+     "t": 25.16,
+     "p": 0.68
+    },
+    {
+     "w": "ho",
+     "t": 25.88,
+     "p": 0.58
+    },
+    {
+     "w": "detto",
+     "t": 25.92,
+     "p": 0.55
+    },
+    {
+     "w": "farmi",
+     "t": 26.16,
+     "p": 0.88
+    },
+    {
+     "w": "mentre",
+     "t": 26.9,
+     "p": 0.23
+    }
+   ],
+   "mix_transcript_supplementary": [
+    {
+     "w": "testi",
+     "t": 20.0,
+     "p": 0.76
+    },
+    {
+     "w": "che",
+     "t": 21.06,
+     "p": 0.98
+    },
+    {
+     "w": "mai",
+     "t": 21.32,
+     "p": 1.0
+    },
+    {
+     "w": "dicesti",
+     "t": 21.88,
+     "p": 0.93
+    },
+    {
+     "w": "io",
+     "t": 23.48,
+     "p": 0.74
+    },
+    {
+     "w": "che",
+     "t": 24.62,
+     "p": 0.19
+    },
+    {
+     "w": "anzi",
+     "t": 25.16,
+     "p": 0.81
+    },
+    {
+     "w": "udite",
+     "t": 25.9,
+     "p": 0.69
+    },
+    {
+     "w": "farmi",
+     "t": 26.22,
+     "p": 0.89
+    },
+    {
+     "w": "mentre",
+     "t": 26.82,
+     "p": 0.52
+    }
+   ],
+   "recovered_ref": [
+    {
+     "ref_i": 2,
+     "word": " testi",
+     "ref_t": 20.0,
+     "res_t": 20.0
+    },
+    {
+     "ref_i": 3,
+     "word": " che",
+     "ref_t": 20.9,
+     "res_t": 20.92
+    },
+    {
+     "ref_i": 4,
+     "word": " mai",
+     "ref_t": 21.3,
+     "res_t": 21.32
+    },
+    {
+     "ref_i": 5,
+     "word": " dicesti.",
+     "ref_t": 21.82,
+     "res_t": 21.88
+    },
+    {
+     "ref_i": 8,
+     "word": " anzi,",
+     "ref_t": 25.44,
+     "res_t": 25.16
+    }
+   ],
+   "control_scrambles": [
+    {
+     "seed": 4001,
+     "transcript": [
+      {
+       "w": "s\u00ec",
+       "t": 20.0,
+       "p": 0.4
+      }
+     ],
+     "recovered": []
+    },
+    {
+     "seed": 4002,
+     "transcript": [
+      {
+       "w": "musica",
+       "t": 20.0,
+       "p": 0.5
+      }
+     ],
+     "recovered": []
+    },
+    {
+     "seed": 4003,
+     "transcript": [
+      {
+       "w": "s\u00ec",
+       "t": 20.0,
+       "p": 0.43
+      }
+     ],
+     "recovered": []
+    },
+    {
+     "seed": 4004,
+     "transcript": [
+      {
+       "w": "s\u00ec",
+       "t": 20.0,
+       "p": 0.47
+      }
+     ],
+     "recovered": []
+    },
+    {
+     "seed": 4005,
+     "transcript": [
+      {
+       "w": "s\u00ec",
+       "t": 20.0,
+       "p": 0.47
+      }
+     ],
+     "recovered": []
+    }
+   ],
+   "floor_union": [],
+   "floor_majority": [],
+   "control_unique": [
+    " testi",
+    " che",
+    " mai",
+    " dicesti.",
+    " anzi,"
+   ],
+   "control_unique_detail": [
+    {
+     "ref_i": 2,
+     "word": " testi",
+     "ref_t": 20.0,
+     "res_t": 20.0
+    },
+    {
+     "ref_i": 3,
+     "word": " che",
+     "ref_t": 20.9,
+     "res_t": 20.92
+    },
+    {
+     "ref_i": 4,
+     "word": " mai",
+     "ref_t": 21.3,
+     "res_t": 21.32
+    },
+    {
+     "ref_i": 5,
+     "word": " dicesti.",
+     "ref_t": 21.82,
+     "res_t": 21.88
+    },
+    {
+     "ref_i": 8,
+     "word": " anzi,",
+     "ref_t": 25.44,
+     "res_t": 25.16
+    }
+   ],
+   "n_control_unique": 5
+  },
+  "V3_roformer": {
+   "stem_transcript": [
+    {
+     "w": "grazie",
+     "t": 20.0,
+     "p": 0.81
+    },
+    {
+     "w": "a",
+     "t": 20.38,
+     "p": 0.53
+    },
+    {
+     "w": "tutti",
+     "t": 20.46,
+     "p": 0.99
+    }
+   ],
+   "mix_transcript_supplementary": [
+    {
+     "w": "grazie",
+     "t": 22.92,
+     "p": 0.63
+    },
+    {
+     "w": "a",
+     "t": 24.32,
+     "p": 0.55
+    },
+    {
+     "w": "tutti",
+     "t": 24.32,
+     "p": 0.99
+    }
+   ],
+   "recovered_ref": [
+    {
+     "ref_i": 4,
+     "word": " mai",
+     "ref_t": 21.3,
+     "res_t": 20.38
+    }
+   ],
+   "control_scrambles": [
+    {
+     "seed": 4001,
+     "transcript": [
+      {
+       "w": "grazie",
+       "t": 22.88,
+       "p": 0.59
+      }
+     ],
+     "recovered": []
+    },
+    {
+     "seed": 4002,
+     "transcript": [
+      {
+       "w": "grazie",
+       "t": 22.6,
+       "p": 0.6
+      }
+     ],
+     "recovered": []
+    },
+    {
+     "seed": 4003,
+     "transcript": [
+      {
+       "w": "grazie",
+       "t": 22.46,
+       "p": 0.6
+      }
+     ],
+     "recovered": []
+    },
+    {
+     "seed": 4004,
+     "transcript": [
+      {
+       "w": "grazie",
+       "t": 22.54,
+       "p": 0.59
+      }
+     ],
+     "recovered": []
+    },
+    {
+     "seed": 4005,
+     "transcript": [
+      {
+       "w": "grazie",
+       "t": 22.9,
+       "p": 0.6
+      }
+     ],
+     "recovered": []
+    }
+   ],
+   "floor_union": [],
+   "floor_majority": [],
+   "control_unique": [
+    " mai"
+   ],
+   "control_unique_detail": [
+    {
+     "ref_i": 4,
+     "word": " mai",
+     "ref_t": 21.3,
+     "res_t": 20.38
+    }
+   ],
+   "n_control_unique": 1
+  },
+  "V5_ensmax": {
+   "stem_transcript": [
+    {
+     "w": "grazie",
+     "t": 22.3,
+     "p": 0.74
+    },
+    {
+     "w": "a",
+     "t": 23.7,
+     "p": 0.4
+    },
+    {
+     "w": "tutti",
+     "t": 23.72,
+     "p": 0.98
+    }
+   ],
+   "mix_transcript_supplementary": [
+    {
+     "w": "grazie",
+     "t": 20.0,
+     "p": 0.61
+    },
+    {
+     "w": "a",
+     "t": 21.04,
+     "p": 0.57
+    },
+    {
+     "w": "tutti",
+     "t": 21.78,
+     "p": 0.99
+    }
+   ],
+   "recovered_ref": [
+    {
+     "ref_i": 4,
+     "word": " mai",
+     "ref_t": 21.3,
+     "res_t": 23.7
+    }
+   ],
+   "control_scrambles": [
+    {
+     "seed": 4001,
+     "transcript": [
+      {
+       "w": "grazie",
+       "t": 20.0,
+       "p": 0.58
+      }
+     ],
+     "recovered": []
+    },
+    {
+     "seed": 4002,
+     "transcript": [
+      {
+       "w": "grazie",
+       "t": 20.0,
+       "p": 0.59
+      }
+     ],
+     "recovered": []
+    },
+    {
+     "seed": 4003,
+     "transcript": [
+      {
+       "w": "grazie",
+       "t": 20.0,
+       "p": 0.59
+      }
+     ],
+     "recovered": []
+    },
+    {
+     "seed": 4004,
+     "transcript": [
+      {
+       "w": "grazie",
+       "t": 20.0,
+       "p": 0.59
+      }
+     ],
+     "recovered": []
+    },
+    {
+     "seed": 4005,
+     "transcript": [
+      {
+       "w": "grazie",
+       "t": 20.0,
+       "p": 0.59
+      }
+     ],
+     "recovered": []
+    }
+   ],
+   "floor_union": [],
+   "floor_majority": [],
+   "control_unique": [
+    " mai"
+   ],
+   "control_unique_detail": [
+    {
+     "ref_i": 4,
+     "word": " mai",
+     "ref_t": 21.3,
+     "res_t": 23.7
+    }
+   ],
+   "n_control_unique": 1
+  },
+  "V2_mdx23c": {
+   "stem_transcript": [
+    {
+     "w": "grazie",
+     "t": 26.58,
+     "p": 0.73
+    },
+    {
+     "w": "a",
+     "t": 27.98,
+     "p": 0.43
+    },
+    {
+     "w": "tutti",
+     "t": 27.98,
+     "p": 0.97
+    }
+   ],
+   "mix_transcript_supplementary": [
+    {
+     "w": "grazie",
+     "t": 20.0,
+     "p": 0.62
+    },
+    {
+     "w": "a",
+     "t": 21.02,
+     "p": 0.55
+    },
+    {
+     "w": "tutti",
+     "t": 21.78,
+     "p": 0.99
+    }
+   ],
+   "recovered_ref": [
+    {
+     "ref_i": 8,
+     "word": " anzi,",
+     "ref_t": 25.44,
+     "res_t": 27.98
+    }
+   ],
+   "control_scrambles": [
+    {
+     "seed": 4001,
+     "transcript": [
+      {
+       "w": "grazie",
+       "t": 23.28,
+       "p": 0.58
+      }
+     ],
+     "recovered": []
+    },
+    {
+     "seed": 4002,
+     "transcript": [
+      {
+       "w": "grazie",
+       "t": 20.0,
+       "p": 0.59
+      }
+     ],
+     "recovered": []
+    },
+    {
+     "seed": 4003,
+     "transcript": [
+      {
+       "w": "grazie",
+       "t": 20.0,
+       "p": 0.59
+      }
+     ],
+     "recovered": []
+    },
+    {
+     "seed": 4004,
+     "transcript": [
+      {
+       "w": "grazie",
+       "t": 20.0,
+       "p": 0.58
+      }
+     ],
+     "recovered": []
+    },
+    {
+     "seed": 4005,
+     "transcript": [
+      {
+       "w": "grazie",
+       "t": 21.94,
+       "p": 0.59
+      }
+     ],
+     "recovered": []
+    }
+   ],
+   "floor_union": [],
+   "floor_majority": [],
+   "control_unique": [
+    " anzi,"
+   ],
+   "control_unique_detail": [
+    {
+     "ref_i": 8,
+     "word": " anzi,",
+     "ref_t": 25.44,
+     "res_t": 27.98
+    }
+   ],
+   "n_control_unique": 1
+  }
+ },
+ "status": "calibration_failed",
+ "diagnostic_only": true,
+ "no_gate_statement": "No machine voice gate is calibrated. The energy/VAD/HTDemucs/pyin/silero panel AND the extract-then-transcribe DET4 corrected challenge BOTH failed the human anchors. Extract-then-transcribe is retained as DIAGNOSTIC-ONLY for strong intelligible residue (it reliably flags gross leakers V1/A/B and word-region words such as C_cascade's 'cortigiani'@57s). Human labels via blind clips are the gate."
+}

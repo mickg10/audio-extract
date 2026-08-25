@@ -1,0 +1,38 @@
+{
+ "O_original": {
+  "offset_s": 0.0,
+  "corr": 0.994
+ },
+ "A_champion": {
+  "offset_s": 0.0,
+  "corr": 0.952
+ },
+ "C_cascade": {
+  "offset_s": 0.0,
+  "corr": 0.581
+ },
+ "V1_inverted": {
+  "offset_s": 0.0,
+  "corr": 0.946
+ },
+ "V2_mdx23c": {
+  "offset_s": 0.0,
+  "corr": 0.47
+ },
+ "V3_roformer": {
+  "offset_s": 0.0,
+  "corr": 0.454
+ },
+ "V4_deechorev": {
+  "offset_s": 0.0,
+  "corr": 0.45
+ },
+ "V5_ensmax": {
+  "offset_s": 0.0,
+  "corr": 0.472
+ },
+ "Z_iter2": {
+  "offset_s": 0.0,
+  "corr": 0.581
+ }
+}

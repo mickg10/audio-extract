@@ -1,0 +1,60 @@
+{
+ "design": "verdi full-coverage blind segments: V5 vs original, attenuate-only match",
+ "pairs": {
+  "L0v5seg_p1": {
+   "A": "original",
+   "B": "V5_ensmax",
+   "gain_orig": -8.3,
+   "gain_v5": 0.0,
+   "post_encode_delta_LU": 0.0,
+   "window": [
+    0.0,
+    20.0
+   ]
+  },
+  "L20v5seg_p2": {
+   "A": "original",
+   "B": "V5_ensmax",
+   "gain_orig": -14.4,
+   "gain_v5": 0.0,
+   "post_encode_delta_LU": 0.0,
+   "window": [
+    20.0,
+    40.0
+   ]
+  },
+  "L40v5seg_p3": {
+   "A": "original",
+   "B": "V5_ensmax",
+   "gain_orig": -11.9,
+   "gain_v5": 0.0,
+   "post_encode_delta_LU": 0.0,
+   "window": [
+    40.0,
+    60.0
+   ]
+  },
+  "L60v5seg_p4": {
+   "A": "original",
+   "B": "V5_ensmax",
+   "gain_orig": -16.3,
+   "gain_v5": 0.0,
+   "post_encode_delta_LU": 0.0,
+   "window": [
+    60.0,
+    80.0
+   ]
+  },
+  "L80v5seg_p5": {
+   "A": "original",
+   "B": "V5_ensmax",
+   "gain_orig": -15.9,
+   "gain_v5": 0.0,
+   "post_encode_delta_LU": 0.0,
+   "window": [
+    80.0,
+    100.0
+   ]
+  }
+ }
+}

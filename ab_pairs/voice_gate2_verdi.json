@@ -1,0 +1,205 @@
+{
+ "track": "verdi_slow_voices",
+ "frozen_threshold": -10.0,
+ "detector": "median_vocals(candidate) vocal energy relative to the ORIGINAL mix energy per 1s window (0.5s hop); silence-gate we>max(we)*1e-3; worst-window rel_db; PASS if worst_db<=-10 dB",
+ "release_checks": {
+  "novoice_windows": "rel_db<=-10 (the detector's no-voice windows)",
+  "theft_scope": "no-voice windows: 10log10(mean((mix-A)^2)/mean(mix^2)); near 0=theft, very negative=clean",
+  "hall_scope": "no-voice windows HF>6kHz rfft bins: 10log10(mean HF(A)^2/mean HF(mix)^2)",
+  "stereo_scope": "full-signal L-R side energy: 10log10(sum(sideA^2)/sum(sideMix^2))",
+  "release_pass": "theft_db<-6 AND hall_db>-6 AND stereo_db>-6"
+ },
+ "calibration_provenance": "corpus orchestra-only negatives worst_db -11..-19 dB vs mix+voice positives ~-0.2 dB; threshold FROZEN at -10 dB (between orchestra floor and voice)",
+ "candidates": {
+  "iter0": {
+   "acoustic_worst_db": -5.71,
+   "acoustic_pass": false,
+   "theft_db": -279.52,
+   "hall_db": 0.0,
+   "stereo_db": 0.0,
+   "iteration": 0,
+   "parent": "mixture",
+   "terminal": null,
+   "asr_overlap_pct": null,
+   "pcm_sha256": "95994dd74fce6d6f8cb60234241750054d095f505546d87b605c5403716e21ae"
+  },
+  "iter1": {
+   "acoustic_worst_db": -7.54,
+   "acoustic_pass": false,
+   "theft_db": -10.63,
+   "hall_db": -5.32,
+   "stereo_db": -2.09,
+   "iteration": 1,
+   "parent": "95994dd74fce6d6f8cb60234241750054d095f505546d87b605c5403716e21ae",
+   "terminal": null,
+   "asr_overlap_pct": null,
+   "pcm_sha256": "4c229b5f568fd9fcd7768daa0fd1f4dfdd61cdc410449e02327948b5001ac9e1"
+  },
+  "iter2": {
+   "acoustic_worst_db": -22.37,
+   "acoustic_pass": true,
+   "theft_db": -1.65,
+   "hall_db": -15.04,
+   "stereo_db": -3.14,
+   "iteration": 2,
+   "parent": "4c229b5f568fd9fcd7768daa0fd1f4dfdd61cdc410449e02327948b5001ac9e1",
+   "terminal": null,
+   "asr_overlap_pct": null,
+   "pcm_sha256": "71c0633886881b4c247b1d57431d74d72f2bc6bea1384aa33a1a1487d1bd0c03"
+  },
+  "Z": {
+   "acoustic_worst_db": -22.37,
+   "acoustic_pass": true,
+   "theft_db": -1.65,
+   "hall_db": -15.04,
+   "stereo_db": -3.14,
+   "iteration": 2,
+   "parent": "4c229b5f568fd9fcd7768daa0fd1f4dfdd61cdc410449e02327948b5001ac9e1",
+   "terminal": "needs_human_ab",
+   "asr_overlap_pct": null,
+   "pcm_sha256": "71c0633886881b4c247b1d57431d74d72f2bc6bea1384aa33a1a1487d1bd0c03"
+  },
+  "Z2": {
+   "acoustic_worst_db": -17.67,
+   "acoustic_pass": true,
+   "theft_db": -1.84,
+   "hall_db": -11.24,
+   "stereo_db": -2.02,
+   "iteration": 2,
+   "parent": "71c0633886881b4c247b1d57431d74d72f2bc6bea1384aa33a1a1487d1bd0c03",
+   "terminal": null,
+   "asr_overlap_pct": null,
+   "pcm_sha256": "b3969de78f17420ac7fb8a9a366257c90e7451343db6f91591603d51fda3d834",
+   "eq": {
+    "eq": "eq_1055novoice_frames_nfft4096_hop1024",
+    "mean_gain": 1.288,
+    "frames": 1055
+   }
+  },
+  "O_original": {
+   "acoustic_worst_db": -1.69,
+   "acoustic_pass": false,
+   "theft_db": -35.37,
+   "hall_db": 0.1,
+   "stereo_db": -0.41,
+   "iteration": null,
+   "parent": null,
+   "terminal": null,
+   "asr_overlap_pct": null
+  },
+  "A_champion": {
+   "acoustic_worst_db": -7.02,
+   "acoustic_pass": false,
+   "theft_db": -11.17,
+   "hall_db": -5.54,
+   "stereo_db": -2.11,
+   "iteration": null,
+   "parent": null,
+   "terminal": null,
+   "asr_overlap_pct": null
+  },
+  "B_melband_ft": {
+   "acoustic_worst_db": -7.04,
+   "acoustic_pass": false,
+   "theft_db": -11.19,
+   "hall_db": -5.48,
+   "stereo_db": -2.12,
+   "iteration": null,
+   "parent": null,
+   "terminal": null,
+   "asr_overlap_pct": null
+  },
+  "C_cascade": {
+   "acoustic_worst_db": -25.09,
+   "acoustic_pass": true,
+   "theft_db": -1.65,
+   "hall_db": -15.42,
+   "stereo_db": -3.17,
+   "iteration": null,
+   "parent": null,
+   "terminal": null,
+   "asr_overlap_pct": null
+  },
+  "M_maxagg": {
+   "acoustic_worst_db": -6.82,
+   "acoustic_pass": false,
+   "theft_db": -5.85,
+   "hall_db": 2.73,
+   "stereo_db": -4.76,
+   "iteration": null,
+   "parent": null,
+   "terminal": null,
+   "asr_overlap_pct": null
+  },
+  "V1_inverted": {
+   "acoustic_worst_db": -11.62,
+   "acoustic_pass": true,
+   "theft_db": -3.3,
+   "hall_db": -11.42,
+   "stereo_db": -7.04,
+   "iteration": null,
+   "parent": null,
+   "terminal": null,
+   "asr_overlap_pct": null
+  },
+  "V2_mdx23c": {
+   "acoustic_worst_db": -24.9,
+   "acoustic_pass": true,
+   "theft_db": -0.83,
+   "hall_db": -24.55,
+   "stereo_db": -7.83,
+   "iteration": null,
+   "parent": null,
+   "terminal": null,
+   "asr_overlap_pct": null
+  },
+  "V3_roformer": {
+   "acoustic_worst_db": -18.6,
+   "acoustic_pass": true,
+   "theft_db": -0.8,
+   "hall_db": -24.46,
+   "stereo_db": -7.79,
+   "iteration": null,
+   "parent": null,
+   "terminal": null,
+   "asr_overlap_pct": null
+  },
+  "V4_deechorev": {
+   "acoustic_worst_db": -8.04,
+   "acoustic_pass": false,
+   "theft_db": -0.73,
+   "hall_db": -26.36,
+   "stereo_db": -8.79,
+   "iteration": null,
+   "parent": null,
+   "terminal": null,
+   "asr_overlap_pct": null
+  },
+  "V5_ensmax": {
+   "acoustic_worst_db": -25.0,
+   "acoustic_pass": true,
+   "theft_db": -0.85,
+   "hall_db": -23.76,
+   "stereo_db": -7.71,
+   "iteration": null,
+   "parent": null,
+   "terminal": null,
+   "asr_overlap_pct": null
+  }
+ },
+ "Z_iteration": 2,
+ "terminal": "needs_human_ab",
+ "cascade_worst_db_curve": [
+  -5.71,
+  -7.54,
+  -22.37
+ ],
+ "delivery": {
+  "Z_m4a": "/home/mickg/ab_pairs/verdi_slow_voices__Z_gate2_iter2.m4a",
+  "Z_pcm_sha256": "71c0633886881b4c247b1d57431d74d72f2bc6bea1384aa33a1a1487d1bd0c03",
+  "Z2_m4a": "/home/mickg/ab_pairs/verdi_slow_voices__Z2_gate2_iter2_comp.m4a",
+  "Z2_pcm_sha256": "b3969de78f17420ac7fb8a9a366257c90e7451343db6f91591603d51fda3d834",
+  "passing_iteration": 2
+ },
+ "done": true
+}

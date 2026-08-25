@@ -1,0 +1,49 @@
+{
+ "design": "FLAC re-audit of expert-contested items + control",
+ "pairs": {
+  "L34donnaf_p1": {
+   "A": "original",
+   "B": "donna_v2@34.5",
+   "encoding": "FLAC lossless cut; one inherited AAC gen from listening master only",
+   "gain_db_on_candidate": 12,
+   "label": "donna_v2@34.5",
+   "window": [
+    34.5,
+    42.5
+   ]
+  },
+  "L3841f_p1": {
+   "A": "original",
+   "B": "mdx23c@3841",
+   "encoding": "FLAC lossless cut; one inherited AAC gen from listening master only",
+   "gain_db_on_candidate": 12,
+   "label": "mdx23c@3841",
+   "window": [
+    38.0,
+    41.0
+   ]
+  },
+  "L3841f_p2": {
+   "A": "roformer@3841",
+   "B": "original",
+   "encoding": "FLAC lossless cut; one inherited AAC gen from listening master only",
+   "gain_db_on_candidate": 12,
+   "label": "roformer@3841",
+   "window": [
+    38.0,
+    41.0
+   ]
+  },
+  "L3841f_p3": {
+   "A": "ensmax@3841_control",
+   "B": "original",
+   "encoding": "FLAC lossless cut; one inherited AAC gen from listening master only",
+   "gain_db_on_candidate": 11.9,
+   "label": "ensmax@3841_control",
+   "window": [
+    38.0,
+    41.0
+   ]
+  }
+ }
+}

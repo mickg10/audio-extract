@@ -1,0 +1,43 @@
+{
+ "design": "ladder v1.1 additions: transparency + reliability probes",
+ "pairs": {
+  "L0nv_p1": {
+   "A": "fresh_V2",
+   "B": "original",
+   "gain_db_on_candidate": 4.74,
+   "type": "transparency_probe_novoice",
+   "window": [
+    0.8,
+    10.0
+   ]
+  },
+  "L4853tw_p1": {
+   "A": "fresh_V2",
+   "B": "legacy_V2",
+   "type": "reliability_twin",
+   "window": [
+    48.0,
+    53.0
+   ]
+  },
+  "L94102tw_p1": {
+   "A": "fresh_V2",
+   "B": "legacy_V2",
+   "type": "reliability_twin",
+   "window": [
+    94.0,
+    102.0
+   ]
+  },
+  "L97nv_p1": {
+   "A": "fresh_V2",
+   "B": "original",
+   "gain_db_on_candidate": 4.74,
+   "type": "transparency_probe_novoice",
+   "window": [
+    97.0,
+    102.8
+   ]
+  }
+ }
+}

@@ -1,0 +1,3063 @@
+[
+ {
+  "track": "verdi_win2028__clip2.m4a",
+  "vote": "words",
+  "ts": "2026-08-16T21:11:28"
+ },
+ {
+  "track": "verdi_win2028__clip3.m4a",
+  "vote": "none",
+  "ts": "2026-08-16T21:11:48"
+ },
+ {
+  "track": "verdi_win2028__clip1.m4a",
+  "vote": "voice",
+  "ts": "2026-08-16T21:16:08"
+ },
+ {
+  "track": "verdi_win2028__clip4.m4a",
+  "vote": "none",
+  "ts": "2026-08-16T21:16:54"
+ },
+ {
+  "track": "verdi_win2028__clip5.m4a",
+  "vote": "words",
+  "ts": "2026-08-16T21:17:05"
+ },
+ {
+  "track": "verdi_win2028__clip6.m4a",
+  "vote": "none",
+  "ts": "2026-08-16T21:17:37"
+ },
+ {
+  "track": "verdi_win2028__clip7.m4a",
+  "vote": "words",
+  "ts": "2026-08-16T21:18:06"
+ },
+ {
+  "track": "verdi_win2028__clip8.m4a",
+  "vote": "none",
+  "ts": "2026-08-16T21:18:35"
+ },
+ {
+  "track": "verdi_win2028__clip9.m4a",
+  "vote": "none",
+  "ts": "2026-08-16T21:19:18"
+ },
+ {
+  "track": "verdi_win3841__clip1.m4a",
+  "vote": "none",
+  "ts": "2026-08-16T21:19:35"
+ },
+ {
+  "track": "verdi_win3841__clip2.m4a",
+  "vote": "none",
+  "ts": "2026-08-16T21:19:55"
+ },
+ {
+  "track": "verdi_win3841__clip3.m4a",
+  "vote": "none",
+  "ts": "2026-08-16T21:20:47"
+ },
+ {
+  "track": "verdi_win3841__clip4.m4a",
+  "vote": "words",
+  "ts": "2026-08-16T21:21:19"
+ },
+ {
+  "track": "verdi_win3841__clip5.m4a",
+  "vote": "none",
+  "ts": "2026-08-16T21:21:29"
+ },
+ {
+  "track": "verdi_win3841__clip6.m4a",
+  "vote": "none",
+  "ts": "2026-08-16T21:21:45"
+ },
+ {
+  "track": "verdi_win3841__clip7.m4a",
+  "vote": "none",
+  "ts": "2026-08-16T21:21:56"
+ },
+ {
+  "track": "verdi_win4853__clip1.m4a",
+  "vote": "none",
+  "ts": "2026-08-16T21:22:40"
+ },
+ {
+  "track": "verdi_win4853__clip2.m4a",
+  "vote": "none",
+  "ts": "2026-08-16T21:23:03"
+ },
+ {
+  "track": "verdi_win4853__clip3.m4a",
+  "vote": "words",
+  "ts": "2026-08-16T21:23:51"
+ },
+ {
+  "track": "verdi_win4853__clip4.m4a",
+  "vote": "words",
+  "ts": "2026-08-16T21:24:36"
+ },
+ {
+  "track": "verdi_win4853__clip5.m4a",
+  "vote": "none",
+  "ts": "2026-08-16T21:25:20"
+ },
+ {
+  "track": "verdi_win4853__clip6.m4a",
+  "vote": "none",
+  "ts": "2026-08-16T21:26:25"
+ },
+ {
+  "track": "verdi_win4853__clip7.m4a",
+  "vote": "none",
+  "ts": "2026-08-16T21:26:49"
+ },
+ {
+  "track": "verdi_win94102__clip1.m4a",
+  "vote": "none",
+  "ts": "2026-08-16T21:27:07"
+ },
+ {
+  "track": "verdi_win94102__clip2.m4a",
+  "vote": "none",
+  "ts": "2026-08-16T21:27:35"
+ },
+ {
+  "track": "verdi_win94102__clip3.m4a",
+  "vote": "words",
+  "ts": "2026-08-16T21:27:44"
+ },
+ {
+  "track": "verdi_win94102__clip4.m4a",
+  "vote": "voice",
+  "ts": "2026-08-16T21:27:56"
+ },
+ {
+  "track": "verdi_win94102__clip5.m4a",
+  "vote": "none",
+  "ts": "2026-08-16T21:28:10"
+ },
+ {
+  "track": "verdi_win94102__clip6.m4a",
+  "vote": "none",
+  "ts": "2026-08-16T21:28:27"
+ },
+ {
+  "track": "verdi_win2028__clip1.m4a",
+  "vote": "quality_unacceptable",
+  "ts": "2026-08-16T21:35:04"
+ },
+ {
+  "track": "verdi_win2028__clip1.m4a",
+  "vote": "words",
+  "ts": "2026-08-16T21:35:09"
+ },
+ {
+  "track": "verdi_win2028__clip2.m4a",
+  "vote": "quality_ok",
+  "ts": "2026-08-16T21:35:21"
+ },
+ {
+  "track": "verdi_win2028__clip2.m4a",
+  "vote": "words",
+  "ts": "2026-08-16T21:35:22"
+ },
+ {
+  "track": "verdi_win2028__clip5.m4a",
+  "vote": "words",
+  "ts": "2026-08-16T21:36:45"
+ },
+ {
+  "track": "verdi_win2028__clip5.m4a",
+  "vote": "quality_borderline",
+  "ts": "2026-08-16T21:36:51"
+ },
+ {
+  "track": "verdi_win2028__clip8.m4a",
+  "vote": "quality_ok",
+  "ts": "2026-08-16T21:37:08"
+ },
+ {
+  "track": "verdi_win2028__clip8.m4a",
+  "vote": "none",
+  "ts": "2026-08-16T21:37:10"
+ },
+ {
+  "track": "verdi_win2028__clip9.m4a",
+  "vote": "quality_unacceptable",
+  "ts": "2026-08-16T21:37:26"
+ },
+ {
+  "track": "verdi_win2028__clip7.m4a",
+  "vote": "quality_unacceptable",
+  "ts": "2026-08-16T21:37:37"
+ },
+ {
+  "track": "verdi_win2028__clip7.m4a",
+  "vote": "voice",
+  "ts": "2026-08-16T21:37:39"
+ },
+ {
+  "track": "verdi_win2028__clip6.m4a",
+  "vote": "none",
+  "ts": "2026-08-16T21:38:10"
+ },
+ {
+  "track": "verdi_win2028__clip6.m4a",
+  "vote": "quality_ok",
+  "ts": "2026-08-16T21:38:12"
+ },
+ {
+  "track": "verdi_win2028__clip3.m4a",
+  "vote": "quality_ok",
+  "ts": "2026-08-16T21:38:23"
+ },
+ {
+  "track": "verdi_win2028__clip3.m4a",
+  "vote": "voice",
+  "ts": "2026-08-16T21:38:24"
+ },
+ {
+  "track": "verdi_win2028__clip4.m4a",
+  "vote": "voice",
+  "ts": "2026-08-16T21:38:30"
+ },
+ {
+  "track": "verdi_win2028__clip4.m4a",
+  "vote": "quality_ok",
+  "ts": "2026-08-16T21:38:35"
+ },
+ {
+  "track": "verdi_win3841__clip3.m4a",
+  "vote": "quality_borderline",
+  "ts": "2026-08-16T21:41:22"
+ },
+ {
+  "track": "verdi_win3841__clip3.m4a",
+  "vote": "none",
+  "ts": "2026-08-16T21:41:27"
+ },
+ {
+  "track": "verdi_win3841__clip3.m4a",
+  "vote": "none",
+  "ts": "2026-08-16T21:41:28"
+ },
+ {
+  "track": "verdi_win3841__clip3.m4a",
+  "vote": "none",
+  "ts": "2026-08-16T21:41:29"
+ },
+ {
+  "track": "verdi_win3841__clip4.m4a",
+  "vote": "quality_ok",
+  "ts": "2026-08-16T21:46:11"
+ },
+ {
+  "track": "verdi_win3841__clip3.m4a",
+  "vote": "quality_unacceptable",
+  "ts": "2026-08-16T21:46:40"
+ },
+ {
+  "track": "verdi_win3841__clip1.m4a",
+  "vote": "quality_borderline",
+  "ts": "2026-08-16T21:46:51"
+ },
+ {
+  "track": "verdi_win3841__clip2.m4a",
+  "vote": "quality_ok",
+  "ts": "2026-08-16T21:46:51"
+ },
+ {
+  "track": "verdi_win2028__clip3.m4a",
+  "vote": "none",
+  "ts": "2026-08-16T21:54:58"
+ },
+ {
+  "track": "verdi_win2028__clip3.m4a",
+  "vote": "none",
+  "ts": "2026-08-16T21:56:58",
+  "note": "OWNER VERBAL CORRECTION: second-pass 'voice' click was accidental; confirmed NO voice"
+ },
+ {
+  "track": "verdi_win2028__clip4.m4a",
+  "vote": "voice_trace",
+  "ts": "2026-08-16T21:56:58",
+  "note": "OWNER VERBAL: barely-audible female voice, NOT recognizable \u2014 below recognition threshold"
+ },
+ {
+  "track": "verdi_win4853__clip1.m4a",
+  "vote": "quality_borderline",
+  "ts": "2026-08-16T21:58:26"
+ },
+ {
+  "track": "verdi_win4853__clip1.m4a",
+  "vote": "quality_unacceptable",
+  "ts": "2026-08-16T21:58:29"
+ },
+ {
+  "track": "verdi_win4853__clip1.m4a",
+  "vote": "quality_borderline",
+  "ts": "2026-08-16T21:58:31"
+ },
+ {
+  "track": "verdi_win4853__clip4.m4a",
+  "vote": "quality_unacceptable",
+  "ts": "2026-08-16T21:58:52"
+ },
+ {
+  "track": "verdi_win94102__clip3.m4a",
+  "vote": "quality_ok",
+  "ts": "2026-08-16T21:59:36"
+ },
+ {
+  "track": "verdi_win4853__clip6.m4a",
+  "vote": "quality_borderline",
+  "ts": "2026-08-16T22:01:33"
+ },
+ {
+  "track": "verdi_win4853__clip3.m4a",
+  "vote": "quality_ok",
+  "ts": "2026-08-16T22:01:49"
+ },
+ {
+  "track": "verdi_win4853__clip5.m4a",
+  "vote": "quality_borderline",
+  "ts": "2026-08-16T22:02:14"
+ },
+ {
+  "track": "verdi_win4853__clip2.m4a",
+  "vote": "quality_borderline",
+  "ts": "2026-08-16T22:02:36"
+ },
+ {
+  "track": "verdi_win4853__clip2.m4a",
+  "vote": "quality_ok",
+  "ts": "2026-08-16T22:02:41"
+ },
+ {
+  "track": "verdi_win4853__clip4.m4a",
+  "vote": "quality_borderline",
+  "ts": "2026-08-16T22:03:19"
+ },
+ {
+  "track": "verdi_win3841__clip6.m4a",
+  "vote": "quality_borderline",
+  "ts": "2026-08-16T22:04:15"
+ },
+ {
+  "track": "verdi_win3841__clip6.m4a",
+  "vote": "quality_unacceptable",
+  "ts": "2026-08-16T22:04:20"
+ },
+ {
+  "track": "verdi_win3841__clip6.m4a",
+  "vote": "quality_unacceptable",
+  "ts": "2026-08-16T22:04:20"
+ },
+ {
+  "track": "verdi_win3841__clip7.m4a",
+  "vote": "quality_ok",
+  "ts": "2026-08-16T22:04:38"
+ },
+ {
+  "track": "verdi_win94102__clip1.m4a",
+  "vote": "quality_borderline",
+  "ts": "2026-08-16T22:05:00"
+ },
+ {
+  "track": "verdi_win94102__clip2.m4a",
+  "vote": "quality_borderline",
+  "ts": "2026-08-16T22:05:32"
+ },
+ {
+  "track": "verdi_win4853__clip7.m4a",
+  "vote": "quality_ok",
+  "ts": "2026-08-16T22:05:48"
+ },
+ {
+  "track": "verdi_win4853__clip7.m4a",
+  "vote": "quality_ok",
+  "ts": "2026-08-16T22:05:49"
+ },
+ {
+  "track": "verdi_win4853__clip7.m4a",
+  "vote": "quality_borderline",
+  "ts": "2026-08-16T22:05:51"
+ },
+ {
+  "track": "verdi_win94102__clip4.m4a",
+  "vote": "none",
+  "ts": "2026-08-16T22:06:28"
+ },
+ {
+  "track": "verdi_win94102__clip4.m4a",
+  "vote": "none",
+  "ts": "2026-08-16T22:06:28"
+ },
+ {
+  "track": "verdi_win94102__clip4.m4a",
+  "vote": "none",
+  "ts": "2026-08-16T22:06:29"
+ },
+ {
+  "track": "verdi_win94102__clip4.m4a",
+  "vote": "none",
+  "ts": "2026-08-16T22:06:30"
+ },
+ {
+  "track": "verdi_win94102__clip4.m4a",
+  "vote": "quality_borderline",
+  "ts": "2026-08-16T22:06:51"
+ },
+ {
+  "track": "verdi_win94102__clip4.m4a",
+  "vote": "quality_borderline",
+  "ts": "2026-08-16T22:06:51"
+ },
+ {
+  "track": "verdi_win94102__clip5.m4a",
+  "vote": "quality_borderline",
+  "ts": "2026-08-16T22:06:51"
+ },
+ {
+  "track": "verdi_win94102__clip5.m4a",
+  "vote": "quality_borderline",
+  "ts": "2026-08-16T22:06:51"
+ },
+ {
+  "track": "verdi_win94102__clip6.m4a",
+  "vote": "quality_borderline",
+  "ts": "2026-08-16T22:07:33"
+ },
+ {
+  "track": "verdi_win94102__clip5.m4a",
+  "vote": "quality_ok",
+  "ts": "2026-08-16T22:07:37"
+ },
+ {
+  "track": "verdi_win94102__clip5.m4a",
+  "vote": "quality_ok",
+  "ts": "2026-08-16T22:07:37"
+ },
+ {
+  "track": "L94102_p3",
+  "vote": "voice_A",
+  "ts": "2026-08-17T10:47:40",
+  "user": "mike"
+ },
+ {
+  "track": "L94102_p4",
+  "vote": "voice_B",
+  "ts": "2026-08-17T10:48:23",
+  "user": "mike"
+ },
+ {
+  "track": "L94102_p4",
+  "vote": "voice_A",
+  "ts": "2026-08-17T10:48:24",
+  "user": "mike"
+ },
+ {
+  "track": "L3841_p1",
+  "vote": "voice_A",
+  "ts": "2026-08-17T12:03:24",
+  "user": "mike"
+ },
+ {
+  "track": "L3841_p1",
+  "vote": "voice_B",
+  "ts": "2026-08-17T12:03:25",
+  "user": "mike"
+ },
+ {
+  "track": "L3841_p3",
+  "vote": "voice_B",
+  "ts": "2026-08-17T15:15:04",
+  "user": "mike"
+ },
+ {
+  "track": "L3841_p3",
+  "vote": "equal",
+  "ts": "2026-08-17T15:15:06",
+  "user": "mike"
+ },
+ {
+  "track": "L3841_p2",
+  "vote": "voice_A",
+  "ts": "2026-08-17T15:16:11",
+  "user": "mike"
+ },
+ {
+  "track": "L3841_p4",
+  "vote": "voice_B",
+  "ts": "2026-08-17T15:16:57",
+  "user": "mike"
+ },
+ {
+  "track": "L3841_p4",
+  "vote": "voice_A",
+  "ts": "2026-08-17T15:16:57",
+  "user": "mike"
+ },
+ {
+  "track": "L3841_p4",
+  "vote": "equal",
+  "ts": "2026-08-17T15:16:58",
+  "user": "mike"
+ },
+ {
+  "track": "L3841_p5",
+  "vote": "fuller_B",
+  "ts": "2026-08-17T15:17:21",
+  "user": "mike"
+ },
+ {
+  "track": "L3841_p5",
+  "vote": "voice_B",
+  "ts": "2026-08-17T15:17:21",
+  "user": "mike"
+ },
+ {
+  "track": "L3841_p5",
+  "vote": "voice_A",
+  "ts": "2026-08-17T15:17:21",
+  "user": "mike"
+ },
+ {
+  "track": "L3841_p6",
+  "vote": "voice_B",
+  "ts": "2026-08-17T15:17:52",
+  "user": "mike"
+ },
+ {
+  "track": "L3841_p6",
+  "vote": "fuller_B",
+  "ts": "2026-08-17T15:18:09",
+  "user": "mike"
+ },
+ {
+  "track": "L3841_p7",
+  "vote": "fuller_A",
+  "ts": "2026-08-17T15:18:22",
+  "user": "mike"
+ },
+ {
+  "track": "L3841_p7",
+  "vote": "voice_A",
+  "ts": "2026-08-17T15:18:23",
+  "user": "mike"
+ },
+ {
+  "track": "L4853_p1",
+  "vote": "equal",
+  "ts": "2026-08-17T15:18:45",
+  "user": "mike"
+ },
+ {
+  "track": "L4853_p1",
+  "vote": "voice_A",
+  "ts": "2026-08-17T15:18:45",
+  "user": "mike"
+ },
+ {
+  "track": "L4853_p1",
+  "vote": "voice_B",
+  "ts": "2026-08-17T15:18:46",
+  "user": "mike"
+ },
+ {
+  "track": "L4853_p2",
+  "vote": "fuller_A",
+  "ts": "2026-08-17T15:19:00",
+  "user": "mike"
+ },
+ {
+  "track": "L4853_p2",
+  "vote": "voice_A",
+  "ts": "2026-08-17T15:19:01",
+  "user": "mike"
+ },
+ {
+  "track": "L4853_p3",
+  "vote": "voice_A",
+  "ts": "2026-08-17T15:19:06",
+  "user": "mike"
+ },
+ {
+  "track": "L4853_p3",
+  "vote": "fuller_A",
+  "ts": "2026-08-17T15:19:07",
+  "user": "mike"
+ },
+ {
+  "track": "L4853_p4",
+  "vote": "voice_B",
+  "ts": "2026-08-17T15:19:27",
+  "user": "mike"
+ },
+ {
+  "track": "L4853_p4",
+  "vote": "voice_A",
+  "ts": "2026-08-17T15:19:27",
+  "user": "mike"
+ },
+ {
+  "track": "L4853_p4",
+  "vote": "equal",
+  "ts": "2026-08-17T15:19:28",
+  "user": "mike"
+ },
+ {
+  "track": "L4853_p5",
+  "vote": "equal",
+  "ts": "2026-08-17T15:19:39",
+  "user": "mike"
+ },
+ {
+  "track": "L4853_p5",
+  "vote": "voice_B",
+  "ts": "2026-08-17T15:19:39",
+  "user": "mike"
+ },
+ {
+  "track": "L4853_p5",
+  "vote": "voice_A",
+  "ts": "2026-08-17T15:19:39",
+  "user": "mike"
+ },
+ {
+  "track": "L4853_p6",
+  "vote": "fuller_A",
+  "ts": "2026-08-17T15:19:50",
+  "user": "mike"
+ },
+ {
+  "track": "L4853_p6",
+  "vote": "voice_A",
+  "ts": "2026-08-17T15:19:50",
+  "user": "mike"
+ },
+ {
+  "track": "L4853_p7",
+  "vote": "fuller_B",
+  "ts": "2026-08-17T15:19:55",
+  "user": "mike"
+ },
+ {
+  "track": "L4853_p7",
+  "vote": "voice_B",
+  "ts": "2026-08-17T15:19:55",
+  "user": "mike"
+ },
+ {
+  "track": "L4853tw_p1",
+  "vote": "equal",
+  "ts": "2026-08-17T15:20:20",
+  "user": "mike"
+ },
+ {
+  "track": "L94102_p1",
+  "vote": "voice_A",
+  "ts": "2026-08-17T15:20:25",
+  "user": "mike"
+ },
+ {
+  "track": "L94102_p1",
+  "vote": "equal",
+  "ts": "2026-08-17T15:20:30",
+  "user": "mike"
+ },
+ {
+  "track": "L94102_p1",
+  "vote": "voice_B",
+  "ts": "2026-08-17T15:20:30",
+  "user": "mike"
+ },
+ {
+  "track": "L94102_p2",
+  "vote": "voice_A",
+  "ts": "2026-08-17T15:20:45",
+  "user": "mike"
+ },
+ {
+  "track": "L94102_p2",
+  "vote": "equal",
+  "ts": "2026-08-17T15:21:01",
+  "user": "mike"
+ },
+ {
+  "track": "L94102_p3",
+  "vote": "fuller_A",
+  "ts": "2026-08-17T15:22:22",
+  "user": "mike"
+ },
+ {
+  "track": "L94102_p4",
+  "vote": "fuller_B",
+  "ts": "2026-08-17T15:22:26",
+  "user": "mike"
+ },
+ {
+  "track": "L94102_p5",
+  "vote": "voice_A",
+  "ts": "2026-08-17T15:22:45",
+  "user": "mike"
+ },
+ {
+  "track": "L94102_p5",
+  "vote": "voice_B",
+  "ts": "2026-08-17T15:22:45",
+  "user": "mike"
+ },
+ {
+  "track": "L94102_p5",
+  "vote": "equal",
+  "ts": "2026-08-17T15:22:47",
+  "user": "mike"
+ },
+ {
+  "track": "L94102_p6",
+  "vote": "voice_A",
+  "ts": "2026-08-17T15:23:26",
+  "user": "mike"
+ },
+ {
+  "track": "L94102_p6",
+  "vote": "fuller_A",
+  "ts": "2026-08-17T15:23:31",
+  "user": "mike"
+ },
+ {
+  "track": "L94102_p7",
+  "vote": "voice_A",
+  "ts": "2026-08-17T15:23:36",
+  "user": "mike"
+ },
+ {
+  "track": "L94102_p7",
+  "vote": "fuller_A",
+  "ts": "2026-08-17T15:23:43",
+  "user": "mike"
+ },
+ {
+  "track": "L94102tw_p1",
+  "vote": "equal",
+  "ts": "2026-08-17T15:23:55",
+  "user": "mike"
+ },
+ {
+  "track": "L97nv_p1",
+  "vote": "equal",
+  "ts": "2026-08-17T15:24:17",
+  "user": "mike"
+ },
+ {
+  "track": "L3841_p1",
+  "vote": "equal",
+  "ts": "2026-08-17T15:24:56",
+  "user": "mike"
+ },
+ {
+  "track": "L3841_p1",
+  "vote": "fuller_B",
+  "ts": "2026-08-17T15:24:57",
+  "user": "mike"
+ },
+ {
+  "track": "L3841_p1",
+  "vote": "equal",
+  "ts": "2026-08-17T15:24:58",
+  "user": "mike"
+ },
+ {
+  "track": "L0nv_p1",
+  "vote": "voice_B",
+  "ts": "2026-08-17T15:25:29",
+  "user": "mike"
+ },
+ {
+  "track": "L0nv_p1",
+  "vote": "equal",
+  "ts": "2026-08-17T15:25:31",
+  "user": "mike"
+ },
+ {
+  "track": "L0nv_p1",
+  "vote": "voice_A",
+  "ts": "2026-08-17T15:35:49",
+  "user": "Elena"
+ },
+ {
+  "track": "L0nv_p1",
+  "vote": "equal",
+  "ts": "2026-08-17T15:52:29",
+  "user": "Elena"
+ },
+ {
+  "track": "L0nv_p1",
+  "vote": "dmg_B",
+  "ts": "2026-08-17T15:52:42",
+  "user": "Elena"
+ },
+ {
+  "track": "L3841_p1",
+  "vote": "equal",
+  "ts": "2026-08-17T15:52:56",
+  "user": "Elena"
+ },
+ {
+  "track": "L3841_p1",
+  "vote": "voice_B",
+  "ts": "2026-08-17T15:52:57",
+  "user": "Elena"
+ },
+ {
+  "track": "L3841_p2",
+  "vote": "dmg_A",
+  "ts": "2026-08-17T15:53:20",
+  "user": "Elena"
+ },
+ {
+  "track": "L3841_p2",
+  "vote": "voice_A",
+  "ts": "2026-08-17T15:53:24",
+  "user": "Elena"
+ },
+ {
+  "track": "L3841_p3",
+  "vote": "voice_A",
+  "ts": "2026-08-17T15:53:30",
+  "user": "Elena"
+ },
+ {
+  "track": "L3841_p3",
+  "vote": "fuller_A",
+  "ts": "2026-08-17T15:53:43",
+  "user": "Elena"
+ },
+ {
+  "track": "L3841_p2",
+  "vote": "fuller_A",
+  "ts": "2026-08-17T15:54:03",
+  "user": "Elena"
+ },
+ {
+  "track": "L3841_p4",
+  "vote": "voice_A",
+  "ts": "2026-08-17T15:54:10",
+  "user": "Elena"
+ },
+ {
+  "track": "L0nv_p1",
+  "vote": "voice_B",
+  "ts": "2026-08-17T15:54:28",
+  "user": "Elena"
+ },
+ {
+  "track": "L0nv_p1",
+  "vote": "voice_A",
+  "ts": "2026-08-17T15:54:29",
+  "user": "Elena"
+ },
+ {
+  "track": "L0nv_p1",
+  "vote": "voice_A",
+  "ts": "2026-08-17T15:54:30",
+  "user": "Elena"
+ },
+ {
+  "track": "L0nv_p1",
+  "vote": "voice_A",
+  "ts": "2026-08-17T15:54:31",
+  "user": "Elena"
+ },
+ {
+  "track": "L0nv_p1",
+  "vote": "voice_A",
+  "ts": "2026-08-17T15:54:32",
+  "user": "Elena"
+ },
+ {
+  "track": "L0nv_p1",
+  "vote": "voice_A",
+  "ts": "2026-08-17T15:54:32",
+  "user": "Elena"
+ },
+ {
+  "track": "L0nv_p1",
+  "vote": "voice_A",
+  "ts": "2026-08-17T15:54:37",
+  "user": "Elena"
+ },
+ {
+  "track": "L0nv_p1",
+  "vote": "voice_A",
+  "ts": "2026-08-17T15:54:37",
+  "user": "Elena"
+ },
+ {
+  "track": "L0nv_p1",
+  "vote": "voice_A",
+  "ts": "2026-08-17T15:54:38",
+  "user": "Elena"
+ },
+ {
+  "track": "L0nv_p1",
+  "vote": "voice_B",
+  "ts": "2026-08-17T15:54:38",
+  "user": "Elena"
+ },
+ {
+  "track": "L0nv_p1",
+  "vote": "dmg_B",
+  "ts": "2026-08-17T15:54:41",
+  "user": "Elena"
+ },
+ {
+  "track": "L0nv_p1",
+  "vote": "voice_A",
+  "ts": "2026-08-17T15:55:29",
+  "user": "Elena"
+ },
+ {
+  "track": "L0nv_p1",
+  "vote": "voice_A",
+  "ts": "2026-08-17T15:55:30",
+  "user": "Elena"
+ },
+ {
+  "track": "L3841_p1",
+  "vote": "voice_B",
+  "ts": "2026-08-17T15:55:39",
+  "user": "Elena"
+ },
+ {
+  "track": "L0nv_p1",
+  "vote": "voice_B",
+  "ts": "2026-08-17T15:56:12",
+  "user": "Elena"
+ },
+ {
+  "track": "L0nv_p1",
+  "vote": "clear",
+  "ts": "2026-08-17T15:57:33",
+  "user": "Elena"
+ },
+ {
+  "track": "L3841_p1",
+  "vote": "clear",
+  "ts": "2026-08-17T15:57:35",
+  "user": "Elena"
+ },
+ {
+  "track": "L3841_p2",
+  "vote": "clear",
+  "ts": "2026-08-17T15:57:37",
+  "user": "Elena"
+ },
+ {
+  "track": "L3841_p3",
+  "vote": "clear",
+  "ts": "2026-08-17T15:57:39",
+  "user": "Elena"
+ },
+ {
+  "track": "L3841_p4",
+  "vote": "clear",
+  "ts": "2026-08-17T15:57:41",
+  "user": "Elena"
+ },
+ {
+  "track": "L0nv_p1",
+  "vote": "voice_B",
+  "ts": "2026-08-17T15:58:10",
+  "user": "Elena"
+ },
+ {
+  "track": "L0nv_p1",
+  "vote": "equal",
+  "ts": "2026-08-17T15:58:33",
+  "user": "Elena"
+ },
+ {
+  "track": "L0nv_p1",
+  "vote": "dmg_B",
+  "ts": "2026-08-17T15:58:38",
+  "user": "Elena"
+ },
+ {
+  "track": "L3841_p1",
+  "vote": "voice_A",
+  "ts": "2026-08-17T15:58:45",
+  "user": "Elena"
+ },
+ {
+  "track": "L3841_p1",
+  "vote": "dmg_A",
+  "ts": "2026-08-17T15:58:55",
+  "user": "Elena"
+ },
+ {
+  "track": "L3841_p1",
+  "vote": "voice_B",
+  "ts": "2026-08-17T15:59:01",
+  "user": "Elena"
+ },
+ {
+  "track": "L3841_p1",
+  "vote": "dmg_B",
+  "ts": "2026-08-17T15:59:04",
+  "user": "Elena"
+ },
+ {
+  "track": "L3841_p1",
+  "vote": "equal",
+  "ts": "2026-08-17T15:59:07",
+  "user": "Elena"
+ },
+ {
+  "track": "L3841_p2",
+  "vote": "voice_B",
+  "ts": "2026-08-17T15:59:15",
+  "user": "Elena"
+ },
+ {
+  "track": "L3841_p2",
+  "vote": "dmg_B",
+  "ts": "2026-08-17T15:59:16",
+  "user": "Elena"
+ },
+ {
+  "track": "L3841_p2",
+  "vote": "voice_A",
+  "ts": "2026-08-17T15:59:23",
+  "user": "Elena"
+ },
+ {
+  "track": "L3841_p2",
+  "vote": "dmg_A",
+  "ts": "2026-08-17T15:59:27",
+  "user": "Elena"
+ },
+ {
+  "track": "L3841_p2",
+  "vote": "equal",
+  "ts": "2026-08-17T15:59:29",
+  "user": "Elena"
+ },
+ {
+  "track": "L3841_p3",
+  "vote": "voice_B",
+  "ts": "2026-08-17T15:59:35",
+  "user": "Elena"
+ },
+ {
+  "track": "L3841_p3",
+  "vote": "dmg_B",
+  "ts": "2026-08-17T15:59:41",
+  "user": "Elena"
+ },
+ {
+  "track": "L3841_p3",
+  "vote": "voice_A",
+  "ts": "2026-08-17T15:59:48",
+  "user": "Elena"
+ },
+ {
+  "track": "L3841_p3",
+  "vote": "dmg_A",
+  "ts": "2026-08-17T15:59:49",
+  "user": "Elena"
+ },
+ {
+  "track": "L3841_p3",
+  "vote": "fuller_B",
+  "ts": "2026-08-17T15:59:52",
+  "user": "Elena"
+ },
+ {
+  "track": "L3841_p4",
+  "vote": "voice_B",
+  "ts": "2026-08-17T15:59:59",
+  "user": "Elena"
+ },
+ {
+  "track": "L3841_p4",
+  "vote": "dmg_B",
+  "ts": "2026-08-17T16:00:05",
+  "user": "Elena"
+ },
+ {
+  "track": "L3841_p4",
+  "vote": "voice_A",
+  "ts": "2026-08-17T16:00:11",
+  "user": "Elena"
+ },
+ {
+  "track": "L3841_p4",
+  "vote": "dmg_A",
+  "ts": "2026-08-17T16:00:16",
+  "user": "Elena"
+ },
+ {
+  "track": "L3841_p4",
+  "vote": "equal",
+  "ts": "2026-08-17T16:00:17",
+  "user": "Elena"
+ },
+ {
+  "track": "L3841_p5",
+  "vote": "voice_B",
+  "ts": "2026-08-17T16:00:22",
+  "user": "Elena"
+ },
+ {
+  "track": "L3841_p5",
+  "vote": "dmg_B",
+  "ts": "2026-08-17T16:00:30",
+  "user": "Elena"
+ },
+ {
+  "track": "L3841_p5",
+  "vote": "dmg_A",
+  "ts": "2026-08-17T16:00:37",
+  "user": "Elena"
+ },
+ {
+  "track": "L3841_p5",
+  "vote": "voice_A",
+  "ts": "2026-08-17T16:00:39",
+  "user": "Elena"
+ },
+ {
+  "track": "L3841_p5",
+  "vote": "equal",
+  "ts": "2026-08-17T16:00:46",
+  "user": "Elena"
+ },
+ {
+  "track": "L3841_p6",
+  "vote": "voice_B",
+  "ts": "2026-08-17T16:00:51",
+  "user": "Elena"
+ },
+ {
+  "track": "L3841_p6",
+  "vote": "dmg_A",
+  "ts": "2026-08-17T16:00:59",
+  "user": "Elena"
+ },
+ {
+  "track": "L3841_p6",
+  "vote": "fuller_B",
+  "ts": "2026-08-17T16:01:01",
+  "user": "Elena"
+ },
+ {
+  "track": "L3841_p7",
+  "vote": "voice_A",
+  "ts": "2026-08-17T16:01:07",
+  "user": "Elena"
+ },
+ {
+  "track": "L3841_p7",
+  "vote": "dmg_B",
+  "ts": "2026-08-17T16:01:13",
+  "user": "Elena"
+ },
+ {
+  "track": "L3841_p7",
+  "vote": "fuller_A",
+  "ts": "2026-08-17T16:01:17",
+  "user": "Elena"
+ },
+ {
+  "track": "L4853_p1",
+  "vote": "voice_B",
+  "ts": "2026-08-17T16:01:24",
+  "user": "Elena"
+ },
+ {
+  "track": "L4853_p1",
+  "vote": "voice_A",
+  "ts": "2026-08-17T16:01:28",
+  "user": "Elena"
+ },
+ {
+  "track": "L4853_p1",
+  "vote": "dmg_B",
+  "ts": "2026-08-17T16:01:50",
+  "user": "Elena"
+ },
+ {
+  "track": "L4853_p1",
+  "vote": "dmg_B",
+  "ts": "2026-08-17T16:01:52",
+  "user": "Elena"
+ },
+ {
+  "track": "L4853_p1",
+  "vote": "clear",
+  "ts": "2026-08-17T16:01:54",
+  "user": "Elena"
+ },
+ {
+  "track": "L4853_p1",
+  "vote": "voice_B",
+  "ts": "2026-08-17T16:01:55",
+  "user": "Elena"
+ },
+ {
+  "track": "L4853_p1",
+  "vote": "voice_A",
+  "ts": "2026-08-17T16:01:55",
+  "user": "Elena"
+ },
+ {
+  "track": "L4853_p1",
+  "vote": "equal",
+  "ts": "2026-08-17T16:02:00",
+  "user": "Elena"
+ },
+ {
+  "track": "L4853_p2",
+  "vote": "voice_A",
+  "ts": "2026-08-17T16:02:15",
+  "user": "Elena"
+ },
+ {
+  "track": "L4853_p2",
+  "vote": "fuller_A",
+  "ts": "2026-08-17T16:02:20",
+  "user": "Elena"
+ },
+ {
+  "track": "L4853_p2",
+  "vote": "dmg_B",
+  "ts": "2026-08-17T16:02:27",
+  "user": "Elena"
+ },
+ {
+  "track": "L4853_p3",
+  "vote": "voice_A",
+  "ts": "2026-08-17T16:02:33",
+  "user": "Elena"
+ },
+ {
+  "track": "L4853_p3",
+  "vote": "fuller_A",
+  "ts": "2026-08-17T16:02:46",
+  "user": "Elena"
+ },
+ {
+  "track": "L4853_p4",
+  "vote": "voice_B",
+  "ts": "2026-08-17T16:02:51",
+  "user": "Elena"
+ },
+ {
+  "track": "L4853_p4",
+  "vote": "voice_A",
+  "ts": "2026-08-17T16:03:01",
+  "user": "Elena"
+ },
+ {
+  "track": "L4853_p4",
+  "vote": "equal",
+  "ts": "2026-08-17T16:03:06",
+  "user": "Elena"
+ },
+ {
+  "track": "L4853_p5",
+  "vote": "voice_A",
+  "ts": "2026-08-17T16:03:10",
+  "user": "Elena"
+ },
+ {
+  "track": "L4853_p5",
+  "vote": "voice_B",
+  "ts": "2026-08-17T16:03:14",
+  "user": "Elena"
+ },
+ {
+  "track": "L4853_p5",
+  "vote": "clear",
+  "ts": "2026-08-17T16:03:17",
+  "user": "Elena"
+ },
+ {
+  "track": "L4853_p5",
+  "vote": "clear",
+  "ts": "2026-08-17T16:03:19",
+  "user": "Elena"
+ },
+ {
+  "track": "L4853_p5",
+  "vote": "voice_A",
+  "ts": "2026-08-17T16:03:20",
+  "user": "Elena"
+ },
+ {
+  "track": "L4853_p5",
+  "vote": "voice_B",
+  "ts": "2026-08-17T16:03:26",
+  "user": "Elena"
+ },
+ {
+  "track": "L4853_p5",
+  "vote": "equal",
+  "ts": "2026-08-17T16:03:27",
+  "user": "Elena"
+ },
+ {
+  "track": "L4853_p6",
+  "vote": "dmg_B",
+  "ts": "2026-08-17T16:03:41",
+  "user": "Elena"
+ },
+ {
+  "track": "L4853_p6",
+  "vote": "voice_A",
+  "ts": "2026-08-17T16:03:48",
+  "user": "Elena"
+ },
+ {
+  "track": "L4853_p6",
+  "vote": "fuller_A",
+  "ts": "2026-08-17T16:03:57",
+  "user": "Elena"
+ },
+ {
+  "track": "L4853_p7",
+  "vote": "voice_B",
+  "ts": "2026-08-17T16:04:02",
+  "user": "Elena"
+ },
+ {
+  "track": "L4853_p7",
+  "vote": "fuller_B",
+  "ts": "2026-08-17T16:04:08",
+  "user": "Elena"
+ },
+ {
+  "track": "L4853_p7",
+  "vote": "dmg_A",
+  "ts": "2026-08-17T16:04:15",
+  "user": "Elena"
+ },
+ {
+  "track": "L4853tw_p1",
+  "vote": "dmg_A",
+  "ts": "2026-08-17T16:04:35",
+  "user": "Elena"
+ },
+ {
+  "track": "L4853tw_p1",
+  "vote": "equal",
+  "ts": "2026-08-17T16:04:42",
+  "user": "Elena"
+ },
+ {
+  "track": "L94102_p1",
+  "vote": "voice_B",
+  "ts": "2026-08-17T16:04:49",
+  "user": "Elena"
+ },
+ {
+  "track": "L94102_p1",
+  "vote": "voice_A",
+  "ts": "2026-08-17T16:05:03",
+  "user": "Elena"
+ },
+ {
+  "track": "L94102_p1",
+  "vote": "equal",
+  "ts": "2026-08-17T16:05:05",
+  "user": "Elena"
+ },
+ {
+  "track": "L94102_p2",
+  "vote": "dmg_B",
+  "ts": "2026-08-17T16:05:13",
+  "user": "Elena"
+ },
+ {
+  "track": "L94102_p2",
+  "vote": "voice_A",
+  "ts": "2026-08-17T16:05:18",
+  "user": "Elena"
+ },
+ {
+  "track": "L94102_p2",
+  "vote": "fuller_A",
+  "ts": "2026-08-17T16:05:53",
+  "user": "Elena"
+ },
+ {
+  "track": "L94102_p3",
+  "vote": "voice_A",
+  "ts": "2026-08-17T16:05:57",
+  "user": "Elena"
+ },
+ {
+  "track": "L94102_p3",
+  "vote": "dmg_B",
+  "ts": "2026-08-17T16:06:09",
+  "user": "Elena"
+ },
+ {
+  "track": "L94102_p3",
+  "vote": "fuller_A",
+  "ts": "2026-08-17T16:06:12",
+  "user": "Elena"
+ },
+ {
+  "track": "L94102_p4",
+  "vote": "voice_B",
+  "ts": "2026-08-17T16:06:17",
+  "user": "Elena"
+ },
+ {
+  "track": "L94102_p4",
+  "vote": "voice_A",
+  "ts": "2026-08-17T16:06:25",
+  "user": "Elena"
+ },
+ {
+  "track": "L94102_p4",
+  "vote": "equal",
+  "ts": "2026-08-17T16:06:39",
+  "user": "Elena"
+ },
+ {
+  "track": "L94102_p5",
+  "vote": "voice_A",
+  "ts": "2026-08-17T16:06:43",
+  "user": "Elena"
+ },
+ {
+  "track": "L94102_p5",
+  "vote": "voice_B",
+  "ts": "2026-08-17T16:06:51",
+  "user": "Elena"
+ },
+ {
+  "track": "L94102_p5",
+  "vote": "equal",
+  "ts": "2026-08-17T16:06:55",
+  "user": "Elena"
+ },
+ {
+  "track": "L94102_p6",
+  "vote": "voice_A",
+  "ts": "2026-08-17T16:06:59",
+  "user": "Elena"
+ },
+ {
+  "track": "L94102_p6",
+  "vote": "dmg_B",
+  "ts": "2026-08-17T16:07:17",
+  "user": "Elena"
+ },
+ {
+  "track": "L94102_p6",
+  "vote": "fuller_A",
+  "ts": "2026-08-17T16:07:21",
+  "user": "Elena"
+ },
+ {
+  "track": "L94102_p7",
+  "vote": "voice_A",
+  "ts": "2026-08-17T16:07:26",
+  "user": "Elena"
+ },
+ {
+  "track": "L94102_p7",
+  "vote": "dmg_B",
+  "ts": "2026-08-17T16:07:35",
+  "user": "Elena"
+ },
+ {
+  "track": "L94102_p7",
+  "vote": "fuller_A",
+  "ts": "2026-08-17T16:07:36",
+  "user": "Elena"
+ },
+ {
+  "track": "L94102tw_p1",
+  "vote": "dmg_B",
+  "ts": "2026-08-17T16:09:09",
+  "user": "Elena"
+ },
+ {
+  "track": "L94102tw_p1",
+  "vote": "dmg_A",
+  "ts": "2026-08-17T16:09:25",
+  "user": "Elena"
+ },
+ {
+  "track": "L94102tw_p1",
+  "vote": "equal",
+  "ts": "2026-08-17T16:09:26",
+  "user": "Elena"
+ },
+ {
+  "track": "L97nv_p1",
+  "vote": "dmg_B",
+  "ts": "2026-08-17T16:09:50",
+  "user": "Elena"
+ },
+ {
+  "track": "L97nv_p1",
+  "vote": "equal",
+  "ts": "2026-08-17T16:10:06",
+  "user": "Elena"
+ },
+ {
+  "track": "L110donna_p1",
+  "vote": "dmg_B",
+  "ts": "2026-08-17T16:10:47",
+  "user": "Elena"
+ },
+ {
+  "track": "L110donna_p1",
+  "vote": "voice_A",
+  "ts": "2026-08-17T16:10:52",
+  "user": "Elena"
+ },
+ {
+  "track": "L110donna_p1",
+  "vote": "fuller_A",
+  "ts": "2026-08-17T16:11:00",
+  "user": "Elena"
+ },
+ {
+  "track": "L12barber_p1",
+  "vote": "dmg_B",
+  "ts": "2026-08-17T16:11:07",
+  "user": "Elena"
+ },
+ {
+  "track": "L12barber_p1",
+  "vote": "voice_A",
+  "ts": "2026-08-17T16:11:15",
+  "user": "Elena"
+ },
+ {
+  "track": "L12barber_p1",
+  "vote": "fuller_A",
+  "ts": "2026-08-17T16:11:17",
+  "user": "Elena"
+ },
+ {
+  "track": "L152nessun_p1",
+  "vote": "voice_A",
+  "ts": "2026-08-17T16:11:32",
+  "user": "Elena"
+ },
+ {
+  "track": "L152nessun_p1",
+  "vote": "dmg_B",
+  "ts": "2026-08-17T16:11:54",
+  "user": "Elena"
+ },
+ {
+  "track": "L152nessun_p1",
+  "vote": "equal",
+  "ts": "2026-08-17T16:12:00",
+  "user": "Elena"
+ },
+ {
+  "track": "L33barber_p1",
+  "vote": "dmg_A",
+  "ts": "2026-08-17T16:12:07",
+  "user": "Elena"
+ },
+ {
+  "track": "L33barber_p1",
+  "vote": "voice_B",
+  "ts": "2026-08-17T16:12:12",
+  "user": "Elena"
+ },
+ {
+  "track": "L33barber_p1",
+  "vote": "fuller_B",
+  "ts": "2026-08-17T16:12:20",
+  "user": "Elena"
+ },
+ {
+  "track": "L34donna_p1",
+  "vote": "voice_B",
+  "ts": "2026-08-17T16:12:25",
+  "user": "Elena"
+ },
+ {
+  "track": "L34donna_p1",
+  "vote": "voice_A",
+  "ts": "2026-08-17T16:12:49",
+  "user": "Elena"
+ },
+ {
+  "track": "L34donna_p1",
+  "vote": "dmg_A",
+  "ts": "2026-08-17T16:12:49",
+  "user": "Elena"
+ },
+ {
+  "track": "L34donna_p1",
+  "vote": "equal",
+  "ts": "2026-08-17T16:12:51",
+  "user": "Elena"
+ },
+ {
+  "track": "L96nessun_p1",
+  "vote": "dmg_A",
+  "ts": "2026-08-17T16:13:20",
+  "user": "Elena"
+ },
+ {
+  "track": "L96nessun_p1",
+  "vote": "voice_B",
+  "ts": "2026-08-17T16:13:24",
+  "user": "Elena"
+ },
+ {
+  "track": "L96nessun_p1",
+  "vote": "equal",
+  "ts": "2026-08-17T16:13:30",
+  "user": "Elena"
+ },
+ {
+  "track": "L3841f_p1",
+  "vote": "voice_A",
+  "ts": "2026-08-17T16:28:59",
+  "user": "Elena"
+ },
+ {
+  "track": "L3841f_p1",
+  "vote": "dmg_B",
+  "ts": "2026-08-17T16:29:11",
+  "user": "Elena"
+ },
+ {
+  "track": "L3841f_p1",
+  "vote": "fuller_B",
+  "ts": "2026-08-17T16:29:20",
+  "user": "Elena"
+ },
+ {
+  "track": "L3841f_p2",
+  "vote": "voice_B",
+  "ts": "2026-08-17T16:29:25",
+  "user": "Elena"
+ },
+ {
+  "track": "L3841f_p2",
+  "vote": "dmg_A",
+  "ts": "2026-08-17T16:29:36",
+  "user": "Elena"
+ },
+ {
+  "track": "L3841f_p2",
+  "vote": "fuller_B",
+  "ts": "2026-08-17T16:29:38",
+  "user": "Elena"
+ },
+ {
+  "track": "L3841f_p3",
+  "vote": "voice_B",
+  "ts": "2026-08-17T16:29:42",
+  "user": "Elena"
+ },
+ {
+  "track": "L3841f_p3",
+  "vote": "dmg_A",
+  "ts": "2026-08-17T16:29:53",
+  "user": "Elena"
+ },
+ {
+  "track": "L3841f_p3",
+  "vote": "fuller_A",
+  "ts": "2026-08-17T16:30:09",
+  "user": "Elena"
+ },
+ {
+  "track": "L34donnaf_p1",
+  "vote": "words_A",
+  "ts": "2026-08-17T16:37:26",
+  "user": "Elena"
+ },
+ {
+  "track": "L34donnaf_p1",
+  "vote": "voice_B",
+  "ts": "2026-08-17T16:37:41",
+  "user": "Elena"
+ },
+ {
+  "track": "L34donnaf_p1",
+  "vote": "clear",
+  "ts": "2026-08-17T16:37:46",
+  "user": "Elena"
+ },
+ {
+  "track": "L34donnaf_p1",
+  "vote": "words_A",
+  "ts": "2026-08-17T16:37:48",
+  "user": "Elena"
+ },
+ {
+  "track": "L34donnaf_p1",
+  "vote": "trace_B",
+  "ts": "2026-08-17T16:37:49",
+  "user": "Elena"
+ },
+ {
+  "track": "L34donnaf_p1",
+  "vote": "dmg_B",
+  "ts": "2026-08-17T16:37:54",
+  "user": "Elena"
+ },
+ {
+  "track": "L34donnaf_p1",
+  "vote": "fuller_B",
+  "ts": "2026-08-17T16:38:14",
+  "user": "Elena"
+ },
+ {
+  "track": "L0nv_p1",
+  "vote": "words_B",
+  "ts": "2026-08-17T16:38:40",
+  "user": "Elena"
+ },
+ {
+  "track": "L110donna_p1",
+  "vote": "trace_A",
+  "ts": "2026-08-17T16:39:12",
+  "user": "Elena"
+ },
+ {
+  "track": "L110donna_p1",
+  "vote": "words_A",
+  "ts": "2026-08-17T16:39:21",
+  "user": "Elena"
+ },
+ {
+  "track": "L110donna_p1",
+  "vote": "trace_B",
+  "ts": "2026-08-17T16:39:26",
+  "user": "Elena"
+ },
+ {
+  "track": "L12barber_p1",
+  "vote": "words_A",
+  "ts": "2026-08-17T16:39:41",
+  "user": "Elena"
+ },
+ {
+  "track": "L12barber_p1",
+  "vote": "trace_B",
+  "ts": "2026-08-17T16:39:56",
+  "user": "Elena"
+ },
+ {
+  "track": "L152nessun_p1",
+  "vote": "words_A",
+  "ts": "2026-08-17T16:40:02",
+  "user": "Elena"
+ },
+ {
+  "track": "L33barber_p1",
+  "vote": "words_B",
+  "ts": "2026-08-17T16:40:21",
+  "user": "Elena"
+ },
+ {
+  "track": "L33barber_p1",
+  "vote": "trace_A",
+  "ts": "2026-08-17T16:40:40",
+  "user": "Elena"
+ },
+ {
+  "track": "L34donna_p1",
+  "vote": "trace_A",
+  "ts": "2026-08-17T16:40:58",
+  "user": "Elena"
+ },
+ {
+  "track": "L34donna_p1",
+  "vote": "words_B",
+  "ts": "2026-08-17T16:41:07",
+  "user": "Elena"
+ },
+ {
+  "track": "L34donnaf_p1",
+  "vote": "trace_A",
+  "ts": "2026-08-17T16:41:20",
+  "user": "Elena"
+ },
+ {
+  "track": "L34donnaf_p1",
+  "vote": "trace_A",
+  "ts": "2026-08-17T16:41:29",
+  "user": "Elena"
+ },
+ {
+  "track": "L34donnaf_p1",
+  "vote": "trace_A",
+  "ts": "2026-08-17T16:41:30",
+  "user": "Elena"
+ },
+ {
+  "track": "L34donnaf_p1",
+  "vote": "words_A",
+  "ts": "2026-08-17T16:41:40",
+  "user": "Elena"
+ },
+ {
+  "track": "L3841_p1",
+  "vote": "words_B",
+  "ts": "2026-08-17T16:41:58",
+  "user": "Elena"
+ },
+ {
+  "track": "L3841_p1",
+  "vote": "words_A",
+  "ts": "2026-08-17T16:42:06",
+  "user": "Elena"
+ },
+ {
+  "track": "L3841_p2",
+  "vote": "clear",
+  "ts": "2026-08-17T16:42:24",
+  "user": "Elena"
+ },
+ {
+  "track": "L3841_p2",
+  "vote": "dmg_B",
+  "ts": "2026-08-17T16:42:30",
+  "user": "Elena"
+ },
+ {
+  "track": "L3841_p2",
+  "vote": "words_A",
+  "ts": "2026-08-17T16:42:34",
+  "user": "Elena"
+ },
+ {
+  "track": "L3841_p2",
+  "vote": "fuller_B",
+  "ts": "2026-08-17T16:42:43",
+  "user": "Elena"
+ },
+ {
+  "track": "L3841_p3",
+  "vote": "voice_A",
+  "ts": "2026-08-17T16:42:53",
+  "user": "Elena"
+ },
+ {
+  "track": "L3841_p3",
+  "vote": "clear",
+  "ts": "2026-08-17T16:42:54",
+  "user": "Elena"
+ },
+ {
+  "track": "L3841_p3",
+  "vote": "dmg_A",
+  "ts": "2026-08-17T16:42:59",
+  "user": "Elena"
+ },
+ {
+  "track": "L3841_p3",
+  "vote": "words_B",
+  "ts": "2026-08-17T16:43:06",
+  "user": "Elena"
+ },
+ {
+  "track": "L3841_p3",
+  "vote": "fuller_A",
+  "ts": "2026-08-17T16:43:16",
+  "user": "Elena"
+ },
+ {
+  "track": "L3841_p4",
+  "vote": "words_A",
+  "ts": "2026-08-17T16:43:22",
+  "user": "Elena"
+ },
+ {
+  "track": "L3841_p4",
+  "vote": "words_B",
+  "ts": "2026-08-17T16:43:29",
+  "user": "Elena"
+ },
+ {
+  "track": "L3841_p4",
+  "vote": "fuller_B",
+  "ts": "2026-08-17T16:43:51",
+  "user": "Elena"
+ },
+ {
+  "track": "L3841_p5",
+  "vote": "words_A",
+  "ts": "2026-08-17T16:43:58",
+  "user": "Elena"
+ },
+ {
+  "track": "L3841_p5",
+  "vote": "words_B",
+  "ts": "2026-08-17T16:44:07",
+  "user": "Elena"
+ },
+ {
+  "track": "L3841_p6",
+  "vote": "words_B",
+  "ts": "2026-08-17T16:44:26",
+  "user": "Elena"
+ },
+ {
+  "track": "L3841_p6",
+  "vote": "fuller_A",
+  "ts": "2026-08-17T16:44:39",
+  "user": "Elena"
+ },
+ {
+  "track": "L3841_p7",
+  "vote": "words_A",
+  "ts": "2026-08-17T16:44:49",
+  "user": "Elena"
+ },
+ {
+  "track": "L3841_p7",
+  "vote": "fuller_B",
+  "ts": "2026-08-17T16:45:02",
+  "user": "Elena"
+ },
+ {
+  "track": "L3841f_p1",
+  "vote": "words_A",
+  "ts": "2026-08-17T16:45:50",
+  "user": "Elena"
+ },
+ {
+  "track": "L3841f_p2",
+  "vote": "words_B",
+  "ts": "2026-08-17T16:46:02",
+  "user": "Elena"
+ },
+ {
+  "track": "L3841f_p2",
+  "vote": "fuller_A",
+  "ts": "2026-08-17T16:46:16",
+  "user": "Elena"
+ },
+ {
+  "track": "L3841f_p3",
+  "vote": "words_B",
+  "ts": "2026-08-17T16:46:25",
+  "user": "Elena"
+ },
+ {
+  "track": "L4853_p1",
+  "vote": "words_B",
+  "ts": "2026-08-17T16:46:42",
+  "user": "Elena"
+ },
+ {
+  "track": "L4853_p1",
+  "vote": "words_A",
+  "ts": "2026-08-17T16:46:49",
+  "user": "Elena"
+ },
+ {
+  "track": "L4853_p2",
+  "vote": "words_A",
+  "ts": "2026-08-17T16:46:56",
+  "user": "Elena"
+ },
+ {
+  "track": "L4853_p2",
+  "vote": "fuller_B",
+  "ts": "2026-08-17T16:47:31",
+  "user": "Elena"
+ },
+ {
+  "track": "L4853_p3",
+  "vote": "dmg_B",
+  "ts": "2026-08-17T16:47:45",
+  "user": "Elena"
+ },
+ {
+  "track": "L4853_p3",
+  "vote": "words_A",
+  "ts": "2026-08-17T16:47:53",
+  "user": "Elena"
+ },
+ {
+  "track": "L4853_p4",
+  "vote": "words_A",
+  "ts": "2026-08-17T16:48:07",
+  "user": "Elena"
+ },
+ {
+  "track": "L4853_p4",
+  "vote": "dmg_A",
+  "ts": "2026-08-17T16:48:15",
+  "user": "Elena"
+ },
+ {
+  "track": "L4853_p4",
+  "vote": "words_B",
+  "ts": "2026-08-17T16:48:23",
+  "user": "Elena"
+ },
+ {
+  "track": "L4853_p5",
+  "vote": "words_B",
+  "ts": "2026-08-17T16:48:48",
+  "user": "Elena"
+ },
+ {
+  "track": "L4853_p5",
+  "vote": "words_A",
+  "ts": "2026-08-17T16:49:01",
+  "user": "Elena"
+ },
+ {
+  "track": "L4853_p5",
+  "vote": "dmg_B",
+  "ts": "2026-08-17T16:49:15",
+  "user": "Elena"
+ },
+ {
+  "track": "L4853_p5",
+  "vote": "dmg_A",
+  "ts": "2026-08-17T16:49:15",
+  "user": "Elena"
+ },
+ {
+  "track": "L4853_p6",
+  "vote": "words_A",
+  "ts": "2026-08-17T16:49:31",
+  "user": "Elena"
+ },
+ {
+  "track": "L4853_p6",
+  "vote": "dmg_A",
+  "ts": "2026-08-17T16:49:36",
+  "user": "Elena"
+ },
+ {
+  "track": "L4853_p7",
+  "vote": "words_B",
+  "ts": "2026-08-17T16:49:53",
+  "user": "Elena"
+ },
+ {
+  "track": "L4853_p7",
+  "vote": "dmg_B",
+  "ts": "2026-08-17T16:49:59",
+  "user": "Elena"
+ },
+ {
+  "track": "L94102_p1",
+  "vote": "words_B",
+  "ts": "2026-08-17T16:50:56",
+  "user": "Elena"
+ },
+ {
+  "track": "L94102_p1",
+  "vote": "words_A",
+  "ts": "2026-08-17T16:51:03",
+  "user": "Elena"
+ },
+ {
+  "track": "L94102_p2",
+  "vote": "words_A",
+  "ts": "2026-08-17T16:51:19",
+  "user": "Elena"
+ },
+ {
+  "track": "L94102_p3",
+  "vote": "words_A",
+  "ts": "2026-08-17T16:51:36",
+  "user": "Elena"
+ },
+ {
+  "track": "L94102_p4",
+  "vote": "words_A",
+  "ts": "2026-08-17T16:52:09",
+  "user": "Elena"
+ },
+ {
+  "track": "L94102_p4",
+  "vote": "words_B",
+  "ts": "2026-08-17T16:52:15",
+  "user": "Elena"
+ },
+ {
+  "track": "L94102_p5",
+  "vote": "words_A",
+  "ts": "2026-08-17T16:52:23",
+  "user": "Elena"
+ },
+ {
+  "track": "L94102_p5",
+  "vote": "words_B",
+  "ts": "2026-08-17T16:52:32",
+  "user": "Elena"
+ },
+ {
+  "track": "L94102_p6",
+  "vote": "words_A",
+  "ts": "2026-08-17T16:52:46",
+  "user": "Elena"
+ },
+ {
+  "track": "L94102_p7",
+  "vote": "words_A",
+  "ts": "2026-08-17T16:53:17",
+  "user": "Elena"
+ },
+ {
+  "track": "L96nessun_p1",
+  "vote": "words_B",
+  "ts": "2026-08-17T16:54:09",
+  "user": "Elena"
+ },
+ {
+  "track": "L0v5seg_p1",
+  "vote": "words_A",
+  "ts": "2026-08-17T16:57:08",
+  "user": "Elena"
+ },
+ {
+  "track": "L0v5seg_p1",
+  "vote": "dmg_B",
+  "ts": "2026-08-17T16:57:34",
+  "user": "Elena"
+ },
+ {
+  "track": "L0v5seg_p1",
+  "vote": "fuller_B",
+  "ts": "2026-08-17T16:57:44",
+  "user": "Elena"
+ },
+ {
+  "track": "L100v5seg_p6",
+  "vote": "dmg_B",
+  "ts": "2026-08-17T16:57:56",
+  "user": "Elena"
+ },
+ {
+  "track": "L100v5seg_p6",
+  "vote": "dmg_A",
+  "ts": "2026-08-17T16:58:05",
+  "user": "Elena"
+ },
+ {
+  "track": "L100v5seg_p6",
+  "vote": "equal",
+  "ts": "2026-08-17T16:58:26",
+  "user": "Elena"
+ },
+ {
+  "track": "L20v5seg_p2",
+  "vote": "words_A",
+  "ts": "2026-08-17T16:58:37",
+  "user": "Elena"
+ },
+ {
+  "track": "L20v5seg_p2",
+  "vote": "trace_B",
+  "ts": "2026-08-17T16:59:08",
+  "user": "Elena"
+ },
+ {
+  "track": "L20v5seg_p2",
+  "vote": "dmg_B",
+  "ts": "2026-08-17T16:59:09",
+  "user": "Elena"
+ },
+ {
+  "track": "L20v5seg_p2",
+  "vote": "trace_B",
+  "ts": "2026-08-17T16:59:23",
+  "user": "Elena"
+ },
+ {
+  "track": "L20v5seg_p2",
+  "vote": "fuller_B",
+  "ts": "2026-08-17T16:59:40",
+  "user": "Elena"
+ },
+ {
+  "track": "L40v5seg_p3",
+  "vote": "words_B",
+  "ts": "2026-08-17T16:59:53",
+  "user": "Elena"
+ },
+ {
+  "track": "L40v5seg_p3",
+  "vote": "dmg_A",
+  "ts": "2026-08-17T17:00:14",
+  "user": "Elena"
+ },
+ {
+  "track": "L40v5seg_p3",
+  "vote": "fuller_A",
+  "ts": "2026-08-17T17:00:48",
+  "user": "Elena"
+ },
+ {
+  "track": "L40v5seg_p3",
+  "vote": "dmg_B",
+  "ts": "2026-08-17T17:01:02",
+  "user": "Elena"
+ },
+ {
+  "track": "L40v5seg_p3",
+  "vote": "dmg_B",
+  "ts": "2026-08-17T17:01:11",
+  "user": "Elena"
+ },
+ {
+  "track": "L40v5seg_p3",
+  "vote": "dmg_B",
+  "ts": "2026-08-17T17:01:12",
+  "user": "Elena"
+ },
+ {
+  "track": "L60v5seg_p4",
+  "vote": "dmg_B",
+  "ts": "2026-08-17T17:01:32",
+  "user": "Elena"
+ },
+ {
+  "track": "L60v5seg_p4",
+  "vote": "words_A",
+  "ts": "2026-08-17T17:01:39",
+  "user": "Elena"
+ },
+ {
+  "track": "L60v5seg_p4",
+  "vote": "fuller_B",
+  "ts": "2026-08-17T17:01:52",
+  "user": "Elena"
+ },
+ {
+  "track": "L80v5seg_p5",
+  "vote": "dmg_A",
+  "ts": "2026-08-17T17:02:00",
+  "user": "Elena"
+ },
+ {
+  "track": "L80v5seg_p5",
+  "vote": "fuller_B",
+  "ts": "2026-08-17T17:02:09",
+  "user": "Elena"
+ },
+ {
+  "track": "L80v5seg_p5",
+  "vote": "fuller_B",
+  "ts": "2026-08-17T17:02:10",
+  "user": "Elena"
+ },
+ {
+  "track": "L80v5seg_p5",
+  "vote": "equal",
+  "ts": "2026-08-17T17:02:15",
+  "user": "Elena"
+ },
+ {
+  "track": "L80v5seg_p5",
+  "vote": "words_B",
+  "ts": "2026-08-17T17:02:16",
+  "user": "Elena"
+ },
+ {
+  "track": "L80v5seg_p5",
+  "vote": "fuller_A",
+  "ts": "2026-08-17T17:02:39",
+  "user": "Elena"
+ },
+ {
+  "track": "L4853tw_p1",
+  "vote": "chat_like",
+  "user": "elena",
+  "ts": "2026-08-17T17:10:47",
+  "note": "relayed by owner from Elena chat 17:09 \u2014 clip she LIKES"
+ },
+ {
+  "track": "L60v5seg_p4",
+  "vote": "chat_like",
+  "user": "elena",
+  "ts": "2026-08-17T17:10:47",
+  "note": "relayed by owner from Elena chat 17:09 \u2014 clip she LIKES"
+ },
+ {
+  "track": "L80v5seg_p5",
+  "vote": "chat_like",
+  "user": "elena",
+  "ts": "2026-08-17T17:10:47",
+  "note": "relayed by owner from Elena chat 17:09 \u2014 clip she LIKES"
+ },
+ {
+  "track": "pick:yt_nessun_suj_2sbsfks_instrumental.m4a",
+  "vote": "tag_dull_treble",
+  "ts": "2026-08-17T17:17:08",
+  "user": "Elena"
+ },
+ {
+  "track": "pick:yt_nessun_suj_2sbsfks_instrumental.m4a",
+  "vote": "tag_dirty",
+  "ts": "2026-08-17T17:17:08",
+  "user": "Elena"
+ },
+ {
+  "track": "pick:yt_nessun_suj_2sbsfks_instrumental.m4a",
+  "vote": "pick5_3",
+  "ts": "2026-08-17T17:17:12",
+  "user": "Elena"
+ },
+ {
+  "track": "pick:yt_donna_a8_vzjny10k_instrumental.m4a",
+  "vote": "tag_voice",
+  "ts": "2026-08-17T17:17:31",
+  "user": "Elena"
+ },
+ {
+  "track": "pick:yt_donna_a8_vzjny10k_instrumental.m4a",
+  "vote": "tag_dirty",
+  "ts": "2026-08-17T17:18:05",
+  "user": "Elena"
+ },
+ {
+  "track": "pick:yt_donna_a8_vzjny10k_instrumental.m4a",
+  "vote": "pick5_1",
+  "ts": "2026-08-17T17:19:17",
+  "user": "Elena"
+ },
+ {
+  "track": "pick:verdi_fast_voices_tobacco_2026_05_07_1_instrumental.m4a",
+  "vote": "tag_voice",
+  "ts": "2026-08-17T17:19:32",
+  "user": "Elena"
+ },
+ {
+  "track": "pick:verdi_fast_voices_tobacco_2026_05_07_1_instrumental.m4a",
+  "vote": "pick5_1",
+  "ts": "2026-08-17T17:19:39",
+  "user": "Elena"
+ },
+ {
+  "track": "pick:turksh_dnc_22s_instrumental.m4a",
+  "vote": "tag_dirty",
+  "ts": "2026-08-17T17:21:03",
+  "user": "Elena"
+ },
+ {
+  "track": "pick:turksh_dnc_22s_instrumental.m4a",
+  "vote": "pick5_4",
+  "ts": "2026-08-17T17:21:14",
+  "user": "Elena"
+ },
+ {
+  "track": "pick:marseillaise_appl_police_7_23_26_instrumental.m4a",
+  "vote": "pick5_5",
+  "ts": "2026-08-17T17:21:58",
+  "user": "Elena"
+ },
+ {
+  "track": "pick:drink_trick_short_tobacco_2026_06_17_1_instrumental.m4a",
+  "vote": "tag_voice",
+  "ts": "2026-08-17T17:22:32",
+  "user": "Elena"
+ },
+ {
+  "track": "pick:drink_trick_short_tobacco_2026_06_17_1_instrumental.m4a",
+  "vote": "pick5_1",
+  "ts": "2026-08-17T17:22:38",
+  "user": "Elena"
+ },
+ {
+  "track": "pick:doll_draft_tobacco_05_14_2026_instrumental.m4a",
+  "vote": "tag_dirty",
+  "ts": "2026-08-17T17:22:55",
+  "user": "Elena"
+ },
+ {
+  "track": "pick:doll_draft_tobacco_05_14_2026_instrumental.m4a",
+  "vote": "tag_voice",
+  "ts": "2026-08-17T17:22:59",
+  "user": "Elena"
+ },
+ {
+  "track": "pick:doll_draft_tobacco_05_14_2026_instrumental.m4a",
+  "vote": "pick5_1",
+  "ts": "2026-08-17T17:23:08",
+  "user": "Elena"
+ },
+ {
+  "track": "pick:cabaret_willkommen_tobacco_05_18_2026_instrumental.m4a",
+  "vote": "pick5_5",
+  "ts": "2026-08-17T17:23:39",
+  "user": "Elena"
+ },
+ {
+  "track": "pick:bedbug_tchaik_old_tobacco_2026_06_22_instrumental.m4a",
+  "vote": "pick5_5",
+  "ts": "2026-08-17T17:23:56",
+  "user": "Elena"
+ },
+ {
+  "track": "pick:7_verdi_slow_voices_tobacco_05_14_26_1_instrumental.m4a",
+  "vote": "tag_voice",
+  "ts": "2026-08-17T17:24:10",
+  "user": "Elena"
+ },
+ {
+  "track": "pick:7_verdi_slow_voices_tobacco_05_14_26_1_instrumental.m4a",
+  "vote": "tag_dirty",
+  "ts": "2026-08-17T17:24:51",
+  "user": "Elena"
+ },
+ {
+  "track": "pick:7_verdi_slow_voices_tobacco_05_14_26_1_instrumental.m4a",
+  "vote": "pick5_1",
+  "ts": "2026-08-17T17:24:59",
+  "user": "Elena"
+ },
+ {
+  "track": "pick:verdi_slow_voices__V5_ensmax.m4a",
+  "vote": "tag_dull_treble",
+  "ts": "2026-08-19T11:36:26",
+  "user": "Elena"
+ },
+ {
+  "track": "pick:verdi_slow_voices__V5_ensmax.m4a",
+  "vote": "tag_dirty",
+  "ts": "2026-08-19T11:36:28",
+  "user": "Elena"
+ },
+ {
+  "track": "pick:verdi_slow_voices__V5_ensmax.m4a",
+  "vote": "pick5_3",
+  "ts": "2026-08-19T11:36:36",
+  "user": "Elena"
+ },
+ {
+  "track": "pick:verdi_slow_voices__V2_mdx23c.m4a",
+  "vote": "tag_dull_treble",
+  "ts": "2026-08-19T11:38:36",
+  "user": "Elena"
+ },
+ {
+  "track": "pick:verdi_slow_voices__V2_mdx23c.m4a",
+  "vote": "tag_dirty",
+  "ts": "2026-08-19T11:38:37",
+  "user": "Elena"
+ },
+ {
+  "track": "pick:verdi_slow_voices__V2_mdx23c.m4a",
+  "vote": "pick5_3",
+  "ts": "2026-08-19T11:39:41",
+  "user": "Elena"
+ },
+ {
+  "track": "pick:nessun_dorma__V2_mdx23c.m4a",
+  "vote": "tag_dull_treble",
+  "ts": "2026-08-19T11:40:40",
+  "user": "Elena"
+ },
+ {
+  "track": "pick:nessun_dorma__V2_mdx23c.m4a",
+  "vote": "tag_dirty",
+  "ts": "2026-08-19T11:41:46",
+  "user": "Elena"
+ },
+ {
+  "track": "pick:nessun_dorma__V2_mdx23c.m4a",
+  "vote": "tag_voice",
+  "ts": "2026-08-19T11:41:59",
+  "user": "Elena"
+ },
+ {
+  "track": "pick:nessun_dorma__V2_mdx23c.m4a",
+  "vote": "pick5_3",
+  "ts": "2026-08-19T11:43:09",
+  "user": "Elena"
+ },
+ {
+  "track": "pick:donna__V2_mdx23c.m4a",
+  "vote": "tag_voice",
+  "ts": "2026-08-19T11:43:54",
+  "user": "Elena"
+ },
+ {
+  "track": "pick:donna__V2_mdx23c.m4a",
+  "vote": "tag_dull_treble",
+  "ts": "2026-08-19T11:44:12",
+  "user": "Elena"
+ },
+ {
+  "track": "pick:donna__V2_mdx23c.m4a",
+  "vote": "tag_dirty",
+  "ts": "2026-08-19T11:45:10",
+  "user": "Elena"
+ },
+ {
+  "track": "pick:donna__V2_mdx23c.m4a",
+  "vote": "pick5_3",
+  "ts": "2026-08-19T11:45:14",
+  "user": "Elena"
+ },
+ {
+  "track": "pick:donna__V2_mdx23c.m4a",
+  "vote": "pick5_2",
+  "ts": "2026-08-19T11:45:19",
+  "user": "Elena"
+ },
+ {
+  "track": "pick:donna__V2_mdx23c.m4a",
+  "vote": "pick5_3",
+  "ts": "2026-08-19T11:45:36",
+  "user": "Elena"
+ },
+ {
+  "track": "pick:barber_agnus_dei__V2_mdx23c.m4a",
+  "vote": "tag_dirty",
+  "ts": "2026-08-19T11:45:48",
+  "user": "Elena"
+ },
+ {
+  "track": "pick:barber_agnus_dei__V2_mdx23c.m4a",
+  "vote": "tag_voice",
+  "ts": "2026-08-19T11:46:04",
+  "user": "Elena"
+ },
+ {
+  "track": "pick:barber_agnus_dei__V2_mdx23c.m4a",
+  "vote": "pick5_1",
+  "ts": "2026-08-19T11:46:17",
+  "user": "Elena"
+ },
+ {
+  "track": "var:1_habanera",
+  "vote": "comment",
+  "ts": "2026-08-19T22:03:25",
+  "user": "mike",
+  "text": "From Elena :"
+ },
+ {
+  "track": "var:1_habanera",
+  "vote": "comment",
+  "ts": "2026-08-19T22:03:29",
+  "user": "mike",
+  "text": "From Elena : Remove voices"
+ },
+ {
+  "track": "var:7_verdi_slow_voices",
+  "vote": "rank_E_5",
+  "ts": "2026-08-19T22:12:56",
+  "user": "mike"
+ },
+ {
+  "track": "var:7_verdi_slow_voices",
+  "vote": "rank_E_5",
+  "ts": "2026-08-19T22:12:57",
+  "user": "mike"
+ },
+ {
+  "track": "var:7_verdi_slow_voices",
+  "vote": "rank_F_5",
+  "ts": "2026-08-19T22:13:14",
+  "user": "mike"
+ },
+ {
+  "track": "var:7_verdi_slow_voices",
+  "vote": "rank_E_5",
+  "ts": "2026-08-19T22:13:15",
+  "user": "mike"
+ },
+ {
+  "track": "var:7_verdi_slow_voices",
+  "vote": "rank_F_4",
+  "ts": "2026-08-19T22:13:18",
+  "user": "mike"
+ },
+ {
+  "track": "var:7_verdi_slow_voices",
+  "vote": "rank_C_3",
+  "ts": "2026-08-19T22:22:11",
+  "user": "mike"
+ },
+ {
+  "track": "var:7_verdi_slow_voices",
+  "vote": "rank_D_3",
+  "ts": "2026-08-19T22:22:22",
+  "user": "mike"
+ },
+ {
+  "track": "var:7_verdi_slow_voices",
+  "vote": "rank_C_2",
+  "ts": "2026-08-19T22:22:23",
+  "user": "mike"
+ },
+ {
+  "track": "var:7_verdi_slow_voices",
+  "vote": "rank_B_2",
+  "ts": "2026-08-19T22:22:31",
+  "user": "mike"
+ },
+ {
+  "track": "var:7_verdi_slow_voices",
+  "vote": "rank_A_1",
+  "ts": "2026-08-19T22:22:33",
+  "user": "mike"
+ },
+ {
+  "track": "var:12_13_scarydog_stabat",
+  "vote": "action",
+  "ts": "2026-08-20T01:23:35",
+  "user": "mike",
+  "text": "Do a spectral analysis of the piece (A) and tell me what is the dominant note being sung."
+ },
+ {
+  "track": "var:12_13_scarydog_stabat",
+  "vote": "action_reply",
+  "user": "engineer",
+  "ts": "2026-08-20T01:25:18",
+  "text": "**Spectral/pitch analysis of the sung span (50.0\u201387.5 s)** \u2014 done on the isolated vocal stem (sample-exact float, not the lossy mix).\n\n**Dominant sung note: G5 (~792 Hz)** \u2014 35% of all sung energy.\n\n| note | share | freq |\n|---|---|---|\n| **G5** | 34.8% | ~792 Hz |\n| Eb5 | 20.5% | ~618 Hz |\n| F5 | 17.1% | ~698 Hz |\n| B4 | 10.7% | ~491 Hz |\n| C5 | 7.9% | ~521 Hz |\n\nMedian sung pitch **F5** (682 Hz); tessitura B4\u2013G5 \u2014 a soprano line sitting high, centered on G5 with Eb/F below (G-minor Stabat Mater color). Confident voicing on 60% of the span."
+ },
+ {
+  "track": "var:12_13_scarydog_stabat",
+  "vote": "action",
+  "ts": "2026-08-20T01:29:03",
+  "user": "mike",
+  "text": "Plot me a spectrogram pls."
+ },
+ {
+  "track": "var:12_13_scarydog_stabat",
+  "vote": "action_reply",
+  "user": "engineer",
+  "ts": "2026-08-20T01:31:46",
+  "file": "12_13_scarydog_stabat_spectrogram_orig_vs_A.png",
+  "text": "**Spectrogram, 45\u201392s window** (log-frequency, dB scale). Top = original, bottom = variant A (mdx23c, spliced).\n\nHow to read it: cyan dashed lines mark the splice span (50.0\u201387.5s). In the top panel the sung line is the bright harmonic stack between the cyan lines \u2014 the fundamental rides around the green dotted line (**G5, 784 Hz**) with clear vibrato wobble and harmonics at 2\u00d7/3\u00d7 above. In the bottom panel that stack is gone while the orchestral texture below ~1 kHz continues \u2014 and outside the cyan lines the two panels are pixel-identical (bit-exact passthrough)."
+ },
+ {
+  "track": "var:12_13_scarydog_stabat",
+  "vote": "comment",
+  "ts": "2026-08-20T12:53:53",
+  "user": "mike"
+ },
+ {
+  "track": "var:1_habanera",
+  "vote": "comment",
+  "ts": "2026-08-23T12:32:20",
+  "user": "mike",
+  "text": "From Elena : Remove voices"
+ },
+ {
+  "track": "var:12_13_scarydog_stabat",
+  "vote": "action",
+  "ts": "2026-08-23T23:06:07",
+  "user": "Elena",
+  "text": "At 00:49 the voice begins singing. Take it out."
+ },
+ {
+  "track": "var:12_13_scarydog_stabat",
+  "vote": "action",
+  "ts": "2026-08-23T23:10:50",
+  "user": "Elena",
+  "text": "Correction: The voice is heard from 00:48 till 00:51. Needs to be extracted. Then voice reappears at 1:08 till 1:22 and 1:27 till 1:30. Extract the voice."
+ },
+ {
+  "track": "var:12_13_scarydog_stabat",
+  "vote": "action_reply",
+  "user": "engineer",
+  "ts": "2026-08-23T23:11:24",
+  "file": "12_13_scarydog_stabat_A_voicefix_from_0485s_2310.m4a",
+  "text": "**Fixed \u2014 you were right.** I checked the isolated vocal stem: it's silent at 48.0s (\u221270 dBFS) and the voice is clearly on by 49.0s (\u221239 dBFS), ramping fast. But the removal span started at **50.0s**, so ~1 s of rising voice (49\u219250 s) was playing through the untouched original \u2014 exactly what you heard at 0:49.\n\n| | before | after |\n|---|---|---|\n| span start | 50.0 s | **48.5 s** |\n| voice at 0:49 | leaked | removed |\n| end | 87.5 s | 87.5 s (unchanged) |\n\nRe-rendered **all six variants (A\u2013F)** with the corrected span, 80 ms crossfades, and confirmed everything **outside** the span is still bit-identical to the original. The cards on this track are updated, and the detector bars are refreshed. The corrected **A (mdx23c)** is attached below \u2014 have a listen at 0:48\u20130:50 and tell me if it's clean now, or if the voice actually starts even earlier."
+ },
+ {
+  "track": "var:12_13_scarydog_stabat",
+  "vote": "comment",
+  "ts": "2026-08-23T23:13:49",
+  "user": "Elena"
+ },
+ {
+  "track": "var:12_13_scarydog_stabat",
+  "vote": "comment",
+  "ts": "2026-08-23T23:18:23",
+  "user": "mike",
+  "text": "You did not remove the voice in the 2nd half - remove it - it is quieter"
+ },
+ {
+  "track": "var:12_13_scarydog_stabat",
+  "vote": "action_reply",
+  "user": "engineer",
+  "ts": "2026-08-23T23:25:19",
+  "file": "12_13_scarydog_stabat_C_roformer_voicefix_2324.m4a",
+  "text": "Two things were wrong, both fixed:\n\n**1. The removal ended too early.** The soprano is still at \u221235 dBFS at 87.5 s (our old span end) and only fades out by ~89 s \u2014 so her last note + tail was leaking. Span end moved 87.5 \u2192 **89.0 s**.\n\n**2. Variant A only removed \u221231 dB of voice \u2014 not enough for your ear.** Measured against the isolated soprano:\n\n| variant | voice removed |\n|---|---|\n| **C roformer** | **\u221249.6 dB** |\n| E melband | \u221234.2 dB |\n| A mdx23c | \u221231.6 dB |\n| D subtract | \u221210.0 dB (avoid) |\n\nSo A *is* changing the audio (\u221231 dB, real spectral cut) \u2014 just not deeply enough. **C removes ~18 dB more voice.** Attached is the corrected **C** (span 48.5\u201389.0). Please listen \u2014 if she's still audible even in C, it's likely hall reverb of her voice and I'll cascade a second pass. If C is clean, that's the one to pick for this track."
+ },
+ {
+  "track": "var:12_13_scarydog_stabat",
+  "vote": "action_reply",
+  "user": "engineer",
+  "ts": "2026-08-23T23:27:19",
+  "files": [
+   "scarydog_C_beforeafter_2327.png",
+   "12_13_scarydog_stabat_C_roformer_voicefix_2327.m4a",
+   "12_13_scarydog_stabat_C_roformer_voicefix_2327.wav"
+  ],
+  "text": "**\u2705 Voice removed \u2014 completion report (variant C, roformer).**\n\n**What I did:**\n- Removal region: original untouched before **48.5 s** (the Scary_Dog effects) \u2192 separated instrumental **48.5\u201389.0 s** (the sung Stabat Mater), 80 ms equal-power crossfades; everything outside the region is bit-identical to the original.\n- Chose **C (BS-Roformer)**: it suppresses the soprano by **\u221249.6 dB** vs A's \u221231.6 dB.\n- Fixed the tail: old end 87.5 s left the last note at \u221235 dBFS; new end 89.0 s carries it to silence.\n\n**Before/after (plot below):** in the soprano's core band **2\u20134 kHz the energy drops \u221219.8 dB**; the orchestra bands below ~1 kHz and the very top are essentially unchanged \u2014 so it's taking her out, not gutting the orchestra.\n\n**Files attached:** before/after spectral histogram \u00b7 **.m4a** (listening) \u00b7 **.wav** (24-bit master). \n\nPlease confirm 0:48\u2192end is clean. If any of her is still audible it'll be hall reverb of the voice \u2014 say so and I'll cascade a second pass."
+ },
+ {
+  "track": "var:12_13_scarydog_stabat",
+  "vote": "action_reply",
+  "user": "engineer",
+  "ts": "2026-08-23T23:37:15",
+  "files": [
+   "scarydog_F_beforeafter_233618.png",
+   "12_13_scarydog_stabat_F_voicefix_233618.m4a",
+   "12_13_scarydog_stabat_F_voicefix_233618.wav"
+  ],
+  "text": "**\u2705 Both problems fixed \u2014 new variant F.**\n\n**1. The 1:28\u21921:29 voice:** removal now runs to **90.5 s** (was 87.5, then 89.0) \u2014 the soprano is truly gone (\u221273 dBFS) before the crossfade back to the original. That tail is clean.\n\n**2. The dullness:** honest result \u2014 hole-filling C did **not** work (measured: C+fill \u2248 C, the restorer can't undo roformer's gouging). So F is now a **crossover blend: roformer (C) below 4 kHz to kill the voice, mdx23c (A) above 4 kHz to keep the air.**\n\n| | voice removed | air vs orig |\n|---|---|---|\n| A mdx23c | \u221231.6 dB | \u221211.6 dB (bright) |\n| C roformer | \u221249.6 dB | \u221219.4 dB (dull) |\n| **F blend** | **\u221245.4 dB** | **\u221212.0 dB (bright)** |\n\nSo F keeps C's voice-kill (\u221245 dB, 14 dB better than A) while restoring the air to A's brightness. Before/after spectrum, .m4a and .wav attached. Please listen to F end-to-end \u2014 especially 1:28 and the overall brightness."
+ },
+ {
+  "track": "var:12_13_scarydog_stabat",
+  "vote": "action_reply",
+  "user": "engineer",
+  "ts": "2026-08-23T23:37:15",
+  "files": [
+   "scarydog_F_normalization_233618.png"
+  ],
+  "text": "**Normalization graph (independent):** RMS level in **dBFS per 2 s**, original vs F across the whole track. Shaded = removal region (48.5\u201390.5 s). Overall RMS: original \u221215.9 dBFS, F \u221217.0 dBFS \u2014 the removal drops level ~1 dB overall and more inside the sung region (voice energy gone); no clipping, no pumping."
+ },
+ {
+  "track": "var:12_13_scarydog_stabat",
+  "vote": "action_reply",
+  "user": "engineer",
+  "ts": "2026-08-23T23:37:53",
+  "files": [
+   "scarydog_A_mdx23c.m4a",
+   "scarydog_B_ensmax.m4a",
+   "scarydog_C_roformer.m4a",
+   "scarydog_D_subtract.m4a",
+   "scarydog_E_melband.m4a",
+   "scarydog_F_blend.m4a",
+   "12_13_scarydog_stabat_F_voicefix_233618.wav"
+  ],
+  "text": "**Every blend for Scary_Dog/Stabat \u2014 discussed, with a link to each.** All splice the original before 48.5 s and after 90.5 s (untouched); they differ only in *how* the voice is removed in 48.5\u201390.5 s. Numbers are vs the isolated soprano / original.\n\n| variant | voice removed | air | verdict |\n|---|---|---|---|\n| A mdx23c | \u221231.6 dB | \u221211.6 (bright) | voice still audible |\n| B ensmax | \u221231.4 dB | \u221212.2 | \u2248 A |\n| C roformer | \u221249.6 dB | \u221219.4 (dull) | cleanest voice, but dull |\n| D subtract | \u221210.0 dB | \u22126.7 | leaves the voice \u2014 avoid |\n| E melband | \u221234.2 dB | \u221218.1 | middling |\n| **\u2605 F blend** | **\u221245.4 dB** | **\u221212.0 (bright)** | **the one \u2014 C's voice-kill + A's air** |\n\n**F is the blend we like:** roformer below 4 kHz (kills the soprano, \u221245 dB) + mdx23c above 4 kHz (keeps the brightness, air back to \u221212 dB like A). All six are attached below in order A\u2192F so you can flip through them; the last file is F's 24-bit **.wav** master. Tell me which letter to lock for this track."
+ },
+ {
+  "track": "var:12_13_scarydog_stabat",
+  "vote": "action_reply",
+  "user": "engineer",
+  "ts": "2026-08-23T23:44:10",
+  "files": [
+   "12_13_scarydog_stabat_C_roformer_voicefix_2327.m4a",
+   "12_13_scarydog_stabat_C_roformer_voicefix_2327.wav"
+  ],
+  "text": "**Agreed \u2014 C (roformer) is the pick.** Your ear settled it, and it matches the numbers: C removes the soprano the hardest of any real separator (formant band \u221233 dB, broadband \u221249.6 dB).\n\nThe trade is honest and unavoidable:\n- **C = clean, but dull.** The dullness is the soprano's *own air* being correctly removed \u2014 it's the sound of the orchestra without her, not damage.\n- **F-blend = bright, but she's back.** You were right: restoring the air above 4 kHz restored the recognizable voice (sibilance/formants live there). That's why it can't be fixed with a brighter blend \u2014 in the sung region the brightness *is* her.\n\nSo on the 'no recognizable voice' bar, **C wins.** Attached: C's .m4a + 24-bit .wav (span 48.5\u201390.5, tail clean). Say the word and I'll **lock C for scary_dog** and move to the next track. (The card's F is now a max-removal ensemble-min if you ever want even more, but you don't need it \u2014 C is clean.)"
+ },
+ {
+  "track": "var:12_13_scarydog_stabat",
+  "vote": "action_reply",
+  "user": "engineer",
+  "ts": "2026-08-23T23:46:25",
+  "files": [
+   "12_13_scarydog_stabat_Fgated_234623.m4a",
+   "12_13_scarydog_stabat_Fgated_234623.wav"
+  ],
+  "text": "**You were right about the rests \u2014 new F: time-gated C.** The soprano actually sings two phrases (49.6\u201371.8 s and 75.5\u201388.6 s) with a real 3.7 s orchestral rest between them. Roformer was needlessly dulling those rests.\n\n**How this differs from the failed blend:** the blend mixed *frequencies* (voice and orchestra share 2\u20138 kHz \u2192 her formants came back). This one switches in *time*: every instant is either 100% C (while she sings) or 100% untouched original (while she rests) \u2014 never both, so no shared-band leak by construction.\n\n| interval | orig air | C air | F-gated air |\n|---|---|---|---|\n| REST 71.8\u201375.5 s | 44.8 | 32.4 (dull) | **44.8 (full)** |\n| SINGING 55\u201365 s | 52.4 | 38.9 | 38.9 (= C, voice gone) |\n| REST 88.6\u201390.5 s | 22.2 | 19.2 | **22.2 (full)** |\n\nThe rests recover the orchestra exactly; the sung phrases stay as clean as C (still dull there \u2014 that part truly is her removed air). **Listen hardest at the two transitions ~71.8 s and ~75.5 s**: if a tail of her voice sneaks through the switch, tell me the timestamp and I'll tighten the gate."
+ },
+ {
+  "track": "var:12_13_scarydog_stabat",
+  "vote": "action_reply",
+  "user": "engineer",
+  "ts": "2026-08-23T23:52:42",
+  "files": [
+   "scarydog_Fadaptive_beforeafter_235239.png",
+   "12_13_scarydog_stabat_Fadaptive_235239.m4a",
+   "12_13_scarydog_stabat_Fadaptive_235239.wav"
+  ],
+  "text": "**You caught it exactly \u2014 1:12\u20131:15 wasn't a rest.** She sings *quietly under an orchestral swell* there (her level \u221242 dBFS); my gate measured voice relative to the mix, and the swell masked her, so the gate passed the raw original through \u2014 full voice. Roformer's version didn't have her because roformer actually removed her. My mistake; that gate design is dead.\n\n**New F = adaptive, never the original inside the span:**\n- Where she sings **loud** \u2192 **C (roformer)** \u2014 only it suppresses her enough.\n- Where she sings **quietly** (like 73.1\u201377.0 s) \u2192 **A (mdx23c)** \u2014 its \u221231 dB pushes her \u2248 \u221274 dBFS (inaudible) while keeping the orchestra bright.\n\n| check | value |\n|---|---|\n| swell air (orig / C / F) | 44.8 / 32.4 dull / **40.4 restored** |\n| her level in swell after F | \u2248 \u221274 dBFS (inaudible) |\n| segments | C: 49.5\u201373.1, 77.0\u201388.3 \u00b7 A: edges + 73.1\u201377.0 + 88.3\u201390.5 |\n\nBoth branches are separated audio, so no raw voice can leak by construction \u2014 worst case anywhere is A-grade removal on an already-quiet voice. Plot, .m4a and .wav attached; the F card is updated. **Also fixed: the random playback stops** \u2014 that was me restarting the server after every change, cutting your stream; I now restart only for code changes (plus made the player sync more robust)."
+ },
+ {
+  "track": "var:7_verdi_fast_nv",
+  "vote": "comment",
+  "ts": "2026-08-24T00:04:52",
+  "user": "elena",
+  "text": "Render m4a of the ORIGINAL pls. For comparison."
+ },
+ {
+  "track": "var:12_13_scarydog_stabat",
+  "vote": "best_C",
+  "user": "mickg",
+  "ts": "2026-08-24T00:05:28",
+  "note": "owner in chat: 'I prefer 2327 roformer at this point - even if dull' \u2014 C locked"
+ },
+ {
+  "track": "var:12_13_scarydog_stabat",
+  "vote": "action_reply",
+  "user": "engineer",
+  "ts": "2026-08-24T00:05:28",
+  "text": "**\ud83d\udd12 LOCKED: C (roformer) is the pick for Scary_Dog/Stabat \u2014 per the owner.**\n\n**Why the adaptive F leaked at 1:13\u20131:17 (the honest post-mortem):** its router decided where mdx23c was 'safe' using **mdx23c's own voice-stem** as the meter \u2014 circular. A quiet soprano under a loud orchestra is exactly where mdx23c both misses her in the stem *and* leaks her in the instrumental, so the router routed the leakiest bars to the leaky model. Roformer genuinely hears her there \u2192 C is clean. The adaptive F is retired from the card.\n\n**Final master = C, span 48.5\u201390.5 s** (same as the 2327 version you liked, plus the last \u221260 dBFS tail 89\u201390.5 s also cleaned; original bit-exact outside). Files already in this thread: `12_13_scarydog_stabat_C_roformer_voicefix_2327.m4a/.wav`. The dullness inside the sung span is the accepted trade.\n\nOne scary_dog item stays open if you ever want it: the hole-filler v2 idea (retrained on roformer-damaged audio) is the only literature-backed path to brightening C without re-adding her \u2014 say the word and I'll train it; otherwise this track is done."
+ },
+ {
+  "track": "var:7_verdi_fast_nv",
+  "vote": "action_reply",
+  "user": "engineer",
+  "ts": "2026-08-24T00:05:55",
+  "files": [
+   "7_verdi_fast_nv_ORIGINAL_000552.m4a"
+  ],
+  "text": "**Original attached** (straight encode of the source mp3 \"7_VERDI_NO VOICES_FAST\", no processing) \u2014 player + download below for A/B against the variants.\n\nContext while you compare: the filename says *no voices*, but the detector flags voice-like content across most of it (strongest at 14\u201319 s, 37\u201342 s, 66\u201371 s) while every separator removes almost nothing there. Your ears settle it: if you hear voice in the original at those spots, tell me which \u2014 if not, the track needs no removal at all and ships as-is."
+ },
+ {
+  "track": "var:7_verdi_fast_nv",
+  "vote": "action_reply",
+  "user": "engineer",
+  "ts": "2026-08-24T00:16:41",
+  "text": "**\u26a0\ufe0f Provenance verdict: the owner is probably right \u2014 this \"master\" looks already-processed by a bad program.** I tested the hypothesis:\n\n**1. It is NOT derived from our voiced fast-verdi take.** Full-length and per-section alignment against `VERDI_FAST_Voices_2026_05_07` shows drifting lags (\u22121.0 s / 0 / \u221219 s) with near-zero correlation \u2014 a different performance (or a heavily re-edited one), so whatever made it, its parent isn't the recording we have.\n\n**2. But it does not look like a clean master either:**\n\n| tell | clean master (voiced fast-verdi) | our old instrumental (known-processed) | **NO_VOICES_FAST** |\n|---|---|---|---|\n| channels | stereo | stereo | **mono** |\n| HF above 11 kHz | \u221236.5 dB | \u221247.3 dB | **\u221258.7 dB (dead)** |\n| detector | voice where sung | ghost hits | **voice-ghosts everywhere** |\n| separators | remove the voice | \u2014 | **find nothing to remove** |\n\nMono, top octave missing (darker even than our own processed render), voice-like residue the detector hears but no separator can grab \u2014 that's the signature of audio that already went through a removal/karaoke tool (or a very degraded bounce), not a fresh recording.\n\n**Recommendation: find the true parent.** If someone made this with another program from a voiced recording, send me THAT recording and I'll do the removal properly (roformer recipe, as locked for Scary_Dog). If it's genuinely an orchestra-only re-take, we still want a stereo, full-bandwidth bounce of it. Please don't ship this file as a master \u2014 question for the team: **where did `7_VERDI_NO VOICES_FAST.mp3` come from?**"
+ },
+ {
+  "track": "var:7_verdi_fast_nv",
+  "vote": "comment",
+  "ts": "2026-08-24T00:20:41",
+  "user": "elena",
+  "text": "Found reference :  VERDI_FAST_Voices_Tobacco_2026_05_07.mp3"
+ },
+ {
+  "track": "var:7_verdi_fast_nv",
+  "vote": "action_reply",
+  "user": "engineer",
+  "ts": "2026-08-24T00:21:48",
+  "text": "**Perfect \u2014 that's the right master.** `VERDI_FAST_Voices_Tobacco_2026_05_07.mp3` is a clean stereo take (full bandwidth, none of the husk's damage). Rendering the removal from it NOW with the recipe locked on Scary_Dog (roformer as the trusted remover, all variants for comparison). New card **7_verdi_fast_0507** appears on /v when done \u2014 I'll post here with the recommended variant attached. The mono NO_VOICES file is retired as a dead end."
+ },
+ {
+  "track": "var:7_verdi_fast_nv",
+  "vote": "action_reply",
+  "user": "engineer",
+  "ts": "2026-08-24T00:30:00",
+  "files": [
+   "7_verdi_fast_0507_A_mdx23c_002958.m4a",
+   "7_verdi_fast_0507_A_mdx23c_002958.wav"
+  ],
+  "text": "**\u2705 New card live: 7_verdi_fast_0507** \u2014 full A\u2013E rendered from the clean voiced master (full-track removal; the voices cover most of the piece).\n\n**Recommendation: A (mdx23c)** \u2014 the owner guessed it, the measurements agree. Unlike Scary_Dog, these voices are easy for mdx23c:\n\n| variant | voice removed (2\u20136 kHz) | broadband |\n|---|---|---|\n| **A mdx23c** | **\u221251.1 dB** | \u221240.1 dB |\n| C roformer | \u221252.7 dB | \u221241.1 dB |\n| E melband | \u221252.3 dB | \u221239.4 dB |\n| B ensmax | \u221249.7 dB | \u221239.0 dB |\n\nA is within ~1.5 dB of roformer everywhere it matters, so there is no reason to pay any extra dullness. (Scary_Dog needed C because its solo soprano leaked through A by 18 dB \u2014 that does not happen here; every track gets its own measurement.)\n\nAttached: **A** as .m4a + 24-bit .wav. Please A/B it against the original on the card and flag any spot where you still hear a voice \u2014 the mono NO_VOICES husk is retired."
+ },
+ {
+  "track": "var:7_verdi_fast_0507",
+  "vote": "comment",
+  "ts": "2026-08-24T00:04:52",
+  "user": "elena",
+  "text": "Render m4a of the ORIGINAL pls. For comparison."
+ },
+ {
+  "track": "var:7_verdi_fast_0507",
+  "vote": "action_reply",
+  "user": "engineer",
+  "ts": "2026-08-24T00:05:55",
+  "files": [
+   "7_verdi_fast_nv_ORIGINAL_000552.m4a"
+  ],
+  "text": "**Original attached** (straight encode of the source mp3 \"7_VERDI_NO VOICES_FAST\", no processing) \u2014 player + download below for A/B against the variants.\n\nContext while you compare: the filename says *no voices*, but the detector flags voice-like content across most of it (strongest at 14\u201319 s, 37\u201342 s, 66\u201371 s) while every separator removes almost nothing there. Your ears settle it: if you hear voice in the original at those spots, tell me which \u2014 if not, the track needs no removal at all and ships as-is."
+ },
+ {
+  "track": "var:7_verdi_fast_0507",
+  "vote": "action_reply",
+  "user": "engineer",
+  "ts": "2026-08-24T00:16:41",
+  "text": "**\u26a0\ufe0f Provenance verdict: the owner is probably right \u2014 this \"master\" looks already-processed by a bad program.** I tested the hypothesis:\n\n**1. It is NOT derived from our voiced fast-verdi take.** Full-length and per-section alignment against `VERDI_FAST_Voices_2026_05_07` shows drifting lags (\u22121.0 s / 0 / \u221219 s) with near-zero correlation \u2014 a different performance (or a heavily re-edited one), so whatever made it, its parent isn't the recording we have.\n\n**2. But it does not look like a clean master either:**\n\n| tell | clean master (voiced fast-verdi) | our old instrumental (known-processed) | **NO_VOICES_FAST** |\n|---|---|---|---|\n| channels | stereo | stereo | **mono** |\n| HF above 11 kHz | \u221236.5 dB | \u221247.3 dB | **\u221258.7 dB (dead)** |\n| detector | voice where sung | ghost hits | **voice-ghosts everywhere** |\n| separators | remove the voice | \u2014 | **find nothing to remove** |\n\nMono, top octave missing (darker even than our own processed render), voice-like residue the detector hears but no separator can grab \u2014 that's the signature of audio that already went through a removal/karaoke tool (or a very degraded bounce), not a fresh recording.\n\n**Recommendation: find the true parent.** If someone made this with another program from a voiced recording, send me THAT recording and I'll do the removal properly (roformer recipe, as locked for Scary_Dog). If it's genuinely an orchestra-only re-take, we still want a stereo, full-bandwidth bounce of it. Please don't ship this file as a master \u2014 question for the team: **where did `7_VERDI_NO VOICES_FAST.mp3` come from?**"
+ },
+ {
+  "track": "var:7_verdi_fast_0507",
+  "vote": "comment",
+  "ts": "2026-08-24T00:20:41",
+  "user": "elena",
+  "text": "Found reference :  VERDI_FAST_Voices_Tobacco_2026_05_07.mp3"
+ },
+ {
+  "track": "var:7_verdi_fast_0507",
+  "vote": "action_reply",
+  "user": "engineer",
+  "ts": "2026-08-24T00:21:48",
+  "text": "**Perfect \u2014 that's the right master.** `VERDI_FAST_Voices_Tobacco_2026_05_07.mp3` is a clean stereo take (full bandwidth, none of the husk's damage). Rendering the removal from it NOW with the recipe locked on Scary_Dog (roformer as the trusted remover, all variants for comparison). New card **7_verdi_fast_0507** appears on /v when done \u2014 I'll post here with the recommended variant attached. The mono NO_VOICES file is retired as a dead end."
+ },
+ {
+  "track": "var:7_verdi_fast_0507",
+  "vote": "action_reply",
+  "user": "engineer",
+  "ts": "2026-08-24T00:30:00",
+  "files": [
+   "7_verdi_fast_0507_A_mdx23c_002958.m4a",
+   "7_verdi_fast_0507_A_mdx23c_002958.wav"
+  ],
+  "text": "**\u2705 New card live: 7_verdi_fast_0507** \u2014 full A\u2013E rendered from the clean voiced master (full-track removal; the voices cover most of the piece).\n\n**Recommendation: A (mdx23c)** \u2014 the owner guessed it, the measurements agree. Unlike Scary_Dog, these voices are easy for mdx23c:\n\n| variant | voice removed (2\u20136 kHz) | broadband |\n|---|---|---|\n| **A mdx23c** | **\u221251.1 dB** | \u221240.1 dB |\n| C roformer | \u221252.7 dB | \u221241.1 dB |\n| E melband | \u221252.3 dB | \u221239.4 dB |\n| B ensmax | \u221249.7 dB | \u221239.0 dB |\n\nA is within ~1.5 dB of roformer everywhere it matters, so there is no reason to pay any extra dullness. (Scary_Dog needed C because its solo soprano leaked through A by 18 dB \u2014 that does not happen here; every track gets its own measurement.)\n\nAttached: **A** as .m4a + 24-bit .wav. Please A/B it against the original on the card and flag any spot where you still hear a voice \u2014 the mono NO_VOICES husk is retired."
+ },
+ {
+  "track": "var:7_verdi_fast_0507",
+  "vote": "action_reply",
+  "user": "engineer",
+  "ts": "2026-08-24T00:31:46",
+  "files": [
+   "verdi_fast_dossier_003146.png"
+  ],
+  "text": "**\ud83d\udcc1 FULL DOSSIER \u2014 how this card came to be** (history cloned from the old card above; this post is the complete analysis with the comparison figure attached).\n\n**1. The suspect file.** The delivered \"master\" `7_VERDI_NO VOICES_FAST.mp3` claimed to be voice-free. Forensics said otherwise:\n\n| tell | true master (05_07) | our old instrumental | NO_VOICES file |\n|---|---|---|---|\n| channels | stereo | stereo | **mono** |\n| HF above 11 kHz | \u221236.5 dB | \u221247.3 dB | **\u221258.7 dB (dead)** |\n| detector | voice where sung | ghost hits | **voice-ghosts everywhere** |\n| separators | remove the voice | \u2014 | **find nothing removable** |\n\nThat combination \u2014 voice-like residue audible to the detector but no longer separable by any model, plus a dead top octave and a mono bounce \u2014 is the signature of audio **already put through a (bad) removal tool**, then re-encoded. The owner called it first.\n\n**2. Provenance test.** Per-section alignment against our voiced fast-verdi shows drifting lags (\u22121.0 s / 0 / \u221219 s, near-zero correlation): the husk is **a different performance** \u2014 its parent is not a recording we hold. Un-fixable: the damage is baked in; no separator can re-remove smeared residue. Retired.\n\n**3. The fix.** Elena identified the correct parent: `VERDI_FAST_Voices_Tobacco_2026_05_07.mp3` (stereo, full-bandwidth, hot master with float peaks 1.84). This card's A\u2013E are rendered from it (full-track; the voices span ~85% of the piece).\n\n**4. Result** (figure attached: true master \u2192 bad husk \u2192 new A render): the new A keeps full bandwidth and kills the voices \u2014 measured \u221251.1 dB in the recognizability band (2\u20136 kHz), statistically tied with roformer (\u221252.7) at none of roformer's dullness cost. Detector concurs (A/C tied cleanest, meanP 0.50 vs the original's 0.87).\n\n**Recommendation: A (mdx23c)** \u2014 files attached in the reply above. Ear-check spots: 43\u201348 s and 70\u201375 s (A's two mild hotspots). Avoid D (leaves the voice) and E (residual burst 15.5\u201320.5 s)."
+ },
+ {
+  "track": "var:7_verdi_fast_0507",
+  "vote": "action_reply",
+  "user": "engineer",
+  "ts": "2026-08-24T00:37:05",
+  "files": [
+   "verdi_fast_prints_003704.png",
+   "verdi_fast_removalmap_003704.png"
+  ],
+  "text": "**\ud83d\udd2c DEEP ANALYSIS \u2014 voice-print vs orchestra-print** (figures attached; all measured on the float masters, A = mdx23c vs the true 05_07 original).\n\n**1. The two prints** (fig 1, top-left): average spectrum of the *extracted voice* in sung frames (red) overlaid on the *orchestra that remains* (blue, same frames). The voice print carries the classic vocal signature \u2014 harmonic ridge through 500 Hz\u20134 kHz with the **singer-formant bump (2.4\u20133.4 kHz, shaded)** that makes voices cut through an orchestra; the orchestra print is smoother and darker up there. That 2.4\u20133.4 kHz band is exactly where recognizability lives \u2014 and where A cuts hardest.\n\n**2. Surgical check** (fig 1, top-right) \u2014 the key trust plot. Removed energy in **sung** frames sits ~13 dB hotter than in **no-voice** frames: the separator takes the voice where it sings (\u22124.8 dB removal print, 2\u20136 kHz) and only micro-adjusts where it does not (\u221217.4 dB, i.e. ~5 dB *below* the orchestra's own level there). The removal is targeted, not a blanket EQ.\n\n**3. Pitch print** (fig 1, bottom): the removed voice's most-sung notes \u2014 **C\u266f5 dominant** (220 frames), then C5, C4, G\u266f4, D5; pitch-class mass on **C\u266f/C/G\u266f** \u2014 a C\u266f-centered line, soprano tessitura C4\u2013D5+. The melody trace (bottom-right) shows the full contour of what was removed.\n\n**4. Removal map** (fig 2): time \u00d7 frequency image of *exactly* what was subtracted from the mix \u2014 the voice's harmonics appear as horizontal striations during the sung passages and vanish in the gaps; below it, the voiced/non-voiced segmentation over time (**69% of frames voiced** at the \u22126.5 dB stem threshold; the piece is wall-to-wall singing with short instrumental breaks).\n\n**Reading it as a verdict:** the prints show A removing a voice-shaped, formant-peaked, C\u266f-centered object in the sung frames while leaving the no-voice frames essentially untouched \u2014 which is what \"clean removal\" looks like when it is real, and matches the earlier numbers (\u221251 dB recognizability-band suppression, tied with roformer). Recommendation stands: **A**."
+ },
+ {
+  "track": "var:7_verdi_fast_0507",
+  "vote": "action_reply",
+  "user": "engineer",
+  "ts": "2026-08-24T00:38:39",
+  "files": [
+   "verdi_fast_evolving_003838.mp4"
+  ],
+  "text": "**\ud83c\udf9e Evolving removal video.** Both spectrograms scroll in real time \u2014 **top: the original** (watch the voice's harmonic ladders and vibrato wiggle appear whenever she sings), **bottom: variant A** (same instant, ladders gone, orchestra intact). **The audio you hear is A** \u2014 so wherever your eye catches a ladder up top and the bottom stays smooth while you hear no voice, you are watching the removal work, moment by moment. Full track, 94 s."
+ },
+ {
+  "track": "var:7_verdi_fast_0507",
+  "vote": "action_reply",
+  "user": "engineer",
+  "ts": "2026-08-24T00:39:15",
+  "text": "**\ud83d\udcdd REVIEW: MDX23C-8KFFT-InstVoc_HQ \u2014 the program that did this removal.** Every claim below is from our own measurements across this project. Fair means both directions.\n\n**Scorecard**\n\n| dimension | grade | evidence |\n|---|---|---|\n| Loud/direct voice removal | **A** | this track: \u221251.1 dB in the recognizability band, statistically tied with the best transformer (roformer \u221252.7) |\n| Orchestra preservation | **A\u2212** | transparent where no voice (removal print \u221217.4 dB, ~5 dB *below* the orchestra's own level); keeps brightness roformer destroys (verdi_slow air \u221211.6 vs \u221219.4 dB) |\n| Quiet voice under loud orchestra | **D** | Scary_Dog soprano: \u221231.6 dB removal vs roformer's \u221249.6 \u2014 an 18 dB gap, audibly leaked, lost the track; the same blindness missed quiet reverberant voice in our cross-corpus tests |\n| Its vocals stem (the other output) | **F** | stems do not sum to the mix (residual peaks 0.84 full-scale); subtraction variants built from it were the dirtiest on every single track (detector 0.86 vs 0.50); its stem under-reports exactly the voices its instrumental leaks \u2014 using it as a guide once routed our splice to the leakiest model (the circular-router failure) |\n| Consistency / predictability | **C** | brilliant on this Verdi, beaten by 18 dB on the Stabat soprano \u2014 nothing in the material predicts which you will get; every track must be measured |\n| Honesty about failure | **F** | no confidence signal of any kind: it fails silently, at full quality-of-output confidence \u2014 the entire human listening gate of this project exists because of this |\n| Speed / robustness | **A** | seconds per track on one GPU; float-clean; unbothered by a hot master (1.84 float peaks) |\n\n**In praise:** on direct, well-recorded voices it is a remarkable instrument \u2014 surgical (13 dB hotter removal in sung frames than silent ones), formant-accurate, and it leaves the orchestra its air. As a *default first pass* it earned its place.\n\n**Without mercy:** it is deaf exactly where opera lives \u2014 the quiet phrase under the swell, the reverberant tail \u2014 and it will not tell you. Its vocal stem is not a measurement, it is an opinion, and trusting that opinion anywhere near a routing or QA decision produces confidently wrong systems. Ship nothing it touches without independent ears or an independent meter.\n\n**Verdict: a tool to trust to *try* \u2014 never to *certify*.** Use it first, measure it always, and keep roformer loaded for the voices it cannot hear."
+ },
+ {
+  "track": "var:7_verdi_fast_0507",
+  "vote": "action_reply",
+  "user": "engineer",
+  "ts": "2026-08-24T00:40:37",
+  "files": [
+   "verdi_fast_frustration_004036.png"
+  ],
+  "text": "**\ud83d\udcc8 Engineer telemetry (by request).** Top: the frustration index across the saga \u2014 note it peaks not at the broken master (that part was honest detective work) but at the bugs I authored myself: a download button whose click handler was registered twice (open + close = net nothing), and a player killed at 1:13, repeatedly, by my own page politely refreshing the conversation underneath it. Bottom: where the effort actually went \u2014 roughly a third proving a file was broken before we ever touched it, a third un-breaking my own tooling, and a third on the work that shipped.\n\n*Moral, now laminated above the workbench: always ffprobe the master before believing its filename.*"
+ },
+ {
+  "track": "var:13_stabat_mater_tobacco_2026_07_06",
+  "vote": "action_reply",
+  "ts": "2026-08-25T16:12:39",
+  "user": "pipeline",
+  "text": "\ud83d\udce5 **Upload received: `13_STABAT_MATER_Tobacco_2026_07_06.mp3`** \u2014 49.4s, 2ch @ 44100 Hz. Saved to the masters directory. Starting the pipeline..."
+ },
+ {
+  "track": "var:13_stabat_mater_tobacco_2026_07_06",
+  "vote": "action_reply",
+  "ts": "2026-08-25T16:12:40",
+  "user": "pipeline",
+  "text": "\ud83d\ude9a copied to the render box; analyzing + rendering (a few minutes)..."
+ },
+ {
+  "track": "var:13_stabat_mater_tobacco_2026_07_06",
+  "vote": "action_reply",
+  "ts": "2026-08-25T16:12:42",
+  "user": "pipeline",
+  "text": "\u2699\ufe0f analyzing voice activity of the original (13_STABAT_MATER_Tobacco_2026_07_06.mp3)..."
+ },
+ {
+  "track": "var:13_stabat_mater_tobacco_2026_07_06",
+  "vote": "action_reply",
+  "ts": "2026-08-25T16:12:44",
+  "user": "pipeline",
+  "text": "\u2699\ufe0f voiced spans: 2.1-43.58s p=0.964 | coverage 84% -> mode: FULL"
+ },
+ {
+  "track": "var:13_stabat_mater_tobacco_2026_07_06",
+  "vote": "action_reply",
+  "ts": "2026-08-25T16:12:49",
+  "user": "pipeline",
+  "text": "\u2699\ufe0f rendering variants A (mdx23c), B (ensemble-max), C (roformer), D (subtract), E (melband) on the GPU..."
+ },
+ {
+  "track": "var:13_stabat_mater_tobacco_2026_07_06",
+  "vote": "action_reply",
+  "ts": "2026-08-25T16:13:28",
+  "user": "pipeline",
+  "text": "\u2699\ufe0f render complete; running the voice detector over every variant..."
+ },
+ {
+  "track": "var:13_stabat_mater_tobacco_2026_07_06",
+  "vote": "action_reply",
+  "ts": "2026-08-25T16:13:46",
+  "user": "pipeline",
+  "text": "\u2699\ufe0f detector comparator: C_roformer 0.383, E_melband 0.418, B_ensmax 0.54, D_subtract 0.55, A_mdx23c 0.555"
+ },
+ {
+  "track": "var:13_stabat_mater_tobacco_2026_07_06",
+  "vote": "action_reply",
+  "ts": "2026-08-25T16:13:49",
+  "user": "pipeline",
+  "text": "\ud83c\udccf **Card is live** with variants A/B/C/D/E and detector bars \u2014 seamless switching, downloads, the works."
+ },
+ {
+  "track": "var:13_stabat_mater_tobacco_2026_07_06",
+  "vote": "action_reply",
+  "ts": "2026-08-25T16:13:49",
+  "user": "pipeline",
+  "text": "\u2705 **Pipeline done.** Detector's cleanest variant: **C** (C_roformer). That is the machine's opinion only \u2014 ears decide. Ask here (\ud83d\udd27) for deeper analysis, spectrograms, or a re-render with different settings."
+ },
+ {
+  "track": "var:13_stabat_mater_tobacco_2026_07_06",
+  "vote": "comment",
+  "ts": "2026-08-25T16:16:01",
+  "user": "elena",
+  "text": "Do a detailed analysis with graphs and histograms WHY \"C\" is better here?"
+ },
+ {
+  "track": "var:13_stabat_mater_tobacco_2026_07_06",
+  "vote": "action_reply",
+  "user": "engineer",
+  "ts": "2026-08-25T16:18:13",
+  "files": [
+   "stabat13_why_c_161813.png"
+  ],
+  "text": "**Why C (roformer) wins here \u2014 measured, four graphs attached.**\n\n**The one-line answer:** this piece is a *loud solo soprano over orchestra* \u2014 the exact material mdx23c is blind to and roformer is built for. Same physics we proved on the Scary_Dog segment (it is the same Stabat Mater), now confirmed on your standalone upload.\n\n**The numbers (residual soprano left in each variant; lower = cleaner):**\n\n| variant | broadband | formant band 2\u20136 kHz (recognizability) |\n|---|---|---|\n| **C roformer** | **\u221246.4 dB** | **\u221230.3 dB** |\n| A mdx23c | \u221230.5 dB | \u221223.7 dB |\n| B ensmax | \u221230.2 dB | \u221222.4 dB |\n| E melband | \u221219.5 dB | \u221219.2 dB |\n\nC removes **~16 dB more voice overall and ~7 dB more in the band where you recognize a singer** than A. The detector agrees independently: counting 10 ms frames where it is confident voice remains \u2014 **A: 2049 frames, C: 434** (4.7\u00d7 fewer residue moments).\n\n**The graphs:** top-left \u2014 band histogram in sung passages: A (orange) keeps visibly more energy exactly in the 1\u20134 kHz voice bands than C (blue). Top-right \u2014 residual-voice bars per variant. Bottom-left \u2014 the detector over time: orange (A) keeps spiking through the sung section where blue (C) stays low. Bottom-right \u2014 frame histogram: A has a fat tail of high-probability voice frames; C does not.\n\n**The honest cost:** C is also darker (its known dullness \u2014 you can see C sitting a few dB below A in every band, not just the voice ones). On this material that trade is worth it: A leaves an audibly recognizable soprano; C leaves a quieter, duller, but *voice-free* orchestra. Same verdict as Scary_Dog: **for this singer, C.** If the dullness bothers you in specific passages, say where and I will look at per-passage options \u2014 but per the Scary_Dog lesson, no blend that re-imports brightness above 2 kHz can avoid re-importing her."
+ },
+ {
+  "track": "var:13_stabat_mater_tobacco_2026_07_06",
+  "vote": "comment",
+  "ts": "2026-08-25T16:18:14",
+  "user": "elena",
+  "text": "Voice at around 23-34 seconds  -very audible in A. Not audible in C. But A sounds better! There's a trace of voice around 0:44 and later in both C and A."
+ },
+ {
+  "track": "var:13_stabat_mater_tobacco_2026_07_06",
+  "vote": "action_reply",
+  "user": "engineer",
+  "ts": "2026-08-25T17:13:43",
+  "files": [
+   "stabat13_switchmap_171336.png",
+   "stabat13_F_hybrid_171336.m4a",
+   "stabat13_F_hybrid_171336.wav"
+  ],
+  "text": "*(First: apologies \u2014 this comment arrived while I was building the previous analysis and my watcher swallowed it. Fixed; it will not happen again.)*\n\n**Built exactly what you described \u2014 new variant F on the card: A's sound, C's removal, only where A actually fails.**\n\nThe router is the independent voice detector listening to **A's own output** (not any separator judging itself): wherever it still hears voice in A, C takes over; everywhere else you get A untouched. The switch map is attached \u2014 shaded regions are where C substitutes: **6.3\u20137.1 s, 9.1\u201310.3 s, and 20.0\u201342.7 s** (your 23\u201334 sits inside that big one). **A keeps 50% of the runtime.**\n\n| region | A | C | **F** |\n|---|---|---|---|\n| 23\u201334 s (your spot) | 0.922 \u2190 the leak | 0.382 | **0.382 (= C, gone)** |\n| whole track | 0.559 | 0.394 | **0.383 (cleanest of all)** |\n\n**About the 0:44+ trace you hear in both:** measured \u2014 the original itself carries only faint voice-ish content there (0.37) and every variant lands \u22480.30 with no separation between them; whatever it is (reverb ghost / breath / bow noise reading voicey), none of the five models can grab it, so switching cannot remove it. It is quiet \u2014 if it still bothers you on the F listen, say so and I will try a targeted notch experiment on just that tail.\n\nF is on the card with detector bars, and attached here as .m4a + 24-bit .wav. Listen for the seams at ~20 s and ~42.7 s \u2014 150 ms ramps between two instrumentals, should be invisible."
+ },
+ {
+  "track": "var:13_stabat_mater_tobacco_2026_07_06",
+  "vote": "comment",
+  "ts": "2026-08-25T17:19:42",
+  "user": "elena",
+  "text": "How do we do takeover? What is the blending boundary algo? And finally, do we recover crispness as learned where there is no voice?"
+ },
+ {
+  "track": "var:13_stabat_mater_tobacco_2026_07_06",
+  "vote": "action_reply",
+  "user": "engineer",
+  "ts": "2026-08-25T17:20:29",
+  "text": "Three good questions \u2014 exact answers:\n\n**1. How the takeover works.** Both A and C are *full-length* renders of the same master, sample-aligned by construction. F is a pure time-domain mix: at every sample, `out(t) = w(t)\u00b7C(t) + (1\u2212w(t))\u00b7A(t)` with w between 0 and 1. Full-band \u2014 no frequency splitting (we tried a frequency blend on Scary_Dog: taking A's highs re-imported the soprano's formants; rejected).\n\n**2. The boundary algorithm.**\n- *Router signal:* the independent voice detector (a small neural net trained on 466 opera voice/orchestra pairs \u2014 no relation to either separator) listening to **A's output**, probability per 10 ms, median-smoothed over ~0.5 s.\n- *Decision:* hysteresis \u2014 enter a C-region when P > 0.55, return to A only when P < 0.45 (the double threshold prevents flutter); regions shorter than 0.6 s dropped, gaps under 1.0 s merged (so her breaths inside a phrase do NOT flip back to A); final regions padded \u00b10.25 s.\n- *Blend shape:* the 0/1 gate is smoothed with a 150 ms moving average \u2192 linear amplitude-complementary ramps. Amplitude- (not power-) complementary is deliberate: A and C are highly **coherent** (same master, both mostly orchestra), and for coherent signals equal-gain sums preserve level \u2014 an equal-power ramp would bump ~+3 dB at every seam.\n- *Result on this track:* C owns 6.3\u20137.1 s, 9.1\u201310.3 s, 20.0\u201342.7 s; A owns the rest (50%).\n\n**3. Crispness where there is no voice \u2014 yes, but only in A-regions.** Where the router leaves A in charge, you get A, and A is measured near-transparent when nobody sings (on the verdi material: \u22120.3 dB himid, \u22120.7 presence, \u22121.8 air vs the original). Inside the C-regions the crispness is **not** recovered \u2014 C's dullness rules there, including through her short rests within 20\u201342.7 s (hysteresis deliberately holds C through them, safety over sparkle). The learned restorer (hole-filler v1) is NOT applied here: it was trained on mdx23c damage and we measured it unable to undo roformer's gouging (C+fill \u2248 C). The honest path to crisp-inside-the-sung-region is training a **hole-filler v2 on roformer-damaged pairs** \u2014 a literature-backed GPU run I can start on your word. Until then, dull-where-she-sings is the price of voice-free."
+ }
+]

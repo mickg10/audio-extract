@@ -1,0 +1,454 @@
+{
+ "schema": "audio-extract/holdout-frozen-gate/v1",
+ "created_at": "2026-08-16T13:44:12+0000",
+ "scored": false,
+ "status": "staged_awaiting_frozen_gate",
+ "note": "Instrumentals STAGED + RENDERED only. NO voice detector / ASR / pass-fail computed here; the frozen-gate evaluation is a separate atomic pass.",
+ "machine": "research6 (RTX PRO 4500 Blackwell)",
+ "resampler": "soxr_vhq (arias 48k->44.1k; control already 44.1k)",
+ "pcm_sha256_def": "audio_extract.identity.artifact_pcm_sha256 over float32-LE interleaved samples + u32 sr + canonical channel-layout(FL,FR) + u64 frames (on the UNCLIPPED f32 master)",
+ "m4a_def": "AAC 192k via ffmpeg, encoded from a clip(-1,1) copy (listening proxy only)",
+ "models": {
+  "MDX23C-8KFFT-InstVoc_HQ.ckpt": "sha256:49d51472769e34a2501cd1da782346a3212555c3a5619fc2c53507445528d816",
+  "vocals_mel_band_roformer.ckpt": "sha256:87201f4d31afb5bc79993230fc49446918425574db48c01c405e44f365c7559e",
+  "model_bs_roformer_ep_317_sdr_12.9755.ckpt": "sha256:5b84f37e8d444c8cb30c79d77f613a41c05868ff9c9ac6c7049c00aefae115aa",
+  "roformer_ft1/melband_ft_step600.ckpt": "sha256:1c12a6b764b9c329890c0db8b16d5dfb91e67f16d0130a2892ad7cbab9edf302"
+ },
+ "variant_recipes": {
+  "champion": "mixture - per_sample_median(v_MDX23C, v_MelBand_pretrained, v_BS)",
+  "ft_member": "mixture - per_sample_median(v_MDX23C, v_MelBand@roformer_ft1/melband_ft_step600, v_BS)  [MelBand weights swapped via model_run.load_state_dict]",
+  "v1_inverted": "mixture - v_BS  (single strong BS-Roformer vocal estimate, full strength = v1 'inverted' character)",
+  "cascade_iter1": "== champion",
+  "cascade_iter2": "cascade_iter1 - per_sample_median(vocals(cascade_iter1) via MDX23C, MelBand_pretrained, BS)",
+  "cascade_iter3": "cascade_iter2 - per_sample_median(vocals(cascade_iter2) via MDX23C, MelBand_pretrained, BS)",
+  "v2_mdx23c": "MDX23C native (Instrumental) stem, peak-normalized -5 dBFS"
+ },
+ "holdout_selection": {
+  "goal": "Untouched Cantolopera holdout works (absent from ALL calibration splits AND never rendered/listened AND not used to train judge v3) + one exact NO-VOCAL control.",
+  "excluded_because_in_splits_train_weak": {
+   "source": "/home/mickg/audio-extract/datasets/classical-v1-splits.json",
+   "cantolopera_operas_with_orchestra_in_train_weak": [
+    "aida",
+    "andrea_chenier",
+    "la_boheme"
+   ],
+   "note": "orchestra recording of each is in train-weak -> whole opera excluded to avoid same-orchestra leakage"
+  },
+  "excluded_because_already_rendered_listened": {
+   "source": "/home/mickg/ab_pairs (render_report.json) + /home/mickg/ae-opera",
+   "six_characterized_works_map": {
+    "nessun_dorma": "turandot-nessun-dorma (Puccini)",
+    "habanera": "carmen-lamour-est-un-oiseau-rebelle (Bizet)",
+    "donna": "rigoletto-la-donna-e-mobile (Verdi) / manon-lescaut-donna-non-vidi-mai (Puccini)",
+    "verdi_slow_voices": "Verdi (tobacco library)",
+    "barber_agnus_dei": "agnus-dei sacred (tobacco library)",
+    "marseillaise_applause": "La Marseillaise (tobacco library)"
+   },
+   "note": "these + broader ae-opera tobacco/yt library are the characterized set; none are the chosen picks"
+  },
+  "excluded_because_trained_judge_v3": {
+   "source": "/home/mickg/judge_build_v3/{manifest,rows_meta,rows_meta_new}.json",
+   "works": [
+    "aida-ritorna-vincitor",
+    "il-barbiere-di-siviglia-largo-al-factotum",
+    "il-barbiere-di-siviglia-una-voce-poco-fa",
+    "il-flauto-magico-der-holle-rache",
+    "il-trovatore-tutto-e-deserto-il-balen",
+    "le-nozze-di-figaro-deh-vieni-non-tardar",
+    "lucia-di-lammermoor-il-dolce-suono",
+    "rigoletto-caro-nome",
+    "rigoletto-cortigiani-vil-razza",
+    "rigoletto-la-donna-e-mobile",
+    "tosca-e-lucevan-le-stelle",
+    "tosca-recondita-armonia",
+    "turandot-in-questa-reggia",
+    "turandot-nessun-dorma"
+   ],
+   "note": "il-barbiere-largo-al-factotum was an initial candidate but is HERE -> dropped; replaced by don_giovanni_madamina"
+  },
+  "chosen_holdout_works": {
+   "gianni_schicchi_babbino": "gianni-schicchi-o-mio-babbino-caro (Puccini, soprano). UNTOUCHED: absent from splits, ae-opera, judge_build_v3 (probe False), no other refs on research6.",
+   "elisir_furtiva_lagrima": "lelisir-damore-una-furtiva-lagrima (Donizetti, tenor). UNTOUCHED: same evidence.",
+   "don_giovanni_madamina": "don-giovanni-madamina-il-catalogo-e-questo (Mozart, bass-baritone). UNTOUCHED: same evidence. Chosen for voice-type spread (S/T/bass)."
+  },
+  "no_vocal_control": {
+   "control_bologna_verdi_orch": "truth_pairs/bologna_verdi/orchestra_only.wav (Zenodo 3628247, CC BY 4.0). PROVABLY voice-free: isolated orchestra desks, soloist excluded, chorus_dirs=[], linear_exactness -97.9 dB. Labeled CONTROL, NOT Cantolopera. (bologna_verdi is in the test-v1 split, which is irrelevant for a false-positive no-vocal control.)"
+  }
+ },
+ "works": {
+  "gianni_schicchi_babbino": {
+   "mixture_path": "/mnt/bigdisk/holdout/gianni_schicchi_babbino/mixture.f32.wav",
+   "source": "NAS:/tanksmall/MICKG2/mickg/cantolopera/full_48khz_f32/gianni-schicchi-o-mio-babbino-caro-giacomo-puccini_voice.wav",
+   "src_subtype": "FLOAT",
+   "src_sr": 48000,
+   "out_sr": 44100,
+   "channels": 2,
+   "frames": 6797131,
+   "dur_s": 154.13,
+   "resampler": "soxr_vhq",
+   "mixture_pcm_sha256": "sha256:2c21031d3c880846ceda992d238d9d4f04fac56fef69d49cbb856fca0b86718e",
+   "peak": 0.90044,
+   "variants": {
+    "champion": {
+     "f32_path": "/mnt/bigdisk/holdout/gianni_schicchi_babbino/champion.f32.wav",
+     "f32_pcm_sha256": "sha256:7364c2ad8f5ef1a8fd0461b94887e2043620c07b13a89ba3f9ef147b605fd1b3",
+     "m4a_path": "/mnt/bigdisk/holdout/gianni_schicchi_babbino/champion.m4a",
+     "m4a_bytes": 3663899,
+     "m4a_blob_sha256": "sha256:b3b840b577e1da86454eced6c2ddece6df40b1f3a718f3e4e7bc70e344f8f897",
+     "frames": 6797131,
+     "peak": 0.47727,
+     "recipe": "mixture - per_sample_median(v_MDX23C, v_MelBand_pretrained, v_BS)"
+    },
+    "ft_member": {
+     "f32_path": "/mnt/bigdisk/holdout/gianni_schicchi_babbino/ft_member.f32.wav",
+     "f32_pcm_sha256": "sha256:9eda505210b6b74be45bca3c7401fe49970ff12d3f456c0831c11cfffd6c1138",
+     "m4a_path": "/mnt/bigdisk/holdout/gianni_schicchi_babbino/ft_member.m4a",
+     "m4a_bytes": 3665446,
+     "m4a_blob_sha256": "sha256:7a318cc8ef31c4a0884b179714ff7d95b5db8f4f113107997b4ee10b312d1530",
+     "frames": 6797131,
+     "peak": 0.47727,
+     "recipe": "mixture - per_sample_median(v_MDX23C, v_MelBand@roformer_ft1/melband_ft_step600, v_BS)  [MelBand weights swapped via model_run.load_state_dict]"
+    },
+    "v1_inverted": {
+     "f32_path": "/mnt/bigdisk/holdout/gianni_schicchi_babbino/v1_inverted.f32.wav",
+     "f32_pcm_sha256": "sha256:267364ab74c96fa72f1c4aca2c8dfdaa6680a73bef27d3c7e63d4ff844276dbc",
+     "m4a_path": "/mnt/bigdisk/holdout/gianni_schicchi_babbino/v1_inverted.m4a",
+     "m4a_bytes": 3630237,
+     "m4a_blob_sha256": "sha256:e8255c338418dec3111fc6839a02fe207974f8c7508b85dad7e39441bcc5acf0",
+     "frames": 6797131,
+     "peak": 0.47727,
+     "recipe": "mixture - v_BS  (single strong BS-Roformer vocal estimate, full strength = v1 'inverted' character)"
+    },
+    "cascade_iter1": {
+     "f32_path": "/mnt/bigdisk/holdout/gianni_schicchi_babbino/cascade_iter1.f32.wav",
+     "f32_pcm_sha256": "sha256:7364c2ad8f5ef1a8fd0461b94887e2043620c07b13a89ba3f9ef147b605fd1b3",
+     "m4a_path": "/mnt/bigdisk/holdout/gianni_schicchi_babbino/cascade_iter1.m4a",
+     "m4a_bytes": 3663899,
+     "m4a_blob_sha256": "sha256:b3b840b577e1da86454eced6c2ddece6df40b1f3a718f3e4e7bc70e344f8f897",
+     "frames": 6797131,
+     "peak": 0.47727,
+     "recipe": "== champion"
+    },
+    "cascade_iter2": {
+     "f32_path": "/mnt/bigdisk/holdout/gianni_schicchi_babbino/cascade_iter2.f32.wav",
+     "f32_pcm_sha256": "sha256:9e8b0b9de073ba0e066c8d7e15d0cccc2f42197046342a8dd3b8e449c831576d",
+     "m4a_path": "/mnt/bigdisk/holdout/gianni_schicchi_babbino/cascade_iter2.m4a",
+     "m4a_bytes": 3665935,
+     "m4a_blob_sha256": "sha256:501901478d6008d8588bed91d98d2504980f6c67d98762dcaf8b079b2412b447",
+     "frames": 6797131,
+     "peak": 0.47709,
+     "recipe": "cascade_iter1 - per_sample_median(vocals(cascade_iter1) via MDX23C, MelBand_pretrained, BS)"
+    },
+    "cascade_iter3": {
+     "f32_path": "/mnt/bigdisk/holdout/gianni_schicchi_babbino/cascade_iter3.f32.wav",
+     "f32_pcm_sha256": "sha256:23e693e4665539f44fe7422805b8974845e8a39b4c3c7d21dbdd4a91ef18fda9",
+     "m4a_path": "/mnt/bigdisk/holdout/gianni_schicchi_babbino/cascade_iter3.m4a",
+     "m4a_bytes": 3664089,
+     "m4a_blob_sha256": "sha256:2dfc05748d5d16c3bca9fbda34c41ac4c50b6cbc84eb40e4d52572d64a6bbe7b",
+     "frames": 6797131,
+     "peak": 0.47605,
+     "recipe": "cascade_iter2 - per_sample_median(vocals(cascade_iter2) via MDX23C, MelBand_pretrained, BS)"
+    },
+    "v2_mdx23c": {
+     "f32_path": "/mnt/bigdisk/holdout/gianni_schicchi_babbino/v2_mdx23c.f32.wav",
+     "f32_pcm_sha256": "sha256:27fe1de1675509e320d4f2711dcb0a930a1849142b5b1b1931bc4de17a62ff69",
+     "m4a_path": "/mnt/bigdisk/holdout/gianni_schicchi_babbino/v2_mdx23c.m4a",
+     "m4a_bytes": 3594736,
+     "m4a_blob_sha256": "sha256:c8c22994086b64c18c402f64d6dcd36c58cbc37b174756f7d0c02df4a6872980",
+     "frames": 6797131,
+     "peak": 0.562341,
+     "premodel_gain_0p9": 0.999512,
+     "source_node_pcm_sha256": "sha256:2c21031d3c880846ceda992d238d9d4f04fac56fef69d49cbb856fca0b86718e",
+     "separator_node_pcm_sha256": "sha256:860f3c8d56f9ba6a19cd9b72db4d5074e3801ed822cc3c07a74f916c641dc286",
+     "recipe": "MDX23C-8KFFT-InstVoc_HQ NATIVE (Instrumental) stem via float DAG: prepare_mix->normalize(0.9 premodel)->demix->Instrumental.T->peaknorm(-5 dBFS); all-float, no PCM/AAC intermediate; m4a=AAC192k from clip(-1,1) listening proxy"
+    }
+   },
+   "work_render_s": 303.1
+  },
+  "elisir_furtiva_lagrima": {
+   "mixture_path": "/mnt/bigdisk/holdout/elisir_furtiva_lagrima/mixture.f32.wav",
+   "source": "NAS:/tanksmall/MICKG2/mickg/cantolopera/full_48khz_f32/lelisir-damore-una-furtiva-lagrima-gaetano-donizetti_voice.wav",
+   "src_subtype": "FLOAT",
+   "src_sr": 48000,
+   "out_sr": 44100,
+   "channels": 2,
+   "frames": 11708107,
+   "dur_s": 265.49,
+   "resampler": "soxr_vhq",
+   "mixture_pcm_sha256": "sha256:6989e9ddfefdac6706393e69d9e4afff46fa9f4ccc55a7c93231bfd78a716d2b",
+   "peak": 0.99427,
+   "variants": {
+    "champion": {
+     "f32_path": "/mnt/bigdisk/holdout/elisir_furtiva_lagrima/champion.f32.wav",
+     "f32_pcm_sha256": "sha256:b0d979baa9135c6cbf02ab2bc19fc56cca69246b28a75e0114bdbbcbae6b2455",
+     "m4a_path": "/mnt/bigdisk/holdout/elisir_furtiva_lagrima/champion.m4a",
+     "m4a_bytes": 6392474,
+     "m4a_blob_sha256": "sha256:e0e6c97dd053575675db75a45b5448d7524dd0d613c09e3530d80ca248ba5389",
+     "frames": 11708107,
+     "peak": 0.92696,
+     "recipe": "mixture - per_sample_median(v_MDX23C, v_MelBand_pretrained, v_BS)"
+    },
+    "ft_member": {
+     "f32_path": "/mnt/bigdisk/holdout/elisir_furtiva_lagrima/ft_member.f32.wav",
+     "f32_pcm_sha256": "sha256:dd459e4265d281df03b0bad3e1faa9e8febc40055862f1130bee8eec1d95ea38",
+     "m4a_path": "/mnt/bigdisk/holdout/elisir_furtiva_lagrima/ft_member.m4a",
+     "m4a_bytes": 6390865,
+     "m4a_blob_sha256": "sha256:7262f595b2937e66efac84d8c5eafe65382d83de2561033ca74838e57625e78f",
+     "frames": 11708107,
+     "peak": 0.92696,
+     "recipe": "mixture - per_sample_median(v_MDX23C, v_MelBand@roformer_ft1/melband_ft_step600, v_BS)  [MelBand weights swapped via model_run.load_state_dict]"
+    },
+    "v1_inverted": {
+     "f32_path": "/mnt/bigdisk/holdout/elisir_furtiva_lagrima/v1_inverted.f32.wav",
+     "f32_pcm_sha256": "sha256:be90bb96e23039a9f1044f2c2799cc237ffa8be99b16c58d4ee31ab09ff6b492",
+     "m4a_path": "/mnt/bigdisk/holdout/elisir_furtiva_lagrima/v1_inverted.m4a",
+     "m4a_bytes": 6376933,
+     "m4a_blob_sha256": "sha256:275f308bc75ef57ce456ab4c800410b755cac6a879b8b98058ca447876b45546",
+     "frames": 11708107,
+     "peak": 0.92696,
+     "recipe": "mixture - v_BS  (single strong BS-Roformer vocal estimate, full strength = v1 'inverted' character)"
+    },
+    "cascade_iter1": {
+     "f32_path": "/mnt/bigdisk/holdout/elisir_furtiva_lagrima/cascade_iter1.f32.wav",
+     "f32_pcm_sha256": "sha256:b0d979baa9135c6cbf02ab2bc19fc56cca69246b28a75e0114bdbbcbae6b2455",
+     "m4a_path": "/mnt/bigdisk/holdout/elisir_furtiva_lagrima/cascade_iter1.m4a",
+     "m4a_bytes": 6392474,
+     "m4a_blob_sha256": "sha256:e0e6c97dd053575675db75a45b5448d7524dd0d613c09e3530d80ca248ba5389",
+     "frames": 11708107,
+     "peak": 0.92696,
+     "recipe": "== champion"
+    },
+    "cascade_iter2": {
+     "f32_path": "/mnt/bigdisk/holdout/elisir_furtiva_lagrima/cascade_iter2.f32.wav",
+     "f32_pcm_sha256": "sha256:897a800bc1f3b6ebba7059549b2983025ec6a94c5954ad6afe7a77a3138c9916",
+     "m4a_path": "/mnt/bigdisk/holdout/elisir_furtiva_lagrima/cascade_iter2.m4a",
+     "m4a_bytes": 6393549,
+     "m4a_blob_sha256": "sha256:25b3248e0e6eab2a87661183e245201e84ce4236987e0521b88025b45195db9e",
+     "frames": 11708107,
+     "peak": 0.9273,
+     "recipe": "cascade_iter1 - per_sample_median(vocals(cascade_iter1) via MDX23C, MelBand_pretrained, BS)"
+    },
+    "cascade_iter3": {
+     "f32_path": "/mnt/bigdisk/holdout/elisir_furtiva_lagrima/cascade_iter3.f32.wav",
+     "f32_pcm_sha256": "sha256:a0b4f69affc5115cb1ddca3b5e9f9aba98ea467c48be49a8312007a655aa64d8",
+     "m4a_path": "/mnt/bigdisk/holdout/elisir_furtiva_lagrima/cascade_iter3.m4a",
+     "m4a_bytes": 6394558,
+     "m4a_blob_sha256": "sha256:9b04a3b55042b4be0a779973c4b64b1bdc48230e7c61fd08ca47aad974ab8e77",
+     "frames": 11708107,
+     "peak": 0.9273,
+     "recipe": "cascade_iter2 - per_sample_median(vocals(cascade_iter2) via MDX23C, MelBand_pretrained, BS)"
+    },
+    "v2_mdx23c": {
+     "f32_path": "/mnt/bigdisk/holdout/elisir_furtiva_lagrima/v2_mdx23c.f32.wav",
+     "f32_pcm_sha256": "sha256:15e9d5e6a33307b75f5d3c8372185b900beaf43068e36d9ff8592b3c5f70d1a6",
+     "m4a_path": "/mnt/bigdisk/holdout/elisir_furtiva_lagrima/v2_mdx23c.m4a",
+     "m4a_bytes": 6304922,
+     "m4a_blob_sha256": "sha256:15e3d0d5b27780cf08dc60a6f3812feedce2774d891d157bd56758535e75d525",
+     "frames": 11708107,
+     "peak": 0.562341,
+     "premodel_gain_0p9": 0.905184,
+     "source_node_pcm_sha256": "sha256:6989e9ddfefdac6706393e69d9e4afff46fa9f4ccc55a7c93231bfd78a716d2b",
+     "separator_node_pcm_sha256": "sha256:8bc23521354b2dad9f5102889f31d03274cfa4664b2ee07199a52111b0748b87",
+     "recipe": "MDX23C-8KFFT-InstVoc_HQ NATIVE (Instrumental) stem via float DAG: prepare_mix->normalize(0.9 premodel)->demix->Instrumental.T->peaknorm(-5 dBFS); all-float, no PCM/AAC intermediate; m4a=AAC192k from clip(-1,1) listening proxy"
+    }
+   },
+   "work_render_s": 430.3
+  },
+  "don_giovanni_madamina": {
+   "mixture_path": "/mnt/bigdisk/holdout/don_giovanni_madamina/mixture.f32.wav",
+   "source": "NAS:/tanksmall/MICKG2/mickg/cantolopera/full_48khz_f32/don-giovanni-madamina-il-catalogo-e-questo-wolfgang-amadeus-mozart_voice.wav",
+   "src_subtype": "FLOAT",
+   "src_sr": 48000,
+   "out_sr": 44100,
+   "channels": 2,
+   "frames": 18127303,
+   "dur_s": 411.05,
+   "resampler": "soxr_vhq",
+   "mixture_pcm_sha256": "sha256:fbb5c5428004c5302e9c22f146d3b352599e2f17ee34ef250619c9853bbfaf4a",
+   "peak": 0.85343,
+   "variants": {
+    "champion": {
+     "f32_path": "/mnt/bigdisk/holdout/don_giovanni_madamina/champion.f32.wav",
+     "f32_pcm_sha256": "sha256:e191c215790add21dbdd19b17df3f3abbca66f858c55c04bad77316378b055eb",
+     "m4a_path": "/mnt/bigdisk/holdout/don_giovanni_madamina/champion.m4a",
+     "m4a_bytes": 9887040,
+     "m4a_blob_sha256": "sha256:fb9807e41cfdd947460a38e58397c3697598088db190a0a1c9dcc46dd669fd8e",
+     "frames": 18127303,
+     "peak": 0.59097,
+     "recipe": "mixture - per_sample_median(v_MDX23C, v_MelBand_pretrained, v_BS)"
+    },
+    "ft_member": {
+     "f32_path": "/mnt/bigdisk/holdout/don_giovanni_madamina/ft_member.f32.wav",
+     "f32_pcm_sha256": "sha256:b70ea79a8bc9e12ce78d1fcca5aa6823f2506ade2ecfafdb307c4f6631b453f6",
+     "m4a_path": "/mnt/bigdisk/holdout/don_giovanni_madamina/ft_member.m4a",
+     "m4a_bytes": 9886613,
+     "m4a_blob_sha256": "sha256:a7da06db5358919f0ce96343f2b441302391d688ed8cf7a28fa157755fc0ed1a",
+     "frames": 18127303,
+     "peak": 0.59097,
+     "recipe": "mixture - per_sample_median(v_MDX23C, v_MelBand@roformer_ft1/melband_ft_step600, v_BS)  [MelBand weights swapped via model_run.load_state_dict]"
+    },
+    "v1_inverted": {
+     "f32_path": "/mnt/bigdisk/holdout/don_giovanni_madamina/v1_inverted.f32.wav",
+     "f32_pcm_sha256": "sha256:22351b56b1b145321cbc0a4565481861e07fda4f1111dc34247f123fca7d341f",
+     "m4a_path": "/mnt/bigdisk/holdout/don_giovanni_madamina/v1_inverted.m4a",
+     "m4a_bytes": 9860592,
+     "m4a_blob_sha256": "sha256:cc6fa39bb0fe630dd71ba869c8461d66ef9866192d48aa8f24be5fa27860a275",
+     "frames": 18127303,
+     "peak": 0.59152,
+     "recipe": "mixture - v_BS  (single strong BS-Roformer vocal estimate, full strength = v1 'inverted' character)"
+    },
+    "cascade_iter1": {
+     "f32_path": "/mnt/bigdisk/holdout/don_giovanni_madamina/cascade_iter1.f32.wav",
+     "f32_pcm_sha256": "sha256:e191c215790add21dbdd19b17df3f3abbca66f858c55c04bad77316378b055eb",
+     "m4a_path": "/mnt/bigdisk/holdout/don_giovanni_madamina/cascade_iter1.m4a",
+     "m4a_bytes": 9887040,
+     "m4a_blob_sha256": "sha256:fb9807e41cfdd947460a38e58397c3697598088db190a0a1c9dcc46dd669fd8e",
+     "frames": 18127303,
+     "peak": 0.59097,
+     "recipe": "== champion"
+    },
+    "cascade_iter2": {
+     "f32_path": "/mnt/bigdisk/holdout/don_giovanni_madamina/cascade_iter2.f32.wav",
+     "f32_pcm_sha256": "sha256:dba7a6f9e828df117eb082f912492257990e662b6ddbe5672b61935aa89f12d4",
+     "m4a_path": "/mnt/bigdisk/holdout/don_giovanni_madamina/cascade_iter2.m4a",
+     "m4a_bytes": 9889420,
+     "m4a_blob_sha256": "sha256:6a3f472ed4442e2e230f258f18d3c88e1f6332a92d4c77c7a6a18c384889f16f",
+     "frames": 18127303,
+     "peak": 0.58484,
+     "recipe": "cascade_iter1 - per_sample_median(vocals(cascade_iter1) via MDX23C, MelBand_pretrained, BS)"
+    },
+    "cascade_iter3": {
+     "f32_path": "/mnt/bigdisk/holdout/don_giovanni_madamina/cascade_iter3.f32.wav",
+     "f32_pcm_sha256": "sha256:007ef90848b6ac3b21e8a3ba8610dc6706a6520a5efea4c8062f78d09774f0e6",
+     "m4a_path": "/mnt/bigdisk/holdout/don_giovanni_madamina/cascade_iter3.m4a",
+     "m4a_bytes": 9891685,
+     "m4a_blob_sha256": "sha256:80674b486f788fb04bb28841d53691535a6ae5f8dc7d6a06d4fca08a70c56208",
+     "frames": 18127303,
+     "peak": 0.58484,
+     "recipe": "cascade_iter2 - per_sample_median(vocals(cascade_iter2) via MDX23C, MelBand_pretrained, BS)"
+    },
+    "v2_mdx23c": {
+     "f32_path": "/mnt/bigdisk/holdout/don_giovanni_madamina/v2_mdx23c.f32.wav",
+     "f32_pcm_sha256": "sha256:8078b6aaf4c572815c5ae3f4f2a841d01e221b4cac7f8de4505a644a823b566f",
+     "m4a_path": "/mnt/bigdisk/holdout/don_giovanni_madamina/v2_mdx23c.m4a",
+     "m4a_bytes": 9851424,
+     "m4a_blob_sha256": "sha256:19b639fd7ce45c84b47d0c9a6c2ee45f90853f070c7d24dd1861af50ebe6bf2c",
+     "frames": 18127303,
+     "peak": 0.562341,
+     "premodel_gain_0p9": 1.0,
+     "source_node_pcm_sha256": "sha256:fbb5c5428004c5302e9c22f146d3b352599e2f17ee34ef250619c9853bbfaf4a",
+     "separator_node_pcm_sha256": "sha256:e3486a4f21cd6a487b2357d87cea748f2436c0424296fa2380ab1acb8b71cb3d",
+     "recipe": "MDX23C-8KFFT-InstVoc_HQ NATIVE (Instrumental) stem via float DAG: prepare_mix->normalize(0.9 premodel)->demix->Instrumental.T->peaknorm(-5 dBFS); all-float, no PCM/AAC intermediate; m4a=AAC192k from clip(-1,1) listening proxy"
+    }
+   },
+   "work_render_s": 812.1
+  },
+  "control_bologna_verdi_orch": {
+   "mixture_path": "/mnt/bigdisk/holdout/control_bologna_verdi_orch/mixture.f32.wav",
+   "source": "research6:/home/mickg/truth_pairs/bologna_verdi/orchestra_only.wav (Zenodo 3628247, CC BY 4.0; isolated orchestra, soloist excluded, chorus_dirs=[])",
+   "src_subtype": "FLOAT",
+   "src_sr": 44100,
+   "out_sr": 44100,
+   "channels": 2,
+   "frames": 4062448,
+   "dur_s": 92.119,
+   "resampler": "none(already_44100)",
+   "mixture_pcm_sha256": "sha256:2d7cdfd32948ba208ffba50631a88c19eb9dd7cdb14621fcb5adbcb8f26832db",
+   "peak": 0.70795,
+   "variants": {
+    "champion": {
+     "f32_path": "/mnt/bigdisk/holdout/control_bologna_verdi_orch/champion.f32.wav",
+     "f32_pcm_sha256": "sha256:55b28a75a70d8eb65f579aa0c362d523755a18ee3c7b80850c5868d68a41d850",
+     "m4a_path": "/mnt/bigdisk/holdout/control_bologna_verdi_orch/champion.m4a",
+     "m4a_bytes": 2200511,
+     "m4a_blob_sha256": "sha256:1c997e91b6a32afe706a83480e21bd2a4225fa3ba83925d2904f2216e8a64e54",
+     "frames": 4062448,
+     "peak": 0.70795,
+     "recipe": "mixture - per_sample_median(v_MDX23C, v_MelBand_pretrained, v_BS)"
+    },
+    "ft_member": {
+     "f32_path": "/mnt/bigdisk/holdout/control_bologna_verdi_orch/ft_member.f32.wav",
+     "f32_pcm_sha256": "sha256:31d40c05c930e81c5633fbb55518cef3f2a8795faac2b6de96078df2500eb33d",
+     "m4a_path": "/mnt/bigdisk/holdout/control_bologna_verdi_orch/ft_member.m4a",
+     "m4a_bytes": 2200956,
+     "m4a_blob_sha256": "sha256:769500bfb63e190c5b9d825ddebca330618bf62f30116790fe7bafd7b186748a",
+     "frames": 4062448,
+     "peak": 0.70795,
+     "recipe": "mixture - per_sample_median(v_MDX23C, v_MelBand@roformer_ft1/melband_ft_step600, v_BS)  [MelBand weights swapped via model_run.load_state_dict]"
+    },
+    "v1_inverted": {
+     "f32_path": "/mnt/bigdisk/holdout/control_bologna_verdi_orch/v1_inverted.f32.wav",
+     "f32_pcm_sha256": "sha256:361ca9ad6ef87953f22da7e2b279c5318a58cc6452570b07b5a883b971a2af6c",
+     "m4a_path": "/mnt/bigdisk/holdout/control_bologna_verdi_orch/v1_inverted.m4a",
+     "m4a_bytes": 2185903,
+     "m4a_blob_sha256": "sha256:3dd2edf2ca220562cc7ad096a4242e8700b4cbdfb22e80dd96714b26cbd28b80",
+     "frames": 4062448,
+     "peak": 0.70795,
+     "recipe": "mixture - v_BS  (single strong BS-Roformer vocal estimate, full strength = v1 'inverted' character)"
+    },
+    "cascade_iter1": {
+     "f32_path": "/mnt/bigdisk/holdout/control_bologna_verdi_orch/cascade_iter1.f32.wav",
+     "f32_pcm_sha256": "sha256:55b28a75a70d8eb65f579aa0c362d523755a18ee3c7b80850c5868d68a41d850",
+     "m4a_path": "/mnt/bigdisk/holdout/control_bologna_verdi_orch/cascade_iter1.m4a",
+     "m4a_bytes": 2200511,
+     "m4a_blob_sha256": "sha256:1c997e91b6a32afe706a83480e21bd2a4225fa3ba83925d2904f2216e8a64e54",
+     "frames": 4062448,
+     "peak": 0.70795,
+     "recipe": "== champion"
+    },
+    "cascade_iter2": {
+     "f32_path": "/mnt/bigdisk/holdout/control_bologna_verdi_orch/cascade_iter2.f32.wav",
+     "f32_pcm_sha256": "sha256:36698373421b3969bb35a79a0c8992b072faa40e443948c30746c9edf3ef0e81",
+     "m4a_path": "/mnt/bigdisk/holdout/control_bologna_verdi_orch/cascade_iter2.m4a",
+     "m4a_bytes": 2204831,
+     "m4a_blob_sha256": "sha256:89c7f46c7f76821bf408d5e4068e08b19c77fda2ee1a8693077aa41d699a9250",
+     "frames": 4062448,
+     "peak": 0.70795,
+     "recipe": "cascade_iter1 - per_sample_median(vocals(cascade_iter1) via MDX23C, MelBand_pretrained, BS)"
+    },
+    "cascade_iter3": {
+     "f32_path": "/mnt/bigdisk/holdout/control_bologna_verdi_orch/cascade_iter3.f32.wav",
+     "f32_pcm_sha256": "sha256:2333b56339e4c5149e9052c6a50a11722a682c7d323d115cd331182adf293bcc",
+     "m4a_path": "/mnt/bigdisk/holdout/control_bologna_verdi_orch/cascade_iter3.m4a",
+     "m4a_bytes": 2214008,
+     "m4a_blob_sha256": "sha256:074b299054085fbf149e5ff324e6aa261d1bec40d49cf08d946055ccac33bb88",
+     "frames": 4062448,
+     "peak": 0.70795,
+     "recipe": "cascade_iter2 - per_sample_median(vocals(cascade_iter2) via MDX23C, MelBand_pretrained, BS)"
+    },
+    "v2_mdx23c": {
+     "f32_path": "/mnt/bigdisk/holdout/control_bologna_verdi_orch/v2_mdx23c.f32.wav",
+     "f32_pcm_sha256": "sha256:6c218c285fa857e81fa1fcdea02bc72bb471b6f58d50d5c92b164df522d49e6b",
+     "m4a_path": "/mnt/bigdisk/holdout/control_bologna_verdi_orch/v2_mdx23c.m4a",
+     "m4a_bytes": 2166119,
+     "m4a_blob_sha256": "sha256:3f354fc9bab92c5d0037b5f73f122bf229f126f300196715ec2886b163aa727c",
+     "frames": 4062448,
+     "peak": 0.562341,
+     "premodel_gain_0p9": 1.0,
+     "source_node_pcm_sha256": "sha256:2d7cdfd32948ba208ffba50631a88c19eb9dd7cdb14621fcb5adbcb8f26832db",
+     "separator_node_pcm_sha256": "sha256:43e58c8992d4b0e6d764e22d602139c27bece586443f8ae5432767bf09292254",
+     "recipe": "MDX23C-8KFFT-InstVoc_HQ NATIVE (Instrumental) stem via float DAG: prepare_mix->normalize(0.9 premodel)->demix->Instrumental.T->peaknorm(-5 dBFS); all-float, no PCM/AAC intermediate; m4a=AAC192k from clip(-1,1) listening proxy"
+    }
+   },
+   "work_render_s": 226.5
+  }
+ },
+ "render_time_s": 1834.7,
+ "provenance_notes": {
+  "v2_mdx23c_render": {
+   "added_at": "2026-08-16",
+   "route": "explicit all-float DAG (audio-separator bypass): prepare_mix -> spec_utils.normalize(0.9 premodel) -> demix -> Instrumental.T -> peaknorm(-5 dBFS); FLOAT throughout",
+   "model": "MDX23C-8KFFT-InstVoc_HQ.ckpt",
+   "model_sha256": "sha256:49d51472769e34a2501cd1da782346a3212555c3a5619fc2c53507445528d816",
+   "inference": {
+    "overlap": 8,
+    "segment_size": 256,
+    "batch_size": 1,
+    "normalization_threshold": 0.9
+   },
+   "output_construction": "native model Instrumental stem (target_instrument=null), NOT mixture-minus-vocals",
+   "scored": false,
+   "note": "Instrumentals STAGED + RENDERED only. NO voice detector / ASR / pass-fail computed. Frozen-gate evaluation remains a separate atomic pass. source_node_pcm_sha256 verified == recorded mixture_pcm_sha256 for every work."
+  }
+ }
+}

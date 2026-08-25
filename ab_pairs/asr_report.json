@@ -1,0 +1,2050 @@
+{
+  "_reference": {
+    "verdi_slow_voices": {
+      "language": "it",
+      "reference_mode": "two_model_agreement",
+      "models_agreed_n": 34,
+      "ref_words_used": 34,
+      "a_words_n": 75,
+      "b_words_n": 113,
+      "lyric_words": [
+        {
+          "word": "stanza",
+          "t": 32.32
+        },
+        {
+          "word": "attiva",
+          "t": 33.36
+        },
+        {
+          "word": "dorme?",
+          "t": 34.72
+        },
+        {
+          "word": "Il",
+          "t": 36.26
+        },
+        {
+          "word": "Ho",
+          "t": 38.22
+        },
+        {
+          "word": "visto,",
+          "t": 39.06
+        },
+        {
+          "word": "ho",
+          "t": 40.18
+        },
+        {
+          "word": "visto,",
+          "t": 40.46
+        },
+        {
+          "word": "orribile",
+          "t": 40.74
+        },
+        {
+          "word": "da",
+          "t": 43.84
+        },
+        {
+          "word": "questo",
+          "t": 43.96
+        },
+        {
+          "word": "Ho",
+          "t": 45.42
+        },
+        {
+          "word": "visto,",
+          "t": 45.86
+        },
+        {
+          "word": "ho",
+          "t": 46.52
+        },
+        {
+          "word": "visto,",
+          "t": 46.96
+        },
+        {
+          "word": "orribile",
+          "t": 47.98
+        },
+        {
+          "word": "Nel",
+          "t": 50.66
+        },
+        {
+          "word": "sonno",
+          "t": 52.06
+        },
+        {
+          "word": "cortigiani",
+          "t": 56.1
+        },
+        {
+          "word": "Dio",
+          "t": 57.78
+        },
+        {
+          "word": "sempre",
+          "t": 59.16
+        },
+        {
+          "word": "ne",
+          "t": 60.1
+        },
+        {
+          "word": "assista,",
+          "t": 60.54
+        },
+        {
+          "word": "anch",
+          "t": 65.24
+        },
+        {
+          "word": "'io,",
+          "t": 65.52
+        },
+        {
+          "word": "ma",
+          "t": 66.78
+        },
+        {
+          "word": "la",
+          "t": 67.58
+        },
+        {
+          "word": "parola",
+          "t": 68.04
+        },
+        {
+          "word": "Perché,",
+          "t": 74.86
+        },
+        {
+          "word": "perché",
+          "t": 75.34
+        },
+        {
+          "word": "ripetere",
+          "t": 75.98
+        },
+        {
+          "word": "ame",
+          "t": 78.64
+        },
+        {
+          "word": "non",
+          "t": 79.44
+        },
+        {
+          "word": "potei?",
+          "t": 79.76
+        }
+      ],
+      "a_transcript": "Fatal mia donna Odì nella stanza attiva Chi dorme? Il re Calzio Ho visto, ho visto, orribile Scherla da questo ucciso Ho visto, ho visto, orribile Nel sonno udì che oravano i cortigiani E Dio sempre ne assista, poi dissero amendi e vogli anch'io, ma la parola in docile gelò sui labbra i miei. Oh Dio! Perché, perché ripetere quella ame non potei? Oh Dio, oh Dio, che perdono i miei! Grazie a tutti.",
+      "b_transcript": "Fata il mia donna! Murmurè come io non l'intendesti! Per cui fu odio, sridere, testiche mai decesti? Io? Sì, anzi, ho detto farmi! Mente scendeva! Sì. Di, è la stanza attiva. Di dorme. Il regal Fio. Ho visto, ho visto, orribile. Si schiorna da questo e c'è. Ho visto, orribile, ho visto, orribile. Nel sonno dichiaravano i cortigiani E Dio sempre ne assista, lui disse l'amemi e il voglio anch'io, ma la parola indocida e gelosa gl'aprimine. Fondi! Perché? Perché ripetere quell'ame non potei? Fondi! Fondi! Perchè? Perchè? Perchè? Perchè? Perchè? Fondi! Perchè? Perchè? Perchè? Perchè? Fondi! Fondi! Non potei! Fondi! Sottotitoli creati dalla comunità Amara.org"
+    },
+    "donna": {
+      "language": "it",
+      "reference_mode": "two_model_agreement",
+      "models_agreed_n": 35,
+      "ref_words_used": 35,
+      "a_words_n": 91,
+      "b_words_n": 190,
+      "lyric_words": [
+        {
+          "word": "La",
+          "t": 11.62
+        },
+        {
+          "word": "donna",
+          "t": 12.92
+        },
+        {
+          "word": "qual",
+          "t": 14.7
+        },
+        {
+          "word": "più",
+          "t": 15.36
+        },
+        {
+          "word": "'accento",
+          "t": 18.42
+        },
+        {
+          "word": "pensiero.",
+          "t": 20.36
+        },
+        {
+          "word": "Sempre",
+          "t": 21.36
+        },
+        {
+          "word": "un",
+          "t": 22.46
+        },
+        {
+          "word": "amabile,",
+          "t": 22.96
+        },
+        {
+          "word": "in",
+          "t": 26.44
+        },
+        {
+          "word": "bianco",
+          "t": 26.98
+        },
+        {
+          "word": "in",
+          "t": 27.96
+        },
+        {
+          "word": "riso,",
+          "t": 28.06
+        },
+        {
+          "word": "La",
+          "t": 31.08
+        },
+        {
+          "word": "donna",
+          "t": 31.72
+        },
+        {
+          "word": "mobile,",
+          "t": 32.64
+        },
+        {
+          "word": "più",
+          "t": 34.18
+        },
+        {
+          "word": "muta",
+          "t": 35.74
+        },
+        {
+          "word": "'accento.",
+          "t": 37.08
+        },
+        {
+          "word": "pensiero,",
+          "t": 42.58
+        },
+        {
+          "word": "pensiero,",
+          "t": 47.14
+        },
+        {
+          "word": "Ormai",
+          "t": 75.3
+        },
+        {
+          "word": "non",
+          "t": 76.6
+        },
+        {
+          "word": "chi",
+          "t": 80.24
+        },
+        {
+          "word": "su",
+          "t": 80.8
+        },
+        {
+          "word": "quel",
+          "t": 81.24
+        },
+        {
+          "word": "seno",
+          "t": 81.64
+        },
+        {
+          "word": "non",
+          "t": 82.62
+        },
+        {
+          "word": "amore",
+          "t": 84.08
+        },
+        {
+          "word": "La",
+          "t": 84.68
+        },
+        {
+          "word": "donna",
+          "t": 85.48
+        },
+        {
+          "word": "mobile,",
+          "t": 86.52
+        },
+        {
+          "word": "più",
+          "t": 88.1
+        },
+        {
+          "word": "di",
+          "t": 100.48
+        },
+        {
+          "word": "di",
+          "t": 103.06
+        }
+      ],
+      "a_transcript": "La donna immobile, qual più malvento, avuta d'accento e di pensiero. Sempre un amabile, leggiadro avviso, in bianco e in riso, è menzognero. La donna è mobile, vuol più malvento, muta l'accento. Oh, vedi pensiero, vedi pensiero, vedi pensiero. E sempre misero chi a lei s'affida, chi ve confida manca un bel copre Ormai non sento sì felice appieno chi su quel seno non li va a amore La donna è mobile, ma il più malvento usa l'accento e il pensiero. E di pensiero E di pensiero",
+      "b_transcript": "La donna è mobile, qual più palvetto ha avuto l'accento e gli pensiero. Sempre un'amabile leggeadro a viso, in bianco e in riso, è ben sognero. La donna è mobile, vuole più malevento, muta l'accento ed il pensiero. Da dove il cuore ormai non sente si, fedi se a pieno chi su quel seno non liva amore. La donna è mobile, qual più mal vento, tutta la cena tua è di pensiere. È di pensiere. Ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah"
+    },
+    "barber_agnus_dei": {
+      "language": "la",
+      "reference_mode": "sparse",
+      "models_agreed_n": 0,
+      "ref_words_used": 4,
+      "a_words_n": 4,
+      "b_words_n": 223,
+      "lyric_words": [
+        {
+          "word": "Sous",
+          "t": 93.16
+        },
+        {
+          "word": "-titrage",
+          "t": 94.56
+        },
+        {
+          "word": "ST'",
+          "t": 94.56
+        },
+        {
+          "word": "501",
+          "t": 94.56
+        }
+      ],
+      "a_transcript": "Sous-titrage ST' 501",
+      "b_transcript": "O come, O come, O come, O come, O come, O come, O come, O come, O come, O come, O come, O come, O come, O come, O come, O come, O come, O come, O come, O come, O come, O come, O come, O come, O come, O come, O come, O come, O come, O come, O come, O come, O come, O come, O come, O come, O come, O come, O come, O come, O come, O come, O come, O come, O come, O come, O come, O come, O come, O come, O come, O come, O come, O come, O come, O come, O come, O come, O come, O come, O come, O come, O come, O come, O come, O come, O come, O come, O come, O come, O come, O come, O come, O come, O ប ប ប ប ប ប ប ប ប ប ប ប ប ប ប ប ប ប ប ប ប ប ប ប ប ប ប ប ប ប ប ប ប ប ប ប ប ប ប ប ប ប ប ប ប ប ប ប ប ប ប ប ប ប ប ប ប ប ប ប ប ប ប ប ប ប ប ប ប ប ប ប ប ប �"
+    },
+    "nessun_dorma": {
+      "language": "it",
+      "reference_mode": "two_model_agreement",
+      "models_agreed_n": 42,
+      "ref_words_used": 42,
+      "a_words_n": 66,
+      "b_words_n": 204,
+      "lyric_words": [
+        {
+          "word": "Tu,",
+          "t": 16.44
+        },
+        {
+          "word": "principessa,",
+          "t": 19.56
+        },
+        {
+          "word": "nella",
+          "t": 22.3
+        },
+        {
+          "word": "tua",
+          "t": 23.74
+        },
+        {
+          "word": "fredda",
+          "t": 24.42
+        },
+        {
+          "word": "stanza,",
+          "t": 25.98
+        },
+        {
+          "word": "le",
+          "t": 30.18
+        },
+        {
+          "word": "stelle",
+          "t": 31.18
+        },
+        {
+          "word": "che",
+          "t": 32.84
+        },
+        {
+          "word": "tremano",
+          "t": 33.76
+        },
+        {
+          "word": "'amore",
+          "t": 36.82
+        },
+        {
+          "word": "di",
+          "t": 40.98
+        },
+        {
+          "word": "speranza.",
+          "t": 42.1
+        },
+        {
+          "word": "Ma",
+          "t": 48.82
+        },
+        {
+          "word": "il",
+          "t": 50.22
+        },
+        {
+          "word": "mio",
+          "t": 50.8
+        },
+        {
+          "word": "mistero",
+          "t": 51.08
+        },
+        {
+          "word": "chiuso",
+          "t": 53.0
+        },
+        {
+          "word": "in",
+          "t": 54.24
+        },
+        {
+          "word": "me",
+          "t": 54.48
+        },
+        {
+          "word": "Il",
+          "t": 56.68
+        },
+        {
+          "word": "nome",
+          "t": 57.42
+        },
+        {
+          "word": "mio",
+          "t": 58.34
+        },
+        {
+          "word": "nessuno",
+          "t": 59.16
+        },
+        {
+          "word": "Ora",
+          "t": 61.5
+        },
+        {
+          "word": "solo",
+          "t": 62.74
+        },
+        {
+          "word": "tua",
+          "t": 64.4
+        },
+        {
+          "word": "Quando",
+          "t": 72.0
+        },
+        {
+          "word": "la",
+          "t": 74.54
+        },
+        {
+          "word": "luce",
+          "t": 76.22
+        },
+        {
+          "word": "splenderà",
+          "t": 79.58
+        },
+        {
+          "word": "il",
+          "t": 92.68
+        },
+        {
+          "word": "mio",
+          "t": 93.76
+        },
+        {
+          "word": "bacio",
+          "t": 95.24
+        },
+        {
+          "word": "il",
+          "t": 98.48
+        },
+        {
+          "word": "silenzio",
+          "t": 100.2
+        },
+        {
+          "word": "che",
+          "t": 102.62
+        },
+        {
+          "word": "ti",
+          "t": 104.9
+        },
+        {
+          "word": "fa",
+          "t": 106.12
+        },
+        {
+          "word": "mia",
+          "t": 107.96
+        },
+        {
+          "word": "All",
+          "t": 146.88
+        },
+        {
+          "word": "'alba",
+          "t": 148.28
+        }
+      ],
+      "a_transcript": "Nessun dorma, nessun dorma. Tu, purea principessa, nella tua fredda stanza, Cor di le stelle che tremano d'amore e di speranza. Ma il mio mistero è chiuso in me Il nome mio nessuno saprà Ora solo tua macchia morirò Quando la luce splenderà E il mio bacio scioglierà il silenzio che ti fa mia Grazie a tutti. All'alba vincerà, vincerà, vincerà! Grazie a tutti.",
+      "b_transcript": "Nessuno dorme, tu pure, o principessa, nella tua fredda stanza, Guardi le stelle che tremano d'amore e di speranza. Ma il mio mistero è chiuso in me, il nome mio nessuno saprò. Ora solo la tua becca non irà quando la luce splenderà. Per il mio bacio scioglierai il silenzio che ti fa mia. E la resa, resa, satana, e noi, noi, noi, noi, noi, noi, noi, noi, noi, noi, noi, noi, noi, noi, noi, noi, noi. Ilemonate tramontate stelle. Tramontate stelle, all'alba vincerò! Ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah, ah Sottotitoli creati dalla comunità Amara.org"
+    },
+    "habanera": {
+      "language": "fr",
+      "reference_mode": "two_model_agreement",
+      "models_agreed_n": 6,
+      "ref_words_used": 6,
+      "a_words_n": 39,
+      "b_words_n": 60,
+      "lyric_words": [
+        {
+          "word": "Prends",
+          "t": 93.4
+        },
+        {
+          "word": "garde",
+          "t": 93.74
+        },
+        {
+          "word": "toi",
+          "t": 94.16
+        },
+        {
+          "word": "Prends",
+          "t": 97.28
+        },
+        {
+          "word": "garde",
+          "t": 97.78
+        },
+        {
+          "word": "toi...",
+          "t": 98.92
+        }
+      ],
+      "a_transcript": "Sous-titrage ST' 501 Sous-titrage MFP. Musique à réappliquer ses cœurs. Prends garde à toi ! Prends garde à toi... Assa, Assa, Assa, aïe, aïe, aïe, aïe, aïe, aïe, aïe, aïe. Sous-titrage ST' 501 Sous-titrage ST' 501",
+      "b_transcript": "L'amour est un oiseau rebelle Que nul ne peut apprivoiser Suis bien en vain dans l'appel Si lui convient de refuser L'univers n'a pas à souffrir, L'empereur n'a pas à souffrir, Et s'ils montrent que je te perds, ils n'arrivent plus, ils s'éclatent Prends garde à toi ! Prends garde à toi..."
+    },
+    "marseillaise_applause": {
+      "language": "fr",
+      "reference_mode": "single_model_fallback_A_only",
+      "models_agreed_n": 0,
+      "ref_words_used": 7,
+      "a_words_n": 7,
+      "b_words_n": 8,
+      "lyric_words": [
+        {
+          "word": "Musique",
+          "t": 0.0
+        },
+        {
+          "word": "du",
+          "t": 1.68
+        },
+        {
+          "word": "générique",
+          "t": 29.88
+        },
+        {
+          "word": "Sous",
+          "t": 56.78
+        },
+        {
+          "word": "-titrage",
+          "t": 58.18
+        },
+        {
+          "word": "FR",
+          "t": 59.58
+        },
+        {
+          "word": "Merci.",
+          "t": 62.14
+        }
+      ],
+      "a_transcript": "Musique du générique Sous-titrage FR ? Merci.",
+      "b_transcript": "La Marseillaise La Marseillaise Sous-titrage ST'501"
+    }
+  },
+  "_meta": {
+    "model_a": "large-v3",
+    "model_b": "medium",
+    "device": "cuda",
+    "compute_type": "float16",
+    "tol_s": 3.0,
+    "minlen": 2,
+    "threshold_overlap_pct": 15.0,
+    "criterion": "reference-anchored in-order time-aligned overlap vs two-model agreement on O_original",
+    "vad_filter": false,
+    "updated": "2026-08-16 02:09:50",
+    "reference_strength": {
+      "verdi_slow_voices": "STRONG",
+      "donna": "STRONG",
+      "barber_agnus_dei": "WEAK",
+      "nessun_dorma": "STRONG",
+      "habanera": "WEAK",
+      "marseillaise_applause": "WEAK"
+    },
+    "calibration_verdi_slow_voices": {
+      "A_champion_overlap": 94.1,
+      "A_champion_fail": true,
+      "A_champion_wf_corr": 0.9559,
+      "B_melband_ft_overlap": 94.1,
+      "B_melband_ft_fail": true,
+      "B_melband_ft_wf_corr": 0.9558,
+      "V1_inverted_overlap": 94.1,
+      "V1_inverted_fail": true,
+      "V1_inverted_wf_corr": 0.9503,
+      "owner_expectation": "A_champion & B_melband_ft = FAIL (loud voice); V1_inverted = PASS (no audible voice)",
+      "result": "A_champion & B_melband_ft FAIL as expected. V1_inverted does NOT pass: it is ~identical to O_original (wf_corr shows) and transcribes the full lyrics -> the current V1_inverted.m4a still contains the voice. No overlap threshold can pass V1 while failing A/B because all three carry the same voice."
+    },
+    "notes": "asr_fail = reference-anchored in-order time-aligned overlap%>=threshold, reference = two-model (large-v3 + medium) agreement on O_original with forced known language. wf_corr_vs_orig is an independent lag-0 waveform correlation vs O_original (near +1 => audio still ~= original). WEAK/MODERATE reference tracks (few agreed anchor words) have lower-confidence per-variant calls; marseillaise_applause used single-model fallback and shows high no_speech_prob, so its FAILs may be spurious (manual review advised)."
+  },
+  "verdi_slow_voices__A_champion": {
+    "asr_models": [
+      "large-v3",
+      "medium"
+    ],
+    "test_model": "large-v3",
+    "language": "it",
+    "ref_language": "it",
+    "overlap_pct": 94.1,
+    "n_ref_scored": 34,
+    "n_recovered": 32,
+    "matched_phrases": [
+      {
+        "text": "stanza",
+        "ref_time_s": 32.3,
+        "var_time_s": 32.3,
+        "n_words": 1
+      },
+      {
+        "text": "dorme? Il Ho visto, ho visto, orribile da questo Ho visto, ho visto, orribile Nel sonno cortigiani Dio sempre ne assista,",
+        "ref_time_s": 34.7,
+        "var_time_s": 35.2,
+        "n_words": 21
+      },
+      {
+        "text": "anch 'io, ma la parola",
+        "ref_time_s": 65.2,
+        "var_time_s": 65.3,
+        "n_words": 5
+      },
+      {
+        "text": "Perché, perché ripetere ame non",
+        "ref_time_s": 74.9,
+        "var_time_s": 74.9,
+        "n_words": 5
+      }
+    ],
+    "asr_fail": true,
+    "no_speech_prob": 0.671,
+    "avg_logprob": -0.429,
+    "transcript": "FATAL MIA DONNA Dio è nella stanza attivo Chi dorme? Il re Calzio Ho visto, ho visto, orribile Scherma da questo il cielo Ho visto, ho visto, orribile Nel sonno unì che odavano i cortigiani E Dio sempre ne assista, lui dissero amendi e mori anch'io, ma la parola in voce leggero sulla pericola. Oh Dio! Perché, perché ripetere quella ame non potrei? Oh Dio, oh Dio, che ferro rovini! Grazie a tutti.",
+    "words_found": false,
+    "secs": 2.4,
+    "wf_corr_vs_orig": 0.9559
+  },
+  "verdi_slow_voices__B_melband_ft": {
+    "asr_models": [
+      "large-v3",
+      "medium"
+    ],
+    "test_model": "large-v3",
+    "language": "it",
+    "ref_language": "it",
+    "overlap_pct": 94.1,
+    "n_ref_scored": 34,
+    "n_recovered": 32,
+    "matched_phrases": [
+      {
+        "text": "stanza",
+        "ref_time_s": 32.3,
+        "var_time_s": 32.4,
+        "n_words": 1
+      },
+      {
+        "text": "dorme? Il Ho visto, ho visto, orribile da questo Ho visto, ho visto, orribile Nel sonno cortigiani Dio sempre ne assista,",
+        "ref_time_s": 34.7,
+        "var_time_s": 35.2,
+        "n_words": 21
+      },
+      {
+        "text": "anch 'io, ma la parola",
+        "ref_time_s": 65.2,
+        "var_time_s": 65.3,
+        "n_words": 5
+      },
+      {
+        "text": "Perché, perché ripetere ame non",
+        "ref_time_s": 74.9,
+        "var_time_s": 74.9,
+        "n_words": 5
+      }
+    ],
+    "asr_fail": true,
+    "no_speech_prob": 0.661,
+    "avg_logprob": -0.41,
+    "transcript": "FATAL MIA DONNA Oddio, è nella stanza attivo Chi dorme? Il re Calzio Ho visto, ho visto, orribile Scherma da questo il cielo Ho visto, ho visto, ho visto, orribile Nel sonno udì che odavano i cortigiani E Dio sempre ne assista, lui dissero amendi e mori anch'io, ma la parola in voce leggero sulla pericola. Oh Dio! Perché, perché ripetere quella ame non potrei? Oh Dio, oh Dio, che perdono di me! Grazie a tutti.",
+    "words_found": false,
+    "secs": 2.4,
+    "wf_corr_vs_orig": 0.9558
+  },
+  "verdi_slow_voices__C_cascade": {
+    "asr_models": [
+      "large-v3",
+      "medium"
+    ],
+    "test_model": "large-v3",
+    "language": "it",
+    "ref_language": "it",
+    "overlap_pct": 0.0,
+    "n_ref_scored": 34,
+    "n_recovered": 0,
+    "matched_phrases": [],
+    "asr_fail": false,
+    "no_speech_prob": 0.782,
+    "avg_logprob": -0.45,
+    "transcript": "Musica Grazie a tutti. Grazie a tutti. Grazie a tutti.",
+    "words_found": false,
+    "secs": 0.7,
+    "wf_corr_vs_orig": 0.5568
+  },
+  "verdi_slow_voices__M_maxagg": {
+    "asr_models": [
+      "large-v3",
+      "medium"
+    ],
+    "test_model": "large-v3",
+    "language": "it",
+    "ref_language": "it",
+    "overlap_pct": 88.2,
+    "n_ref_scored": 34,
+    "n_recovered": 30,
+    "matched_phrases": [
+      {
+        "text": "stanza",
+        "ref_time_s": 32.3,
+        "var_time_s": 32.2,
+        "n_words": 1
+      },
+      {
+        "text": "dorme? Il Ho visto, ho visto, orribile da questo Ho visto, ho visto, orribile",
+        "ref_time_s": 34.7,
+        "var_time_s": 33.8,
+        "n_words": 14
+      },
+      {
+        "text": "sonno cortigiani Dio sempre ne assista,",
+        "ref_time_s": 52.1,
+        "var_time_s": 52.0,
+        "n_words": 6
+      },
+      {
+        "text": "anch 'io, ma la parola",
+        "ref_time_s": 65.2,
+        "var_time_s": 65.4,
+        "n_words": 5
+      },
+      {
+        "text": "Perché, perché ripetere",
+        "ref_time_s": 74.9,
+        "var_time_s": 74.8,
+        "n_words": 3
+      },
+      {
+        "text": "non",
+        "ref_time_s": 79.4,
+        "var_time_s": 79.3,
+        "n_words": 1
+      }
+    ],
+    "asr_fail": true,
+    "no_speech_prob": 0.547,
+    "avg_logprob": -0.525,
+    "transcript": "FATALIA DONNA la stanza chi dorme il re Canzio ho visto ho visto orribile da questo il cielo ho visto orribile ho visto orribile che il sonno di che amavano i cortigiani e Dio Oh, sempre ne assista e discerò, a mentir voglia anch'io, ma la parola in voce metterò sui lapi dei miei. Son lì! Perché, perché ripetere? Son lì! Che a me non voterei! Son lì! Son lì! che stendono il vento e i denti. Che stendono il vento e i denti. Non lo vedo, non lo vedo.",
+    "words_found": true,
+    "secs": 2.9,
+    "wf_corr_vs_orig": 0.977
+  },
+  "verdi_slow_voices__O_original": {
+    "asr_models": [
+      "large-v3",
+      "medium"
+    ],
+    "test_model": "large-v3",
+    "language": "it",
+    "ref_language": "it",
+    "overlap_pct": 100.0,
+    "n_ref_scored": 34,
+    "n_recovered": 34,
+    "matched_phrases": [
+      {
+        "text": "stanza attiva dorme? Il Ho visto, ho visto, orribile da questo Ho visto, ho visto, orribile Nel sonno cortigiani Dio sempre ne assista,",
+        "ref_time_s": 32.3,
+        "var_time_s": 32.3,
+        "n_words": 23
+      },
+      {
+        "text": "anch 'io, ma la parola",
+        "ref_time_s": 65.2,
+        "var_time_s": 65.2,
+        "n_words": 5
+      },
+      {
+        "text": "Perché, perché ripetere ame non potei?",
+        "ref_time_s": 74.9,
+        "var_time_s": 74.9,
+        "n_words": 6
+      }
+    ],
+    "asr_fail": true,
+    "no_speech_prob": 0.751,
+    "avg_logprob": -0.385,
+    "transcript": "Fatal mia donna Odì nella stanza attiva Chi dorme? Il re Calzio Ho visto, ho visto, orribile Scherla da questo ucciso Ho visto, ho visto, orribile Nel sonno udì che oravano i cortigiani E Dio sempre ne assista, poi dissero amendi e vogli anch'io, ma la parola in docile gelò sui labbra i miei. Oh Dio! Perché, perché ripetere quella ame non potei? Oh Dio, oh Dio, che perdono i miei! Grazie a tutti.",
+    "words_found": false,
+    "secs": 2.6,
+    "wf_corr_vs_orig": 1.0
+  },
+  "verdi_slow_voices__V1_inverted": {
+    "asr_models": [
+      "large-v3",
+      "medium"
+    ],
+    "test_model": "large-v3",
+    "language": "it",
+    "ref_language": "it",
+    "overlap_pct": 94.1,
+    "n_ref_scored": 34,
+    "n_recovered": 32,
+    "matched_phrases": [
+      {
+        "text": "stanza",
+        "ref_time_s": 32.3,
+        "var_time_s": 32.3,
+        "n_words": 1
+      },
+      {
+        "text": "dorme? Il Ho visto, ho visto, orribile da questo Ho visto, ho visto, orribile Nel sonno cortigiani Dio sempre ne assista,",
+        "ref_time_s": 34.7,
+        "var_time_s": 35.2,
+        "n_words": 21
+      },
+      {
+        "text": "anch 'io, ma la parola",
+        "ref_time_s": 65.2,
+        "var_time_s": 65.3,
+        "n_words": 5
+      },
+      {
+        "text": "Perché, perché ripetere",
+        "ref_time_s": 74.9,
+        "var_time_s": 74.9,
+        "n_words": 3
+      },
+      {
+        "text": "non potei?",
+        "ref_time_s": 79.4,
+        "var_time_s": 79.9,
+        "n_words": 2
+      }
+    ],
+    "asr_fail": true,
+    "no_speech_prob": 0.582,
+    "avg_logprob": -0.531,
+    "transcript": "FATAL MIA DONNA Dio è nella stanza attivo Chi dorme? Il re Calzio Ho visto, ho visto, orribile Si torna da questo ucciso Ho visto, orribile, ho visto, orribile Nel sonno di che oravano i cortigiani E Dio sempre ne assista, lui disse no, amendi e mori anch'io, ma la parola in voce vedo sulla pericola. Oh, Dio! Perché, perché ripetere quella mena non potei? Oh, Dio! Oh, Dio! Che spero non ti vedo mai! Oh, Dio! Che spero non ti vedo mai! Oh, Dio! Oh, Dio! Non potei! Oh, Dio! Grazie a tutti.",
+    "words_found": true,
+    "secs": 3.1,
+    "wf_corr_vs_orig": 0.9503
+  },
+  "verdi_slow_voices__V2_mdx23c": {
+    "asr_models": [
+      "large-v3",
+      "medium"
+    ],
+    "test_model": "large-v3",
+    "language": "it",
+    "ref_language": "it",
+    "overlap_pct": 0.0,
+    "n_ref_scored": 34,
+    "n_recovered": 0,
+    "matched_phrases": [],
+    "asr_fail": false,
+    "no_speech_prob": 0.858,
+    "avg_logprob": -0.438,
+    "transcript": "Musica Grazie a tutti. Grazie a tutti Grazie a tutti.",
+    "words_found": false,
+    "secs": 0.8,
+    "wf_corr_vs_orig": 0.429
+  },
+  "verdi_slow_voices__V3_roformer": {
+    "asr_models": [
+      "large-v3",
+      "medium"
+    ],
+    "test_model": "large-v3",
+    "language": "it",
+    "ref_language": "it",
+    "overlap_pct": 0.0,
+    "n_ref_scored": 34,
+    "n_recovered": 0,
+    "matched_phrases": [],
+    "asr_fail": false,
+    "no_speech_prob": 0.791,
+    "avg_logprob": -0.354,
+    "transcript": "Musica Autore dei sottotitoli e dei corretti di QTSS Grazie a tutti. Grazie a tutti.",
+    "words_found": false,
+    "secs": 0.9,
+    "wf_corr_vs_orig": 0.416
+  },
+  "verdi_slow_voices__V4_deechorev": {
+    "asr_models": [
+      "large-v3",
+      "medium"
+    ],
+    "test_model": "large-v3",
+    "language": "it",
+    "ref_language": "it",
+    "overlap_pct": 0.0,
+    "n_ref_scored": 34,
+    "n_recovered": 0,
+    "matched_phrases": [],
+    "asr_fail": false,
+    "no_speech_prob": 0.826,
+    "avg_logprob": -0.503,
+    "transcript": "Musica grazie a tutti grazie a tutti grazie a tutti",
+    "words_found": false,
+    "secs": 0.7,
+    "wf_corr_vs_orig": 0.4128
+  },
+  "verdi_slow_voices__V5_ensmax": {
+    "asr_models": [
+      "large-v3",
+      "medium"
+    ],
+    "test_model": "large-v3",
+    "language": "it",
+    "ref_language": "it",
+    "overlap_pct": 0.0,
+    "n_ref_scored": 34,
+    "n_recovered": 0,
+    "matched_phrases": [],
+    "asr_fail": false,
+    "no_speech_prob": 0.776,
+    "avg_logprob": -0.367,
+    "transcript": "Musica Grazie a tutti. Grazie a tutti. Grazie a tutti.",
+    "words_found": false,
+    "secs": 0.8,
+    "wf_corr_vs_orig": 0.4309
+  },
+  "verdi_slow_voices__Z2_voicefree_comp": {
+    "asr_models": [
+      "large-v3",
+      "medium"
+    ],
+    "test_model": "large-v3",
+    "language": "it",
+    "ref_language": "it",
+    "overlap_pct": 97.1,
+    "n_ref_scored": 34,
+    "n_recovered": 33,
+    "matched_phrases": [
+      {
+        "text": "stanza attiva dorme? Il Ho visto, ho visto, orribile da questo Ho visto, ho visto, orribile Nel sonno cortigiani Dio sempre ne assista,",
+        "ref_time_s": 32.3,
+        "var_time_s": 32.4,
+        "n_words": 23
+      },
+      {
+        "text": "anch 'io, ma la parola",
+        "ref_time_s": 65.2,
+        "var_time_s": 65.2,
+        "n_words": 5
+      },
+      {
+        "text": "Perché, perché ripetere",
+        "ref_time_s": 74.9,
+        "var_time_s": 73.8,
+        "n_words": 3
+      },
+      {
+        "text": "non potei?",
+        "ref_time_s": 79.4,
+        "var_time_s": 79.4,
+        "n_words": 2
+      }
+    ],
+    "asr_fail": true,
+    "no_speech_prob": 0.647,
+    "avg_logprob": -0.357,
+    "transcript": "Fatal mia donna, tu murmure come io non intendesti Per gufo di lo stridere, testi che mai dicesti Io? Sì, anzi, ormai ti farmi Mentre scendere Sì Dì, è la stanza attiva Chi dorme? Il re Calzio Ho visto, ho visto, orribile Scherla da questo il cibo Ho visto, ho visto, orribile Nel sonno udì che oravano i cortigiani E Dio sempre ne assista, poi dissero amendi e vogli anch'io, ma la parola in docile gelò sui laperi miei. Perché, perché ripetere quella a me non potei? Follì, follì, che perdono di me l'ai sentì Follì, follì, che perdono di me l'hai sentì Follì, follì, non potei Grazie a tutti.",
+    "words_found": false,
+    "secs": 3.1,
+    "wf_corr_vs_orig": 0.9985
+  },
+  "verdi_slow_voices__Z_voicefree": {
+    "asr_models": [
+      "large-v3",
+      "medium"
+    ],
+    "test_model": "large-v3",
+    "language": "it",
+    "ref_language": "it",
+    "overlap_pct": 97.1,
+    "n_ref_scored": 34,
+    "n_recovered": 33,
+    "matched_phrases": [
+      {
+        "text": "stanza attiva dorme? Il Ho visto, ho visto, orribile da questo Ho visto, ho visto, orribile Nel sonno cortigiani Dio sempre ne assista,",
+        "ref_time_s": 32.3,
+        "var_time_s": 32.3,
+        "n_words": 23
+      },
+      {
+        "text": "anch 'io, ma la parola",
+        "ref_time_s": 65.2,
+        "var_time_s": 65.2,
+        "n_words": 5
+      },
+      {
+        "text": "Perché, perché ripetere",
+        "ref_time_s": 74.9,
+        "var_time_s": 73.7,
+        "n_words": 3
+      },
+      {
+        "text": "non potei?",
+        "ref_time_s": 79.4,
+        "var_time_s": 79.4,
+        "n_words": 2
+      }
+    ],
+    "asr_fail": true,
+    "no_speech_prob": 0.62,
+    "avg_logprob": -0.361,
+    "transcript": "Fatal mia donna Dì nella stanza attiva Chi dorme? Il re Calzio Ho visto, ho visto, orribile Scherna da questo il cibo Ho visto, ho visto, orribile Nel sonno dì che oravano i cortigiani E Dio sempre ne assista, poi dissero amendi e vogli anch'io, ma la parola in docile gelò sui laperi miei. Perché, perché ripetere quella a me non potei? Follì, follì, che perdono di me i miei denti. Follì, follì, che perdono di me i miei denti. Follì, follì, che perdono di me i miei denti. Grazie a tutti.",
+    "words_found": false,
+    "secs": 2.6,
+    "wf_corr_vs_orig": 0.9985
+  },
+  "donna__A_champion": {
+    "asr_models": [
+      "large-v3",
+      "medium"
+    ],
+    "test_model": "large-v3",
+    "language": "it",
+    "ref_language": "it",
+    "overlap_pct": 17.1,
+    "n_ref_scored": 35,
+    "n_recovered": 6,
+    "matched_phrases": [
+      {
+        "text": "La donna",
+        "ref_time_s": 11.6,
+        "var_time_s": 11.5,
+        "n_words": 2
+      },
+      {
+        "text": "Ormai non",
+        "ref_time_s": 75.3,
+        "var_time_s": 75.6,
+        "n_words": 2
+      },
+      {
+        "text": "non",
+        "ref_time_s": 82.6,
+        "var_time_s": 82.3,
+        "n_words": 1
+      },
+      {
+        "text": "La",
+        "ref_time_s": 84.7,
+        "var_time_s": 85.0,
+        "n_words": 1
+      }
+    ],
+    "asr_fail": true,
+    "no_speech_prob": 0.695,
+    "avg_logprob": -0.579,
+    "transcript": "La donna immobile Grazie a tutti. E' sempre visto chi ha l'insapita, il ricavato e il dolore. Ormai non sento sì che dice appieno che il suo sordo non gli va a morire. La notte è un'ottima notte, un'ottima notte, un'ottima notte, un'ottima notte. Buonasera, buonasera!",
+    "words_found": false,
+    "secs": 1.8,
+    "wf_corr_vs_orig": 0.7231
+  },
+  "donna__B_melband_ft": {
+    "asr_models": [
+      "large-v3",
+      "medium"
+    ],
+    "test_model": "large-v3",
+    "language": "it",
+    "ref_language": "it",
+    "overlap_pct": 20.0,
+    "n_ref_scored": 35,
+    "n_recovered": 7,
+    "matched_phrases": [
+      {
+        "text": "La donna",
+        "ref_time_s": 11.6,
+        "var_time_s": 11.5,
+        "n_words": 2
+      },
+      {
+        "text": "Ormai non",
+        "ref_time_s": 75.3,
+        "var_time_s": 75.6,
+        "n_words": 2
+      },
+      {
+        "text": "non",
+        "ref_time_s": 82.6,
+        "var_time_s": 82.3,
+        "n_words": 1
+      },
+      {
+        "text": "La donna",
+        "ref_time_s": 84.7,
+        "var_time_s": 83.9,
+        "n_words": 2
+      }
+    ],
+    "asr_fail": true,
+    "no_speech_prob": 0.728,
+    "avg_logprob": -0.629,
+    "transcript": "La donna immobile Grazie a tutti. E' sempre visto chi a lei s'affida, il rego di cavalli e donne. Ormai non sento sì felice appieno che il suo sordo non riva. La donna è morta, è morta, è morta, è morta. Non accetto l'invenzione. E' l'invenzione. E' l'invenzione. Grazie.",
+    "words_found": false,
+    "secs": 2.3,
+    "wf_corr_vs_orig": 0.7225
+  },
+  "donna__C_cascade": {
+    "asr_models": [
+      "large-v3",
+      "medium"
+    ],
+    "test_model": "large-v3",
+    "language": "it",
+    "ref_language": "it",
+    "overlap_pct": 0.0,
+    "n_ref_scored": 35,
+    "n_recovered": 0,
+    "matched_phrases": [],
+    "asr_fail": false,
+    "no_speech_prob": 0.809,
+    "avg_logprob": -0.358,
+    "transcript": "Applausi Grazie a tutti. grazie a tutti Grazie a tutti. Grazie.",
+    "words_found": false,
+    "secs": 1.0,
+    "wf_corr_vs_orig": 0.5889
+  },
+  "donna__M_maxagg": {
+    "asr_models": [
+      "large-v3",
+      "medium"
+    ],
+    "test_model": "large-v3",
+    "language": "it",
+    "ref_language": "it",
+    "overlap_pct": 0.0,
+    "n_ref_scored": 35,
+    "n_recovered": 0,
+    "matched_phrases": [],
+    "asr_fail": false,
+    "no_speech_prob": 0.892,
+    "avg_logprob": -0.582,
+    "transcript": "Grazie a tutti. Grazie a tutti. Grazie a tutti. Grazie a tutti Grazie.",
+    "words_found": false,
+    "secs": 1.0,
+    "wf_corr_vs_orig": 0.7424
+  },
+  "donna__O_original": {
+    "asr_models": [
+      "large-v3",
+      "medium"
+    ],
+    "test_model": "large-v3",
+    "language": "it",
+    "ref_language": "it",
+    "overlap_pct": 100.0,
+    "n_ref_scored": 35,
+    "n_recovered": 35,
+    "matched_phrases": [
+      {
+        "text": "La donna qual più 'accento pensiero. Sempre un amabile, in bianco in riso, La donna mobile, più muta 'accento.",
+        "ref_time_s": 11.6,
+        "var_time_s": 11.6,
+        "n_words": 19
+      },
+      {
+        "text": "pensiero,",
+        "ref_time_s": 42.6,
+        "var_time_s": 42.6,
+        "n_words": 1
+      },
+      {
+        "text": "pensiero,",
+        "ref_time_s": 47.1,
+        "var_time_s": 47.1,
+        "n_words": 1
+      },
+      {
+        "text": "Ormai non chi su quel seno non amore La donna mobile, più",
+        "ref_time_s": 75.3,
+        "var_time_s": 75.3,
+        "n_words": 12
+      },
+      {
+        "text": "di di",
+        "ref_time_s": 100.5,
+        "var_time_s": 100.5,
+        "n_words": 2
+      }
+    ],
+    "asr_fail": true,
+    "no_speech_prob": 0.672,
+    "avg_logprob": -0.431,
+    "transcript": "La donna immobile, qual più malvento, avuta d'accento e di pensiero. Sempre un amabile, leggiadro avviso, in bianco e in riso, è menzognero. La donna è mobile, vuol più malvento, muta l'accento. Oh, vedi pensiero, vedi pensiero, vedi pensiero. E sempre misero chi a lei s'affida, chi ve confida manca un bel copre Ormai non sento sì felice appieno chi su quel seno non li va a amore La donna è mobile, ma il più malvento usa l'accento e il pensiero. E di pensiero E di pensiero",
+    "words_found": false,
+    "secs": 2.4,
+    "wf_corr_vs_orig": 1.0
+  },
+  "barber_agnus_dei__A_champion": {
+    "asr_models": [
+      "large-v3",
+      "medium"
+    ],
+    "test_model": "large-v3",
+    "language": "la",
+    "ref_language": "la",
+    "overlap_pct": 0.0,
+    "n_ref_scored": 4,
+    "n_recovered": 0,
+    "matched_phrases": [],
+    "asr_fail": false,
+    "no_speech_prob": 0.756,
+    "avg_logprob": -0.663,
+    "transcript": "Thank you for watching!",
+    "words_found": false,
+    "secs": 0.8,
+    "wf_corr_vs_orig": 0.9855
+  },
+  "barber_agnus_dei__B_melband_ft": {
+    "asr_models": [
+      "large-v3",
+      "medium"
+    ],
+    "test_model": "large-v3",
+    "language": "la",
+    "ref_language": "la",
+    "overlap_pct": 0.0,
+    "n_ref_scored": 4,
+    "n_recovered": 0,
+    "matched_phrases": [],
+    "asr_fail": false,
+    "no_speech_prob": 0.83,
+    "avg_logprob": -0.784,
+    "transcript": "O Israel, Israel, Israel, Israel, Israel, Israel, Israel. Thank you for watching!",
+    "words_found": false,
+    "secs": 0.9,
+    "wf_corr_vs_orig": 0.9868
+  },
+  "barber_agnus_dei__C_cascade": {
+    "asr_models": [
+      "large-v3",
+      "medium"
+    ],
+    "test_model": "large-v3",
+    "language": "la",
+    "ref_language": "la",
+    "overlap_pct": 0.0,
+    "n_ref_scored": 4,
+    "n_recovered": 0,
+    "matched_phrases": [],
+    "asr_fail": false,
+    "no_speech_prob": 0.899,
+    "avg_logprob": -0.283,
+    "transcript": "OPERATIONS OPERATIONS OPERATIONS OPERATIONS OPERATIONS OPERATIONS OPERATIONS OPERATIONS OPERATIONS OPERATIONS",
+    "words_found": false,
+    "secs": 1.4,
+    "wf_corr_vs_orig": 0.2777
+  },
+  "barber_agnus_dei__M_maxagg": {
+    "asr_models": [
+      "large-v3",
+      "medium"
+    ],
+    "test_model": "large-v3",
+    "language": "la",
+    "ref_language": "la",
+    "overlap_pct": 50.0,
+    "n_ref_scored": 4,
+    "n_recovered": 2,
+    "matched_phrases": [
+      {
+        "text": "Sous -titrage",
+        "ref_time_s": 93.2,
+        "var_time_s": 93.2,
+        "n_words": 2
+      }
+    ],
+    "asr_fail": true,
+    "no_speech_prob": 0.766,
+    "avg_logprob": -0.828,
+    "transcript": "Sous-titrage MFP. Sous-titrage FR ?",
+    "words_found": false,
+    "secs": 0.8,
+    "wf_corr_vs_orig": 0.9791
+  },
+  "barber_agnus_dei__O_original": {
+    "asr_models": [
+      "large-v3",
+      "medium"
+    ],
+    "test_model": "large-v3",
+    "language": "la",
+    "ref_language": "la",
+    "overlap_pct": 100.0,
+    "n_ref_scored": 4,
+    "n_recovered": 4,
+    "matched_phrases": [
+      {
+        "text": "Sous -titrage ST' 501",
+        "ref_time_s": 93.2,
+        "var_time_s": 93.2,
+        "n_words": 4
+      }
+    ],
+    "asr_fail": true,
+    "no_speech_prob": 0.742,
+    "avg_logprob": -0.749,
+    "transcript": "Sous-titrage ST' 501",
+    "words_found": false,
+    "secs": 0.9,
+    "wf_corr_vs_orig": 1.0
+  },
+  "barber_agnus_dei__V1_inverted": {
+    "asr_models": [
+      "large-v3",
+      "medium"
+    ],
+    "test_model": "large-v3",
+    "language": "la",
+    "ref_language": "la",
+    "overlap_pct": 0.0,
+    "n_ref_scored": 4,
+    "n_recovered": 0,
+    "matched_phrases": [],
+    "asr_fail": false,
+    "no_speech_prob": 0.75,
+    "avg_logprob": -0.677,
+    "transcript": "Thank you for watching!",
+    "words_found": false,
+    "secs": 0.9,
+    "wf_corr_vs_orig": 0.9881
+  },
+  "barber_agnus_dei__V2_mdx23c": {
+    "asr_models": [
+      "large-v3",
+      "medium"
+    ],
+    "test_model": "large-v3",
+    "language": "la",
+    "ref_language": "la",
+    "overlap_pct": 0.0,
+    "n_ref_scored": 4,
+    "n_recovered": 0,
+    "matched_phrases": [],
+    "asr_fail": false,
+    "no_speech_prob": 0.869,
+    "avg_logprob": -0.305,
+    "transcript": "I don't know if you can see it, but I'm going to show you how to do it. I'm going to show you how to do it. I'm going to show you how to do it. I'm going to show you how to do it. I'm going to show you how to do it. I'm going to show you how to do it. I'm going to show you how to do it. I'm going to show you how to do it. Thank you for watching!",
+    "words_found": false,
+    "secs": 2.3,
+    "wf_corr_vs_orig": 0.1786
+  },
+  "barber_agnus_dei__V3_roformer": {
+    "asr_models": [
+      "large-v3",
+      "medium"
+    ],
+    "test_model": "large-v3",
+    "language": "la",
+    "ref_language": "la",
+    "overlap_pct": 0.0,
+    "n_ref_scored": 4,
+    "n_recovered": 0,
+    "matched_phrases": [],
+    "asr_fail": false,
+    "no_speech_prob": 0.806,
+    "avg_logprob": -0.481,
+    "transcript": ". . . I'm going to take a short break and go back to the hotel. I'm going to take a short break and go back to the hotel. I'm going to take a short break and go back to the hotel. I'm going to take a short break and go back to the hotel. I'm going to take a short break and go back to the hotel. I'm going to take a short break and go back to the hotel. I'm going to take a short break and go back to the hotel. Thank you for watching!",
+    "words_found": false,
+    "secs": 2.4,
+    "wf_corr_vs_orig": 0.1062
+  },
+  "barber_agnus_dei__V4_deechorev": {
+    "asr_models": [
+      "large-v3",
+      "medium"
+    ],
+    "test_model": "large-v3",
+    "language": "la",
+    "ref_language": "la",
+    "overlap_pct": 50.0,
+    "n_ref_scored": 4,
+    "n_recovered": 2,
+    "matched_phrases": [
+      {
+        "text": "Sous -titrage",
+        "ref_time_s": 93.2,
+        "var_time_s": 91.5,
+        "n_words": 2
+      }
+    ],
+    "asr_fail": true,
+    "no_speech_prob": 0.853,
+    "avg_logprob": -0.522,
+    "transcript": "I don't know if you can see it, but I'm going to show you how to do it. I'm going to show you how to do it. I'm going to show you how to do it. I'm going to show you how to do it. I'm going to show you how to do it. I'm going to show you how to do it. I'm going to show you how to do it. I'm going to show you how to do it. Sous-titrage Société Radio-Canada",
+    "words_found": false,
+    "secs": 1.8,
+    "wf_corr_vs_orig": 0.1682
+  },
+  "barber_agnus_dei__V5_ensmax": {
+    "asr_models": [
+      "large-v3",
+      "medium"
+    ],
+    "test_model": "large-v3",
+    "language": "la",
+    "ref_language": "la",
+    "overlap_pct": 0.0,
+    "n_ref_scored": 4,
+    "n_recovered": 0,
+    "matched_phrases": [],
+    "asr_fail": false,
+    "no_speech_prob": 0.883,
+    "avg_logprob": -0.633,
+    "transcript": "In this video, I will show you how to make a simple and easy-to-understand I will show you how to make a simple and easy-to-understand painting technique. I will show you how to make a simple and easy-to-understand painting technique.",
+    "words_found": false,
+    "secs": 1.5,
+    "wf_corr_vs_orig": 0.1825
+  },
+  "nessun_dorma__A_champion": {
+    "asr_models": [
+      "large-v3",
+      "medium"
+    ],
+    "test_model": "large-v3",
+    "language": "it",
+    "ref_language": "it",
+    "overlap_pct": 0.0,
+    "n_ref_scored": 42,
+    "n_recovered": 0,
+    "matched_phrases": [],
+    "asr_fail": false,
+    "no_speech_prob": 0.747,
+    "avg_logprob": -0.404,
+    "transcript": "Musica Grazie a tutti. Grazie a tutti. Grazie a tutti. Grazie a tutti. Grazie a tutti. Grazie a tutti.",
+    "words_found": false,
+    "secs": 1.4,
+    "wf_corr_vs_orig": 0.7274
+  },
+  "nessun_dorma__B_melband_ft": {
+    "asr_models": [
+      "large-v3",
+      "medium"
+    ],
+    "test_model": "large-v3",
+    "language": "it",
+    "ref_language": "it",
+    "overlap_pct": 0.0,
+    "n_ref_scored": 42,
+    "n_recovered": 0,
+    "matched_phrases": [],
+    "asr_fail": false,
+    "no_speech_prob": 0.754,
+    "avg_logprob": -0.396,
+    "transcript": "Musica Grazie a tutti. Grazie a tutti. Grazie a tutti. Grazie a tutti. Grazie a tutti. Grazie a tutti.",
+    "words_found": false,
+    "secs": 1.4,
+    "wf_corr_vs_orig": 0.7128
+  },
+  "nessun_dorma__C_cascade": {
+    "asr_models": [
+      "large-v3",
+      "medium"
+    ],
+    "test_model": "large-v3",
+    "language": "it",
+    "ref_language": "it",
+    "overlap_pct": 0.0,
+    "n_ref_scored": 42,
+    "n_recovered": 0,
+    "matched_phrases": [],
+    "asr_fail": false,
+    "no_speech_prob": 0.798,
+    "avg_logprob": -0.405,
+    "transcript": "Musica Grazie a tutti. Grazie a tutti. Grazie a tutti. Grazie a tutti. Grazie a tutti. Grazie a tutti.",
+    "words_found": false,
+    "secs": 1.4,
+    "wf_corr_vs_orig": 0.7004
+  },
+  "nessun_dorma__M_maxagg": {
+    "asr_models": [
+      "large-v3",
+      "medium"
+    ],
+    "test_model": "large-v3",
+    "language": "it",
+    "ref_language": "it",
+    "overlap_pct": 2.4,
+    "n_ref_scored": 42,
+    "n_recovered": 1,
+    "matched_phrases": [
+      {
+        "text": "la",
+        "ref_time_s": 74.5,
+        "var_time_s": 75.2,
+        "n_words": 1
+      }
+    ],
+    "asr_fail": false,
+    "no_speech_prob": 0.719,
+    "avg_logprob": -0.301,
+    "transcript": "Grazie per la visione! Grazie per la visione! Grazie per la visione! Grazie a tutti. Grazie a tutti. Grazie a tutti. Grazie a tutti.",
+    "words_found": false,
+    "secs": 1.5,
+    "wf_corr_vs_orig": 0.3438
+  },
+  "nessun_dorma__O_original": {
+    "asr_models": [
+      "large-v3",
+      "medium"
+    ],
+    "test_model": "large-v3",
+    "language": "it",
+    "ref_language": "it",
+    "overlap_pct": 100.0,
+    "n_ref_scored": 42,
+    "n_recovered": 42,
+    "matched_phrases": [
+      {
+        "text": "Tu, principessa, nella tua fredda stanza, le stelle che tremano 'amore di speranza.",
+        "ref_time_s": 16.4,
+        "var_time_s": 16.4,
+        "n_words": 13
+      },
+      {
+        "text": "Ma il mio mistero chiuso in me Il nome mio nessuno Ora solo tua",
+        "ref_time_s": 48.8,
+        "var_time_s": 48.8,
+        "n_words": 14
+      },
+      {
+        "text": "Quando la luce splenderà",
+        "ref_time_s": 72.0,
+        "var_time_s": 72.0,
+        "n_words": 4
+      },
+      {
+        "text": "il mio bacio il silenzio che ti fa mia",
+        "ref_time_s": 92.7,
+        "var_time_s": 92.7,
+        "n_words": 9
+      },
+      {
+        "text": "All 'alba",
+        "ref_time_s": 146.9,
+        "var_time_s": 146.9,
+        "n_words": 2
+      }
+    ],
+    "asr_fail": true,
+    "no_speech_prob": 0.716,
+    "avg_logprob": -0.415,
+    "transcript": "Nessun dorma, nessun dorma. Tu, purea principessa, nella tua fredda stanza, Cor di le stelle che tremano d'amore e di speranza. Ma il mio mistero è chiuso in me Il nome mio nessuno saprà Ora solo tua macchia morirò Quando la luce splenderà E il mio bacio scioglierà il silenzio che ti fa mia Grazie a tutti. All'alba vincerà, vincerà, vincerà! Grazie a tutti.",
+    "words_found": false,
+    "secs": 2.3,
+    "wf_corr_vs_orig": 1.0
+  },
+  "habanera__A_champion": {
+    "asr_models": [
+      "large-v3",
+      "medium"
+    ],
+    "test_model": "large-v3",
+    "language": "fr",
+    "ref_language": "fr",
+    "overlap_pct": 0.0,
+    "n_ref_scored": 6,
+    "n_recovered": 0,
+    "matched_phrases": [],
+    "asr_fail": false,
+    "no_speech_prob": 0.674,
+    "avg_logprob": -0.349,
+    "transcript": "Sous-titrage ST' 501 Sous-titrage ST' 501 Musique Sous-titrage Société Radio-Canada Sous-titrage MFP. Sous-titrage ST' 501 Sous-titrage ST' 501",
+    "words_found": false,
+    "secs": 2.2,
+    "wf_corr_vs_orig": 0.9881
+  },
+  "habanera__B_melband_ft": {
+    "asr_models": [
+      "large-v3",
+      "medium"
+    ],
+    "test_model": "large-v3",
+    "language": "fr",
+    "ref_language": "fr",
+    "overlap_pct": 0.0,
+    "n_ref_scored": 6,
+    "n_recovered": 0,
+    "matched_phrases": [],
+    "asr_fail": false,
+    "no_speech_prob": 0.713,
+    "avg_logprob": -0.338,
+    "transcript": "Sous-titrage ST' 501 Sous-titrage ST' 501 Musique Sous-titrage Société Radio-Canada C'est parti, c'est parti, c'est parti ! Sous-titrage ST' 501 Sous-titrage ST' 501",
+    "words_found": false,
+    "secs": 1.9,
+    "wf_corr_vs_orig": 0.9881
+  },
+  "habanera__O_original": {
+    "asr_models": [
+      "large-v3",
+      "medium"
+    ],
+    "test_model": "large-v3",
+    "language": "fr",
+    "ref_language": "fr",
+    "overlap_pct": 100.0,
+    "n_ref_scored": 6,
+    "n_recovered": 6,
+    "matched_phrases": [
+      {
+        "text": "Prends garde toi Prends garde toi...",
+        "ref_time_s": 93.4,
+        "var_time_s": 93.4,
+        "n_words": 6
+      }
+    ],
+    "asr_fail": true,
+    "no_speech_prob": 0.627,
+    "avg_logprob": -0.456,
+    "transcript": "Sous-titrage ST' 501 Sous-titrage MFP. Musique à réappliquer ses cœurs. Prends garde à toi ! Prends garde à toi... Assa, Assa, Assa, aïe, aïe, aïe, aïe, aïe, aïe, aïe, aïe. Sous-titrage ST' 501 Sous-titrage ST' 501",
+    "words_found": false,
+    "secs": 2.3,
+    "wf_corr_vs_orig": 1.0
+  },
+  "habanera__V1_inverted": {
+    "asr_models": [
+      "large-v3",
+      "medium"
+    ],
+    "test_model": "large-v3",
+    "language": "fr",
+    "ref_language": "fr",
+    "overlap_pct": 0.0,
+    "n_ref_scored": 6,
+    "n_recovered": 0,
+    "matched_phrases": [],
+    "asr_fail": false,
+    "no_speech_prob": 0.687,
+    "avg_logprob": -0.442,
+    "transcript": "Sous-titrage ST' 501 ... Musique Sous-titrage Société Radio-Canada Encore, encore, encore, aïe, aïe, aïe, aïe, aïe, aïe, aïe. Sous-titrage ST' 501 Sous-titrage ST' 501",
+    "words_found": false,
+    "secs": 1.8,
+    "wf_corr_vs_orig": 0.9852
+  },
+  "habanera__V2_mdx23c": {
+    "asr_models": [
+      "large-v3",
+      "medium"
+    ],
+    "test_model": "large-v3",
+    "language": "fr",
+    "ref_language": "fr",
+    "overlap_pct": 0.0,
+    "n_ref_scored": 6,
+    "n_recovered": 0,
+    "matched_phrases": [],
+    "asr_fail": false,
+    "no_speech_prob": 0.804,
+    "avg_logprob": -0.256,
+    "transcript": "Sous-titrage ST' 501 Sous-titrage ST' 501 Sous-titrage ST' 501 ... Sous-titrage MFP. Sous-titrage MFP. Sous-titrage ST' 501",
+    "words_found": false,
+    "secs": 1.5,
+    "wf_corr_vs_orig": 0.9658
+  },
+  "habanera__V3_roformer": {
+    "asr_models": [
+      "large-v3",
+      "medium"
+    ],
+    "test_model": "large-v3",
+    "language": "fr",
+    "ref_language": "fr",
+    "overlap_pct": 0.0,
+    "n_ref_scored": 6,
+    "n_recovered": 0,
+    "matched_phrases": [],
+    "asr_fail": false,
+    "no_speech_prob": 0.808,
+    "avg_logprob": -0.362,
+    "transcript": "Sous-titrage ST' 501 Sous-titrage ST' 501 Sous-titrage ST' 501 ... Sous-titrage MFP. Sous-titrage MFP. Sous-titrage MFP. Merci.",
+    "words_found": false,
+    "secs": 1.9,
+    "wf_corr_vs_orig": 0.9634
+  },
+  "habanera__V4_deechorev": {
+    "asr_models": [
+      "large-v3",
+      "medium"
+    ],
+    "test_model": "large-v3",
+    "language": "fr",
+    "ref_language": "fr",
+    "overlap_pct": 0.0,
+    "n_ref_scored": 6,
+    "n_recovered": 0,
+    "matched_phrases": [],
+    "asr_fail": false,
+    "no_speech_prob": 0.782,
+    "avg_logprob": -0.221,
+    "transcript": "Sous-titrage ST' 501 Sous-titrage ST' 501 Sous-titrage MFP. Sous-titrage FR ? Sous-titrage ST' 501 Sous-titrage MFP. Sous-titrage ST' 501",
+    "words_found": false,
+    "secs": 2.2,
+    "wf_corr_vs_orig": 0.9492
+  },
+  "habanera__V5_ensmax": {
+    "asr_models": [
+      "large-v3",
+      "medium"
+    ],
+    "test_model": "large-v3",
+    "language": "fr",
+    "ref_language": "fr",
+    "overlap_pct": 0.0,
+    "n_ref_scored": 6,
+    "n_recovered": 0,
+    "matched_phrases": [],
+    "asr_fail": false,
+    "no_speech_prob": 0.811,
+    "avg_logprob": -0.209,
+    "transcript": "Sous-titrage ST' 501 Sous-titrage ST' 501 Sous-titrage ST' 501 Sous-titrage FR ? Sous-titrage MFP. Sous-titrage MFP. Sous-titrage ST' 501",
+    "words_found": false,
+    "secs": 1.6,
+    "wf_corr_vs_orig": 0.9663
+  },
+  "marseillaise_applause__A_champion": {
+    "asr_models": [
+      "large-v3",
+      "medium"
+    ],
+    "test_model": "large-v3",
+    "language": "fr",
+    "ref_language": "fr",
+    "overlap_pct": 100.0,
+    "n_ref_scored": 7,
+    "n_recovered": 7,
+    "matched_phrases": [
+      {
+        "text": "Musique du",
+        "ref_time_s": 0.0,
+        "var_time_s": 0.0,
+        "n_words": 2
+      },
+      {
+        "text": "générique",
+        "ref_time_s": 29.9,
+        "var_time_s": 29.9,
+        "n_words": 1
+      },
+      {
+        "text": "Sous -titrage FR Merci.",
+        "ref_time_s": 56.8,
+        "var_time_s": 56.8,
+        "n_words": 4
+      }
+    ],
+    "asr_fail": true,
+    "no_speech_prob": 0.898,
+    "avg_logprob": -0.546,
+    "transcript": "Musique du générique Sous-titrage FR ? Merci.",
+    "words_found": false,
+    "secs": 0.6,
+    "wf_corr_vs_orig": 0.9969
+  },
+  "marseillaise_applause__B_melband_ft": {
+    "asr_models": [
+      "large-v3",
+      "medium"
+    ],
+    "test_model": "large-v3",
+    "language": "fr",
+    "ref_language": "fr",
+    "overlap_pct": 100.0,
+    "n_ref_scored": 7,
+    "n_recovered": 7,
+    "matched_phrases": [
+      {
+        "text": "Musique du",
+        "ref_time_s": 0.0,
+        "var_time_s": 0.0,
+        "n_words": 2
+      },
+      {
+        "text": "générique",
+        "ref_time_s": 29.9,
+        "var_time_s": 29.9,
+        "n_words": 1
+      },
+      {
+        "text": "Sous -titrage FR Merci.",
+        "ref_time_s": 56.8,
+        "var_time_s": 56.8,
+        "n_words": 4
+      }
+    ],
+    "asr_fail": true,
+    "no_speech_prob": 0.899,
+    "avg_logprob": -0.544,
+    "transcript": "Musique du générique Sous-titrage FR ? Merci.",
+    "words_found": false,
+    "secs": 0.6,
+    "wf_corr_vs_orig": 0.9965
+  },
+  "marseillaise_applause__O_original": {
+    "asr_models": [
+      "large-v3",
+      "medium"
+    ],
+    "test_model": "large-v3",
+    "language": "fr",
+    "ref_language": "fr",
+    "overlap_pct": 100.0,
+    "n_ref_scored": 7,
+    "n_recovered": 7,
+    "matched_phrases": [
+      {
+        "text": "Musique du",
+        "ref_time_s": 0.0,
+        "var_time_s": 0.0,
+        "n_words": 2
+      },
+      {
+        "text": "générique",
+        "ref_time_s": 29.9,
+        "var_time_s": 29.9,
+        "n_words": 1
+      },
+      {
+        "text": "Sous -titrage FR Merci.",
+        "ref_time_s": 56.8,
+        "var_time_s": 56.8,
+        "n_words": 4
+      }
+    ],
+    "asr_fail": true,
+    "no_speech_prob": 0.899,
+    "avg_logprob": -0.557,
+    "transcript": "Musique du générique Sous-titrage FR ? Merci.",
+    "words_found": false,
+    "secs": 0.6,
+    "wf_corr_vs_orig": 1.0
+  },
+  "marseillaise_applause__V1_inverted": {
+    "asr_models": [
+      "large-v3",
+      "medium"
+    ],
+    "test_model": "large-v3",
+    "language": "fr",
+    "ref_language": "fr",
+    "overlap_pct": 100.0,
+    "n_ref_scored": 7,
+    "n_recovered": 7,
+    "matched_phrases": [
+      {
+        "text": "Musique du",
+        "ref_time_s": 0.0,
+        "var_time_s": 0.0,
+        "n_words": 2
+      },
+      {
+        "text": "générique",
+        "ref_time_s": 29.9,
+        "var_time_s": 29.9,
+        "n_words": 1
+      },
+      {
+        "text": "Sous -titrage FR Merci.",
+        "ref_time_s": 56.8,
+        "var_time_s": 56.8,
+        "n_words": 4
+      }
+    ],
+    "asr_fail": true,
+    "no_speech_prob": 0.905,
+    "avg_logprob": -0.563,
+    "transcript": "Musique du générique Sous-titrage FR ? Merci.",
+    "words_found": false,
+    "secs": 0.6,
+    "wf_corr_vs_orig": 0.9969
+  },
+  "marseillaise_applause__V2_mdx23c": {
+    "asr_models": [
+      "large-v3",
+      "medium"
+    ],
+    "test_model": "large-v3",
+    "language": "fr",
+    "ref_language": "fr",
+    "overlap_pct": 71.4,
+    "n_ref_scored": 7,
+    "n_recovered": 5,
+    "matched_phrases": [
+      {
+        "text": "générique",
+        "ref_time_s": 29.9,
+        "var_time_s": 30.0,
+        "n_words": 1
+      },
+      {
+        "text": "Sous -titrage FR Merci.",
+        "ref_time_s": 56.8,
+        "var_time_s": 56.8,
+        "n_words": 4
+      }
+    ],
+    "asr_fail": true,
+    "no_speech_prob": 0.82,
+    "avg_logprob": -0.562,
+    "transcript": "Musique du générique Sous-titrage FR ? Merci.",
+    "words_found": false,
+    "secs": 0.6,
+    "wf_corr_vs_orig": 0.9952
+  },
+  "marseillaise_applause__V3_roformer": {
+    "asr_models": [
+      "large-v3",
+      "medium"
+    ],
+    "test_model": "large-v3",
+    "language": "fr",
+    "ref_language": "fr",
+    "overlap_pct": 100.0,
+    "n_ref_scored": 7,
+    "n_recovered": 7,
+    "matched_phrases": [
+      {
+        "text": "Musique du",
+        "ref_time_s": 0.0,
+        "var_time_s": 0.0,
+        "n_words": 2
+      },
+      {
+        "text": "générique",
+        "ref_time_s": 29.9,
+        "var_time_s": 29.9,
+        "n_words": 1
+      },
+      {
+        "text": "Sous -titrage FR Merci.",
+        "ref_time_s": 56.8,
+        "var_time_s": 56.8,
+        "n_words": 4
+      }
+    ],
+    "asr_fail": true,
+    "no_speech_prob": 0.904,
+    "avg_logprob": -0.565,
+    "transcript": "Musique du générique Sous-titrage FR ? Merci.",
+    "words_found": false,
+    "secs": 0.6,
+    "wf_corr_vs_orig": 0.996
+  },
+  "marseillaise_applause__V4_deechorev": {
+    "asr_models": [
+      "large-v3",
+      "medium"
+    ],
+    "test_model": "large-v3",
+    "language": "fr",
+    "ref_language": "fr",
+    "overlap_pct": 14.3,
+    "n_ref_scored": 7,
+    "n_recovered": 1,
+    "matched_phrases": [
+      {
+        "text": "générique",
+        "ref_time_s": 29.9,
+        "var_time_s": 30.0,
+        "n_words": 1
+      }
+    ],
+    "asr_fail": false,
+    "no_speech_prob": 0.687,
+    "avg_logprob": -0.49,
+    "transcript": "Musique du générique ... Sous-titrage MFP.",
+    "words_found": false,
+    "secs": 0.6,
+    "wf_corr_vs_orig": 0.9819
+  },
+  "marseillaise_applause__V5_ensmax": {
+    "asr_models": [
+      "large-v3",
+      "medium"
+    ],
+    "test_model": "large-v3",
+    "language": "fr",
+    "ref_language": "fr",
+    "overlap_pct": 100.0,
+    "n_ref_scored": 7,
+    "n_recovered": 7,
+    "matched_phrases": [
+      {
+        "text": "Musique du",
+        "ref_time_s": 0.0,
+        "var_time_s": 0.0,
+        "n_words": 2
+      },
+      {
+        "text": "générique",
+        "ref_time_s": 29.9,
+        "var_time_s": 29.9,
+        "n_words": 1
+      },
+      {
+        "text": "Sous -titrage FR Merci.",
+        "ref_time_s": 56.8,
+        "var_time_s": 56.8,
+        "n_words": 4
+      }
+    ],
+    "asr_fail": true,
+    "no_speech_prob": 0.905,
+    "avg_logprob": -0.564,
+    "transcript": "Musique du générique Sous-titrage FR ? Merci.",
+    "words_found": false,
+    "secs": 0.6,
+    "wf_corr_vs_orig": 0.9962
+  }
+}

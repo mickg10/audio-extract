@@ -1,0 +1,93 @@
+{
+ "design": "v1.1 verdi full-coverage V5 vs original; 6 segments 0-104.175986s; balanced 3/3 orientation; attenuate-only; tail method preregistered rms fallback",
+ "pairs": {
+  "L0v5seg_p1": {
+   "A": "original",
+   "B": "V5_ensmax",
+   "cut_dur": 20.0,
+   "delta_method": "lufs",
+   "gain_orig": -8.3,
+   "gain_v5": 0.0,
+   "match_method": "lufs",
+   "post_encode_delta": 0.0,
+   "window": [
+    0.0,
+    20.0
+   ]
+  },
+  "L100v5seg_p6": {
+   "A": "V5_ensmax",
+   "B": "original",
+   "cut_dur": 4.176009,
+   "delta_method": "lufs",
+   "gain_orig": -4.9,
+   "gain_v5": 0.0,
+   "match_method": "lufs",
+   "post_encode_delta": 0.0,
+   "window": [
+    100.0,
+    104.176009
+   ]
+  },
+  "L20v5seg_p2": {
+   "A": "original",
+   "B": "V5_ensmax",
+   "cut_dur": 20.0,
+   "delta_method": "lufs",
+   "gain_orig": -14.4,
+   "gain_v5": 0.0,
+   "match_method": "lufs",
+   "post_encode_delta": 0.0,
+   "window": [
+    20.0,
+    40.0
+   ]
+  },
+  "L40v5seg_p3": {
+   "A": "V5_ensmax",
+   "B": "original",
+   "cut_dur": 20.0,
+   "delta_method": "lufs",
+   "gain_orig": -11.9,
+   "gain_v5": 0.0,
+   "match_method": "lufs",
+   "post_encode_delta": 0.0,
+   "window": [
+    40.0,
+    60.0
+   ]
+  },
+  "L60v5seg_p4": {
+   "A": "original",
+   "B": "V5_ensmax",
+   "cut_dur": 20.0,
+   "delta_method": "lufs",
+   "gain_orig": -16.3,
+   "gain_v5": 0.0,
+   "match_method": "lufs",
+   "post_encode_delta": 0.0,
+   "window": [
+    60.0,
+    80.0
+   ]
+  },
+  "L80v5seg_p5": {
+   "A": "V5_ensmax",
+   "B": "original",
+   "cut_dur": 20.0,
+   "delta_method": "lufs",
+   "gain_orig": -15.9,
+   "gain_v5": 0.0,
+   "match_method": "lufs",
+   "post_encode_delta": 0.0,
+   "window": [
+    80.0,
+    100.0
+   ]
+  }
+ },
+ "supersedes": {
+  "reason": "missing 4.175986s tail (claimed full track at 100s) + unbalanced 5/5 original-on-A orientation; zero votes had been cast",
+  "sha256": "f11302f7fdb16ed301560821df253a91f3c572a430e5e592b9a33c505ba51917"
+ }
+}

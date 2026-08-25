@@ -1,0 +1,2344 @@
+{
+ "status": "calibration_failed",
+ "artifact_kind": "diagnostic archive \u2014 NOT a validated gate; no frozen thresholds, no canonical PASS verdicts",
+ "no_gate_statement": "No machine voice gate is calibrated. The energy/VAD/HTDemucs/pyin/silero panel AND the extract-then-transcribe DET4 corrected challenge BOTH failed the human anchors. Extract-then-transcribe is retained as DIAGNOSTIC-ONLY for strong intelligible residue (it reliably flags gross leakers V1/A/B and word-region words such as C_cascade's 'cortigiani'@57s). Human labels via blind clips are the gate.",
+ "reason": "No independent detector reproduces the owner's exact 20-28s anchor (owner-positive ['C_cascade', 'V1_inverted', 'V3_roformer', 'V5_ensmax', 'Z'] vs owner-negative V2_mdx23c). The BINDING frozen DET4 challenge result = FAIL (archive as calibration_failed): per-candidate control-unique 20-28s recovery = {'C':1,'Z':0,'V1':5,'V3':1,'V5':1,'V2':1} \u2014 Z (a positive) recovers 0 and V2 (the negative) recovers 1; single-word recoveries (mai/anzi) are noise-floor and do not track owner labels. The energy/level/VAD panel ALSO fails the anchor: at 20-28s it fires on C/Z/V1/A/B/M but reads V3/V5 at the same floor as clean V2 and the orchestra negatives. CONTEXT: the reference lyric was INCOMPLETE (full-track ASR dropped the 10-32s sung dialogue; a focused 10-35s pass recovered it), CONFIRMING intelligible voice EXISTS at 20-28s in the ORIGINAL \u2014 the owner is correct that voice is present there.",
+ "language_discipline": "This archive asserts NO absence of voice at 20-28s; the OWNER's label is CONTROLLING and is CONFIRMED (intelligible words exist at 20-28s in the ORIGINAL). All detector outputs here are DIAGNOSTIC comparisons only; no thresholds are frozen and no PASS verdict is issued for any variant.",
+ "hypotheses_evaluated": {
+  "time_offset": "REJECTED \u2014 cross-correlation of every variant vs O_original = +0.000s (no shift).",
+  "mis_anchored_window": "REJECTED \u2014 whole-track scoring does not discriminate V3/V5 from V2 either.",
+  "reference_lyric_incomplete": "TRUE (resolved) \u2014 full-track ASR dropped the 10-32s sung dialogue; a focused 10-35s pass recovers it; the reference lyric should be EXTENDED to ~10-32s.",
+  "det4_corrected_challenge": "FAIL (archive as calibration_failed) \u2014 frozen rule (5/5 positives AND V2 negative) not met.",
+  "energy_vad_panel_vs_anchor": "FAILED \u2014 fires C/Z/V1/A/B/M at 20-28s; V3/V5 read like clean V2."
+ },
+ "extended_reference_18_30s": [
+  " lo",
+  " stridere,",
+  " testi",
+  " che",
+  " mai",
+  " dicesti.",
+  " Io?",
+  " S\u00ec,",
+  " anzi,",
+  " Mentre",
+  " S\u00ec."
+ ],
+ "det4_corrected_challenge": {
+  "verdict": "FAIL (archive as calibration_failed)",
+  "frozen_success_rule": "PASS iff all 5 positives {C,Z,V1,V3,V5} recover >=1 control-unique ref word AND V2 recovers 0",
+  "frozen_seeds": [
+   4001,
+   4002,
+   4003,
+   4004,
+   4005
+  ],
+  "candidate_signal": "HTDemucs-04 extracted vocal stem (extract-then-transcribe); mix transcript supplementary",
+  "reference_agreements": [
+   {
+    "word": " lo",
+    "t": 18.04,
+    "mix_t": 18.04,
+    "stem_t": 18.04,
+    "mix_p": 0.7,
+    "stem_p": 0.81
+   },
+   {
+    "word": " stridere,",
+    "t": 18.65,
+    "mix_t": 18.64,
+    "stem_t": 18.66,
+    "mix_p": 0.99,
+    "stem_p": 0.99
+   },
+   {
+    "word": " testi",
+    "t": 20.0,
+    "mix_t": 20.0,
+    "stem_t": 20.0,
+    "mix_p": 0.85,
+    "stem_p": 0.77
+   },
+   {
+    "word": " che",
+    "t": 20.9,
+    "mix_t": 20.82,
+    "stem_t": 20.98,
+    "mix_p": 0.99,
+    "stem_p": 0.99
+   },
+   {
+    "word": " mai",
+    "t": 21.3,
+    "mix_t": 21.3,
+    "stem_t": 21.3,
+    "mix_p": 1.0,
+    "stem_p": 1.0
+   },
+   {
+    "word": " dicesti.",
+    "t": 21.82,
+    "mix_t": 21.82,
+    "stem_t": 21.82,
+    "mix_p": 0.98,
+    "stem_p": 0.98
+   },
+   {
+    "word": " Io?",
+    "t": 24.1,
+    "mix_t": 24.1,
+    "stem_t": 24.1,
+    "mix_p": 0.96,
+    "stem_p": 0.97
+   },
+   {
+    "word": " S\u00ec,",
+    "t": 25.06,
+    "mix_t": 25.06,
+    "stem_t": 25.06,
+    "mix_p": 0.9,
+    "stem_p": 0.76
+   },
+   {
+    "word": " anzi,",
+    "t": 25.44,
+    "mix_t": 25.52,
+    "stem_t": 25.36,
+    "mix_p": 0.98,
+    "stem_p": 0.95
+   },
+   {
+    "word": " Mentre",
+    "t": 27.17,
+    "mix_t": 27.18,
+    "stem_t": 27.16,
+    "mix_p": 0.81,
+    "stem_p": 0.64
+   },
+   {
+    "word": " S\u00ec.",
+    "t": 28.91,
+    "mix_t": 28.92,
+    "stem_t": 28.9,
+    "mix_p": 1.0,
+    "stem_p": 1.0
+   }
+  ],
+  "reference_disagreements": [
+   {
+    "src": "mix_only",
+    "word": " ho",
+    "t": 25.9,
+    "p": 0.38
+   },
+   {
+    "src": "mix_only",
+    "word": " detto",
+    "t": 25.96,
+    "p": 0.86
+   },
+   {
+    "src": "mix_only",
+    "word": " il",
+    "t": 26.18,
+    "p": 0.4
+   },
+   {
+    "src": "mix_only",
+    "word": " farmi.",
+    "t": 26.28,
+    "p": 0.87
+   },
+   {
+    "src": "mix_only",
+    "word": " scendeva?",
+    "t": 27.72,
+    "p": 0.66
+   },
+   {
+    "src": "stem_only",
+    "word": " or",
+    "t": 25.88,
+    "p": 0.45
+   },
+   {
+    "src": "stem_only",
+    "word": " di",
+    "t": 25.98,
+    "p": 0.33
+   },
+   {
+    "src": "stem_only",
+    "word": " interfarmi.",
+    "t": 26.1,
+    "p": 0.72
+   },
+   {
+    "src": "stem_only",
+    "word": " scendea?",
+    "t": 27.7,
+    "p": 0.94
+   }
+  ],
+  "per_candidate_control_unique": {
+   "C_cascade": 1,
+   "Z": 0,
+   "V1_inverted": 5,
+   "V3_roformer": 1,
+   "V5_ensmax": 1,
+   "V2_mdx23c": 1
+  },
+  "positives_recover_ge1": {
+   "C_cascade": true,
+   "Z": false,
+   "V1_inverted": true,
+   "V3_roformer": true,
+   "V5_ensmax": true
+  },
+  "negative_V2_recovers_0": false,
+  "false_negatives": [
+   "Z"
+  ],
+  "false_positive_negative_anchor": true,
+  "pilot_det4b_20_28_word_counts": {
+   "O_original": 7,
+   "C_cascade": 0,
+   "Z": 0,
+   "V1_inverted": 7,
+   "V3_roformer": 0,
+   "V5_ensmax": 0,
+   "V2_mdx23c": 1,
+   "A_champion": 10,
+   "B_melband_ft": 8,
+   "M_maxagg": 0,
+   "V4_deechorev": 1
+  },
+  "note": "det4b pilot (single-source reference, 16-32s clip, 3 seeds) and det4c binding (two-source agreement reference, exact 20-28s clip, 5 frozen seeds) BOTH FAIL the frozen rule; the marginal single-word differences between them are noise-floor -> the 20-28s lexical detector is unreliable."
+ },
+ "time_offset_xcorr": "all variants +0.000s vs O_original (no shift)",
+ "owner_positive_not_reproduced_by_panel": [
+  "V3_roformer",
+  "V5_ensmax"
+ ],
+ "retranscription_original_10_35s": {
+  "region_s": [
+   10.0,
+   35.0
+  ],
+  "ref_lyric_starts": 32.32,
+  "any_words_before_32_32": true,
+  "mix_words_before_32_32": [
+   {
+    "w": " Ma",
+    "t": 10.0,
+    "p": 0.36
+   },
+   {
+    "w": " tal",
+    "t": 10.12,
+    "p": 0.97
+   },
+   {
+    "w": " mia",
+    "t": 10.26,
+    "p": 0.99
+   },
+   {
+    "w": " donna,",
+    "t": 10.52,
+    "p": 1.0
+   },
+   {
+    "w": " tu",
+    "t": 11.18,
+    "p": 0.47
+   },
+   {
+    "w": " murmure",
+    "t": 11.4,
+    "p": 0.91
+   },
+   {
+    "w": " come",
+    "t": 12.7,
+    "p": 0.68
+   },
+   {
+    "w": " io",
+    "t": 13.22,
+    "p": 0.99
+   },
+   {
+    "w": " non",
+    "t": 13.78,
+    "p": 0.98
+   },
+   {
+    "w": " intendesti.",
+    "t": 14.1,
+    "p": 0.91
+   },
+   {
+    "w": " Per",
+    "t": 16.7,
+    "p": 0.52
+   },
+   {
+    "w": " gufo",
+    "t": 16.84,
+    "p": 0.55
+   },
+   {
+    "w": " di",
+    "t": 17.74,
+    "p": 0.67
+   },
+   {
+    "w": " lo",
+    "t": 18.04,
+    "p": 0.7
+   },
+   {
+    "w": " stridere,",
+    "t": 18.64,
+    "p": 0.99
+   },
+   {
+    "w": " testi",
+    "t": 20.0,
+    "p": 0.85
+   },
+   {
+    "w": " che",
+    "t": 20.82,
+    "p": 0.99
+   },
+   {
+    "w": " mai",
+    "t": 21.3,
+    "p": 1.0
+   },
+   {
+    "w": " dicesti.",
+    "t": 21.82,
+    "p": 0.98
+   },
+   {
+    "w": " Io?",
+    "t": 24.1,
+    "p": 0.96
+   },
+   {
+    "w": " S\u00ec,",
+    "t": 25.06,
+    "p": 0.9
+   },
+   {
+    "w": " anzi,",
+    "t": 25.52,
+    "p": 0.98
+   },
+   {
+    "w": " ho",
+    "t": 25.9,
+    "p": 0.38
+   },
+   {
+    "w": " detto",
+    "t": 25.96,
+    "p": 0.86
+   },
+   {
+    "w": " il",
+    "t": 26.18,
+    "p": 0.4
+   },
+   {
+    "w": " farmi.",
+    "t": 26.28,
+    "p": 0.87
+   },
+   {
+    "w": " Mentre",
+    "t": 27.18,
+    "p": 0.81
+   },
+   {
+    "w": " scendeva?",
+    "t": 27.72,
+    "p": 0.66
+   },
+   {
+    "w": " S\u00ec.",
+    "t": 28.92,
+    "p": 1.0
+   },
+   {
+    "w": " Di,",
+    "t": 31.24,
+    "p": 0.46
+   },
+   {
+    "w": " nella",
+    "t": 31.92,
+    "p": 0.78
+   }
+  ],
+  "stem_words_before_32_32": [
+   {
+    "w": " Ma",
+    "t": 10.0,
+    "p": 0.13
+   },
+   {
+    "w": " tal",
+    "t": 10.18,
+    "p": 0.97
+   },
+   {
+    "w": " mia",
+    "t": 10.26,
+    "p": 0.98
+   },
+   {
+    "w": " donna,",
+    "t": 10.52,
+    "p": 1.0
+   },
+   {
+    "w": " un",
+    "t": 11.2,
+    "p": 0.47
+   },
+   {
+    "w": " murmurecco",
+    "t": 11.42,
+    "p": 0.88
+   },
+   {
+    "w": " mio",
+    "t": 13.02,
+    "p": 0.99
+   },
+   {
+    "w": " non",
+    "t": 13.54,
+    "p": 0.83
+   },
+   {
+    "w": " intendesti.",
+    "t": 14.12,
+    "p": 0.98
+   },
+   {
+    "w": " Il",
+    "t": 16.68,
+    "p": 0.47
+   },
+   {
+    "w": " gufo",
+    "t": 16.88,
+    "p": 0.86
+   },
+   {
+    "w": " di",
+    "t": 17.76,
+    "p": 0.83
+   },
+   {
+    "w": " lo",
+    "t": 18.04,
+    "p": 0.81
+   },
+   {
+    "w": " stridere,",
+    "t": 18.66,
+    "p": 0.99
+   },
+   {
+    "w": " testi",
+    "t": 20.0,
+    "p": 0.77
+   },
+   {
+    "w": " che",
+    "t": 20.98,
+    "p": 0.99
+   },
+   {
+    "w": " mai",
+    "t": 21.3,
+    "p": 1.0
+   },
+   {
+    "w": " dicesti.",
+    "t": 21.82,
+    "p": 0.98
+   },
+   {
+    "w": " Io?",
+    "t": 24.1,
+    "p": 0.97
+   },
+   {
+    "w": " S\u00ec,",
+    "t": 25.06,
+    "p": 0.76
+   },
+   {
+    "w": " anzi,",
+    "t": 25.36,
+    "p": 0.95
+   },
+   {
+    "w": " or",
+    "t": 25.88,
+    "p": 0.45
+   },
+   {
+    "w": " di",
+    "t": 25.98,
+    "p": 0.33
+   },
+   {
+    "w": " interfarmi.",
+    "t": 26.1,
+    "p": 0.72
+   },
+   {
+    "w": " Mentre",
+    "t": 27.16,
+    "p": 0.64
+   },
+   {
+    "w": " scendea?",
+    "t": 27.7,
+    "p": 0.94
+   },
+   {
+    "w": " S\u00ec.",
+    "t": 28.9,
+    "p": 1.0
+   },
+   {
+    "w": " Di,",
+    "t": 31.18,
+    "p": 0.59
+   },
+   {
+    "w": " nella",
+    "t": 31.92,
+    "p": 0.89
+   }
+  ],
+  "mix_transcript": [
+   {
+    "w": " Ma",
+    "t": 10.0,
+    "p": 0.36
+   },
+   {
+    "w": " tal",
+    "t": 10.12,
+    "p": 0.97
+   },
+   {
+    "w": " mia",
+    "t": 10.26,
+    "p": 0.99
+   },
+   {
+    "w": " donna,",
+    "t": 10.52,
+    "p": 1.0
+   },
+   {
+    "w": " tu",
+    "t": 11.18,
+    "p": 0.47
+   },
+   {
+    "w": " murmure",
+    "t": 11.4,
+    "p": 0.91
+   },
+   {
+    "w": " come",
+    "t": 12.7,
+    "p": 0.68
+   },
+   {
+    "w": " io",
+    "t": 13.22,
+    "p": 0.99
+   },
+   {
+    "w": " non",
+    "t": 13.78,
+    "p": 0.98
+   },
+   {
+    "w": " intendesti.",
+    "t": 14.1,
+    "p": 0.91
+   },
+   {
+    "w": " Per",
+    "t": 16.7,
+    "p": 0.52
+   },
+   {
+    "w": " gufo",
+    "t": 16.84,
+    "p": 0.55
+   },
+   {
+    "w": " di",
+    "t": 17.74,
+    "p": 0.67
+   },
+   {
+    "w": " lo",
+    "t": 18.04,
+    "p": 0.7
+   },
+   {
+    "w": " stridere,",
+    "t": 18.64,
+    "p": 0.99
+   },
+   {
+    "w": " testi",
+    "t": 20.0,
+    "p": 0.85
+   },
+   {
+    "w": " che",
+    "t": 20.82,
+    "p": 0.99
+   },
+   {
+    "w": " mai",
+    "t": 21.3,
+    "p": 1.0
+   },
+   {
+    "w": " dicesti.",
+    "t": 21.82,
+    "p": 0.98
+   },
+   {
+    "w": " Io?",
+    "t": 24.1,
+    "p": 0.96
+   },
+   {
+    "w": " S\u00ec,",
+    "t": 25.06,
+    "p": 0.9
+   },
+   {
+    "w": " anzi,",
+    "t": 25.52,
+    "p": 0.98
+   },
+   {
+    "w": " ho",
+    "t": 25.9,
+    "p": 0.38
+   },
+   {
+    "w": " detto",
+    "t": 25.96,
+    "p": 0.86
+   },
+   {
+    "w": " il",
+    "t": 26.18,
+    "p": 0.4
+   },
+   {
+    "w": " farmi.",
+    "t": 26.28,
+    "p": 0.87
+   },
+   {
+    "w": " Mentre",
+    "t": 27.18,
+    "p": 0.81
+   },
+   {
+    "w": " scendeva?",
+    "t": 27.72,
+    "p": 0.66
+   },
+   {
+    "w": " S\u00ec.",
+    "t": 28.92,
+    "p": 1.0
+   },
+   {
+    "w": " Di,",
+    "t": 31.24,
+    "p": 0.46
+   },
+   {
+    "w": " nella",
+    "t": 31.92,
+    "p": 0.78
+   },
+   {
+    "w": " stanza",
+    "t": 32.32,
+    "p": 1.0
+   },
+   {
+    "w": " attiva.",
+    "t": 33.36,
+    "p": 0.87
+   }
+  ],
+  "stem_transcript": [
+   {
+    "w": " Ma",
+    "t": 10.0,
+    "p": 0.13
+   },
+   {
+    "w": " tal",
+    "t": 10.18,
+    "p": 0.97
+   },
+   {
+    "w": " mia",
+    "t": 10.26,
+    "p": 0.98
+   },
+   {
+    "w": " donna,",
+    "t": 10.52,
+    "p": 1.0
+   },
+   {
+    "w": " un",
+    "t": 11.2,
+    "p": 0.47
+   },
+   {
+    "w": " murmurecco",
+    "t": 11.42,
+    "p": 0.88
+   },
+   {
+    "w": " mio",
+    "t": 13.02,
+    "p": 0.99
+   },
+   {
+    "w": " non",
+    "t": 13.54,
+    "p": 0.83
+   },
+   {
+    "w": " intendesti.",
+    "t": 14.12,
+    "p": 0.98
+   },
+   {
+    "w": " Il",
+    "t": 16.68,
+    "p": 0.47
+   },
+   {
+    "w": " gufo",
+    "t": 16.88,
+    "p": 0.86
+   },
+   {
+    "w": " di",
+    "t": 17.76,
+    "p": 0.83
+   },
+   {
+    "w": " lo",
+    "t": 18.04,
+    "p": 0.81
+   },
+   {
+    "w": " stridere,",
+    "t": 18.66,
+    "p": 0.99
+   },
+   {
+    "w": " testi",
+    "t": 20.0,
+    "p": 0.77
+   },
+   {
+    "w": " che",
+    "t": 20.98,
+    "p": 0.99
+   },
+   {
+    "w": " mai",
+    "t": 21.3,
+    "p": 1.0
+   },
+   {
+    "w": " dicesti.",
+    "t": 21.82,
+    "p": 0.98
+   },
+   {
+    "w": " Io?",
+    "t": 24.1,
+    "p": 0.97
+   },
+   {
+    "w": " S\u00ec,",
+    "t": 25.06,
+    "p": 0.76
+   },
+   {
+    "w": " anzi,",
+    "t": 25.36,
+    "p": 0.95
+   },
+   {
+    "w": " or",
+    "t": 25.88,
+    "p": 0.45
+   },
+   {
+    "w": " di",
+    "t": 25.98,
+    "p": 0.33
+   },
+   {
+    "w": " interfarmi.",
+    "t": 26.1,
+    "p": 0.72
+   },
+   {
+    "w": " Mentre",
+    "t": 27.16,
+    "p": 0.64
+   },
+   {
+    "w": " scendea?",
+    "t": 27.7,
+    "p": 0.94
+   },
+   {
+    "w": " S\u00ec.",
+    "t": 28.9,
+    "p": 1.0
+   },
+   {
+    "w": " Di,",
+    "t": 31.18,
+    "p": 0.59
+   },
+   {
+    "w": " nella",
+    "t": 31.92,
+    "p": 0.89
+   },
+   {
+    "w": " stanza",
+    "t": 32.34,
+    "p": 1.0
+   },
+   {
+    "w": " attiva.",
+    "t": 33.36,
+    "p": 0.96
+   }
+  ]
+ },
+ "detector4_lyric_timing": {
+  "ref_words_n": 34,
+  "ref_span_s": [
+   32.32,
+   79.76
+  ],
+  "note": "ORIGINAL reference lyric words span 32.32-79.76s -> DET4 unevaluable at 20-28s."
+ },
+ "panel_classification": {
+  "panel_dirty_widespread_residue_and_words": [
+   "A_champion",
+   "B_melband_ft",
+   "C_cascade",
+   "M_maxagg",
+   "V1_inverted",
+   "Z"
+  ],
+  "panel_cleanlike_V2_only_shared_tutti_0words": [
+   "V2_mdx23c",
+   "V3_roformer",
+   "V4_deechorev",
+   "V5_ensmax"
+  ],
+  "orchestra_negatives_no_fire": [
+   "neg_bologna_verdi",
+   "neg_aalto_mozart_dry",
+   "neg_aalto_mozart_hall"
+  ]
+ },
+ "provenance_disjointness": {
+  "removal_DAG_models": [
+   "MDX23C-8KFFT-InstVoc_HQ.ckpt",
+   "vocals_mel_band_roformer.ckpt(+FT melband_ft_step600)",
+   "model_bs_roformer_ep_317_sdr_12.9755.ckpt",
+   "roformer variants"
+  ],
+  "detectors": {
+   "htdemucs04": {
+    "sha256": "f3cf25b222c4eed7cd49dd8b2c9597d50c18bd154090f7b919cfa5f93cf22c49",
+    "arch": "Hybrid Transformer Demucs (waveform+spectrogram U-Net, Meta/adefossez)"
+   },
+   "htdemucs95": {
+    "sha256": "8726e21a993978c7ba086d3872e7608d7d5bfca646ca4aca459ffda844faa8b4",
+    "arch": "HTDemucs 2nd checkpoint"
+   },
+   "whisper": {
+    "model": "faster-whisper 1.2.1 large-v3 float16",
+    "arch": "Transformer ASR (OpenAI)"
+   },
+   "silero_vad": {
+    "version": "6.2.1",
+    "arch": "Silero VAD (separate RNN)"
+   },
+   "pyin": {
+    "lib": "librosa 0.11.0",
+    "arch": "probabilistic-YIN classical DSP"
+   }
+  },
+  "assertion": "Detector family (HTDemucs/whisper/silero/pyin) shares NO weights, config, lineage, or ensemble membership with any removal-DAG model. HTDemucs never used in removal -> DISJOINT."
+ },
+ "window_geometry": {
+  "window_s": 1.0,
+  "hop_s": 0.5,
+  "region_20_28": "windows whose 1s span overlaps [20,28]",
+  "normalization": "energy: /ORIGINAL program-mix per window (dB) AND absolute dBFS of stem",
+  "silence_gate": "recorded, NOT applied to hide; verified NOT the 20-28s mechanism (no windows gated 17-30s)",
+  "composite": "diagnostic agreement: window fires if absVoc>-50 dBFS AND silero-stem>0.30 (NOT frozen)"
+ },
+ "circular_detector_note": "DIAGNOSTIC ONLY: median of MDX23C/MelBand/BS = the SAME ensemble used for removal; residue lives in its null space (why_quiet='low_vocal_score(null space)').",
+ "variants": {
+  "O_original": {
+   "circular_20_28_db": -2.4,
+   "circular_20_28_db_candnorm": -1.7,
+   "circular_vmed_dbfs_20_28": -11.4,
+   "circular_why_quiet_20_28": "scored_at_or_above_gate",
+   "htdemucs04_20_28_db": -0.6,
+   "htdemucs95_20_28_db": -0.7,
+   "htdemucs04_absvoc_dbfs_20_28": -9.9,
+   "pyin_voiced_prob_20_28": 0.985,
+   "silero_vad_20_28": 1.0,
+   "silero_mix_20_28": 0.145,
+   "no_speech_prob_20_28": 0.814,
+   "htdemucs04_worst_db": -0.2,
+   "htdemucs04_rel_worst_at": [
+    -0.2,
+    62.5
+   ],
+   "htdemucs95_worst_db": -0.2,
+   "absvoc_dbfs_worst_at": [
+    -9.9,
+    24.5
+   ],
+   "silero_stem_worst_at": [
+    1.0,
+    9.5
+   ],
+   "pyin_worst_at": [
+    1.0,
+    11.0
+   ],
+   "composite_fire_intervals": [
+    [
+     5.5,
+     7.5,
+     -41.2,
+     0.778
+    ],
+    [
+     8.5,
+     30.5,
+     -9.9,
+     1.0
+    ],
+    [
+     31.0,
+     50.5,
+     -11.8,
+     1.0
+    ],
+    [
+     51.0,
+     97.5,
+     -11.4,
+     0.999
+    ]
+   ],
+   "n_fire_intervals": 4,
+   "fire_duration_s": 90.0,
+   "detector4_fire_wordregion": true,
+   "det4_orig_matched_words_wordregion": 5,
+   "matched_phrases_wordregion": [
+    {
+     "word": "attiva",
+     "ref_t": 33.36,
+     "res_t": 33.28
+    },
+    {
+     "word": "da",
+     "ref_t": 43.84,
+     "res_t": 43.84
+    },
+    {
+     "word": "questo",
+     "ref_t": 43.96,
+     "res_t": 43.96
+    },
+    {
+     "word": "ne",
+     "ref_t": 60.1,
+     "res_t": 60.1
+    },
+    {
+     "word": "potei",
+     "ref_t": 79.76,
+     "res_t": 80.14
+    }
+   ],
+   "scramble_floor": [
+    "ame",
+    "anch",
+    "assista",
+    "cortigiani",
+    "dio",
+    "dorme",
+    "ho",
+    "il",
+    "io",
+    "la",
+    "ma",
+    "nel",
+    "non",
+    "orribile",
+    "parola",
+    "perch\u00e9",
+    "ripetere",
+    "sempre",
+    "sonno",
+    "stanza",
+    "visto"
+   ],
+   "det4b_pilot_words_20_28": 7,
+   "det4b_pilot_phrases_20_28": [
+    {
+     "w": "che",
+     "ref_t": 20.82,
+     "res_t": 21.02
+    },
+    {
+     "w": "mai",
+     "ref_t": 21.3,
+     "res_t": 21.32
+    },
+    {
+     "w": "dicesti",
+     "ref_t": 21.82,
+     "res_t": 21.76
+    },
+    {
+     "w": "io",
+     "ref_t": 24.1,
+     "res_t": 23.88
+    },
+    {
+     "w": "s\u00ec",
+     "ref_t": 25.06,
+     "res_t": 25.06
+    },
+    {
+     "w": "anzi",
+     "ref_t": 25.52,
+     "res_t": 25.36
+    },
+    {
+     "w": "farmi",
+     "ref_t": 26.28,
+     "res_t": 26.04
+    }
+   ],
+   "det4c_control_unique_20_28": null,
+   "det4c_control_unique_words": null,
+   "owner_label_20_28": "unlabeled",
+   "panel_class": "panel_positive(original)"
+  },
+  "C_cascade": {
+   "circular_20_28_db": -25.5,
+   "circular_20_28_db_candnorm": -10.7,
+   "circular_vmed_dbfs_20_28": -34.3,
+   "circular_why_quiet_20_28": "scored_at_or_above_gate",
+   "htdemucs04_20_28_db": -25.3,
+   "htdemucs95_20_28_db": -26.9,
+   "htdemucs04_absvoc_dbfs_20_28": -36.5,
+   "pyin_voiced_prob_20_28": 0.946,
+   "silero_vad_20_28": 0.832,
+   "silero_mix_20_28": 0.0,
+   "no_speech_prob_20_28": 0.808,
+   "htdemucs04_worst_db": -17.8,
+   "htdemucs04_rel_worst_at": [
+    -17.9,
+    65.5
+   ],
+   "htdemucs95_worst_db": -5.7,
+   "absvoc_dbfs_worst_at": [
+    -36.5,
+    24.5
+   ],
+   "silero_stem_worst_at": [
+    1.0,
+    15.5
+   ],
+   "pyin_worst_at": [
+    1.0,
+    33.0
+   ],
+   "composite_fire_intervals": [
+    [
+     14.5,
+     16.5,
+     -48.6,
+     0.985
+    ],
+    [
+     24.0,
+     28.5,
+     -36.5,
+     0.832
+    ],
+    [
+     30.5,
+     43.5,
+     -37.6,
+     0.965
+    ],
+    [
+     44.5,
+     50.5,
+     -40.7,
+     0.659
+    ],
+    [
+     59.5,
+     65.0,
+     -36.8,
+     0.923
+    ],
+    [
+     67.0,
+     70.5,
+     -40.4,
+     0.689
+    ],
+    [
+     78.5,
+     80.5,
+     -38.1,
+     0.354
+    ]
+   ],
+   "n_fire_intervals": 7,
+   "fire_duration_s": 36.5,
+   "detector4_fire_wordregion": true,
+   "det4_orig_matched_words_wordregion": 1,
+   "matched_phrases_wordregion": [
+    {
+     "word": "cortigiani",
+     "ref_t": 56.1,
+     "res_t": 57.36
+    }
+   ],
+   "scramble_floor": [
+    "anch",
+    "perch\u00e9"
+   ],
+   "det4b_pilot_words_20_28": 0,
+   "det4b_pilot_phrases_20_28": [],
+   "det4c_control_unique_20_28": 1,
+   "det4c_control_unique_words": [
+    " anzi,"
+   ],
+   "owner_label_20_28": "voice_present",
+   "panel_class": "panel_dirty_widespread_residue+words",
+   "anchor_reproduced": true
+  },
+  "Z": {
+   "circular_20_28_db": -26.0,
+   "circular_20_28_db_candnorm": -11.0,
+   "circular_vmed_dbfs_20_28": -34.5,
+   "circular_why_quiet_20_28": "scored_at_or_above_gate",
+   "htdemucs04_20_28_db": -23.4,
+   "htdemucs95_20_28_db": -26.1,
+   "htdemucs04_absvoc_dbfs_20_28": -35.9,
+   "pyin_voiced_prob_20_28": 0.946,
+   "silero_vad_20_28": 0.705,
+   "silero_mix_20_28": 0.0,
+   "no_speech_prob_20_28": 1.0,
+   "htdemucs04_worst_db": -20.2,
+   "htdemucs04_rel_worst_at": [
+    -20.2,
+    65.5
+   ],
+   "htdemucs95_worst_db": -9.2,
+   "absvoc_dbfs_worst_at": [
+    -35.9,
+    24.5
+   ],
+   "silero_stem_worst_at": [
+    1.0,
+    15.5
+   ],
+   "pyin_worst_at": [
+    1.0,
+    53.0
+   ],
+   "composite_fire_intervals": [
+    [
+     24.0,
+     26.0,
+     -35.9,
+     0.705
+    ],
+    [
+     27.0,
+     30.0,
+     -44.1,
+     0.676
+    ],
+    [
+     31.5,
+     34.5,
+     -46.0,
+     0.963
+    ],
+    [
+     35.0,
+     43.5,
+     -38.4,
+     0.91
+    ],
+    [
+     44.5,
+     50.5,
+     -39.8,
+     0.727
+    ],
+    [
+     59.5,
+     62.0,
+     -39.4,
+     0.953
+    ],
+    [
+     62.5,
+     64.5,
+     -36.7,
+     0.437
+    ],
+    [
+     67.0,
+     70.5,
+     -40.0,
+     0.82
+    ],
+    [
+     76.0,
+     77.5,
+     -42.3,
+     0.307
+    ],
+    [
+     78.5,
+     81.0,
+     -38.5,
+     0.431
+    ],
+    [
+     93.0,
+     94.5,
+     -45.1,
+     0.62
+    ]
+   ],
+   "n_fire_intervals": 11,
+   "fire_duration_s": 36.0,
+   "detector4_fire_wordregion": true,
+   "det4_orig_matched_words_wordregion": 1,
+   "matched_phrases_wordregion": [
+    {
+     "word": "cortigiani",
+     "ref_t": 56.1,
+     "res_t": 58.12
+    }
+   ],
+   "scramble_floor": [
+    "anch",
+    "assista"
+   ],
+   "det4b_pilot_words_20_28": 0,
+   "det4b_pilot_phrases_20_28": [],
+   "det4c_control_unique_20_28": 0,
+   "det4c_control_unique_words": [],
+   "owner_label_20_28": "voice_present",
+   "panel_class": "panel_dirty_widespread_residue+words",
+   "anchor_reproduced": true
+  },
+  "V1_inverted": {
+   "circular_20_28_db": -11.8,
+   "circular_20_28_db_candnorm": -0.7,
+   "circular_vmed_dbfs_20_28": -20.0,
+   "circular_why_quiet_20_28": "scored_at_or_above_gate",
+   "htdemucs04_20_28_db": -11.8,
+   "htdemucs95_20_28_db": -11.7,
+   "htdemucs04_absvoc_dbfs_20_28": -19.9,
+   "pyin_voiced_prob_20_28": 0.985,
+   "silero_vad_20_28": 1.0,
+   "silero_mix_20_28": 0.001,
+   "no_speech_prob_20_28": 0.726,
+   "htdemucs04_worst_db": -11.6,
+   "htdemucs04_rel_worst_at": [
+    -11.6,
+    63.0
+   ],
+   "htdemucs95_worst_db": -11.5,
+   "absvoc_dbfs_worst_at": [
+    -19.9,
+    24.5
+   ],
+   "silero_stem_worst_at": [
+    1.0,
+    9.5
+   ],
+   "pyin_worst_at": [
+    1.0,
+    11.0
+   ],
+   "composite_fire_intervals": [
+    [
+     9.0,
+     50.5,
+     -19.9,
+     1.0
+    ],
+    [
+     51.0,
+     97.5,
+     -22.2,
+     0.998
+    ]
+   ],
+   "n_fire_intervals": 2,
+   "fire_duration_s": 88.0,
+   "detector4_fire_wordregion": true,
+   "det4_orig_matched_words_wordregion": 18,
+   "matched_phrases_wordregion": [
+    {
+     "word": "attiva",
+     "ref_t": 33.36,
+     "res_t": 33.36
+    },
+    {
+     "word": "il",
+     "ref_t": 36.26,
+     "res_t": 36.36
+    },
+    {
+     "word": "orribile",
+     "ref_t": 40.74,
+     "res_t": 40.76
+    },
+    {
+     "word": "da",
+     "ref_t": 43.84,
+     "res_t": 43.84
+    },
+    {
+     "word": "questo",
+     "ref_t": 43.96,
+     "res_t": 43.96
+    },
+    {
+     "word": "orribile",
+     "ref_t": 47.98,
+     "res_t": 48.12
+    },
+    {
+     "word": "nel",
+     "ref_t": 50.66,
+     "res_t": 49.16
+    },
+    {
+     "word": "cortigiani",
+     "ref_t": 56.1,
+     "res_t": 55.22
+    },
+    {
+     "word": "ne",
+     "ref_t": 60.1,
+     "res_t": 60.1
+    },
+    {
+     "word": "anch",
+     "ref_t": 65.24,
+     "res_t": 63.06
+    },
+    {
+     "word": "io",
+     "ref_t": 65.52,
+     "res_t": 65.58
+    },
+    {
+     "word": "ma",
+     "ref_t": 66.78,
+     "res_t": 66.82
+    },
+    {
+     "word": "la",
+     "ref_t": 67.58,
+     "res_t": 67.62
+    },
+    {
+     "word": "parola",
+     "ref_t": 68.04,
+     "res_t": 68.04
+    },
+    {
+     "word": "perch\u00e9",
+     "ref_t": 74.86,
+     "res_t": 73.0
+    },
+    {
+     "word": "perch\u00e9",
+     "ref_t": 75.34,
+     "res_t": 75.34
+    },
+    {
+     "word": "ripetere",
+     "ref_t": 75.98,
+     "res_t": 75.96
+    },
+    {
+     "word": "non",
+     "ref_t": 79.44,
+     "res_t": 79.38
+    }
+   ],
+   "scramble_floor": [
+    "assista",
+    "dio",
+    "dorme",
+    "ho",
+    "sempre",
+    "sonno",
+    "stanza",
+    "visto"
+   ],
+   "det4b_pilot_words_20_28": 7,
+   "det4b_pilot_phrases_20_28": [
+    {
+     "w": "che",
+     "ref_t": 20.82,
+     "res_t": 21.04
+    },
+    {
+     "w": "mai",
+     "ref_t": 21.3,
+     "res_t": 21.32
+    },
+    {
+     "w": "dicesti",
+     "ref_t": 21.82,
+     "res_t": 21.84
+    },
+    {
+     "w": "io",
+     "ref_t": 24.1,
+     "res_t": 23.96
+    },
+    {
+     "w": "s\u00ec",
+     "ref_t": 25.06,
+     "res_t": 25.04
+    },
+    {
+     "w": "anzi",
+     "ref_t": 25.52,
+     "res_t": 25.38
+    },
+    {
+     "w": "farmi",
+     "ref_t": 26.28,
+     "res_t": 26.2
+    }
+   ],
+   "det4c_control_unique_20_28": 5,
+   "det4c_control_unique_words": [
+    " testi",
+    " che",
+    " mai",
+    " dicesti.",
+    " anzi,"
+   ],
+   "owner_label_20_28": "voice_present",
+   "panel_class": "panel_dirty_widespread_residue+words",
+   "anchor_reproduced": true
+  },
+  "V3_roformer": {
+   "circular_20_28_db": -43.4,
+   "circular_20_28_db_candnorm": -26.2,
+   "circular_vmed_dbfs_20_28": -56.8,
+   "circular_why_quiet_20_28": "low_vocal_score(median-ensemble extracts ~nothing: residue in MDX/Mel/BS null space)",
+   "htdemucs04_20_28_db": -71.7,
+   "htdemucs95_20_28_db": -64.4,
+   "htdemucs04_absvoc_dbfs_20_28": -88.2,
+   "pyin_voiced_prob_20_28": 0.109,
+   "silero_vad_20_28": 0.003,
+   "silero_mix_20_28": 0.0,
+   "no_speech_prob_20_28": 1.0,
+   "htdemucs04_worst_db": -26.0,
+   "htdemucs04_rel_worst_at": [
+    -26.1,
+    94.0
+   ],
+   "htdemucs95_worst_db": -5.5,
+   "absvoc_dbfs_worst_at": [
+    -47.3,
+    39.0
+   ],
+   "silero_stem_worst_at": [
+    0.8,
+    38.5
+   ],
+   "pyin_worst_at": [
+    1.0,
+    34.5
+   ],
+   "composite_fire_intervals": [
+    [
+     38.5,
+     40.0,
+     -47.3,
+     0.763
+    ],
+    [
+     94.0,
+     95.0,
+     -48.2,
+     0.585
+    ]
+   ],
+   "n_fire_intervals": 2,
+   "fire_duration_s": 2.5,
+   "detector4_fire_wordregion": false,
+   "det4_orig_matched_words_wordregion": 0,
+   "matched_phrases_wordregion": [],
+   "scramble_floor": [
+    "anch"
+   ],
+   "det4b_pilot_words_20_28": 0,
+   "det4b_pilot_phrases_20_28": [],
+   "det4c_control_unique_20_28": 1,
+   "det4c_control_unique_words": [
+    " mai"
+   ],
+   "owner_label_20_28": "voice_present",
+   "panel_class": "panel_cleanlike_V2(fires_only_at_shared_~38.5s_tutti,0_words)",
+   "anchor_reproduced": false
+  },
+  "V5_ensmax": {
+   "circular_20_28_db": -40.9,
+   "circular_20_28_db_candnorm": -28.8,
+   "circular_vmed_dbfs_20_28": -58.4,
+   "circular_why_quiet_20_28": "low_vocal_score(median-ensemble extracts ~nothing: residue in MDX/Mel/BS null space)",
+   "htdemucs04_20_28_db": -69.7,
+   "htdemucs95_20_28_db": -41.9,
+   "htdemucs04_absvoc_dbfs_20_28": -86.8,
+   "pyin_voiced_prob_20_28": 0.372,
+   "silero_vad_20_28": 0.007,
+   "silero_mix_20_28": 0.0,
+   "no_speech_prob_20_28": 0.859,
+   "htdemucs04_worst_db": -26.4,
+   "htdemucs04_rel_worst_at": [
+    -26.4,
+    94.0
+   ],
+   "htdemucs95_worst_db": -6.1,
+   "absvoc_dbfs_worst_at": [
+    -41.7,
+    38.5
+   ],
+   "silero_stem_worst_at": [
+    0.9,
+    38.5
+   ],
+   "pyin_worst_at": [
+    1.0,
+    34.5
+   ],
+   "composite_fire_intervals": [
+    [
+     38.0,
+     40.0,
+     -41.7,
+     0.86
+    ],
+    [
+     94.0,
+     95.0,
+     -48.6,
+     0.601
+    ]
+   ],
+   "n_fire_intervals": 2,
+   "fire_duration_s": 3.0,
+   "detector4_fire_wordregion": false,
+   "det4_orig_matched_words_wordregion": 0,
+   "matched_phrases_wordregion": [],
+   "scramble_floor": [],
+   "det4b_pilot_words_20_28": 0,
+   "det4b_pilot_phrases_20_28": [],
+   "det4c_control_unique_20_28": 1,
+   "det4c_control_unique_words": [
+    " mai"
+   ],
+   "owner_label_20_28": "voice_present",
+   "panel_class": "panel_cleanlike_V2(fires_only_at_shared_~38.5s_tutti,0_words)",
+   "anchor_reproduced": false
+  },
+  "V2_mdx23c": {
+   "circular_20_28_db": -40.5,
+   "circular_20_28_db_candnorm": -29.3,
+   "circular_vmed_dbfs_20_28": -58.3,
+   "circular_why_quiet_20_28": "low_vocal_score(median-ensemble extracts ~nothing: residue in MDX/Mel/BS null space)",
+   "htdemucs04_20_28_db": -70.6,
+   "htdemucs95_20_28_db": -40.8,
+   "htdemucs04_absvoc_dbfs_20_28": -88.2,
+   "pyin_voiced_prob_20_28": 0.426,
+   "silero_vad_20_28": 0.005,
+   "silero_mix_20_28": 0.0,
+   "no_speech_prob_20_28": 0.84,
+   "htdemucs04_worst_db": -27.0,
+   "htdemucs04_rel_worst_at": [
+    -27.0,
+    101.5
+   ],
+   "htdemucs95_worst_db": -6.3,
+   "absvoc_dbfs_worst_at": [
+    -44.6,
+    38.5
+   ],
+   "silero_stem_worst_at": [
+    0.9,
+    38.5
+   ],
+   "pyin_worst_at": [
+    1.0,
+    35.5
+   ],
+   "composite_fire_intervals": [
+    [
+     38.5,
+     40.0,
+     -44.6,
+     0.89
+    ]
+   ],
+   "n_fire_intervals": 1,
+   "fire_duration_s": 1.5,
+   "detector4_fire_wordregion": false,
+   "det4_orig_matched_words_wordregion": 0,
+   "matched_phrases_wordregion": [],
+   "scramble_floor": [],
+   "det4b_pilot_words_20_28": 1,
+   "det4b_pilot_phrases_20_28": [
+    {
+     "w": "anzi",
+     "ref_t": 25.52,
+     "res_t": 27.86
+    }
+   ],
+   "det4c_control_unique_20_28": 1,
+   "det4c_control_unique_words": [
+    " anzi,"
+   ],
+   "owner_label_20_28": "voice_free",
+   "panel_class": "panel_cleanlike_V2(fires_only_at_shared_~38.5s_tutti,0_words)"
+  },
+  "A_champion": {
+   "circular_20_28_db": -7.1,
+   "circular_20_28_db_candnorm": -1.2,
+   "circular_vmed_dbfs_20_28": -15.3,
+   "circular_why_quiet_20_28": "scored_at_or_above_gate",
+   "htdemucs04_20_28_db": -6.6,
+   "htdemucs95_20_28_db": -6.6,
+   "htdemucs04_absvoc_dbfs_20_28": -14.8,
+   "pyin_voiced_prob_20_28": 0.985,
+   "silero_vad_20_28": 1.0,
+   "silero_mix_20_28": 0.0,
+   "no_speech_prob_20_28": 0.758,
+   "htdemucs04_worst_db": -6.4,
+   "htdemucs04_rel_worst_at": [
+    -6.4,
+    84.0
+   ],
+   "htdemucs95_worst_db": -6.2,
+   "absvoc_dbfs_worst_at": [
+    -14.8,
+    24.5
+   ],
+   "silero_stem_worst_at": [
+    1.0,
+    9.5
+   ],
+   "pyin_worst_at": [
+    1.0,
+    11.0
+   ],
+   "composite_fire_intervals": [
+    [
+     6.5,
+     8.0,
+     -44.3,
+     0.447
+    ],
+    [
+     9.0,
+     50.5,
+     -14.8,
+     1.0
+    ],
+    [
+     51.0,
+     97.0,
+     -17.1,
+     0.998
+    ]
+   ],
+   "n_fire_intervals": 3,
+   "fire_duration_s": 89.0,
+   "detector4_fire_wordregion": true,
+   "det4_orig_matched_words_wordregion": 8,
+   "matched_phrases_wordregion": [
+    {
+     "word": "il",
+     "ref_t": 36.26,
+     "res_t": 36.34
+    },
+    {
+     "word": "orribile",
+     "ref_t": 40.74,
+     "res_t": 40.74
+    },
+    {
+     "word": "da",
+     "ref_t": 43.84,
+     "res_t": 43.84
+    },
+    {
+     "word": "questo",
+     "ref_t": 43.96,
+     "res_t": 43.96
+    },
+    {
+     "word": "orribile",
+     "ref_t": 47.98,
+     "res_t": 48.12
+    },
+    {
+     "word": "cortigiani",
+     "ref_t": 56.1,
+     "res_t": 55.22
+    },
+    {
+     "word": "ne",
+     "ref_t": 60.1,
+     "res_t": 60.1
+    },
+    {
+     "word": "non",
+     "ref_t": 79.44,
+     "res_t": 79.38
+    }
+   ],
+   "scramble_floor": [
+    "anch",
+    "assista",
+    "attiva",
+    "dio",
+    "dorme",
+    "ho",
+    "io",
+    "la",
+    "ma",
+    "nel",
+    "parola",
+    "perch\u00e9",
+    "ripetere",
+    "sempre",
+    "sonno",
+    "stanza",
+    "visto"
+   ],
+   "det4b_pilot_words_20_28": 10,
+   "det4b_pilot_phrases_20_28": [
+    {
+     "w": "che",
+     "ref_t": 20.82,
+     "res_t": 21.06
+    },
+    {
+     "w": "mai",
+     "ref_t": 21.3,
+     "res_t": 21.3
+    },
+    {
+     "w": "dicesti",
+     "ref_t": 21.82,
+     "res_t": 21.84
+    },
+    {
+     "w": "io",
+     "ref_t": 24.1,
+     "res_t": 23.94
+    },
+    {
+     "w": "s\u00ec",
+     "ref_t": 25.06,
+     "res_t": 25.04
+    },
+    {
+     "w": "anzi",
+     "ref_t": 25.52,
+     "res_t": 25.38
+    },
+    {
+     "w": "ho",
+     "ref_t": 25.9,
+     "res_t": 25.9
+    },
+    {
+     "w": "detto",
+     "ref_t": 25.96,
+     "res_t": 25.96
+    },
+    {
+     "w": "farmi",
+     "ref_t": 26.28,
+     "res_t": 26.16
+    },
+    {
+     "w": "mentre",
+     "ref_t": 27.18,
+     "res_t": 27.16
+    }
+   ],
+   "det4c_control_unique_20_28": null,
+   "det4c_control_unique_words": null,
+   "owner_label_20_28": "unlabeled",
+   "panel_class": "panel_dirty_widespread_residue+words"
+  },
+  "B_melband_ft": {
+   "circular_20_28_db": -7.2,
+   "circular_20_28_db_candnorm": -1.2,
+   "circular_vmed_dbfs_20_28": -15.3,
+   "circular_why_quiet_20_28": "scored_at_or_above_gate",
+   "htdemucs04_20_28_db": -6.5,
+   "htdemucs95_20_28_db": -6.6,
+   "htdemucs04_absvoc_dbfs_20_28": -14.8,
+   "pyin_voiced_prob_20_28": 0.985,
+   "silero_vad_20_28": 1.0,
+   "silero_mix_20_28": 0.0,
+   "no_speech_prob_20_28": 0.769,
+   "htdemucs04_worst_db": -6.4,
+   "htdemucs04_rel_worst_at": [
+    -6.4,
+    83.5
+   ],
+   "htdemucs95_worst_db": -6.2,
+   "absvoc_dbfs_worst_at": [
+    -14.8,
+    24.5
+   ],
+   "silero_stem_worst_at": [
+    1.0,
+    9.5
+   ],
+   "pyin_worst_at": [
+    1.0,
+    11.0
+   ],
+   "composite_fire_intervals": [
+    [
+     6.5,
+     7.5,
+     -48.9,
+     0.324
+    ],
+    [
+     9.0,
+     50.5,
+     -14.8,
+     1.0
+    ],
+    [
+     51.0,
+     97.0,
+     -17.1,
+     0.998
+    ]
+   ],
+   "n_fire_intervals": 3,
+   "fire_duration_s": 88.5,
+   "detector4_fire_wordregion": true,
+   "det4_orig_matched_words_wordregion": 16,
+   "matched_phrases_wordregion": [
+    {
+     "word": "il",
+     "ref_t": 36.26,
+     "res_t": 36.34
+    },
+    {
+     "word": "orribile",
+     "ref_t": 40.74,
+     "res_t": 40.74
+    },
+    {
+     "word": "da",
+     "ref_t": 43.84,
+     "res_t": 43.84
+    },
+    {
+     "word": "questo",
+     "ref_t": 43.96,
+     "res_t": 43.96
+    },
+    {
+     "word": "orribile",
+     "ref_t": 47.98,
+     "res_t": 47.28
+    },
+    {
+     "word": "cortigiani",
+     "ref_t": 56.1,
+     "res_t": 55.22
+    },
+    {
+     "word": "ne",
+     "ref_t": 60.1,
+     "res_t": 60.1
+    },
+    {
+     "word": "anch",
+     "ref_t": 65.24,
+     "res_t": 62.72
+    },
+    {
+     "word": "io",
+     "ref_t": 65.52,
+     "res_t": 65.56
+    },
+    {
+     "word": "ma",
+     "ref_t": 66.78,
+     "res_t": 66.8
+    },
+    {
+     "word": "la",
+     "ref_t": 67.58,
+     "res_t": 67.62
+    },
+    {
+     "word": "parola",
+     "ref_t": 68.04,
+     "res_t": 68.04
+    },
+    {
+     "word": "perch\u00e9",
+     "ref_t": 74.86,
+     "res_t": 72.98
+    },
+    {
+     "word": "perch\u00e9",
+     "ref_t": 75.34,
+     "res_t": 75.34
+    },
+    {
+     "word": "ripetere",
+     "ref_t": 75.98,
+     "res_t": 75.98
+    },
+    {
+     "word": "non",
+     "ref_t": 79.44,
+     "res_t": 79.38
+    }
+   ],
+   "scramble_floor": [
+    "assista",
+    "attiva",
+    "dio",
+    "dorme",
+    "ho",
+    "nel",
+    "sempre",
+    "sonno",
+    "stanza",
+    "visto"
+   ],
+   "det4b_pilot_words_20_28": 8,
+   "det4b_pilot_phrases_20_28": [
+    {
+     "w": "che",
+     "ref_t": 20.82,
+     "res_t": 21.06
+    },
+    {
+     "w": "mai",
+     "ref_t": 21.3,
+     "res_t": 21.32
+    },
+    {
+     "w": "dicesti",
+     "ref_t": 21.82,
+     "res_t": 21.84
+    },
+    {
+     "w": "io",
+     "ref_t": 24.1,
+     "res_t": 23.96
+    },
+    {
+     "w": "s\u00ec",
+     "ref_t": 25.06,
+     "res_t": 25.04
+    },
+    {
+     "w": "anzi",
+     "ref_t": 25.52,
+     "res_t": 25.54
+    },
+    {
+     "w": "ho",
+     "ref_t": 25.9,
+     "res_t": 25.86
+    },
+    {
+     "w": "farmi",
+     "ref_t": 26.28,
+     "res_t": 26.06
+    }
+   ],
+   "det4c_control_unique_20_28": null,
+   "det4c_control_unique_words": null,
+   "owner_label_20_28": "unlabeled",
+   "panel_class": "panel_dirty_widespread_residue+words"
+  },
+  "M_maxagg": {
+   "circular_20_28_db": -7.0,
+   "circular_20_28_db_candnorm": -0.7,
+   "circular_vmed_dbfs_20_28": -15.1,
+   "circular_why_quiet_20_28": "scored_at_or_above_gate",
+   "htdemucs04_20_28_db": -6.8,
+   "htdemucs95_20_28_db": -6.7,
+   "htdemucs04_absvoc_dbfs_20_28": -15.0,
+   "pyin_voiced_prob_20_28": 0.985,
+   "silero_vad_20_28": 1.0,
+   "silero_mix_20_28": 0.0,
+   "no_speech_prob_20_28": 1.0,
+   "htdemucs04_worst_db": -6.7,
+   "htdemucs04_rel_worst_at": [
+    -6.7,
+    68.5
+   ],
+   "htdemucs95_worst_db": -6.3,
+   "absvoc_dbfs_worst_at": [
+    -15.0,
+    24.5
+   ],
+   "silero_stem_worst_at": [
+    1.0,
+    9.5
+   ],
+   "pyin_worst_at": [
+    1.0,
+    10.5
+   ],
+   "composite_fire_intervals": [
+    [
+     9.0,
+     30.5,
+     -15.0,
+     1.0
+    ],
+    [
+     31.0,
+     50.5,
+     -18.0,
+     1.0
+    ],
+    [
+     51.0,
+     97.0,
+     -17.3,
+     0.999
+    ]
+   ],
+   "n_fire_intervals": 3,
+   "fire_duration_s": 87.0,
+   "detector4_fire_wordregion": true,
+   "det4_orig_matched_words_wordregion": 4,
+   "matched_phrases_wordregion": [
+    {
+     "word": "orribile",
+     "ref_t": 47.98,
+     "res_t": 48.12
+    },
+    {
+     "word": "nel",
+     "ref_t": 50.66,
+     "res_t": 49.16
+    },
+    {
+     "word": "cortigiani",
+     "ref_t": 56.1,
+     "res_t": 55.2
+    },
+    {
+     "word": "ne",
+     "ref_t": 60.1,
+     "res_t": 60.1
+    }
+   ],
+   "scramble_floor": [
+    "ame",
+    "anch",
+    "assista",
+    "dio",
+    "dorme",
+    "ho",
+    "il",
+    "io",
+    "la",
+    "ma",
+    "non",
+    "parola",
+    "perch\u00e9",
+    "ripetere",
+    "sempre",
+    "sonno",
+    "stanza",
+    "visto"
+   ],
+   "det4b_pilot_words_20_28": 0,
+   "det4b_pilot_phrases_20_28": [],
+   "det4c_control_unique_20_28": null,
+   "det4c_control_unique_words": null,
+   "owner_label_20_28": "unlabeled",
+   "panel_class": "panel_dirty_widespread_residue+words"
+  },
+  "V4_deechorev": {
+   "circular_20_28_db": -48.4,
+   "circular_20_28_db_candnorm": -31.0,
+   "circular_vmed_dbfs_20_28": -62.6,
+   "circular_why_quiet_20_28": "low_vocal_score(median-ensemble extracts ~nothing: residue in MDX/Mel/BS null space)",
+   "htdemucs04_20_28_db": -69.4,
+   "htdemucs95_20_28_db": -35.4,
+   "htdemucs04_absvoc_dbfs_20_28": -85.0,
+   "pyin_voiced_prob_20_28": 0.241,
+   "silero_vad_20_28": 0.008,
+   "silero_mix_20_28": 0.0,
+   "no_speech_prob_20_28": 0.825,
+   "htdemucs04_worst_db": -32.2,
+   "htdemucs04_rel_worst_at": [
+    -32.2,
+    38.5
+   ],
+   "htdemucs95_worst_db": -7.1,
+   "absvoc_dbfs_worst_at": [
+    -47.1,
+    39.0
+   ],
+   "silero_stem_worst_at": [
+    0.6,
+    38.5
+   ],
+   "pyin_worst_at": [
+    1.0,
+    39.5
+   ],
+   "composite_fire_intervals": [
+    [
+     38.5,
+     41.0,
+     -47.1,
+     0.553
+    ]
+   ],
+   "n_fire_intervals": 1,
+   "fire_duration_s": 2.5,
+   "detector4_fire_wordregion": false,
+   "det4_orig_matched_words_wordregion": 0,
+   "matched_phrases_wordregion": [],
+   "scramble_floor": [
+    "assista"
+   ],
+   "det4b_pilot_words_20_28": 1,
+   "det4b_pilot_phrases_20_28": [
+    {
+     "w": "anzi",
+     "ref_t": 25.52,
+     "res_t": 23.62
+    }
+   ],
+   "det4c_control_unique_20_28": null,
+   "det4c_control_unique_words": null,
+   "owner_label_20_28": "unlabeled",
+   "panel_class": "panel_cleanlike_V2(fires_only_at_shared_~38.5s_tutti,0_words)"
+  }
+ },
+ "orchestra_negatives_FP": {
+  "neg_bologna_verdi": {
+   "circular_20_28_db": -35.1,
+   "circular_20_28_db_candnorm": -35.1,
+   "circular_vmed_dbfs_20_28": -69.7,
+   "circular_why_quiet_20_28": "low_vocal_score(median-ensemble extracts ~nothing: residue in MDX/Mel/BS null space)",
+   "htdemucs04_20_28_db": -43.5,
+   "htdemucs95_20_28_db": -9.4,
+   "htdemucs04_absvoc_dbfs_20_28": -79.3,
+   "pyin_voiced_prob_20_28": 0.109,
+   "silero_vad_20_28": 0.013,
+   "silero_mix_20_28": 0.001,
+   "no_speech_prob_20_28": null,
+   "htdemucs04_worst_db": -23.0,
+   "htdemucs04_rel_worst_at": [
+    -1.2,
+    90.5
+   ],
+   "htdemucs95_worst_db": -4.2,
+   "absvoc_dbfs_worst_at": [
+    -47.5,
+    58.5
+   ],
+   "silero_stem_worst_at": [
+    0.4,
+    18.0
+   ],
+   "pyin_worst_at": [
+    0.9,
+    43.0
+   ],
+   "composite_fire_intervals": [],
+   "n_fire_intervals": 0,
+   "fire_duration_s": 0,
+   "detector4_fire_wordregion": false,
+   "det4_orig_matched_words_wordregion": 0,
+   "matched_phrases_wordregion": [],
+   "scramble_floor": [],
+   "det4b_pilot_words_20_28": 0,
+   "det4b_pilot_phrases_20_28": [],
+   "det4c_control_unique_20_28": null,
+   "det4c_control_unique_words": null
+  },
+  "neg_aalto_mozart_dry": {
+   "circular_20_28_db": -36.9,
+   "circular_20_28_db_candnorm": -36.9,
+   "circular_vmed_dbfs_20_28": -63.0,
+   "circular_why_quiet_20_28": "low_vocal_score(median-ensemble extracts ~nothing: residue in MDX/Mel/BS null space)",
+   "htdemucs04_20_28_db": -49.4,
+   "htdemucs95_20_28_db": -42.7,
+   "htdemucs04_absvoc_dbfs_20_28": -73.4,
+   "pyin_voiced_prob_20_28": 0.207,
+   "silero_vad_20_28": 0.046,
+   "silero_mix_20_28": 0.0,
+   "no_speech_prob_20_28": null,
+   "htdemucs04_worst_db": -32.9,
+   "htdemucs04_rel_worst_at": [
+    -32.9,
+    81.5
+   ],
+   "htdemucs95_worst_db": -38.6,
+   "absvoc_dbfs_worst_at": [
+    -64.9,
+    81.5
+   ],
+   "silero_stem_worst_at": [
+    0.1,
+    27.5
+   ],
+   "pyin_worst_at": [
+    1.0,
+    13.5
+   ],
+   "composite_fire_intervals": [],
+   "n_fire_intervals": 0,
+   "fire_duration_s": 0,
+   "detector4_fire_wordregion": false,
+   "det4_orig_matched_words_wordregion": 0,
+   "matched_phrases_wordregion": [],
+   "scramble_floor": [],
+   "det4b_pilot_words_20_28": 0,
+   "det4b_pilot_phrases_20_28": [],
+   "det4c_control_unique_20_28": null,
+   "det4c_control_unique_words": null
+  },
+  "neg_aalto_mozart_hall": {
+   "circular_20_28_db": -33.1,
+   "circular_20_28_db_candnorm": -33.1,
+   "circular_vmed_dbfs_20_28": -59.9,
+   "circular_why_quiet_20_28": "low_vocal_score(median-ensemble extracts ~nothing: residue in MDX/Mel/BS null space)",
+   "htdemucs04_20_28_db": -44.9,
+   "htdemucs95_20_28_db": -1.6,
+   "htdemucs04_absvoc_dbfs_20_28": -69.6,
+   "pyin_voiced_prob_20_28": 0.946,
+   "silero_vad_20_28": 0.056,
+   "silero_mix_20_28": 0.0,
+   "no_speech_prob_20_28": null,
+   "htdemucs04_worst_db": -30.0,
+   "htdemucs04_rel_worst_at": [
+    -30.0,
+    81.5
+   ],
+   "htdemucs95_worst_db": -1.3,
+   "absvoc_dbfs_worst_at": [
+    -55.4,
+    29.0
+   ],
+   "silero_stem_worst_at": [
+    0.7,
+    28.0
+   ],
+   "pyin_worst_at": [
+    1.0,
+    29.0
+   ],
+   "composite_fire_intervals": [],
+   "n_fire_intervals": 0,
+   "fire_duration_s": 0,
+   "detector4_fire_wordregion": false,
+   "det4_orig_matched_words_wordregion": 0,
+   "matched_phrases_wordregion": [],
+   "scramble_floor": [],
+   "det4b_pilot_words_20_28": 0,
+   "det4b_pilot_phrases_20_28": [],
+   "det4c_control_unique_20_28": null,
+   "det4c_control_unique_words": null
+  }
+ }
+}

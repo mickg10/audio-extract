@@ -1,0 +1,1338 @@
+{
+  "_meta": {
+    "purpose": "priming/hallucination confound controls for ASR voice gate",
+    "model": "large-v3",
+    "device": "cuda",
+    "compute_type": "float16",
+    "language_forced": "it",
+    "tol_s": 3.0,
+    "minlen": 2,
+    "vad_filter": false,
+    "condition_on_previous_text": false,
+    "beam_size": 5,
+    "temperature": 0.0,
+    "reference": "asr_report.json _reference.verdi_slow_voices.lyric_words (34 words, two-model agreement on O_original)",
+    "n_ref_scored_total": 34,
+    "started": "2026-08-16 02:33:30",
+    "status": "done",
+    "finished": "2026-08-16 02:34:22"
+  },
+  "results": {
+    "O_original_validation": {
+      "kind": "validation",
+      "path": "/home/mickg/ab_pairs/verdi_slow_voices__O_original.m4a",
+      "overlap_pct": 100.0,
+      "n_recovered": 34,
+      "n_ref_scored": 34,
+      "matched_words": [
+        {
+          "word": "stanza",
+          "norm": "stanza",
+          "ref_t": 32.32,
+          "var_t": 32.32
+        },
+        {
+          "word": "attiva",
+          "norm": "attiva",
+          "ref_t": 33.36,
+          "var_t": 33.36
+        },
+        {
+          "word": "dorme?",
+          "norm": "dorme",
+          "ref_t": 34.72,
+          "var_t": 34.72
+        },
+        {
+          "word": "Il",
+          "norm": "il",
+          "ref_t": 36.26,
+          "var_t": 36.26
+        },
+        {
+          "word": "Ho",
+          "norm": "ho",
+          "ref_t": 38.22,
+          "var_t": 38.22
+        },
+        {
+          "word": "visto,",
+          "norm": "visto",
+          "ref_t": 39.06,
+          "var_t": 39.06
+        },
+        {
+          "word": "ho",
+          "norm": "ho",
+          "ref_t": 40.18,
+          "var_t": 40.18
+        },
+        {
+          "word": "visto,",
+          "norm": "visto",
+          "ref_t": 40.46,
+          "var_t": 40.46
+        },
+        {
+          "word": "orribile",
+          "norm": "orribile",
+          "ref_t": 40.74,
+          "var_t": 40.74
+        },
+        {
+          "word": "da",
+          "norm": "da",
+          "ref_t": 43.84,
+          "var_t": 43.84
+        },
+        {
+          "word": "questo",
+          "norm": "questo",
+          "ref_t": 43.96,
+          "var_t": 43.96
+        },
+        {
+          "word": "Ho",
+          "norm": "ho",
+          "ref_t": 45.42,
+          "var_t": 45.42
+        },
+        {
+          "word": "visto,",
+          "norm": "visto",
+          "ref_t": 45.86,
+          "var_t": 45.86
+        },
+        {
+          "word": "ho",
+          "norm": "ho",
+          "ref_t": 46.52,
+          "var_t": 46.52
+        },
+        {
+          "word": "visto,",
+          "norm": "visto",
+          "ref_t": 46.96,
+          "var_t": 46.96
+        },
+        {
+          "word": "orribile",
+          "norm": "orribile",
+          "ref_t": 47.98,
+          "var_t": 47.98
+        },
+        {
+          "word": "Nel",
+          "norm": "nel",
+          "ref_t": 50.66,
+          "var_t": 50.66
+        },
+        {
+          "word": "sonno",
+          "norm": "sonno",
+          "ref_t": 52.06,
+          "var_t": 52.06
+        },
+        {
+          "word": "cortigiani",
+          "norm": "cortigiani",
+          "ref_t": 56.1,
+          "var_t": 56.1
+        },
+        {
+          "word": "Dio",
+          "norm": "dio",
+          "ref_t": 57.78,
+          "var_t": 57.78
+        },
+        {
+          "word": "sempre",
+          "norm": "sempre",
+          "ref_t": 59.16,
+          "var_t": 59.16
+        },
+        {
+          "word": "ne",
+          "norm": "ne",
+          "ref_t": 60.1,
+          "var_t": 60.1
+        },
+        {
+          "word": "assista,",
+          "norm": "assista",
+          "ref_t": 60.54,
+          "var_t": 60.54
+        },
+        {
+          "word": "anch",
+          "norm": "anch",
+          "ref_t": 65.24,
+          "var_t": 65.24
+        },
+        {
+          "word": "'io,",
+          "norm": "io",
+          "ref_t": 65.52,
+          "var_t": 65.52
+        },
+        {
+          "word": "ma",
+          "norm": "ma",
+          "ref_t": 66.78,
+          "var_t": 66.78
+        },
+        {
+          "word": "la",
+          "norm": "la",
+          "ref_t": 67.58,
+          "var_t": 67.58
+        },
+        {
+          "word": "parola",
+          "norm": "parola",
+          "ref_t": 68.04,
+          "var_t": 68.04
+        },
+        {
+          "word": "Perché,",
+          "norm": "perché",
+          "ref_t": 74.86,
+          "var_t": 74.86
+        },
+        {
+          "word": "perché",
+          "norm": "perché",
+          "ref_t": 75.34,
+          "var_t": 75.34
+        },
+        {
+          "word": "ripetere",
+          "norm": "ripetere",
+          "ref_t": 75.98,
+          "var_t": 75.98
+        },
+        {
+          "word": "ame",
+          "norm": "ame",
+          "ref_t": 78.64,
+          "var_t": 78.64
+        },
+        {
+          "word": "non",
+          "norm": "non",
+          "ref_t": 79.44,
+          "var_t": 79.44
+        },
+        {
+          "word": "potei?",
+          "norm": "potei",
+          "ref_t": 79.76,
+          "var_t": 79.76
+        }
+      ],
+      "recovered_ref_idx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33
+      ],
+      "language": "it",
+      "no_speech_prob": 0.751,
+      "avg_logprob": -0.385,
+      "n_var_words": 75,
+      "transcript": "Fatal mia donna Odì nella stanza attiva Chi dorme? Il re Calzio Ho visto, ho visto, orribile Scherla da questo ucciso Ho visto, ho visto, orribile Nel sonno udì che oravano i cortigiani E Dio sempre ne assista, poi dissero amendi e vogli anch'io, ma la parola in docile gelò sui labbra i miei. Oh Dio! Perché, perché ripetere quella ame non potei? Oh Dio, oh Dio, che perdono i miei! Grazie a tutti.",
+      "secs": 3.1
+    },
+    "V1_inverted_validation": {
+      "kind": "validation",
+      "path": "/home/mickg/ab_pairs/verdi_slow_voices__V1_inverted.m4a",
+      "overlap_pct": 94.1,
+      "n_recovered": 32,
+      "n_ref_scored": 34,
+      "matched_words": [
+        {
+          "word": "stanza",
+          "norm": "stanza",
+          "ref_t": 32.32,
+          "var_t": 32.34
+        },
+        {
+          "word": "dorme?",
+          "norm": "dorme",
+          "ref_t": 34.72,
+          "var_t": 35.24
+        },
+        {
+          "word": "Il",
+          "norm": "il",
+          "ref_t": 36.26,
+          "var_t": 36.26
+        },
+        {
+          "word": "Ho",
+          "norm": "ho",
+          "ref_t": 38.22,
+          "var_t": 38.22
+        },
+        {
+          "word": "visto,",
+          "norm": "visto",
+          "ref_t": 39.06,
+          "var_t": 39.04
+        },
+        {
+          "word": "ho",
+          "norm": "ho",
+          "ref_t": 40.18,
+          "var_t": 40.18
+        },
+        {
+          "word": "visto,",
+          "norm": "visto",
+          "ref_t": 40.46,
+          "var_t": 40.46
+        },
+        {
+          "word": "orribile",
+          "norm": "orribile",
+          "ref_t": 40.74,
+          "var_t": 40.76
+        },
+        {
+          "word": "da",
+          "norm": "da",
+          "ref_t": 43.84,
+          "var_t": 43.84
+        },
+        {
+          "word": "questo",
+          "norm": "questo",
+          "ref_t": 43.96,
+          "var_t": 43.98
+        },
+        {
+          "word": "Ho",
+          "norm": "ho",
+          "ref_t": 45.42,
+          "var_t": 45.42
+        },
+        {
+          "word": "visto,",
+          "norm": "visto",
+          "ref_t": 45.86,
+          "var_t": 45.82
+        },
+        {
+          "word": "ho",
+          "norm": "ho",
+          "ref_t": 46.52,
+          "var_t": 47.26
+        },
+        {
+          "word": "visto,",
+          "norm": "visto",
+          "ref_t": 46.96,
+          "var_t": 47.5
+        },
+        {
+          "word": "orribile",
+          "norm": "orribile",
+          "ref_t": 47.98,
+          "var_t": 48.14
+        },
+        {
+          "word": "Nel",
+          "norm": "nel",
+          "ref_t": 50.66,
+          "var_t": 50.66
+        },
+        {
+          "word": "sonno",
+          "norm": "sonno",
+          "ref_t": 52.06,
+          "var_t": 52.04
+        },
+        {
+          "word": "cortigiani",
+          "norm": "cortigiani",
+          "ref_t": 56.1,
+          "var_t": 55.74
+        },
+        {
+          "word": "Dio",
+          "norm": "dio",
+          "ref_t": 57.78,
+          "var_t": 57.78
+        },
+        {
+          "word": "sempre",
+          "norm": "sempre",
+          "ref_t": 59.16,
+          "var_t": 59.16
+        },
+        {
+          "word": "ne",
+          "norm": "ne",
+          "ref_t": 60.1,
+          "var_t": 60.1
+        },
+        {
+          "word": "assista,",
+          "norm": "assista",
+          "ref_t": 60.54,
+          "var_t": 60.56
+        },
+        {
+          "word": "anch",
+          "norm": "anch",
+          "ref_t": 65.24,
+          "var_t": 65.28
+        },
+        {
+          "word": "'io,",
+          "norm": "io",
+          "ref_t": 65.52,
+          "var_t": 65.52
+        },
+        {
+          "word": "ma",
+          "norm": "ma",
+          "ref_t": 66.78,
+          "var_t": 66.8
+        },
+        {
+          "word": "la",
+          "norm": "la",
+          "ref_t": 67.58,
+          "var_t": 67.6
+        },
+        {
+          "word": "parola",
+          "norm": "parola",
+          "ref_t": 68.04,
+          "var_t": 68.06
+        },
+        {
+          "word": "Perché,",
+          "norm": "perché",
+          "ref_t": 74.86,
+          "var_t": 74.86
+        },
+        {
+          "word": "perché",
+          "norm": "perché",
+          "ref_t": 75.34,
+          "var_t": 75.34
+        },
+        {
+          "word": "ripetere",
+          "norm": "ripetere",
+          "ref_t": 75.98,
+          "var_t": 76.02
+        },
+        {
+          "word": "non",
+          "norm": "non",
+          "ref_t": 79.44,
+          "var_t": 79.86
+        },
+        {
+          "word": "potei?",
+          "norm": "potei",
+          "ref_t": 79.76,
+          "var_t": 80.3
+        }
+      ],
+      "recovered_ref_idx": [
+        0,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        32,
+        33
+      ],
+      "language": "it",
+      "no_speech_prob": 0.582,
+      "avg_logprob": -0.531,
+      "n_var_words": 95,
+      "transcript": "FATAL MIA DONNA Dio è nella stanza attivo Chi dorme? Il re Calzio Ho visto, ho visto, orribile Si torna da questo ucciso Ho visto, orribile, ho visto, orribile Nel sonno di che oravano i cortigiani E Dio sempre ne assista, lui disse no, amendi e mori anch'io, ma la parola in voce vedo sulla pericola. Oh, Dio! Perché, perché ripetere quella mena non potei? Oh, Dio! Oh, Dio! Che spero non ti vedo mai! Oh, Dio! Che spero non ti vedo mai! Oh, Dio! Oh, Dio! Non potei! Oh, Dio! Grazie a tutti.",
+      "secs": 4.2
+    },
+    "ctrl_a_phase_scrambled_V1": {
+      "kind": "zero_voice_control",
+      "path": "/home/mickg/ab_pairs/priming_controls/verdi_V1_phase_scrambled.wav",
+      "overlap_pct": 55.9,
+      "n_recovered": 19,
+      "n_ref_scored": 34,
+      "matched_words": [
+        {
+          "word": "stanza",
+          "norm": "stanza",
+          "ref_t": 32.32,
+          "var_t": 32.32
+        },
+        {
+          "word": "dorme?",
+          "norm": "dorme",
+          "ref_t": 34.72,
+          "var_t": 35.32
+        },
+        {
+          "word": "Il",
+          "norm": "il",
+          "ref_t": 36.26,
+          "var_t": 36.28
+        },
+        {
+          "word": "Ho",
+          "norm": "ho",
+          "ref_t": 38.22,
+          "var_t": 38.58
+        },
+        {
+          "word": "visto,",
+          "norm": "visto",
+          "ref_t": 39.06,
+          "var_t": 39.06
+        },
+        {
+          "word": "ho",
+          "norm": "ho",
+          "ref_t": 40.18,
+          "var_t": 40.14
+        },
+        {
+          "word": "visto,",
+          "norm": "visto",
+          "ref_t": 40.46,
+          "var_t": 40.44
+        },
+        {
+          "word": "Ho",
+          "norm": "ho",
+          "ref_t": 45.42,
+          "var_t": 42.96
+        },
+        {
+          "word": "visto,",
+          "norm": "visto",
+          "ref_t": 45.86,
+          "var_t": 43.26
+        },
+        {
+          "word": "ho",
+          "norm": "ho",
+          "ref_t": 46.52,
+          "var_t": 46.58
+        },
+        {
+          "word": "visto,",
+          "norm": "visto",
+          "ref_t": 46.96,
+          "var_t": 46.96
+        },
+        {
+          "word": "Dio",
+          "norm": "dio",
+          "ref_t": 57.78,
+          "var_t": 57.74
+        },
+        {
+          "word": "assista,",
+          "norm": "assista",
+          "ref_t": 60.54,
+          "var_t": 60.62
+        },
+        {
+          "word": "anch",
+          "norm": "anch",
+          "ref_t": 65.24,
+          "var_t": 65.34
+        },
+        {
+          "word": "'io,",
+          "norm": "io",
+          "ref_t": 65.52,
+          "var_t": 65.5
+        },
+        {
+          "word": "ma",
+          "norm": "ma",
+          "ref_t": 66.78,
+          "var_t": 66.86
+        },
+        {
+          "word": "la",
+          "norm": "la",
+          "ref_t": 67.58,
+          "var_t": 67.52
+        },
+        {
+          "word": "parola",
+          "norm": "parola",
+          "ref_t": 68.04,
+          "var_t": 68.02
+        },
+        {
+          "word": "non",
+          "norm": "non",
+          "ref_t": 79.44,
+          "var_t": 79.4
+        }
+      ],
+      "recovered_ref_idx": [
+        0,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        11,
+        12,
+        13,
+        14,
+        19,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        32
+      ],
+      "language": "it",
+      "no_speech_prob": 0.739,
+      "avg_logprob": -0.657,
+      "n_var_words": 83,
+      "transcript": "Musica In la stanza vivo. Chi dorme? Il reganzino. Ho visto, ho visto, ho visto il rimine. Ho visto, ho visto, ho visto il rimine. E sono lì che ora morono i coltigiani. E Dio sente e mi assista, purtissimamente mori anch'io, ma la parola in voce, come il giusto, che la pericoli. O Dio! E per te, per i pezzi, le condanne non potrei. O Dio! O Dio! E per te, per i pezzi, le condanne non potrei. Grazie a tutti.",
+      "secs": 2.8
+    },
+    "ctrl_b_orch_bologna_verdi": {
+      "kind": "zero_voice_control",
+      "path": "/home/mickg/truth_pairs/bologna_verdi/orchestra_only.wav",
+      "overlap_pct": 0.0,
+      "n_recovered": 0,
+      "n_ref_scored": 34,
+      "matched_words": [],
+      "recovered_ref_idx": [],
+      "language": "it",
+      "no_speech_prob": 0.822,
+      "avg_logprob": -0.379,
+      "n_var_words": 12,
+      "transcript": "Grazie a tutti. Grazie a tutti. Grazie a tutti. Grazie a tutti.",
+      "secs": 1.1
+    },
+    "ctrl_b_orch_aalto_mozart_dry": {
+      "kind": "zero_voice_control",
+      "path": "/home/mickg/truth_pairs/aalto_mozart_dry/orchestra_only.wav",
+      "overlap_pct": 0.0,
+      "n_recovered": 0,
+      "n_ref_scored": 34,
+      "matched_words": [],
+      "recovered_ref_idx": [],
+      "language": "it",
+      "no_speech_prob": 0.839,
+      "avg_logprob": -0.378,
+      "n_var_words": 9,
+      "transcript": "Grazie a tutti. grazie a tutti Grazie a tutti.",
+      "secs": 0.7
+    },
+    "ctrl_b_orch_aalto_mozart_hall": {
+      "kind": "zero_voice_control",
+      "path": "/home/mickg/truth_pairs/aalto_mozart_hall/orchestra_only.wav",
+      "overlap_pct": 0.0,
+      "n_recovered": 0,
+      "n_ref_scored": 34,
+      "matched_words": [],
+      "recovered_ref_idx": [],
+      "language": "it",
+      "no_speech_prob": 0.884,
+      "avg_logprob": -0.426,
+      "n_var_words": 7,
+      "transcript": "Musica Grazie a tutti. Grazie a tutti.",
+      "secs": 1.0
+    },
+    "ctrl_c_vocalband_atten_V1": {
+      "kind": "vocalband_test",
+      "path": "/home/mickg/ab_pairs/priming_controls/verdi_V1_vocalband_atten.wav",
+      "overlap_pct": 64.7,
+      "n_recovered": 22,
+      "n_ref_scored": 34,
+      "matched_words": [
+        {
+          "word": "stanza",
+          "norm": "stanza",
+          "ref_t": 32.32,
+          "var_t": 32.28
+        },
+        {
+          "word": "dorme?",
+          "norm": "dorme",
+          "ref_t": 34.72,
+          "var_t": 34.82
+        },
+        {
+          "word": "Il",
+          "norm": "il",
+          "ref_t": 36.26,
+          "var_t": 36.26
+        },
+        {
+          "word": "Ho",
+          "norm": "ho",
+          "ref_t": 38.22,
+          "var_t": 38.22
+        },
+        {
+          "word": "visto,",
+          "norm": "visto",
+          "ref_t": 39.06,
+          "var_t": 39.06
+        },
+        {
+          "word": "ho",
+          "norm": "ho",
+          "ref_t": 40.18,
+          "var_t": 40.14
+        },
+        {
+          "word": "visto,",
+          "norm": "visto",
+          "ref_t": 40.46,
+          "var_t": 40.46
+        },
+        {
+          "word": "orribile",
+          "norm": "orribile",
+          "ref_t": 40.74,
+          "var_t": 40.84
+        },
+        {
+          "word": "da",
+          "norm": "da",
+          "ref_t": 43.84,
+          "var_t": 43.82
+        },
+        {
+          "word": "questo",
+          "norm": "questo",
+          "ref_t": 43.96,
+          "var_t": 43.98
+        },
+        {
+          "word": "Ho",
+          "norm": "ho",
+          "ref_t": 45.42,
+          "var_t": 45.42
+        },
+        {
+          "word": "visto,",
+          "norm": "visto",
+          "ref_t": 45.86,
+          "var_t": 45.82
+        },
+        {
+          "word": "ho",
+          "norm": "ho",
+          "ref_t": 46.52,
+          "var_t": 47.26
+        },
+        {
+          "word": "visto,",
+          "norm": "visto",
+          "ref_t": 46.96,
+          "var_t": 47.5
+        },
+        {
+          "word": "orribile",
+          "norm": "orribile",
+          "ref_t": 47.98,
+          "var_t": 48.12
+        },
+        {
+          "word": "Nel",
+          "norm": "nel",
+          "ref_t": 50.66,
+          "var_t": 50.58
+        },
+        {
+          "word": "sonno",
+          "norm": "sonno",
+          "ref_t": 52.06,
+          "var_t": 51.98
+        },
+        {
+          "word": "cortigiani",
+          "norm": "cortigiani",
+          "ref_t": 56.1,
+          "var_t": 55.54
+        },
+        {
+          "word": "Dio",
+          "norm": "dio",
+          "ref_t": 57.78,
+          "var_t": 57.76
+        },
+        {
+          "word": "sempre",
+          "norm": "sempre",
+          "ref_t": 59.16,
+          "var_t": 59.18
+        },
+        {
+          "word": "ne",
+          "norm": "ne",
+          "ref_t": 60.1,
+          "var_t": 60.1
+        },
+        {
+          "word": "assista,",
+          "norm": "assista",
+          "ref_t": 60.54,
+          "var_t": 60.56
+        }
+      ],
+      "recovered_ref_idx": [
+        0,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22
+      ],
+      "language": "it",
+      "no_speech_prob": 0.728,
+      "avg_logprob": -0.428,
+      "n_var_words": 43,
+      "transcript": "FATAL MIA DONNA E nella stanza vivo Chi dorme? Il re Calzio Ho visto, ho visto orribile Si torna da questo ucciso Ho visto orribile, ho visto orribile Nel sonno di che amano i cortigiani E Dio sempre ne assista. Grazie a tutti.",
+      "secs": 1.9
+    },
+    "ctrl_a_phase_scrambled_V1_s1": {
+      "kind": "zero_voice_control",
+      "path": "/home/mickg/ab_pairs/priming_controls/verdi_V1_phase_scrambled_s1.wav",
+      "overlap_pct": 47.1,
+      "n_recovered": 16,
+      "n_ref_scored": 34,
+      "recovered_ref_idx": [
+        0,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        11,
+        12,
+        13,
+        14,
+        15,
+        17,
+        19,
+        22
+      ],
+      "matched_words": [
+        {
+          "word": "stanza",
+          "ref_t": 32.32,
+          "var_t": 32.32
+        },
+        {
+          "word": "dorme?",
+          "ref_t": 34.72,
+          "var_t": 35.34
+        },
+        {
+          "word": "Il",
+          "ref_t": 36.26,
+          "var_t": 36.26
+        },
+        {
+          "word": "Ho",
+          "ref_t": 38.22,
+          "var_t": 38.2
+        },
+        {
+          "word": "visto,",
+          "ref_t": 39.06,
+          "var_t": 39.04
+        },
+        {
+          "word": "ho",
+          "ref_t": 40.18,
+          "var_t": 40.14
+        },
+        {
+          "word": "visto,",
+          "ref_t": 40.46,
+          "var_t": 40.48
+        },
+        {
+          "word": "orribile",
+          "ref_t": 40.74,
+          "var_t": 40.88
+        },
+        {
+          "word": "Ho",
+          "ref_t": 45.42,
+          "var_t": 42.7
+        },
+        {
+          "word": "visto,",
+          "ref_t": 45.86,
+          "var_t": 43.38
+        },
+        {
+          "word": "ho",
+          "ref_t": 46.52,
+          "var_t": 45.64
+        },
+        {
+          "word": "visto,",
+          "ref_t": 46.96,
+          "var_t": 45.72
+        },
+        {
+          "word": "orribile",
+          "ref_t": 47.98,
+          "var_t": 46.36
+        },
+        {
+          "word": "sonno",
+          "ref_t": 52.06,
+          "var_t": 51.76
+        },
+        {
+          "word": "Dio",
+          "ref_t": 57.78,
+          "var_t": 57.8
+        },
+        {
+          "word": "assista,",
+          "ref_t": 60.54,
+          "var_t": 60.48
+        }
+      ],
+      "n_var_words": 51
+    },
+    "ctrl_a_phase_scrambled_V1_s2": {
+      "kind": "zero_voice_control",
+      "path": "/home/mickg/ab_pairs/priming_controls/verdi_V1_phase_scrambled_s2.wav",
+      "overlap_pct": 52.9,
+      "n_recovered": 18,
+      "n_ref_scored": 34,
+      "recovered_ref_idx": [
+        0,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        11,
+        12,
+        13,
+        14,
+        17,
+        18,
+        19,
+        22,
+        25,
+        26,
+        27
+      ],
+      "matched_words": [
+        {
+          "word": "stanza",
+          "ref_t": 32.32,
+          "var_t": 32.24
+        },
+        {
+          "word": "dorme?",
+          "ref_t": 34.72,
+          "var_t": 35.32
+        },
+        {
+          "word": "Il",
+          "ref_t": 36.26,
+          "var_t": 36.26
+        },
+        {
+          "word": "Ho",
+          "ref_t": 38.22,
+          "var_t": 38.22
+        },
+        {
+          "word": "visto,",
+          "ref_t": 39.06,
+          "var_t": 39.04
+        },
+        {
+          "word": "ho",
+          "ref_t": 40.18,
+          "var_t": 40.14
+        },
+        {
+          "word": "visto,",
+          "ref_t": 40.46,
+          "var_t": 40.36
+        },
+        {
+          "word": "Ho",
+          "ref_t": 45.42,
+          "var_t": 42.48
+        },
+        {
+          "word": "visto,",
+          "ref_t": 45.86,
+          "var_t": 43.28
+        },
+        {
+          "word": "ho",
+          "ref_t": 46.52,
+          "var_t": 45.66
+        },
+        {
+          "word": "visto,",
+          "ref_t": 46.96,
+          "var_t": 45.8
+        },
+        {
+          "word": "sonno",
+          "ref_t": 52.06,
+          "var_t": 51.98
+        },
+        {
+          "word": "cortigiani",
+          "ref_t": 56.1,
+          "var_t": 56.14
+        },
+        {
+          "word": "Dio",
+          "ref_t": 57.78,
+          "var_t": 57.8
+        },
+        {
+          "word": "assista,",
+          "ref_t": 60.54,
+          "var_t": 60.48
+        },
+        {
+          "word": "ma",
+          "ref_t": 66.78,
+          "var_t": 66.86
+        },
+        {
+          "word": "la",
+          "ref_t": 67.58,
+          "var_t": 67.52
+        },
+        {
+          "word": "parola",
+          "ref_t": 68.04,
+          "var_t": 68.08
+        }
+      ],
+      "n_var_words": 73
+    },
+    "ctrl_a_phase_scrambled_V1_s3": {
+      "kind": "zero_voice_control",
+      "path": "/home/mickg/ab_pairs/priming_controls/verdi_V1_phase_scrambled_s3.wav",
+      "overlap_pct": 26.5,
+      "n_recovered": 9,
+      "n_ref_scored": 34,
+      "recovered_ref_idx": [
+        0,
+        4,
+        5,
+        6,
+        7,
+        11,
+        12,
+        13,
+        14
+      ],
+      "matched_words": [
+        {
+          "word": "stanza",
+          "ref_t": 32.32,
+          "var_t": 32.32
+        },
+        {
+          "word": "Ho",
+          "ref_t": 38.22,
+          "var_t": 38.28
+        },
+        {
+          "word": "visto,",
+          "ref_t": 39.06,
+          "var_t": 38.28
+        },
+        {
+          "word": "ho",
+          "ref_t": 40.18,
+          "var_t": 40.2
+        },
+        {
+          "word": "visto,",
+          "ref_t": 40.46,
+          "var_t": 40.44
+        },
+        {
+          "word": "Ho",
+          "ref_t": 45.42,
+          "var_t": 43.02
+        },
+        {
+          "word": "visto,",
+          "ref_t": 45.86,
+          "var_t": 43.02
+        },
+        {
+          "word": "ho",
+          "ref_t": 46.52,
+          "var_t": 45.02
+        },
+        {
+          "word": "visto,",
+          "ref_t": 46.96,
+          "var_t": 45.02
+        }
+      ],
+      "n_var_words": 51
+    },
+    "ctrl_a_phase_scrambled_V1_s4": {
+      "kind": "zero_voice_control",
+      "path": "/home/mickg/ab_pairs/priming_controls/verdi_V1_phase_scrambled_s4.wav",
+      "overlap_pct": 32.4,
+      "n_recovered": 11,
+      "n_ref_scored": 34,
+      "recovered_ref_idx": [
+        0,
+        2,
+        4,
+        5,
+        6,
+        7,
+        11,
+        12,
+        13,
+        14,
+        22
+      ],
+      "matched_words": [
+        {
+          "word": "stanza",
+          "ref_t": 32.32,
+          "var_t": 32.32
+        },
+        {
+          "word": "dorme?",
+          "ref_t": 34.72,
+          "var_t": 35.32
+        },
+        {
+          "word": "Ho",
+          "ref_t": 38.22,
+          "var_t": 38.22
+        },
+        {
+          "word": "visto,",
+          "ref_t": 39.06,
+          "var_t": 39.12
+        },
+        {
+          "word": "ho",
+          "ref_t": 40.18,
+          "var_t": 40.18
+        },
+        {
+          "word": "visto,",
+          "ref_t": 40.46,
+          "var_t": 40.46
+        },
+        {
+          "word": "Ho",
+          "ref_t": 45.42,
+          "var_t": 43.52
+        },
+        {
+          "word": "visto,",
+          "ref_t": 45.86,
+          "var_t": 43.52
+        },
+        {
+          "word": "ho",
+          "ref_t": 46.52,
+          "var_t": 45.38
+        },
+        {
+          "word": "visto,",
+          "ref_t": 46.96,
+          "var_t": 45.78
+        },
+        {
+          "word": "assista,",
+          "ref_t": 60.54,
+          "var_t": 60.5
+        }
+      ],
+      "n_var_words": 169
+    }
+  },
+  "corrected": {
+    "n_ref_scored_total": 34,
+    "V1_overlap_pct": 94.1,
+    "zero_voice_controls": {
+      "ctrl_a_phase_scrambled_V1": 55.9,
+      "ctrl_b_orch_bologna_verdi": 0.0,
+      "ctrl_b_orch_aalto_mozart_dry": 0.0,
+      "ctrl_b_orch_aalto_mozart_hall": 0.0
+    },
+    "priming_floor_pct": 55.9,
+    "priming_floor_source": "ctrl_a_phase_scrambled_V1",
+    "n_priming_recoverable_refwords": 19,
+    "method_1_floor_subtraction": {
+      "formula": "overlap_corrected = overlap_V1 - max(overlap over zero-voice controls)",
+      "overlap_corrected_pct": 38.2
+    },
+    "method_2_control_unique_words": {
+      "formula": "count only ref words V1 recovered that NO zero-voice control recovered",
+      "n_v1_recovered": 32,
+      "n_priming_recoverable": 19,
+      "n_v1_unique": 13,
+      "overlap_corrected_pct": 38.2,
+      "v1_unique_ref_idx": [
+        8,
+        9,
+        10,
+        15,
+        16,
+        17,
+        18,
+        20,
+        21,
+        28,
+        29,
+        30,
+        33
+      ]
+    },
+    "vocalband_test": {
+      "ctrl_c_overlap_pct": 64.7,
+      "drop_from_V1_pct": 29.4
+    },
+    "multiseed_floor": {
+      "phase_scramble_seed_overlaps": {
+        "ctrl_a_phase_scrambled_V1": 55.9,
+        "ctrl_a_phase_scrambled_V1_s1": 47.1,
+        "ctrl_a_phase_scrambled_V1_s2": 52.9,
+        "ctrl_a_phase_scrambled_V1_s3": 26.5,
+        "ctrl_a_phase_scrambled_V1_s4": 32.4
+      },
+      "phase_scramble_floor_max_pct": 55.9,
+      "phase_scramble_floor_mean_pct": 43.0,
+      "n_zero_voice_controls": 8,
+      "union_priming_recoverable_refwords": 23,
+      "V1_overlap_pct": 94.1,
+      "V1_unique_vs_union_floor_n": 9,
+      "V1_unique_overlap_corrected_pct": 26.5,
+      "floor_subtraction_corrected_pct": 38.2,
+      "v1_unique_ref_idx": [
+        9,
+        10,
+        16,
+        20,
+        21,
+        28,
+        29,
+        30,
+        33
+      ],
+      "v1_unique_words": [
+        "da",
+        "questo",
+        "Nel",
+        "sempre",
+        "ne",
+        "Perché,",
+        "perché",
+        "ripetere",
+        "potei?"
+      ]
+    }
+  }
+}

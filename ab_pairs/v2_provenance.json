@@ -1,0 +1,390 @@
+{
+ "schema": "audio-extract/v2-production-provenance/v2",
+ "created_at_utc": "2026-08-16",
+ "deliverable": "verdi_slow_voices__V2_mdx23c",
+ "narrow_claims_held": {
+  "historical_source_identified": "7_VERDI_SLOW_Voices_Tobacco_05_14_26_1/original.mp3 (md5 db7ad5492999db46bc4ff44d85e00c85, sha256 3c8a76459c7c44bf9c8a1f33efbf5d1d63e43f5811b1eb0dee605091d4d586cb, 104.18s)",
+  "owner_m4a_byte_identity": "owner ab_pair (md5 740d2081d211851bf129ea9bd11afcb3) is BYTE-IDENTICAL to the Mac v1 lib delivery lib/7_VERDI_SLOW_Voices_Tobacco_05_14_26_1/out/mdx23c_instrumental.m4a",
+  "recipe_strongly_reproduced": "fresh float-DAG rerun nulls the historical PCM24 ancestor at -65.32 dB overall and reproduces the owner m4a to the AAC floor (-43.58 dB)"
+ },
+ "corrections_vs_prior_artifact": {
+  "prior_reproduced_master_relabeled": "The prior artifact's 'reproduced_master' (verdi_V2_reproduced.f32.wav, pcm_sha256 6eef6d10...) is a float DECODE of the authoritative v1 24-bit (PCM_24) wav. It is the FORENSIC PCM24 ANCESTOR (likely true parent of the legacy m4a), NOT a float-clean canonical reconstruction. It is retained and relabeled below.",
+  "prior_reseparation_crosscheck_superseded": "The prior 'reseparation_crosscheck' (48d6af43...) let audio-separator's stock writer persist the stem as int16 (PCM16) at the separator boundary; that DID cross a lossy writer and is a diagnostic only. It is SUPERSEDED by the float-DAG bypass canonical master below (which never crosses PCM16/24).",
+  "noise_floor_interpretation_corrected": "The prior '-66 dB = numerical noise floor' claim is corrected: the fresh-vs-ancestor null (~-65 dB) reflects cross-backend/cross-version demix differences (Mac v1 run vs research6 CUDA now) PLUS the historical ancestor's PCM16->PCM24 quantization; it is NOT a same-computation numerical floor."
+ },
+ "recipe": {
+  "pipeline_origin": "~/audio-extract/convert.py (v1); variant id mdx23c_instrumental == ab_pairs V2_mdx23c",
+  "convert_py_sha256": "sha256:d70d6d6ae1a654ae18d893f4fce2f3af03fcb64b67faba9ec458329f90ad3e91",
+  "model": "MDX23C-8KFFT-InstVoc_HQ.ckpt",
+  "model_sha256": "sha256:49d51472769e34a2501cd1da782346a3212555c3a5619fc2c53507445528d816",
+  "output_construction": "NATIVE MDX23C (Instrumental) stem. CONFIRMED at runtime: training.instruments=['Vocals','Instrumental'], training.target_instrument=null -> the model emits both stems natively; Instrumental is a native model output, NOT mixture-minus-vocal-stem.",
+  "inference_settings": "audio-separator DEFAULTS (confirmed at runtime): overlap=8, segment_size=256, batch_size=1, override_model_segment_size=false, normalization_threshold=0.9, amplification_threshold=0.0. No adapter/LoRA. dim_t=256.",
+  "premodel_input_gain": "audio-separator normalizes the INPUT mix to 0.9 peak before demix (mdxc_separator.separate: spec_utils.normalize(max_peak=0.9)). For verdi decoded_peak=1.714073 -> premodel_gain=0.525065. THIS GAIN IS PART OF THE RECIPE (a normalization_threshold of 1.0, e.g. the repo M2 adapter, would change model execution and is therefore NOT faithful; M2 outputs were used only as diagnostics).",
+  "resampling": "NONE (no-op). prepare_mix uses librosa.load(sr=44100); source mp3 and holdout mixtures are already 44100; MDX23C native 44100.",
+  "channel_layout": "FL,FR (stereo)",
+  "post_processing": "peak-normalize the native Instrumental stem to -5 dBFS (gain = 10^(-5/20)/peak) in float. v1 additionally quantized to PCM_24 before AAC; the canonical reconstruction keeps float throughout.",
+  "listening_copy_encode_v1": "ffmpeg -c:a aac -b:a 256k -movflags +faststart (convert.py transcode_library) -- this AAC of the v1 PCM24 wav IS the owner m4a."
+ },
+ "forensic_pcm24_ancestor": {
+  "label": "forensic evidence (PCM24 ancestor - likely true parent of legacy m4a)",
+  "path_research6": "/home/mickg/v2_provenance/verdi_V2_reproduced.f32.wav",
+  "definition": "float decode of the authoritative v1 pre-AAC normalized wav (out/mdx23c_instrumental.wav, PCM_24, -5 dBFS)",
+  "pcm_sha256": "sha256:6eef6d109db84d8ea044d3571f4c64dbeedc6530558af33df5b277d6b38c4554",
+  "null_vs_owner_m4a": {
+   "overall_db": -43.62,
+   "worstwindow_db": -25.53,
+   "lag_samples": 0,
+   "gain_L": 0.99901,
+   "gain_R": 0.99916
+  },
+  "canonical": false
+ },
+ "canonical_fresh_float_master": {
+  "label": "canonical float-clean reconstruction (explicit all-float DAG; repo bypass route, threshold 0.9)",
+  "path_research6": "/home/mickg/v2_provenance/verdi_V2_fresh.f32.wav",
+  "format": "WAV pcm_f32le, 44100 Hz, FL,FR, 4594176 frames, peak 0.562341",
+  "reproduced_f32_pcm_sha256": "sha256:1a5497941d42cf4d7ebc990b7c1ff234305cde3e6e6197107109f031cf8e1680",
+  "plain_interleaved_f32le_sha256": "sha256:29861855c28b5e22708047287a5483139af51ceb68f66e900f8b411d3b6fa6bf",
+  "pcm_sha256_def": "audio_extract.identity.artifact_pcm_sha256 (float32-LE interleaved + u32 sr + FL,FR descriptor + u64 frames)",
+  "determinism_note": "MDX23C demix is effectively deterministic on this GPU: an independent capture (write_audio-bypass monkeypatch, same threshold 0.9) nulls vs this master at -149.79 dB (max_abs_diff 3.5e-8), i.e. bit-identical to float32 epsilon. This also proves neither capture crossed PCM16 (an int16 crossing would leave a ~-90 dB quantization signature).",
+  "all_float_dag": {
+   "verified_no_lossy_intermediate": true,
+   "note": "Every node A->D is float (persisted subtype FLOAT). The only lossy element is the HISTORICAL SOURCE itself (verdi original.mp3, MPEG_LAYER_III) which is the given v1 input, not an introduced quantization. Holdout works have fully-float sources (mixture.f32.wav).",
+   "nodes": {
+    "A_decoded": {
+     "path": "/home/mickg/v2_provenance/verdi_dag/verdi_A_decoded.f32.wav",
+     "desc": "mi.prepare_mix(mp3) librosa.load sr=44100",
+     "pcm_sha256": "sha256:e87f9454f0b9d8635fab142047e3f82ea3ab7dc6b391bcb3e184a9b2945a586a",
+     "peak": 1.714073
+    },
+    "B_premodel_0p9": {
+     "path": "/home/mickg/v2_provenance/verdi_dag/verdi_B_premodel_0p9.f32.wav",
+     "desc": "spec_utils.normalize(A, max_peak=0.9) premodel_gain=0.525065",
+     "pcm_sha256": "sha256:47c173d64911cda27e32065921b8473ba1a87cf69f49545a1cdc08f18c558d76",
+     "peak": 0.9
+    },
+    "C_separator_instrumental": {
+     "path": "/home/mickg/v2_provenance/verdi_dag/verdi_C_separator_instrumental.f32.wav",
+     "desc": "mi.demix(B)['Instrumental'].T raw model output pre-writer",
+     "pcm_sha256": "sha256:d6339cfaa5f65392abca1a6680a5c8b15571852f9613283d9038c3f211b0daaf",
+     "peak": 0.508401
+    },
+    "D_master_m5dBFS": {
+     "path": "/home/mickg/v2_provenance/verdi_V2_fresh.f32.wav",
+     "desc": "peaknorm(C, -5 dBFS) in float = THE deliverable",
+     "pcm_sha256": "sha256:1a5497941d42cf4d7ebc990b7c1ff234305cde3e6e6197107109f031cf8e1680",
+     "peak": 0.562341
+    }
+   }
+  },
+  "listening_m4a": {
+   "path": "/home/mickg/v2_provenance/verdi_V2_fresh.m4a",
+   "codec": "AAC 256k",
+   "from_clip": false,
+   "bytes": 3295082,
+   "blob_sha256": "sha256:78da75f5e0ffd9ec260362c3ba08d102031f22f6ef380ae444ef816a9ba31438"
+  },
+  "canonical": true
+ },
+ "three_way_null": {
+  "method": "ffmpeg-decode both to f32le stereo@44100; FFT xcorr integer-sample align; per-channel optimal gain g=<t,r>/<r,r>; null_db=10log10(mean(resid^2)/mean(tgt^2)); worst = max over non-overlapping 1.0s windows.",
+  "fresh_float__vs__pcm24_ancestor": {
+   "overall_db": -65.32,
+   "worstwindow_db": -36.57,
+   "worst_start_s": 103.0,
+   "lag_samples": 0,
+   "gain_L": 0.999764,
+   "gain_R": 0.999882,
+   "interpretation": "no AAC; residual = cross-backend/version demix diff (Mac v1 vs research6 CUDA) + ancestor PCM16->PCM24 quantization"
+  },
+  "fresh_float__vs__legacy_owner_m4a": {
+   "overall_db": -43.58,
+   "worstwindow_db": -25.36,
+   "worst_start_s": 0.0,
+   "lag_samples": 0,
+   "gain_L": 0.998774,
+   "gain_R": 0.999042,
+   "interpretation": "AAC-256k floor dominates; recipe reproduces owner deliverable end-to-end from source"
+  },
+  "pcm24_ancestor__vs__legacy_owner_m4a": {
+   "overall_db": -43.62,
+   "worstwindow_db": -25.53,
+   "worst_start_s": 0.0,
+   "lag_samples": 0,
+   "gain_L": 0.99901,
+   "gain_R": 0.99916,
+   "interpretation": "forensic identity: the owner m4a is the v1 AAC-256k encode of THIS PCM24 ancestor"
+  }
+ },
+ "exec_fingerprint": {
+  "python": "3.12.13",
+  "platform": "Linux x86_64",
+  "torch": "2.13.0+cu130",
+  "cuda": "13.0",
+  "numpy": "2.4.6",
+  "librosa": "0.11.0",
+  "soundfile": "0.14.0",
+  "audio_separator": "0.44.5",
+  "gpu": "NVIDIA RTX PRO 4500 Blackwell",
+  "separate_py_sha256": "sha256:bcca3615baeba790bc25f20467a1c0d30a9ba69083b1a820784f8344d1aea73a"
+ },
+ "holdout_v2_mdx23c": {
+  "note": "Same float-DAG recipe applied to the 4 frozen-gate holdout works; masters + hashes recorded in /home/mickg/holdout/holdout_manifest.json. NOTHING SCORED (scored:false).",
+  "masters_pcm_sha256": {
+   "gianni_schicchi_babbino": "sha256:27fe1de1675509e320d4f2711dcb0a930a1849142b5b1b1931bc4de17a62ff69",
+   "elisir_furtiva_lagrima": "sha256:15e9d5e6a33307b75f5d3c8372185b900beaf43068e36d9ff8592b3c5f70d1a6",
+   "don_giovanni_madamina": "sha256:8078b6aaf4c572815c5ae3f4f2a841d01e221b4cac7f8de4505a644a823b566f",
+   "control_bologna_verdi_orch": "sha256:6c218c285fa857e81fa1fcdea02bc72bb471b6f58d50d5c92b164df522d49e6b"
+  },
+  "source_node_matches_manifest_mixture_sha256": true,
+  "node_bytes_persisted": "Holdout A/B/C node bytes (in-memory only at first) were re-derived by re-running the DETERMINISTIC float DAG; re-run C == committed separator_node_pcm_sha256 and re-run D == committed master for all 4 works (bit-exact). No verdi rerun."
+ },
+ "status": {
+  "float_execution_lineage_clean": true,
+  "fresh_capture_crossed_pcm16": false,
+  "canonical_store_imported": true,
+  "store_lineage_verifier_v2": "PASS",
+  "provenance_clean": true,
+  "canonical": true,
+  "external_audit": "gpt56 store_v2 audit = PASS (canonical lineage ACCEPTED; WRITES=0 idempotency verified independently). Broad flags lifted per that acceptance.",
+  "note": "float_execution_lineage_clean + fresh_capture_crossed_pcm16:false stand. canonical_store_imported/provenance_clean/canonical are TRUE for store_v2 only; the round-2 staging store remains evidence, not canonical."
+ },
+ "adapter_identities": {
+  "bypass_script": "v2_bypass.py",
+  "bypass_script_sha256": "sha256:b663054d39550a9511ae04085f063a310e29c484f5759b8ccb54d1a21d949fe7",
+  "resolved_model_yaml": "model_2_stem_full_band_8k.yaml",
+  "resolved_model_yaml_sha256": "sha256:451765e869b78dcb9ca9188a74da31f581b7254ff0e8b532aa76b974148de947",
+  "model_weights_sha256": "sha256:49d51472769e34a2501cd1da782346a3212555c3a5619fc2c53507445528d816",
+  "executed_bundle_id": "sha256:854e4b19cc39bef86f28b74323701875530cd0ac6ce212416c1b6a703e7e4fbb",
+  "audio_separator_pkg": "0.44.5",
+  "separate_py_sha256": "sha256:bcca3615baeba790bc25f20467a1c0d30a9ba69083b1a820784f8344d1aea73a",
+  "audio_extract_commit": "b88cf5afe5984e9f79fed456bc19cd3bdb2fad55",
+  "note": "MDX23C native Instrumental was produced via the explicit v2_bypass.py DAG (prepare_mix/normalize0.9/demix), NOT via separate.py's SeparatorAdapter; hence bypass_script_sha256 + resolved_model_yaml_sha256 are the load-bearing adapter identities."
+ },
+ "canonical_store": {
+  "store_root": "/home/mickg/v2_provenance/store_v2",
+  "manifest_path_research6": "/home/mickg/v2_provenance/store_v2_manifest.json",
+  "discipline": "audio_extract.storage.TrackLayout.write_candidate (append-only, read-back-verified)",
+  "non_destructive": true,
+  "idempotent": true,
+  "supersedes": "staging store /home/mickg/v2_provenance/store (kept as evidence) which had 2 violations: (V1) no explicit recipe-ID parents, (V2) destructive importer (rmtree+unconditional copy). Both fixed here.",
+  "explicit_parent_contract": "execution.json.parents = recipe-IDs ([] for decode A; [parent_recipe_id] for B/C/D); manifest parent_recipe_ids mirrors. (input_pcm.sha256 edge retained additionally.)",
+  "recipe_ids_match_accepted_staging": true,
+  "lineage_verifier_v2": {
+   "verdict": "PASS",
+   "checks": [
+    "(a) recipe-ID recompute==dir==manifest",
+    "(b) explicit execution parents present+correct",
+    "(c) manifest parent_recipe_ids consistent",
+    "(d) source immutability",
+    "(e) second-invocation zero-writes",
+    "base: node bytes re-hash==recorded pcm, FLOAT subtype, no lossy analysis ancestor, edges intact"
+   ],
+   "output_file_scp": "v2_store_lineage_verifier_v2.out"
+  },
+  "idempotency_evidence": {
+   "run1_writes": 35,
+   "run2_writes": 0,
+   "n_files": 115,
+   "snapshots_identical": true,
+   "diffs": 0,
+   "method": "stat(inode,mtime_ns,size)+sha256 of every file captured BEFORE and AFTER run-2; identical => zero writes",
+   "evidence_file_scp": "v2_idempotency_evidence.json"
+  },
+  "nodes_total": 20,
+  "tracks": {
+   "verdi_slow_voices": {
+    "source_lossy_origin": true,
+    "chain": {
+     "A": {
+      "recipe_id": "sha256:e15964a3f0ec9acdf1ce9964ee22b3b0efbd0ae25feaaa9e9d24f616ec1827ca",
+      "parent_recipe_ids": [],
+      "operation": "decode",
+      "output_pcm_sha256": "sha256:e87f9454f0b9d8635fab142047e3f82ea3ab7dc6b391bcb3e184a9b2945a586a"
+     },
+     "B": {
+      "recipe_id": "sha256:18cfc8cc53da8efa6dface4afaa2b6971764173cdc38cc04f1f67e8bc54190d5",
+      "parent_recipe_ids": [
+       "sha256:e15964a3f0ec9acdf1ce9964ee22b3b0efbd0ae25feaaa9e9d24f616ec1827ca"
+      ],
+      "operation": "global_gain",
+      "output_pcm_sha256": "sha256:47c173d64911cda27e32065921b8473ba1a87cf69f49545a1cdc08f18c558d76"
+     },
+     "C": {
+      "recipe_id": "sha256:12ad757804c6f39c55c2a28cae2d7a39d81dc7f1d7ed1720f79cebb70479ea06",
+      "parent_recipe_ids": [
+       "sha256:18cfc8cc53da8efa6dface4afaa2b6971764173cdc38cc04f1f67e8bc54190d5"
+      ],
+      "operation": "separate",
+      "output_pcm_sha256": "sha256:d6339cfaa5f65392abca1a6680a5c8b15571852f9613283d9038c3f211b0daaf"
+     },
+     "D": {
+      "recipe_id": "sha256:ed484a6210b5ca85211247d69fa81b9e1799a5f0ac512b487abd0568419175d0",
+      "parent_recipe_ids": [
+       "sha256:12ad757804c6f39c55c2a28cae2d7a39d81dc7f1d7ed1720f79cebb70479ea06"
+      ],
+      "operation": "global_gain",
+      "output_pcm_sha256": "sha256:1a5497941d42cf4d7ebc990b7c1ff234305cde3e6e6197107109f031cf8e1680"
+     }
+    }
+   },
+   "gianni_schicchi_babbino": {
+    "source_lossy_origin": false,
+    "chain": {
+     "A": {
+      "recipe_id": "sha256:fe0beb0eca7444d1ea264d091a3639351d855f688d77f8dff32ded8d4b83e4e3",
+      "parent_recipe_ids": [],
+      "operation": "decode",
+      "output_pcm_sha256": "sha256:2c21031d3c880846ceda992d238d9d4f04fac56fef69d49cbb856fca0b86718e"
+     },
+     "B": {
+      "recipe_id": "sha256:db486c87993e528f5e61dc55570f1ac2949b5b8fb6c66399b1349b37a8d41aee",
+      "parent_recipe_ids": [
+       "sha256:fe0beb0eca7444d1ea264d091a3639351d855f688d77f8dff32ded8d4b83e4e3"
+      ],
+      "operation": "global_gain",
+      "output_pcm_sha256": "sha256:28fcbfff9e0a5434b8e4ad58c5610c2528a461cd122718854020a45876060b68"
+     },
+     "C": {
+      "recipe_id": "sha256:1f2d445a025e1c78e26b1c919f93d3687f0ffce0d3aaeecd0a05cf0fcd126592",
+      "parent_recipe_ids": [
+       "sha256:db486c87993e528f5e61dc55570f1ac2949b5b8fb6c66399b1349b37a8d41aee"
+      ],
+      "operation": "separate",
+      "output_pcm_sha256": "sha256:860f3c8d56f9ba6a19cd9b72db4d5074e3801ed822cc3c07a74f916c641dc286"
+     },
+     "D": {
+      "recipe_id": "sha256:3b88228dc21d165d7a309ad8c647df2ebc56f1ec94b156be6e6ad3f86200e551",
+      "parent_recipe_ids": [
+       "sha256:1f2d445a025e1c78e26b1c919f93d3687f0ffce0d3aaeecd0a05cf0fcd126592"
+      ],
+      "operation": "global_gain",
+      "output_pcm_sha256": "sha256:27fe1de1675509e320d4f2711dcb0a930a1849142b5b1b1931bc4de17a62ff69"
+     }
+    }
+   },
+   "elisir_furtiva_lagrima": {
+    "source_lossy_origin": false,
+    "chain": {
+     "A": {
+      "recipe_id": "sha256:510ceba1eb81bbfb46367a903fb7908d6604b3e6a45ef2071d02181cf266aeb1",
+      "parent_recipe_ids": [],
+      "operation": "decode",
+      "output_pcm_sha256": "sha256:6989e9ddfefdac6706393e69d9e4afff46fa9f4ccc55a7c93231bfd78a716d2b"
+     },
+     "B": {
+      "recipe_id": "sha256:7e2f218adb27d99cf7e66dfffb74c00f9d19866322927ebfd426a7ace5cce75a",
+      "parent_recipe_ids": [
+       "sha256:510ceba1eb81bbfb46367a903fb7908d6604b3e6a45ef2071d02181cf266aeb1"
+      ],
+      "operation": "global_gain",
+      "output_pcm_sha256": "sha256:c08db7faf7d6a6178cc6f143fe891aaaef41558e22b506d90fd901258fda390b"
+     },
+     "C": {
+      "recipe_id": "sha256:b07ac9ffeadb3c44060541c12b64056e00dd8daaa5b04d9f3cf7dcce91eeb980",
+      "parent_recipe_ids": [
+       "sha256:7e2f218adb27d99cf7e66dfffb74c00f9d19866322927ebfd426a7ace5cce75a"
+      ],
+      "operation": "separate",
+      "output_pcm_sha256": "sha256:8bc23521354b2dad9f5102889f31d03274cfa4664b2ee07199a52111b0748b87"
+     },
+     "D": {
+      "recipe_id": "sha256:94c9e3cb2ae95d4a4f9bfcb24a03b4e444eaf585e48c0f913589aeb110b28525",
+      "parent_recipe_ids": [
+       "sha256:b07ac9ffeadb3c44060541c12b64056e00dd8daaa5b04d9f3cf7dcce91eeb980"
+      ],
+      "operation": "global_gain",
+      "output_pcm_sha256": "sha256:15e9d5e6a33307b75f5d3c8372185b900beaf43068e36d9ff8592b3c5f70d1a6"
+     }
+    }
+   },
+   "don_giovanni_madamina": {
+    "source_lossy_origin": false,
+    "chain": {
+     "A": {
+      "recipe_id": "sha256:ec260df7e5e144af2f618b69f2aa499cdf99e6ccc3d9534c68208f5c3aa6bf05",
+      "parent_recipe_ids": [],
+      "operation": "decode",
+      "output_pcm_sha256": "sha256:fbb5c5428004c5302e9c22f146d3b352599e2f17ee34ef250619c9853bbfaf4a"
+     },
+     "B": {
+      "recipe_id": "sha256:f8e355b3345f5013c898dbf71383c426e3fab5724864aa0da10ac9ec251b6130",
+      "parent_recipe_ids": [
+       "sha256:ec260df7e5e144af2f618b69f2aa499cdf99e6ccc3d9534c68208f5c3aa6bf05"
+      ],
+      "operation": "global_gain",
+      "output_pcm_sha256": "sha256:fbb5c5428004c5302e9c22f146d3b352599e2f17ee34ef250619c9853bbfaf4a"
+     },
+     "C": {
+      "recipe_id": "sha256:95a326b1979ee95979b63130d29804bb629c71aa39fe1b893b7897e859c28ce4",
+      "parent_recipe_ids": [
+       "sha256:f8e355b3345f5013c898dbf71383c426e3fab5724864aa0da10ac9ec251b6130"
+      ],
+      "operation": "separate",
+      "output_pcm_sha256": "sha256:e3486a4f21cd6a487b2357d87cea748f2436c0424296fa2380ab1acb8b71cb3d"
+     },
+     "D": {
+      "recipe_id": "sha256:ecb2def6e5cc40809ca7977382e2bffbcf1e860ce42732d278c60bab512544b7",
+      "parent_recipe_ids": [
+       "sha256:95a326b1979ee95979b63130d29804bb629c71aa39fe1b893b7897e859c28ce4"
+      ],
+      "operation": "global_gain",
+      "output_pcm_sha256": "sha256:8078b6aaf4c572815c5ae3f4f2a841d01e221b4cac7f8de4505a644a823b566f"
+     }
+    }
+   },
+   "control_bologna_verdi_orch": {
+    "source_lossy_origin": false,
+    "chain": {
+     "A": {
+      "recipe_id": "sha256:970262d0fba84f7808704da1e2dc3b0e5dcba3edc05809c13a9ce7a2eab9e14b",
+      "parent_recipe_ids": [],
+      "operation": "decode",
+      "output_pcm_sha256": "sha256:2d7cdfd32948ba208ffba50631a88c19eb9dd7cdb14621fcb5adbcb8f26832db"
+     },
+     "B": {
+      "recipe_id": "sha256:9727536749dc57138b577a67c169a412343d9ed1b0adbefe23f862502e48393b",
+      "parent_recipe_ids": [
+       "sha256:970262d0fba84f7808704da1e2dc3b0e5dcba3edc05809c13a9ce7a2eab9e14b"
+      ],
+      "operation": "global_gain",
+      "output_pcm_sha256": "sha256:2d7cdfd32948ba208ffba50631a88c19eb9dd7cdb14621fcb5adbcb8f26832db"
+     },
+     "C": {
+      "recipe_id": "sha256:bac7eb23470b7b43b6bfb005f5430af22b55a8abaee438993fb068e6e96c4185",
+      "parent_recipe_ids": [
+       "sha256:9727536749dc57138b577a67c169a412343d9ed1b0adbefe23f862502e48393b"
+      ],
+      "operation": "separate",
+      "output_pcm_sha256": "sha256:43e58c8992d4b0e6d764e22d602139c27bece586443f8ae5432767bf09292254"
+     },
+     "D": {
+      "recipe_id": "sha256:84c7fc59b816eaa90d46f155c28e7d079692000d201ebe6bd9ea4d4000e651e9",
+      "parent_recipe_ids": [
+       "sha256:bac7eb23470b7b43b6bfb005f5430af22b55a8abaee438993fb068e6e96c4185"
+      ],
+      "operation": "global_gain",
+      "output_pcm_sha256": "sha256:6c218c285fa857e81fa1fcdea02bc72bb471b6f58d50d5c92b164df522d49e6b"
+     }
+    }
+   }
+  },
+  "recipe_id_equivalence": {
+   "claim": "ALL 20 recipe-IDs (A/B/C/D x 5 tracks) in store_v2 MATCH the accepted staging store; all 20 output pcm hashes MATCH (audio identity unchanged); candidate directory sets are identical on disk.",
+   "verified": "empirically from disk 2026-08-16: manifest cross-compare = 0 recipe_id mismatches, 0 output_pcm mismatches; per-track candidates/ dir-set equality = True for all 5 tracks.",
+   "file_vs_id_nuance": "The stored recipe.json FILES differ textually between the stores (store_v2 persists the NORMALIZED recipe with schema/canon materialized; staging stored the raw pre-normalization object), but identity.recipe_id() normalizes before hashing, so they hash to identical recipe-IDs.",
+   "audit_note_correction": "The final audit's premise that 'C changes on all five tracks' described an INTERMEDIATE draft (two drafts drifted the five C recipe-IDs by rewording effective_config.note, which is hashed). The exact accepted note was restored before the final store_v2 build; those draft roots were discarded. Final store_v2: C matches staging everywhere, C audio bytes unchanged."
+  },
+  "paths": {
+   "store_v2_root_research6": "/home/mickg/v2_provenance/store_v2",
+   "manifest_research6": "/home/mickg/v2_provenance/store_v2_manifest.json",
+   "verifier_output_research6": "/home/mickg/v2_provenance/verify_store_lineage_v2.out",
+   "idempotency_evidence_research6": "/home/mickg/v2_provenance/idempotency_evidence.json",
+   "manifest_mac": "/Users/mickg10/audio-extract/ab_pairs/v2_store_v2_manifest.json",
+   "verifier_output_mac": "/Users/mickg10/audio-extract/ab_pairs/v2_store_lineage_verifier_v2.out",
+   "idempotency_evidence_mac": "/Users/mickg10/audio-extract/ab_pairs/v2_idempotency_evidence.json",
+   "staging_store_evidence_research6": "/home/mickg/v2_provenance/store (superseded, kept as evidence)"
+  }
+ },
+ "storage_work_status": "CLOSED per audit acceptance 2026-08-16; no further store work. Remaining support: owner listening + model-validation prep; terminal decision stays needs_human_ab pending owner labels."
+}

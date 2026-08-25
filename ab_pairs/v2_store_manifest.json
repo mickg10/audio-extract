@@ -1,0 +1,317 @@
+{
+ "schema": "audio-extract/v2-canonical-store/v1",
+ "store_root": "/home/mickg/v2_provenance/store",
+ "created_utc": "2026-08-16",
+ "adapter_identities": {
+  "bypass_script": "v2_bypass.py",
+  "bypass_script_sha256": "sha256:b663054d39550a9511ae04085f063a310e29c484f5759b8ccb54d1a21d949fe7",
+  "resolved_model_yaml": "model_2_stem_full_band_8k.yaml",
+  "resolved_model_yaml_sha256": "sha256:451765e869b78dcb9ca9188a74da31f581b7254ff0e8b532aa76b974148de947",
+  "model_weights_sha256": "sha256:49d51472769e34a2501cd1da782346a3212555c3a5619fc2c53507445528d816",
+  "executed_bundle_id": "sha256:854e4b19cc39bef86f28b74323701875530cd0ac6ce212416c1b6a703e7e4fbb",
+  "audio_separator_pkg": "0.44.5",
+  "separate_py_sha256": "sha256:bcca3615baeba790bc25f20467a1c0d30a9ba69083b1a820784f8344d1aea73a",
+  "audio_extract_commit": "b88cf5afe5984e9f79fed456bc19cd3bdb2fad55"
+ },
+ "runtime_identity": {
+  "python": "3.12.13",
+  "platform": "Linux-5.15.0-187-generic-x86_64-with-glibc2.35",
+  "machine": "x86_64",
+  "numpy": "2.4.6",
+  "torch": "2.13.0+cu130",
+  "cuda": "13.0",
+  "librosa": "0.11.0",
+  "soundfile": "0.14.0",
+  "audio_separator": null,
+  "fingerprint_sha256": "sha256:874bdd048fb43b667c37ad53f0a2fc2fa2a332b792d4ba936b62b49c804bbdef",
+  "gpu": "NVIDIA RTX PRO 4500 Blackwell",
+  "audio_separator_pkg": "0.44.5"
+ },
+ "tracks": {
+  "verdi_slow_voices": {
+   "track_id": "verdi_slow_voices",
+   "source": {
+    "path": "/home/mickg/v2_provenance/v1_source_original.mp3",
+    "blob_sha256": "sha256:3c8a76459c7c44bf9c8a1f33efbf5d1d63e43f5811b1eb0dee605091d4d586cb",
+    "format": "mpeg1-layer3",
+    "lossy_origin": true
+   },
+   "nodes": {
+    "A": {
+     "recipe_id": "sha256:e15964a3f0ec9acdf1ce9964ee22b3b0efbd0ae25feaaa9e9d24f616ec1827ca",
+     "output_pcm_sha256": "sha256:e87f9454f0b9d8635fab142047e3f82ea3ab7dc6b391bcb3e184a9b2945a586a",
+     "parent_input_pcm_sha256": "sha256:3c8a76459c7c44bf9c8a1f33efbf5d1d63e43f5811b1eb0dee605091d4d586cb",
+     "parent_node": null,
+     "operation": "decode",
+     "candidate_dir": "/home/mickg/v2_provenance/store/verdi_slow_voices/candidates/sha256_e15964a3f0ec9acdf1ce9964ee22b3b0efbd0ae25feaaa9e9d24f616ec1827ca",
+     "frames": 4594176,
+     "peak": 1.714073
+    },
+    "B": {
+     "recipe_id": "sha256:18cfc8cc53da8efa6dface4afaa2b6971764173cdc38cc04f1f67e8bc54190d5",
+     "output_pcm_sha256": "sha256:47c173d64911cda27e32065921b8473ba1a87cf69f49545a1cdc08f18c558d76",
+     "parent_input_pcm_sha256": "sha256:e87f9454f0b9d8635fab142047e3f82ea3ab7dc6b391bcb3e184a9b2945a586a",
+     "parent_node": "A",
+     "operation": "global_gain",
+     "candidate_dir": "/home/mickg/v2_provenance/store/verdi_slow_voices/candidates/sha256_18cfc8cc53da8efa6dface4afaa2b6971764173cdc38cc04f1f67e8bc54190d5",
+     "frames": 4594176,
+     "peak": 0.9
+    },
+    "C": {
+     "recipe_id": "sha256:12ad757804c6f39c55c2a28cae2d7a39d81dc7f1d7ed1720f79cebb70479ea06",
+     "output_pcm_sha256": "sha256:d6339cfaa5f65392abca1a6680a5c8b15571852f9613283d9038c3f211b0daaf",
+     "parent_input_pcm_sha256": "sha256:47c173d64911cda27e32065921b8473ba1a87cf69f49545a1cdc08f18c558d76",
+     "parent_node": "B",
+     "operation": "separate",
+     "candidate_dir": "/home/mickg/v2_provenance/store/verdi_slow_voices/candidates/sha256_12ad757804c6f39c55c2a28cae2d7a39d81dc7f1d7ed1720f79cebb70479ea06",
+     "frames": 4594176,
+     "peak": 0.508401
+    },
+    "D": {
+     "recipe_id": "sha256:ed484a6210b5ca85211247d69fa81b9e1799a5f0ac512b487abd0568419175d0",
+     "output_pcm_sha256": "sha256:1a5497941d42cf4d7ebc990b7c1ff234305cde3e6e6197107109f031cf8e1680",
+     "parent_input_pcm_sha256": "sha256:d6339cfaa5f65392abca1a6680a5c8b15571852f9613283d9038c3f211b0daaf",
+     "parent_node": "C",
+     "operation": "global_gain",
+     "candidate_dir": "/home/mickg/v2_provenance/store/verdi_slow_voices/candidates/sha256_ed484a6210b5ca85211247d69fa81b9e1799a5f0ac512b487abd0568419175d0",
+     "frames": 4594176,
+     "peak": 0.562341
+    }
+   },
+   "listening_m4a": {
+    "path": "/home/mickg/v2_provenance/verdi_V2_fresh.m4a",
+    "bitrate": "256k",
+    "blob_sha256": "sha256:78da75f5e0ffd9ec260362c3ba08d102031f22f6ef380ae444ef816a9ba31438",
+    "of_node": "D"
+   }
+  },
+  "gianni_schicchi_babbino": {
+   "track_id": "gianni_schicchi_babbino",
+   "source": {
+    "path": "/home/mickg/holdout/gianni_schicchi_babbino/mixture.f32.wav",
+    "blob_sha256": "sha256:822b03d8a9f2334ea2a7736ce9de90391c2b30451337a9cb9a7c726d375a4819",
+    "format": "float32-le-interleaved",
+    "lossy_origin": false
+   },
+   "nodes": {
+    "A": {
+     "recipe_id": "sha256:fe0beb0eca7444d1ea264d091a3639351d855f688d77f8dff32ded8d4b83e4e3",
+     "output_pcm_sha256": "sha256:2c21031d3c880846ceda992d238d9d4f04fac56fef69d49cbb856fca0b86718e",
+     "parent_input_pcm_sha256": "sha256:2c21031d3c880846ceda992d238d9d4f04fac56fef69d49cbb856fca0b86718e",
+     "parent_node": null,
+     "operation": "decode",
+     "candidate_dir": "/home/mickg/v2_provenance/store/gianni_schicchi_babbino/candidates/sha256_fe0beb0eca7444d1ea264d091a3639351d855f688d77f8dff32ded8d4b83e4e3",
+     "frames": 6797131,
+     "peak": 0.90044
+    },
+    "B": {
+     "recipe_id": "sha256:db486c87993e528f5e61dc55570f1ac2949b5b8fb6c66399b1349b37a8d41aee",
+     "output_pcm_sha256": "sha256:28fcbfff9e0a5434b8e4ad58c5610c2528a461cd122718854020a45876060b68",
+     "parent_input_pcm_sha256": "sha256:2c21031d3c880846ceda992d238d9d4f04fac56fef69d49cbb856fca0b86718e",
+     "parent_node": "A",
+     "operation": "global_gain",
+     "candidate_dir": "/home/mickg/v2_provenance/store/gianni_schicchi_babbino/candidates/sha256_db486c87993e528f5e61dc55570f1ac2949b5b8fb6c66399b1349b37a8d41aee",
+     "frames": 6797131,
+     "peak": 0.9
+    },
+    "C": {
+     "recipe_id": "sha256:1f2d445a025e1c78e26b1c919f93d3687f0ffce0d3aaeecd0a05cf0fcd126592",
+     "output_pcm_sha256": "sha256:860f3c8d56f9ba6a19cd9b72db4d5074e3801ed822cc3c07a74f916c641dc286",
+     "parent_input_pcm_sha256": "sha256:28fcbfff9e0a5434b8e4ad58c5610c2528a461cd122718854020a45876060b68",
+     "parent_node": "B",
+     "operation": "separate",
+     "candidate_dir": "/home/mickg/v2_provenance/store/gianni_schicchi_babbino/candidates/sha256_1f2d445a025e1c78e26b1c919f93d3687f0ffce0d3aaeecd0a05cf0fcd126592",
+     "frames": 6797131,
+     "peak": 0.482129
+    },
+    "D": {
+     "recipe_id": "sha256:3b88228dc21d165d7a309ad8c647df2ebc56f1ec94b156be6e6ad3f86200e551",
+     "output_pcm_sha256": "sha256:27fe1de1675509e320d4f2711dcb0a930a1849142b5b1b1931bc4de17a62ff69",
+     "parent_input_pcm_sha256": "sha256:860f3c8d56f9ba6a19cd9b72db4d5074e3801ed822cc3c07a74f916c641dc286",
+     "parent_node": "C",
+     "operation": "global_gain",
+     "candidate_dir": "/home/mickg/v2_provenance/store/gianni_schicchi_babbino/candidates/sha256_3b88228dc21d165d7a309ad8c647df2ebc56f1ec94b156be6e6ad3f86200e551",
+     "frames": 6797131,
+     "peak": 0.562341
+    }
+   },
+   "listening_m4a": {
+    "path": "/home/mickg/holdout/gianni_schicchi_babbino/v2_mdx23c.m4a",
+    "bitrate": "192k",
+    "blob_sha256": "sha256:c8c22994086b64c18c402f64d6dcd36c58cbc37b174756f7d0c02df4a6872980",
+    "of_node": "D"
+   }
+  },
+  "elisir_furtiva_lagrima": {
+   "track_id": "elisir_furtiva_lagrima",
+   "source": {
+    "path": "/home/mickg/holdout/elisir_furtiva_lagrima/mixture.f32.wav",
+    "blob_sha256": "sha256:d306cd53130e9f99a5478b0a961380a3c35462d177673032059a8292e6864266",
+    "format": "float32-le-interleaved",
+    "lossy_origin": false
+   },
+   "nodes": {
+    "A": {
+     "recipe_id": "sha256:510ceba1eb81bbfb46367a903fb7908d6604b3e6a45ef2071d02181cf266aeb1",
+     "output_pcm_sha256": "sha256:6989e9ddfefdac6706393e69d9e4afff46fa9f4ccc55a7c93231bfd78a716d2b",
+     "parent_input_pcm_sha256": "sha256:6989e9ddfefdac6706393e69d9e4afff46fa9f4ccc55a7c93231bfd78a716d2b",
+     "parent_node": null,
+     "operation": "decode",
+     "candidate_dir": "/home/mickg/v2_provenance/store/elisir_furtiva_lagrima/candidates/sha256_510ceba1eb81bbfb46367a903fb7908d6604b3e6a45ef2071d02181cf266aeb1",
+     "frames": 11708107,
+     "peak": 0.994273
+    },
+    "B": {
+     "recipe_id": "sha256:7e2f218adb27d99cf7e66dfffb74c00f9d19866322927ebfd426a7ace5cce75a",
+     "output_pcm_sha256": "sha256:c08db7faf7d6a6178cc6f143fe891aaaef41558e22b506d90fd901258fda390b",
+     "parent_input_pcm_sha256": "sha256:6989e9ddfefdac6706393e69d9e4afff46fa9f4ccc55a7c93231bfd78a716d2b",
+     "parent_node": "A",
+     "operation": "global_gain",
+     "candidate_dir": "/home/mickg/v2_provenance/store/elisir_furtiva_lagrima/candidates/sha256_7e2f218adb27d99cf7e66dfffb74c00f9d19866322927ebfd426a7ace5cce75a",
+     "frames": 11708107,
+     "peak": 0.9
+    },
+    "C": {
+     "recipe_id": "sha256:b07ac9ffeadb3c44060541c12b64056e00dd8daaa5b04d9f3cf7dcce91eeb980",
+     "output_pcm_sha256": "sha256:8bc23521354b2dad9f5102889f31d03274cfa4664b2ee07199a52111b0748b87",
+     "parent_input_pcm_sha256": "sha256:c08db7faf7d6a6178cc6f143fe891aaaef41558e22b506d90fd901258fda390b",
+     "parent_node": "B",
+     "operation": "separate",
+     "candidate_dir": "/home/mickg/v2_provenance/store/elisir_furtiva_lagrima/candidates/sha256_b07ac9ffeadb3c44060541c12b64056e00dd8daaa5b04d9f3cf7dcce91eeb980",
+     "frames": 11708107,
+     "peak": 0.853645
+    },
+    "D": {
+     "recipe_id": "sha256:94c9e3cb2ae95d4a4f9bfcb24a03b4e444eaf585e48c0f913589aeb110b28525",
+     "output_pcm_sha256": "sha256:15e9d5e6a33307b75f5d3c8372185b900beaf43068e36d9ff8592b3c5f70d1a6",
+     "parent_input_pcm_sha256": "sha256:8bc23521354b2dad9f5102889f31d03274cfa4664b2ee07199a52111b0748b87",
+     "parent_node": "C",
+     "operation": "global_gain",
+     "candidate_dir": "/home/mickg/v2_provenance/store/elisir_furtiva_lagrima/candidates/sha256_94c9e3cb2ae95d4a4f9bfcb24a03b4e444eaf585e48c0f913589aeb110b28525",
+     "frames": 11708107,
+     "peak": 0.562341
+    }
+   },
+   "listening_m4a": {
+    "path": "/home/mickg/holdout/elisir_furtiva_lagrima/v2_mdx23c.m4a",
+    "bitrate": "192k",
+    "blob_sha256": "sha256:15e3d0d5b27780cf08dc60a6f3812feedce2774d891d157bd56758535e75d525",
+    "of_node": "D"
+   }
+  },
+  "don_giovanni_madamina": {
+   "track_id": "don_giovanni_madamina",
+   "source": {
+    "path": "/home/mickg/holdout/don_giovanni_madamina/mixture.f32.wav",
+    "blob_sha256": "sha256:0929236c8943a9fe4433fd252820d761adc81c77dea51c619d7b972f30ba00b9",
+    "format": "float32-le-interleaved",
+    "lossy_origin": false
+   },
+   "nodes": {
+    "A": {
+     "recipe_id": "sha256:ec260df7e5e144af2f618b69f2aa499cdf99e6ccc3d9534c68208f5c3aa6bf05",
+     "output_pcm_sha256": "sha256:fbb5c5428004c5302e9c22f146d3b352599e2f17ee34ef250619c9853bbfaf4a",
+     "parent_input_pcm_sha256": "sha256:fbb5c5428004c5302e9c22f146d3b352599e2f17ee34ef250619c9853bbfaf4a",
+     "parent_node": null,
+     "operation": "decode",
+     "candidate_dir": "/home/mickg/v2_provenance/store/don_giovanni_madamina/candidates/sha256_ec260df7e5e144af2f618b69f2aa499cdf99e6ccc3d9534c68208f5c3aa6bf05",
+     "frames": 18127303,
+     "peak": 0.853434
+    },
+    "B": {
+     "recipe_id": "sha256:f8e355b3345f5013c898dbf71383c426e3fab5724864aa0da10ac9ec251b6130",
+     "output_pcm_sha256": "sha256:fbb5c5428004c5302e9c22f146d3b352599e2f17ee34ef250619c9853bbfaf4a",
+     "parent_input_pcm_sha256": "sha256:fbb5c5428004c5302e9c22f146d3b352599e2f17ee34ef250619c9853bbfaf4a",
+     "parent_node": "A",
+     "operation": "global_gain",
+     "candidate_dir": "/home/mickg/v2_provenance/store/don_giovanni_madamina/candidates/sha256_f8e355b3345f5013c898dbf71383c426e3fab5724864aa0da10ac9ec251b6130",
+     "frames": 18127303,
+     "peak": 0.853434
+    },
+    "C": {
+     "recipe_id": "sha256:95a326b1979ee95979b63130d29804bb629c71aa39fe1b893b7897e859c28ce4",
+     "output_pcm_sha256": "sha256:e3486a4f21cd6a487b2357d87cea748f2436c0424296fa2380ab1acb8b71cb3d",
+     "parent_input_pcm_sha256": "sha256:fbb5c5428004c5302e9c22f146d3b352599e2f17ee34ef250619c9853bbfaf4a",
+     "parent_node": "B",
+     "operation": "separate",
+     "candidate_dir": "/home/mickg/v2_provenance/store/don_giovanni_madamina/candidates/sha256_95a326b1979ee95979b63130d29804bb629c71aa39fe1b893b7897e859c28ce4",
+     "frames": 18127303,
+     "peak": 0.590895
+    },
+    "D": {
+     "recipe_id": "sha256:ecb2def6e5cc40809ca7977382e2bffbcf1e860ce42732d278c60bab512544b7",
+     "output_pcm_sha256": "sha256:8078b6aaf4c572815c5ae3f4f2a841d01e221b4cac7f8de4505a644a823b566f",
+     "parent_input_pcm_sha256": "sha256:e3486a4f21cd6a487b2357d87cea748f2436c0424296fa2380ab1acb8b71cb3d",
+     "parent_node": "C",
+     "operation": "global_gain",
+     "candidate_dir": "/home/mickg/v2_provenance/store/don_giovanni_madamina/candidates/sha256_ecb2def6e5cc40809ca7977382e2bffbcf1e860ce42732d278c60bab512544b7",
+     "frames": 18127303,
+     "peak": 0.562341
+    }
+   },
+   "listening_m4a": {
+    "path": "/home/mickg/holdout/don_giovanni_madamina/v2_mdx23c.m4a",
+    "bitrate": "192k",
+    "blob_sha256": "sha256:19b639fd7ce45c84b47d0c9a6c2ee45f90853f070c7d24dd1861af50ebe6bf2c",
+    "of_node": "D"
+   }
+  },
+  "control_bologna_verdi_orch": {
+   "track_id": "control_bologna_verdi_orch",
+   "source": {
+    "path": "/home/mickg/holdout/control_bologna_verdi_orch/mixture.f32.wav",
+    "blob_sha256": "sha256:722ca10c7c9b5892c33f233c4525b8c3c42a845922245ec81ed3515940703eb2",
+    "format": "float32-le-interleaved",
+    "lossy_origin": false
+   },
+   "nodes": {
+    "A": {
+     "recipe_id": "sha256:970262d0fba84f7808704da1e2dc3b0e5dcba3edc05809c13a9ce7a2eab9e14b",
+     "output_pcm_sha256": "sha256:2d7cdfd32948ba208ffba50631a88c19eb9dd7cdb14621fcb5adbcb8f26832db",
+     "parent_input_pcm_sha256": "sha256:2d7cdfd32948ba208ffba50631a88c19eb9dd7cdb14621fcb5adbcb8f26832db",
+     "parent_node": null,
+     "operation": "decode",
+     "candidate_dir": "/home/mickg/v2_provenance/store/control_bologna_verdi_orch/candidates/sha256_970262d0fba84f7808704da1e2dc3b0e5dcba3edc05809c13a9ce7a2eab9e14b",
+     "frames": 4062448,
+     "peak": 0.707946
+    },
+    "B": {
+     "recipe_id": "sha256:9727536749dc57138b577a67c169a412343d9ed1b0adbefe23f862502e48393b",
+     "output_pcm_sha256": "sha256:2d7cdfd32948ba208ffba50631a88c19eb9dd7cdb14621fcb5adbcb8f26832db",
+     "parent_input_pcm_sha256": "sha256:2d7cdfd32948ba208ffba50631a88c19eb9dd7cdb14621fcb5adbcb8f26832db",
+     "parent_node": "A",
+     "operation": "global_gain",
+     "candidate_dir": "/home/mickg/v2_provenance/store/control_bologna_verdi_orch/candidates/sha256_9727536749dc57138b577a67c169a412343d9ed1b0adbefe23f862502e48393b",
+     "frames": 4062448,
+     "peak": 0.707946
+    },
+    "C": {
+     "recipe_id": "sha256:bac7eb23470b7b43b6bfb005f5430af22b55a8abaee438993fb068e6e96c4185",
+     "output_pcm_sha256": "sha256:43e58c8992d4b0e6d764e22d602139c27bece586443f8ae5432767bf09292254",
+     "parent_input_pcm_sha256": "sha256:2d7cdfd32948ba208ffba50631a88c19eb9dd7cdb14621fcb5adbcb8f26832db",
+     "parent_node": "B",
+     "operation": "separate",
+     "candidate_dir": "/home/mickg/v2_provenance/store/control_bologna_verdi_orch/candidates/sha256_bac7eb23470b7b43b6bfb005f5430af22b55a8abaee438993fb068e6e96c4185",
+     "frames": 4062448,
+     "peak": 0.70914
+    },
+    "D": {
+     "recipe_id": "sha256:84c7fc59b816eaa90d46f155c28e7d079692000d201ebe6bd9ea4d4000e651e9",
+     "output_pcm_sha256": "sha256:6c218c285fa857e81fa1fcdea02bc72bb471b6f58d50d5c92b164df522d49e6b",
+     "parent_input_pcm_sha256": "sha256:43e58c8992d4b0e6d764e22d602139c27bece586443f8ae5432767bf09292254",
+     "parent_node": "C",
+     "operation": "global_gain",
+     "candidate_dir": "/home/mickg/v2_provenance/store/control_bologna_verdi_orch/candidates/sha256_84c7fc59b816eaa90d46f155c28e7d079692000d201ebe6bd9ea4d4000e651e9",
+     "frames": 4062448,
+     "peak": 0.562341
+    }
+   },
+   "listening_m4a": {
+    "path": "/home/mickg/holdout/control_bologna_verdi_orch/v2_mdx23c.m4a",
+    "bitrate": "192k",
+    "blob_sha256": "sha256:3f354fc9bab92c5d0037b5f73f122bf229f126f300196715ec2886b163aa727c",
+    "of_node": "D"
+   }
+  }
+ }
+}

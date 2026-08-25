@@ -44,3 +44,15 @@ calibration/input_data/
 deliverables/
 Screenshot*.png
 deliverables_judge/
+
+# listening-lab audio artifacts (reproducible / user data)
+variants/*.m4a
+variants/.wav_cache/
+attachments/*
+!attachments/.gitkeep
+ab_pairs/*.m4a
+ab_pairs/*.flac
+ab_pairs/*.wav
+owner_review/
+variants/.vad_timelines.json
+ab_pairs/v2_store_lineage_verifier_v2.out
